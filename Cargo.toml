@@ -1,0 +1,24 @@
+[package]
+name = "gl_lib"
+version = "0.1.0"
+authors = ["Nikolaj Østergaard <niko.fris@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+failure = "0.1"
+nalgebra = "0.25.4"
+image = "0.23.14"
+walkdir = "2.1"
+
+[build-dependencies]
+gl_generator = "0.14.0"
+
+[dev-dependencies.sdl2]
+version = "0.34.3"
+features = ["bundled", "static-link"]
+
+
+[features]
+debug = []
