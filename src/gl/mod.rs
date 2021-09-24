@@ -12,6 +12,7 @@ pub mod viewport;
 pub use crate::gl::bindings::Gl as InnerGl;
 pub use crate::gl::bindings::*;
 
+/// Generated bindings for opengl
 #[derive(Clone)]
 pub struct Gl {
     inner: Rc<bindings::Gl>,
