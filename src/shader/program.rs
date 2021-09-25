@@ -132,14 +132,6 @@ impl ShaderSource {
         Ok(ShaderSource { gl: gl.clone(), id })
     }
 
-    pub fn from_vert_source(gl: &gl::Gl, source: &CStr) -> Result<ShaderSource, String> {
-        ShaderSource::from_source(gl, source, gl::VERTEX_SHADER)
-    }
-
-    pub fn from_frag_source(gl: &gl::Gl, source: &CStr) -> Result<ShaderSource, String> {
-        ShaderSource::from_source(gl, source, gl::FRAGMENT_SHADER)
-    }
-
     pub fn id(&self) -> gl::types::GLuint {
         self.id
     }

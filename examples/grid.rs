@@ -1,6 +1,4 @@
-use sdl2::{Sdl};
 use gl_lib::{gl, objects::square, shader};
-use std::io;
 use failure;
 
 use nalgebra as na;
@@ -36,7 +34,7 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-    let gl_context = window.gl_create_context().unwrap();
+    let _gl_context = window.gl_create_context().unwrap();
     let gl = gl::Gl::load_with(|s|{
         video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
     });
@@ -52,7 +50,6 @@ fn main() -> Result<(), failure::Error> {
         window.gl_swap_window();
     }
 
-    Ok(())
 }
 
 
@@ -106,10 +103,6 @@ fn render_grid(gl: &gl::Gl, shader: &shader::Shader, square: &square::Square, ro
             let c = -(1.0-scale_y/2.0) + ((row as f32) * scale_y);
 
             let trans_mat = na::Matrix4::new_translation(&na::Vector3::new(r, c, 0.0));
-
-            //println!("{:?}",r);
-            scale_mat.append_translation(&na::Vector3::new(r, 0.0, 0.0));
-
 
             // Set the model matrix to scale and translate the square
             shader.set_mat4(gl, "model", trans_mat * scale_mat);

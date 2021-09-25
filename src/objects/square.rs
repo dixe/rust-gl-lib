@@ -1,7 +1,5 @@
 use crate::buffer;
-
 use crate::gl;
-use crate::na;
 
 
 pub struct Square {
@@ -12,9 +10,7 @@ pub struct Square {
 
 impl Square {
 
-    pub fn new(gl: &gl::Gl) -> Result<Square, failure::Error> {
-
-
+    pub fn new(gl: &gl::Gl) -> Square {
 
         let vertices: Vec<f32> = vec![
             // positions
@@ -66,16 +62,15 @@ impl Square {
         vbo.unbind();
         vao.unbind();
 
-        Ok(Square {
+        Square {
             vao,
             _vbo: vbo,
             _ebo: ebo,
-        })
+        }
     }
 
 
     pub fn render(&self, gl: &gl::Gl) {
-
         self.vao.bind();
         unsafe {
             // draw

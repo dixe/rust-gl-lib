@@ -1,6 +1,4 @@
-use sdl2::{Sdl};
 use gl_lib::{gl, objects::square, shader};
-use std::io;
 use failure;
 
 
@@ -29,14 +27,14 @@ fn main() -> Result<(), failure::Error> {
 
 
     // Load gl functions and set to sdl video subsystem
-    let gl_context = window.gl_create_context().unwrap();
+    let _gl_context = window.gl_create_context().unwrap();
     let gl = gl::Gl::load_with(|s|{
         video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
     });
     viewport.set_used(&gl);
 
     // Create a default shader
-    let shader = shader::Shader::default_shader(&gl).unwrap();
+    let shader = shader::Shader::default_shader(&gl);
 
     // and a default square
     let square = square::Square::new(&gl)?;
