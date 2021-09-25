@@ -1,5 +1,6 @@
 use gl_lib::{gl, objects::cube, shader, camera};
 use failure;
+use std::time::{Duration, Instant};
 
 use nalgebra as na;
 
@@ -54,14 +55,34 @@ fn main() -> Result<(), failure::Error> {
 
     let color = na::Vector3::new(0.4, 0.9, 0.3);
 
-    camera.update_pos(na::Vector3::new(0.0, -5.0, 2.0));
+    let dist = 5.0;
 
 
     unsafe {
         gl.PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+
+        // background color
+        gl.ClearColor(0.85, 0.8, 0.7, 1.0);
     }
+
+    let mut instant = Instant::now();
+
+    let mut angle = 0.0;
+
+    let mut line = true;
     loop {
 
+        let delta = (instant.elapsed().as_millis() as f32) / 1000.0;
+        instant = Instant::now();
+
+        angle += delta;
+        // update camera pos
+
+        let x = f32::sin(angle);
+        let y = f32::cos(angle);
+        let z = f32::sin(2.0 * angle);
+
+        camera.update_pos(na::Vector3::new(x * dist, y * dist, 2.0 * z));
         unsafe {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
@@ -80,6 +101,24 @@ fn main() -> Result<(), failure::Error> {
 
         cube.render(&gl);
         window.gl_swap_window();
+
+        if angle > std::f32::consts::PI * 2.0 {
+            angle = 0.0;
+
+
+            unsafe {
+                if line {
+                    gl.PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+
+                }
+                else {
+                    gl.PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+                }
+                line = !line;
+            }
+        }
+
+
     }
 
 }
@@ -88,6 +127,11 @@ fn main() -> Result<(), failure::Error> {
 fn create_shader(gl: &gl::Gl) -> shader::Shader {
     let vert_source = r"#version 330 core
 layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aColor;
+
+out VS_OUTPUT {
+   flat vec3 Color;
+} OUT;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -95,15 +139,22 @@ uniform mat4 projection;
 
 void main()
 {
+    OUT.Color = aColor;
     gl_Position =  projection * view * model * vec4(aPos.x, aPos.y, aPos.z, 1.0);
 }";
 
     let frag_source = r"#version 330 core
 out vec4 FragColor;
 uniform vec3 color;
+
+
+in VS_OUTPUT {
+    flat vec3 Color;
+} IN;
+
 void main()
 {
-    FragColor = vec4(color, 1.0f);
+    FragColor = vec4(IN.Color * color, 1.0f);
 }";
 
 
