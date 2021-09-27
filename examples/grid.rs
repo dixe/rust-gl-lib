@@ -43,7 +43,7 @@ fn main() -> Result<(), failure::Error> {
 
 
     let shader = create_shader(&gl);
-    let square = square::Square::new(&gl).unwrap();
+    let square = square::Square::new(&gl);
 
     loop {
         render_grid(&gl, &shader, &square, 8, 7);

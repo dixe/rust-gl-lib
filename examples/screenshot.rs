@@ -40,10 +40,27 @@ fn main() -> Result<(), failure::Error> {
     let square = square::Square::new(&gl);
 
 
-    // Display square using shader
-    loop {
-        shader.set_used();
-        square.render(&gl);
-        window.gl_swap_window();
+    shader.set_used();
+    square.render(&gl);
+
+    window.gl_swap_window();
+
+    let size = (height * width *  3) as usize;
+
+    let screenshot_buffer = vec![0.0; size];
+
+    unsafe {
+        gl.ReadBuffer(gl::FRONT);
+        gl.ReadPixels(0,0,width as i32, height as i32, gl::RGB, gl::FLOAT, screenshot_buffer.as_ptr() as *mut std::os::raw::c_void);
     }
+
+    let mut sum = 0.0;
+    for i in 0..size {
+        sum += screenshot_buffer[i];
+    }
+
+    println!("{:?}", sum);
+
+
+    Ok(())
 }

@@ -1,6 +1,6 @@
 use gl_lib::{gl, objects::cube, shader, camera};
 use failure;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use nalgebra as na;
 
@@ -51,7 +51,7 @@ fn main() -> Result<(), failure::Error> {
     let shader = create_shader(&gl);
     let cube = cube::Cube::new(&gl);
 
-    let mut model_mat = na::Matrix4::identity();
+    let model_mat = na::Matrix4::identity();
 
     let color = na::Vector3::new(0.4, 0.9, 0.3);
 

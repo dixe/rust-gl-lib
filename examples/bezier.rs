@@ -1,4 +1,4 @@
-use gl_lib::{gl, objects::square, shader};
+use gl_lib::{gl, objects::bezier, shader, na};
 use failure;
 
 
@@ -34,16 +34,25 @@ fn main() -> Result<(), failure::Error> {
     viewport.set_used(&gl);
 
     // Create a default shader
-    let shader = shader::Shader::default_shader(&gl)?;
+    let shader = shader::Shader::bezier_shader(&gl)?;
 
-    // and a default square
-    let square = square::Square::new(&gl);
+    let samples = 1000;
+    // and a bezier curve
+    let bezier = bezier::Bezier::new(
+        &gl,
+        bezier::Curve {
+            p0: na::Vector3::new(0.0, 0.0, 0.0),
+            p1: na::Vector3::new(0.5, 0.5, 0.0),
+            p2: na::Vector3::new(-0.5, 0.5, 0.0),
+            p3: na::Vector3::new(0.0, 1.0, 0.0)
+        },
+        samples);
 
 
-    // Display square using shader
+
     loop {
         shader.set_used();
-        square.render(&gl);
+        bezier.render(&gl);
         window.gl_swap_window();
     }
 }

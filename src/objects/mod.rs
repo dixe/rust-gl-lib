@@ -8,3 +8,5 @@
 pub mod square;
 
 pub mod cube;
+
+pub mod bezier;
