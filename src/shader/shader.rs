@@ -66,9 +66,7 @@ impl Shader {
         unsafe {
             let name_str = std::ffi::CString::new(name).unwrap();
 
-            let loc = gl.GetUniformLocation(
-                self.program.id(),
-                name_str.as_ptr() as *mut gl::types::GLchar);
+            let loc = gl.GetUniformLocation( self.program.id(), name_str.as_ptr() as *mut gl::types::GLchar);
 
             gl.Uniform1i(loc, data);
         }
