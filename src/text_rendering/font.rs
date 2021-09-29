@@ -5,7 +5,7 @@ use std::str::{FromStr};
 use std::fmt;
 use itertools::Itertools;
 use image::io::Reader as ImageReader;
-
+use image::imageops;
 
 use crate::na;
 
@@ -54,7 +54,9 @@ pub struct Font {
 
 impl Font {
 
+
     /// Assumes that the png file referred to in the font is located in the same directory as the .fnt file.
+    /// Fonts generated from steps here: https://github.com/libgdx/libgdx/wiki/Distance-field-fonts
     pub fn load_fnt_font(fnt_path: &Path) -> Result<Font, Box<dyn Error>> {
 
         let text = fs::read_to_string(fnt_path)?;
@@ -66,20 +68,37 @@ impl Font {
         let info: FontInfo = info_lines.join(" ").parse()?;
 
         // The rest is page. Maybe assuming single page is an error;
-        let page: Page = lines.collect::<Vec<&str>>().join("\n").parse()?;
+        let mut page: Page = lines.collect::<Vec<&str>>().join("\n").parse()?;
 
 
         let parent = fnt_path.parent().ok_or(ParseFontError::PathHasNotParent)?;
         let img_path = parent.join(&page.info.file_name);
 
-        let image = ImageReader::open(img_path)?.decode()?.into_rgb8();
+        let mut image = ImageReader::open(img_path)?.decode()?.into_rgb8();
+        image = imageops::flip_vertical(&image);
+
+        // image is flipped so also flip chars
+        for c in &mut page.chars {
+            c.y = image.height() as i32 - c.y;
+        }
 
         Ok(Font {
             info,
             page,
             image,
         })
+    }
 
+    pub fn get_char(&self, char_id: usize) -> Option<PageChar> {
+
+        for c in &self.page.chars {
+
+            if c.id == char_id {
+                return Some(*c);
+            }
+        }
+
+        None
     }
 }
 
@@ -268,7 +287,7 @@ impl FromStr for PageInfo  {
 
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct PageChar {
     pub id: usize,
     pub x: i32,

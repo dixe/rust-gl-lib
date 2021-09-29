@@ -51,12 +51,15 @@ fn main() -> Result<(), failure::Error> {
 
 
     let shader = create_shader(&gl);
+    shader.set_used();
+
 
     let font = font::Font::load_fnt_font(Path::new("./assets/fonts/Arial.fnt")).unwrap();
     let tex_id = texture::gen_texture(&gl, &font.image);
 
 
-    texture::set_texture(&gl, tex_id);
+
+
     let color = na::Vector3::new(0.4, 0.9, 0.3);
 
     // set color
@@ -64,11 +67,18 @@ fn main() -> Result<(), failure::Error> {
 
     let char_quad = objects::char_quad::CharQuad::new(&gl, 65, &font);
 
-    shader.set_used();
+    shader.set_i32(&gl, "text_map", (tex_id - 1) as i32);
+
 
     loop {
         unsafe {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+        }
+
+
+        unsafe {
+            gl.ActiveTexture(gl::TEXTURE0);
+            texture::set_texture(&gl, tex_id);
         }
 
         char_quad.render(&gl);
@@ -82,7 +92,7 @@ fn main() -> Result<(), failure::Error> {
 fn create_shader(gl: &gl::Gl) -> shader::Shader {
     let vert_source = r"#version 330 core
 layout (location = 0) in vec2 pos;
-layout (location = 1) in vec2 tex_coord;
+layout (location = 1) in vec2 aTexCoord;
 
 out VS_OUTPUT {
     vec2 TexCoords;
@@ -92,7 +102,7 @@ out VS_OUTPUT {
 void main()
 {
     gl_Position = vec4(pos, 0.0, 1.0);
-    OUT.TexCoords = tex_coord;
+    OUT.TexCoords = aTexCoord;
 }";
 
     let frag_source = r"#version 330 core
@@ -107,11 +117,8 @@ in VS_OUTPUT {
 
 void main()
 {
-
-    float tex_val = IN.TexCoords.x;
-    //texture(text_map, IN.TexCoords).r;
-
-    FragColor = vec4(IN.TexCoords.x, IN.TexCoords.y, tex_val, 1.0);
+    FragColor = texture(text_map, IN.TexCoords);
+    //FragColor = vec4(IN.TexCoords.x, IN.TexCoords.y, 0.0, 1.0);
 }";
 
 
