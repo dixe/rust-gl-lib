@@ -16,3 +16,4 @@ pub mod buffer;
 pub mod objects;
 pub mod camera;
 pub mod text_rendering;
+pub mod texture;

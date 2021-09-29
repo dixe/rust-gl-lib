@@ -46,9 +46,9 @@ impl From<std::str::ParseBoolError> for ParseFontError {
 
 #[derive(Debug)]
 pub struct Font {
-    info: FontInfo,
-    page: Page,
-    image: image::RgbImage
+    pub info: FontInfo,
+    pub page: Page,
+    pub image: image::RgbImage
 }
 
 
@@ -85,18 +85,18 @@ impl Font {
 
 
 #[derive(Debug)]
-struct FontInfo {
-    spacing: na::Vector2::<i32>,
-    face: String,
-    size: i32,
-    stretch_h: i32,
-    padding: Padding,
-    aa: i32,
-    smooth: i32,
-    line_height: i32,
-    scale: Scale,
-    pages: i32,
-    packed: bool,
+pub struct FontInfo {
+    pub spacing: na::Vector2::<i32>,
+    pub face: String,
+    pub size: i32,
+    pub stretch_h: i32,
+    pub padding: Padding,
+    pub aa: i32,
+    pub smooth: i32,
+    pub line_height: i32,
+    pub scale: Scale,
+    pub pages: i32,
+    pub packed: bool,
 }
 
 impl FontInfo {
@@ -190,10 +190,10 @@ impl FromStr for FontInfo  {
 }
 
 #[derive(Debug, Default)]
-struct Page {
-    info: PageInfo,
-    chars: Vec::<PageChar>,
-    kernings: Vec::<Kerning>
+pub struct Page {
+    pub info: PageInfo,
+    pub chars: Vec::<PageChar>,
+    pub kernings: Vec::<Kerning>
 }
 
 impl FromStr for Page  {
@@ -230,9 +230,9 @@ impl FromStr for Page  {
 }
 
 #[derive(Debug, Default)]
-struct PageInfo {
-    id: usize,
-    file_name: String,
+pub struct PageInfo {
+    pub id: usize,
+    pub file_name: String,
 }
 
 
@@ -269,18 +269,18 @@ impl FromStr for PageInfo  {
 }
 
 #[derive(Debug, Default)]
-struct PageChar {
-    id: usize,
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    x_offset: i32,
-    y_offset: i32,
-    x_advance: i32,
-    y_advance: i32,
-    page_id: usize,
-    channel: i32,
+pub struct PageChar {
+    pub id: usize,
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
+    pub x_offset: i32,
+    pub y_offset: i32,
+    pub x_advance: i32,
+    pub y_advance: i32,
+    pub page_id: usize,
+    pub channel: i32,
 }
 
 impl FromStr for PageChar  {
@@ -334,10 +334,10 @@ impl FromStr for PageChar  {
 }
 
 #[derive(Debug, Default)]
-struct Kerning {
-    first_id: usize,
-    second_id: usize,
-    amount: i32
+pub struct Kerning {
+    pub first_id: usize,
+    pub second_id: usize,
+    pub amount: i32
 }
 
 impl FromStr for Kerning  {
@@ -367,18 +367,18 @@ impl FromStr for Kerning  {
 }
 
 #[derive(Debug)]
-struct Scale {
-    w: i32,
-    h: i32
+pub struct Scale {
+    pub w: i32,
+    pub h: i32
 }
 
 
 #[derive(Debug)]
-struct Padding {
-    top: i32,
-    bottom: i32,
-    left: i32,
-    right: i32,
+pub struct Padding {
+    pub top: i32,
+    pub bottom: i32,
+    pub left: i32,
+    pub right: i32,
 }
 
 
