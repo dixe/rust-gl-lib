@@ -5,16 +5,13 @@ use crate::na;
 pub struct Bezier {
     vao: buffer::VertexArray,
     _vbo: buffer::ArrayBuffer,
-    lines: i32,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Curve {
-    pub p0: na::Vector3::<f32>,
-    pub p1: na::Vector3::<f32>,
-    pub p2: na::Vector3::<f32>,
-    pub p3: na::Vector3::<f32>,
-
+    pub p0: na::Vector2::<f32>,
+    pub p1: na::Vector2::<f32>,
+    pub p2: na::Vector2::<f32>,
 }
 
 // TODO: look at this http://commaexcess.com/articles/6/vector-graphics-on-the-gpu
@@ -22,17 +19,24 @@ pub struct Curve {
 
 impl Bezier {
 
-    pub fn new(gl: &gl::Gl, curve: Curve, samples: u32) -> Bezier {
-
-        let mut vertices = Vec::new();
-        vertices.push(curve.p0);
-        for ut in 0..=samples {
-            let t = (ut as f32) / ( samples as f32);
+    pub fn new(gl: &gl::Gl, curve: Curve) -> Bezier {
 
 
-            let p = bezier_cube(&curve, t);
-            vertices.push(p);
-        }
+        let p1_trans = curve.p1 - curve.p0;
+        let p2_trans = curve.p2 - curve.p0;
+
+        let uv = na::Vector2::new(p1_trans.x / p2_trans.x, p1_trans.y / p2_trans.y);
+        println!("p1_t {:?}", p1_trans);
+        println!("p2_t {:?}", p2_trans);
+        println!("uv {:?}", uv);
+
+
+        let vertices: Vec<f32> = vec![
+            // positions		UV
+            curve.p0.x, curve.p0.y, 	0.0, 0.0,
+            curve.p1.x, curve.p1.y, 	uv.x, uv.y,
+            curve.p2.x, curve.p2.y,	1.0, 1.0,
+        ];
 
 
         let vbo = buffer::ArrayBuffer::new(gl);
@@ -46,40 +50,48 @@ impl Bezier {
             vbo.bind();
             vbo.static_draw_data(&vertices);
 
+            let stride = 4;
             // 3.
             gl.VertexAttribPointer(
                 0,
-                3,
+                2,
                 gl::FLOAT,
                 gl::FALSE,
-                (3 * std::mem::size_of::<f32>()) as gl::types::GLint,
+                (stride * std::mem::size_of::<f32>()) as gl::types::GLint,
                 0 as *const gl::types::GLvoid,
             );
             gl.EnableVertexAttribArray(0);
+
+
+            gl.VertexAttribPointer(
+                1,
+                2,
+                gl::FLOAT,
+                gl::FALSE,
+                (stride * std::mem::size_of::<f32>()) as gl::types::GLint,
+                (2 * std::mem::size_of::<f32>()) as *const gl::types::GLvoid,
+            );
+            gl.EnableVertexAttribArray(1);
+
         }
 
         vbo.unbind();
         vao.unbind();
 
-
-
         Bezier {
             vao,
             _vbo: vbo,
-            lines: vertices.len() as i32,
         }
     }
-
-
 
     pub fn render(&self, gl: &gl::Gl) {
         self.vao.bind();
         unsafe {
             // draw
             gl.DrawArrays(
-                gl::LINE_STRIP,
+                gl::TRIANGLES,
                 0,
-                self.lines
+                3
             );
         }
 
@@ -88,10 +100,12 @@ impl Bezier {
 }
 
 
-fn bezier_quad(p0: na::Vector3::<f32>, p1: na::Vector3::<f32>, p2: na::Vector3::<f32>, t: f32) -> na::Vector3::<f32> {
+fn bezier_quad(p0: na::Vector2::<f32>, p1: na::Vector2::<f32>, p2: na::Vector2::<f32>, t: f32) -> na::Vector2::<f32> {
     p1 + (1.0 - t)* (1.0 - t) * (p0 - p1) + t*t * (p2-p1)
 }
 
-fn bezier_cube(curve: &Curve, t: f32) -> na::Vector3::<f32> {
-    (1.0 -t) * bezier_quad(curve.p0, curve.p1, curve.p2, t) + t * bezier_quad(curve.p1, curve.p2, curve.p3, t)
+/*
+fn bezier_cube(curve: &Curve, t: f32) -> na::Vector2::<f32> {
+(1.0 -t) * bezier_quad(curve.p0, curve.p1, curve.p2, t) + t * bezier_quad(curve.p1, curve.p2, curve.p3, t)
 }
+*/

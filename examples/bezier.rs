@@ -36,18 +36,14 @@ fn main() -> Result<(), failure::Error> {
     // Create a default shader
     let shader = shader::Shader::bezier_shader(&gl)?;
 
-    let samples = 1000;
     // and a bezier curve
     let bezier = bezier::Bezier::new(
         &gl,
         bezier::Curve {
-            p0: na::Vector3::new(0.0, 0.0, 0.0),
-            p1: na::Vector3::new(0.5, 0.5, 0.0),
-            p2: na::Vector3::new(-0.5, 0.5, 0.0),
-            p3: na::Vector3::new(0.0, 1.0, 0.0)
-        },
-        samples);
-
+            p0: na::Vector2::new(0.0, 0.0),
+            p1: na::Vector2::new(2.0, 1.0),
+            p2: na::Vector2::new(1.0, 1.0)
+        });
 
 
     loop {

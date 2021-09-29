@@ -15,3 +15,4 @@ pub mod shader;
 pub mod buffer;
 pub mod objects;
 pub mod camera;
+pub mod text_rendering;

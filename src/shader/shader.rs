@@ -92,21 +92,40 @@ impl Shader {
     pub fn bezier_shader(gl: &gl::Gl) -> Result<Shader, failure::Error> {
         // default program for square
         let vert_source = r"#version 330 core
-layout (location = 0) in vec3 aPos;
+layout (location = 0) in vec2 aPos;
+layout (location = 1) in vec2 uv;
+
+out VS_OUTPUT {
+    smooth vec2 uv;
+} OUT;
+
 
 void main()
 {
-    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+    gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);
+
+   OUT.uv = uv;
 }";
 
         let frag_source = r"#version 330 core
-
-
 out vec4 FragColor;
+
+in VS_OUTPUT {
+    smooth vec2 uv;
+} IN;
 
 void main()
 {
-    FragColor = vec4(1.0f , 0.5f, 0.2f, 0.0);
+    float u = IN.uv.s;
+    float v = IN.uv.t;
+
+    if ((u * u) - v > 0)
+    {
+        discard;
+    }
+
+
+    FragColor = vec4(1.0f , 0.5f, 0.2f, 1.0);
 }";
         Shader::new(gl, vert_source, frag_source)
 
