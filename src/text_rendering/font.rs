@@ -1,9 +1,12 @@
 use std::path::Path;
 use std::fs;
 use std::error::Error;
-use std::str::{FromStr, ParseBoolError};
+use std::str::{FromStr};
 use std::fmt;
 use itertools::Itertools;
+use image::io::Reader as ImageReader;
+
+
 use crate::na;
 
 
@@ -13,7 +16,8 @@ pub enum ParseFontError {
     IntParseError(std::num::ParseIntError),
     BoolParseError(std::str::ParseBoolError),
     NoPagesError,
-    ParsePageError(String)
+    ParsePageError(String),
+    PathHasNotParent,
 }
 
 impl fmt::Display for ParseFontError {
@@ -43,8 +47,10 @@ impl From<std::str::ParseBoolError> for ParseFontError {
 #[derive(Debug)]
 pub struct Font {
     info: FontInfo,
-    page: Page
+    page: Page,
+    image: image::RgbImage
 }
+
 
 impl Font {
 
@@ -52,30 +58,28 @@ impl Font {
     pub fn load_fnt_font(fnt_path: &Path) -> Result<Font, Box<dyn Error>> {
 
         let text = fs::read_to_string(fnt_path)?;
-        let font: Font = text.parse()?;
 
-        Ok(font)
-
-    }
-}
-
-impl FromStr for Font  {
-    type Err = ParseFontError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-
-        let mut lines = s.lines();
+        let mut lines = text.lines();
 
         let info_lines: Vec::<&str> = lines.take_while_ref(|l| !l.starts_with("page ")).collect();
 
-        let info: FontInfo = info_lines.connect(" ").parse()?;
+        let info: FontInfo = info_lines.join(" ").parse()?;
 
         // The rest is page. Maybe assuming single page is an error;
-        let page: Page = lines.collect::<Vec<&str>>().connect("\n").parse()?;
+        let page: Page = lines.collect::<Vec<&str>>().join("\n").parse()?;
+
+
+        let parent = fnt_path.parent().ok_or(ParseFontError::PathHasNotParent)?;
+        let img_path = parent.join(&page.info.file_name);
+
+        let image = ImageReader::open(img_path)?.decode()?.into_rgb8();
 
         Ok(Font {
             info,
-            page
+            page,
+            image,
         })
+
     }
 }
 
@@ -122,7 +126,7 @@ impl FromStr for FontInfo  {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
 
         let mut input = s.to_string();
-        let mut rest = input.split_off(5);
+        let rest = input.split_off(5);
         let parts = rest.split(" ");
 
         let mut info = FontInfo::empty();
@@ -175,7 +179,7 @@ impl FromStr for FontInfo  {
                     let val : i32 = splitted[1].parse()?;
                     info.packed = val > 0;
                 },
-                a => { println!("Skipping '{}'", a);}
+                _ => { }
             }
 
 
@@ -199,8 +203,6 @@ impl FromStr for Page  {
 
         let mut page: Page = Default::default();
 
-
-        let input = s.to_string();
         let info_line = lines.next().ok_or(ParseFontError::ParsePageError("No page info line".to_string()))?;
 
         page.info = info_line.parse()?;
@@ -254,7 +256,7 @@ impl FromStr for PageInfo  {
 
                 },
                 "file" => {
-                    info.file_name = splitted[1].to_string();
+                    info.file_name = splitted[1].to_string().replace("\"","");
 
                 },
                 a => return Err(ParseFontError::ParsePageError(format!("Parsing page info found unknown '{}'", a)))
@@ -323,7 +325,7 @@ impl FromStr for PageChar  {
                 "chnl" => {
                     pc.channel = splitted[1].parse()?;
                 },
-                a => {println!("Skipping in char '{:?}'", a);}
+                _ => {}
             }
         }
 
@@ -356,7 +358,7 @@ impl FromStr for Kerning  {
                 "amount" => {
                     kern.amount = splitted[1].parse()?;
                 },
-                a => {println!("Skipping in kerning '{:?}'", a);}
+                _=> {}
             }
         }
 
