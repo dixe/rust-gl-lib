@@ -1,7 +1,8 @@
-use gl_lib::{gl, shader, text_rendering::font, texture, objects};
+use gl_lib::{gl, shader, texture, objects};
+use gl_lib::text_rendering::text_renderer;
 use failure;
 use std::time::Instant;
-use std::path::Path;
+
 
 
 use nalgebra as na;
@@ -44,31 +45,13 @@ fn main() -> Result<(), failure::Error> {
 
     viewport.set_used(&gl);
 
+
+    let text_renderer = text_renderer::TextRenderer::new(&gl);
+
     unsafe {
         gl.Enable(gl::DEPTH_TEST);
-        gl.Enable(gl::BLEND);
-        gl.BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+        gl.ClearColor(1.0, 1.0, 1.0, 1.0);
     }
-
-
-    let shader = create_shader(&gl);
-    shader.set_used();
-
-
-    let font = font::Font::load_fnt_font(Path::new("./assets/fonts/Arial.fnt")).unwrap();
-    let tex_id = texture::gen_texture_rgba(&gl, &font.image);
-
-
-
-
-    let color = na::Vector3::new(0.4, 0.9, 0.3);
-
-    // set color
-    shader.set_vec3(&gl, "color", &color);
-
-    let char_quad = objects::char_quad::CharQuad::new(&gl, 65, &font);
-
-    shader.set_i32(&gl, "text_map", (tex_id - 1) as i32);
 
 
     loop {
@@ -76,54 +59,12 @@ fn main() -> Result<(), failure::Error> {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-
-        unsafe {
-            gl.ActiveTexture(gl::TEXTURE0);
-            texture::set_texture(&gl, tex_id);
-        }
-
-        char_quad.render(&gl);
+        let x = 0.0;
+        let y = 0.0;
+        let size = 0.008;
+        text_renderer.render_text(&gl, "t", x, y, size);
 
         window.gl_swap_window();
     }
 
-}
-
-
-fn create_shader(gl: &gl::Gl) -> shader::Shader {
-    let vert_source = r"#version 330 core
-layout (location = 0) in vec2 pos;
-layout (location = 1) in vec2 aTexCoord;
-
-out VS_OUTPUT {
-    vec2 TexCoords;
-} OUT;
-
-
-void main()
-{
-    gl_Position = vec4(pos, 0.0, 1.0);
-    OUT.TexCoords = aTexCoord;
-}";
-
-    let frag_source = r"#version 330 core
-out vec4 FragColor;
-uniform vec3 color;
-
-uniform sampler2D text_map;
-
-in VS_OUTPUT {
-   vec2 TexCoords;
-} IN;
-
-void main()
-{
-    vec4 tex_col = texture(text_map, IN.TexCoords);
-
-
-    FragColor = tex_col;
-}";
-
-
-    shader::Shader::new(gl, vert_source, frag_source).unwrap()
 }

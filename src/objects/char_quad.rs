@@ -10,12 +10,10 @@ pub struct CharQuad {
 
 impl CharQuad {
 
-    pub fn new(gl: &gl::Gl, char_id: usize, font: &font::Font) -> CharQuad {
-
-
+    pub fn new(gl: &gl::Gl, unicode_id: u32, x: f32, y: f32, scale: f32, font: &font::Font) -> CharQuad {
         // TODO: Return a result when invalid char is given
-        println!("{:?}", char_id as i32);
-        let c = font.get_char(char_id).unwrap();
+
+        let c = font.get_char(unicode_id as usize).unwrap();
 
         let padding = 0.0;
         let left = (c.x as f32) / (font.image.width() as f32) - padding;
@@ -24,27 +22,35 @@ impl CharQuad {
         let top = (c.y as f32 )  / (font.image.height() as f32) - padding;
         // We subtract c.height, since the texture is loaded and flipped.
         let bottom = (c.y as f32 - c.height as f32 )  / (font.image.height() as f32) + padding;
-
+        /*
         println!("(Left, Top) = ({:?} {})",c.x, c.y);
         println!("(Right, Bottom) = ({:?},{})",c.x + c.width, c.y - c.height);
         println!("(left, right, top, bottom) ({}, {}, {}, {})" , left, right, top, bottom);
+         */
+        // let all chars have height 1 and then set the x to widht/ height
+        let x_l = x;
+        let x_r = x + c.width as f32 * scale;
+        let y_t = y;
+        let y_b = y - c.height as f32 * scale;
 
+        println!("(x_l, x_r, y_t, y_b) ({}, {}, {}, {})", x_l, x_r, y_t, y_b);
         let vertices: Vec<f32> = vec![
             // positions	  // texture coordinates
-            1.0,  1.0,		right, top,  // Right Top
-            1.0, -1.0,		right, bottom,  // Right Bottom
-            -1.0, -1.0,		left, bottom,  // Left Bottom
-            -1.0,  1.0,		left, top,  // Left Top
+            x_r,  y_t,		right, top,  // Right Top
+            x_r, y_b,		right, bottom,  // Right Bottom
+            x_l, y_b,		left, bottom,  // Left Bottom
+            x_l,  y_t,		left, top,  // Left Top
         ];
 
-
         /*
+        let x = (c.width as f32 / c.height as f32);
+
         let vertices: Vec<f32> = vec![
         // positions	  // texture coordinates
-        1.0,  1.0,		1.0, 1.0,  // Right Top
-        1.0, -1.0,		1.0, 0.0,  // Left Bottom
-        -1.0, -1.0,		0.0, 0.0,  // Right Bottom
-        -1.0,  1.0,		0.0, 1.0,  // Left Top
+        x,  y_pos,		right, top,  // Right Top
+        x, 0.0,		right, bottom,  // Right Bottom
+        0.0, 0.0,		left, bottom,  // Left Bottom
+        0.0,  y_pos,		left, top,  // Left Top
     ];
          */
 

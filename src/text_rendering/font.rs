@@ -82,12 +82,6 @@ impl Font {
             c.y = image.height() as i32 - c.y;
         }
 
-        for p in image.pixels() {
-            //println!("{:?}", p);
-        }
-
-
-
         Ok(Font {
             info,
             page,
