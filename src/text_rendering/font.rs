@@ -48,7 +48,7 @@ impl From<std::str::ParseBoolError> for ParseFontError {
 pub struct Font {
     pub info: FontInfo,
     pub page: Page,
-    pub image: image::RgbImage
+    pub image: image::RgbaImage
 }
 
 
@@ -74,13 +74,19 @@ impl Font {
         let parent = fnt_path.parent().ok_or(ParseFontError::PathHasNotParent)?;
         let img_path = parent.join(&page.info.file_name);
 
-        let mut image = ImageReader::open(img_path)?.decode()?.into_rgb8();
+        let mut image = ImageReader::open(img_path)?.decode()?.into_rgba8();
         image = imageops::flip_vertical(&image);
 
         // image is flipped so also flip chars
         for c in &mut page.chars {
             c.y = image.height() as i32 - c.y;
         }
+
+        for p in image.pixels() {
+            //println!("{:?}", p);
+        }
+
+
 
         Ok(Font {
             info,

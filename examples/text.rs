@@ -46,7 +46,8 @@ fn main() -> Result<(), failure::Error> {
 
     unsafe {
         gl.Enable(gl::DEPTH_TEST);
-        gl.ClearColor(0.85, 0.8, 0.7, 1.0);
+        gl.Enable(gl::BLEND);
+        gl.BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
     }
 
 
@@ -55,7 +56,7 @@ fn main() -> Result<(), failure::Error> {
 
 
     let font = font::Font::load_fnt_font(Path::new("./assets/fonts/Arial.fnt")).unwrap();
-    let tex_id = texture::gen_texture(&gl, &font.image);
+    let tex_id = texture::gen_texture_rgba(&gl, &font.image);
 
 
 
@@ -117,8 +118,10 @@ in VS_OUTPUT {
 
 void main()
 {
-    FragColor = texture(text_map, IN.TexCoords);
-    //FragColor = vec4(IN.TexCoords.x, IN.TexCoords.y, 0.0, 1.0);
+    vec4 tex_col = texture(text_map, IN.TexCoords);
+
+
+    FragColor = tex_col;
 }";
 
 

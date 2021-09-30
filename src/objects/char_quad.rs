@@ -31,10 +31,10 @@ impl CharQuad {
 
         let vertices: Vec<f32> = vec![
             // positions	  // texture coordinates
-            0.5,  0.5,		right, top,  // Right Top
-            0.5, -0.5,		right, bottom,  // Right Bottom
-            -0.5, -0.5,		left, bottom,  // Left Bottom
-            -0.5,  0.5,		left, top,  // Left Top
+            1.0,  1.0,		right, top,  // Right Top
+            1.0, -1.0,		right, bottom,  // Right Bottom
+            -1.0, -1.0,		left, bottom,  // Left Bottom
+            -1.0,  1.0,		left, top,  // Left Top
         ];
 
 
