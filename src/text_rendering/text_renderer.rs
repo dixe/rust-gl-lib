@@ -1,6 +1,6 @@
 use std::path::Path;
 use crate::na;
-use crate::text_rendering::{font::Font};
+use crate::text_rendering::{font::{Font, PageChar}};
 use crate::shader::Shader;
 use crate::texture::{self, TextureId};
 use crate::gl;
@@ -18,9 +18,7 @@ pub struct TextRenderer {
 impl TextRenderer {
 
     pub fn new(gl: &gl::Gl) -> Self {
-
-
-        // TODO: return result
+        // TODO: return result from font load
 
         // TODO maybe take optional font as parameter
         let font = Font::load_fnt_font(Path::new("./assets/fonts/Arial.fnt")).unwrap();
@@ -32,7 +30,9 @@ impl TextRenderer {
 
         let shader = create_shader(gl);
 
+
         let texture_id = texture::gen_texture_rgba(&gl, &font.image);
+
 
         Self {
             font,
@@ -43,14 +43,12 @@ impl TextRenderer {
     }
 
 
-    pub fn render_text(&self, gl: &gl::Gl, text: &str, screen_x: f32, screen_y: f32, size: f32) {
+    pub fn render_text(&self, gl: &gl::Gl, text: &str, screen_x: f32, screen_y: f32, scale: f32) {
         self.shader.set_used();
 
         let color = na::Vector3::new(0.0, 0.0, 0.0);
         // set color
         self.shader.set_vec3(gl, "color", &color);
-
-
 
         self.shader.set_i32(gl, "text_map", (self.texture_id - 1) as i32);
         // Most basic way is to generate a new char_quad for each char in text and render it
@@ -60,15 +58,36 @@ impl TextRenderer {
             texture::set_texture(gl, self.texture_id);
         }
 
+
         let mut x = screen_x;
         let mut y = screen_y;
+        let mut prev_char: Option<PageChar> = None;
         for c in text.chars() {
-            let char_quad = objects::char_quad::CharQuad::new(gl, c as u32, x, y, size, &self.font);
+
+            let chr = self.font.get_char(c as u32).unwrap();
+
+
+            let char_quad = objects::char_quad::CharQuad::new(gl, x, y, scale, &chr, (&self.font.image).into());
             char_quad.render(gl);
-            println!("{:?}", c);
+
+
+            x += chr.x_advance * scale;
+
+            if let Some(prev) = prev_char {
+                // Lookup potential kerning and apply to x
+
+                let kern = self.font.get_kerning(prev.id, chr.id) * scale;
+
+
+                x += kern;
+            }
+
+            prev_char = Some(chr);
         }
     }
 }
+
+
 
 
 
@@ -117,7 +136,10 @@ void main()
 
     float alpha = smoothstep(u_buffer - smoothing, u_buffer + smoothing, dist);
 
-
+    if(alpha == 0.0)
+    {
+        discard;
+    }
     FragColor = vec4(color, alpha);
 }";
 

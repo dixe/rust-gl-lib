@@ -9,41 +9,6 @@ use image::imageops;
 
 use crate::na;
 
-
-#[derive(Debug)]
-pub enum ParseFontError {
-    GeneralError,
-    IntParseError(std::num::ParseIntError),
-    BoolParseError(std::str::ParseBoolError),
-    NoPagesError,
-    ParsePageError(String),
-    PathHasNotParent,
-}
-
-impl fmt::Display for ParseFontError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f,"{:?}", self)
-    }
-}
-
-impl Error for ParseFontError {}
-
-impl From<std::num::ParseIntError> for ParseFontError {
-
-    fn from(other: std::num::ParseIntError) -> Self {
-        ParseFontError::IntParseError(other)
-    }
-}
-
-impl From<std::str::ParseBoolError> for ParseFontError {
-
-    fn from(other: std::str::ParseBoolError) -> Self {
-        ParseFontError::BoolParseError(other)
-    }
-}
-
-
-
 #[derive(Debug)]
 pub struct Font {
     pub info: FontInfo,
@@ -53,7 +18,6 @@ pub struct Font {
 
 
 impl Font {
-
 
     /// Assumes that the png file referred to in the font is located in the same directory as the .fnt file.
     /// Fonts generated from steps here: https://github.com/libgdx/libgdx/wiki/Distance-field-fonts
@@ -79,7 +43,7 @@ impl Font {
 
         // image is flipped so also flip chars
         for c in &mut page.chars {
-            c.y = image.height() as i32 - c.y;
+            c.y = image.height() as f32 - c.y;
         }
 
         Ok(Font {
@@ -89,7 +53,7 @@ impl Font {
         })
     }
 
-    pub fn get_char(&self, char_id: usize) -> Option<PageChar> {
+    pub fn get_char(&self, char_id: u32) -> Option<PageChar> {
 
         for c in &self.page.chars {
 
@@ -97,8 +61,19 @@ impl Font {
                 return Some(*c);
             }
         }
-
         None
+    }
+
+    pub fn get_kerning(&self, left: u32, right: u32) -> f32 {
+
+        for kerning in self.page.kernings.iter() {
+
+            if kerning.first_id == left && kerning.second_id == right {
+                return kerning.amount;
+            }
+        }
+
+        0.0
     }
 }
 
@@ -289,15 +264,15 @@ impl FromStr for PageInfo  {
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct PageChar {
-    pub id: usize,
-    pub x: i32,
-    pub y: i32,
-    pub width: i32,
-    pub height: i32,
-    pub x_offset: i32,
-    pub y_offset: i32,
-    pub x_advance: i32,
-    pub y_advance: i32,
+    pub id: u32,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+    pub x_offset: f32,
+    pub y_offset: f32,
+    pub x_advance: f32,
+    pub y_advance: f32,
     pub page_id: usize,
     pub channel: i32,
 }
@@ -354,9 +329,9 @@ impl FromStr for PageChar  {
 
 #[derive(Debug, Default)]
 pub struct Kerning {
-    pub first_id: usize,
-    pub second_id: usize,
-    pub amount: i32
+    pub first_id: u32,
+    pub second_id: u32,
+    pub amount: f32
 }
 
 impl FromStr for Kerning  {
@@ -447,5 +422,47 @@ mod tests {
 
         assert_eq!(font.page.chars.len(), 191);
 
+    }
+}
+
+
+
+#[derive(Debug)]
+pub enum ParseFontError {
+    GeneralError,
+    IntParseError(std::num::ParseIntError),
+    FloatParseError(std::num::ParseFloatError),
+    BoolParseError(std::str::ParseBoolError),
+    NoPagesError,
+    ParsePageError(String),
+    PathHasNotParent,
+}
+
+impl fmt::Display for ParseFontError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f,"{:?}", self)
+    }
+}
+
+impl Error for ParseFontError {}
+
+impl From<std::num::ParseIntError> for ParseFontError {
+
+    fn from(other: std::num::ParseIntError) -> Self {
+        ParseFontError::IntParseError(other)
+    }
+}
+
+
+impl From<std::num::ParseFloatError> for ParseFontError {
+    fn from(other: std::num::ParseFloatError) -> Self {
+        ParseFontError::FloatParseError(other)
+    }
+}
+
+impl From<std::str::ParseBoolError> for ParseFontError {
+
+    fn from(other: std::str::ParseBoolError) -> Self {
+        ParseFontError::BoolParseError(other)
     }
 }

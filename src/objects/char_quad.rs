@@ -1,6 +1,8 @@
 use crate::buffer;
 use crate::gl;
 use crate::text_rendering::font;
+use image;
+
 
 pub struct CharQuad {
     vao: buffer::VertexArray,
@@ -8,32 +10,48 @@ pub struct CharQuad {
     _ebo: buffer::ElementArrayBuffer
 }
 
+
+pub struct ImageInfo {
+    pub height: f32,
+    pub width: f32
+}
+
+impl From<&image::RgbaImage> for ImageInfo {
+
+    fn from(image: &image::RgbaImage) -> Self {
+        Self {
+            height: image.height() as f32,
+            width: image.width() as f32,
+        }
+    }
+}
+
+
+
 impl CharQuad {
 
-    pub fn new(gl: &gl::Gl, unicode_id: u32, x: f32, y: f32, scale: f32, font: &font::Font) -> CharQuad {
-        // TODO: Return a result when invalid char is given
-
-        let c = font.get_char(unicode_id as usize).unwrap();
+    pub fn new(gl: &gl::Gl, x: f32, y: f32, scale: f32, &chr: &font::PageChar, image_info: ImageInfo) -> CharQuad {
 
         let padding = 0.0;
-        let left = (c.x as f32) / (font.image.width() as f32) - padding;
-        let right = (c.x as f32 + c.width as f32)  / (font.image.width() as f32) + padding;
+        let left = chr.x  / image_info.width - padding;
+        let right = (chr.x + chr.width)  / image_info.width + padding;
 
-        let top = (c.y as f32 )  / (font.image.height() as f32) - padding;
-        // We subtract c.height, since the texture is loaded and flipped.
-        let bottom = (c.y as f32 - c.height as f32 )  / (font.image.height() as f32) + padding;
+        let top = (chr.y  / image_info.height) - padding;
+        // We subtract chr.height, since the texture is loaded and flipped.
+        let bottom = (chr.y  - chr.height) / (image_info.height ) + padding;
+
         /*
-        println!("(Left, Top) = ({:?} {})",c.x, c.y);
-        println!("(Right, Bottom) = ({:?},{})",c.x + c.width, c.y - c.height);
+        println!("(Left, Top) = ({:?} {})",chr.x, chr.y);
+        println!("(Right, Bottom) = ({:?},{})",chr.x + chr.width, chr.y - chr.height);
         println!("(left, right, top, bottom) ({}, {}, {}, {})" , left, right, top, bottom);
          */
         // let all chars have height 1 and then set the x to widht/ height
-        let x_l = x;
-        let x_r = x + c.width as f32 * scale;
-        let y_t = y;
-        let y_b = y - c.height as f32 * scale;
+        let x_l = x + chr.x_offset * scale;
+        let x_r = x + chr.width  * scale + chr.x_offset * scale;
+        let y_t = y  - chr.y_offset * scale;
+        let y_b = y - chr.height  * scale  - chr.y_offset * scale;
 
-        println!("(x_l, x_r, y_t, y_b) ({}, {}, {}, {})", x_l, x_r, y_t, y_b);
+        //println!("(x_l, x_r, y_t, y_b) ({}, {}, {}, {})", x_l, x_r, y_t, y_b);
         let vertices: Vec<f32> = vec![
             // positions	  // texture coordinates
             x_r,  y_t,		right, top,  // Right Top
@@ -43,7 +61,7 @@ impl CharQuad {
         ];
 
         /*
-        let x = (c.width as f32 / c.height as f32);
+        let x = (c.width  / c.height );
 
         let vertices: Vec<f32> = vec![
         // positions	  // texture coordinates

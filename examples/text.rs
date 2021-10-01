@@ -49,8 +49,10 @@ fn main() -> Result<(), failure::Error> {
     let text_renderer = text_renderer::TextRenderer::new(&gl);
 
     unsafe {
+        // Either disable Depth test or set depth funct to LEQUAL
         gl.Enable(gl::DEPTH_TEST);
-        gl.ClearColor(1.0, 1.0, 1.0, 1.0);
+        gl.DepthFunc(gl::LEQUAL);
+        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
     }
 
 
@@ -59,10 +61,10 @@ fn main() -> Result<(), failure::Error> {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        let x = 0.0;
+        let x = -0.7;
         let y = 0.0;
         let size = 0.008;
-        text_renderer.render_text(&gl, "t", x, y, size);
+        text_renderer.render_text(&gl, "jtg Yo Yo job", x, y, size);
 
         window.gl_swap_window();
     }
