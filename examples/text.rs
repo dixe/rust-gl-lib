@@ -1,11 +1,7 @@
-use gl_lib::{gl, shader, texture, objects};
+use gl_lib::gl;
 use gl_lib::text_rendering::text_renderer;
 use failure;
-use std::time::Instant;
 
-
-
-use nalgebra as na;
 
 fn main() -> Result<(), failure::Error> {
     let sdl = sdl2::init().unwrap();
@@ -64,7 +60,7 @@ fn main() -> Result<(), failure::Error> {
         let x = -0.7;
         let y = 0.0;
         let size = 0.008;
-        text_renderer.render_text(&gl, "jtg Yo Yo job", x, y, size);
+        text_renderer.render_text(&gl, "Yo Yo ho bjd å øæå please wrap me around", x, y, size);
 
         window.gl_swap_window();
     }

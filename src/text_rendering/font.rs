@@ -78,7 +78,7 @@ impl Font {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FontInfo {
     pub spacing: na::Vector2::<i32>,
     pub face: String,
@@ -87,32 +87,10 @@ pub struct FontInfo {
     pub padding: Padding,
     pub aa: i32,
     pub smooth: i32,
-    pub line_height: i32,
+    pub line_height: f32,
     pub scale: Scale,
     pub pages: i32,
     pub packed: bool,
-}
-
-impl FontInfo {
-
-    fn empty() -> Self {
-        Self {
-            spacing: na::Vector2::new(0,0),
-            face: "".to_string(),
-            size: 0,
-            stretch_h: 0,
-            line_height: 0,
-            scale: Scale {
-                w: 0,
-                h: 0
-            },
-            pages: 0,
-            aa: 0,
-            smooth: 0,
-            padding: Padding::empty(),
-            packed: false,
-        }
-    }
 }
 
 impl FromStr for FontInfo  {
@@ -123,7 +101,7 @@ impl FromStr for FontInfo  {
         let rest = input.split_off(5);
         let parts = rest.split(" ");
 
-        let mut info = FontInfo::empty();
+        let mut info: FontInfo = Default::default();
 
         for part in parts {
             let splitted: Vec::<&str> = part.split("=").collect();
@@ -360,14 +338,14 @@ impl FromStr for Kerning  {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Scale {
     pub w: i32,
     pub h: i32
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Padding {
     pub top: i32,
     pub bottom: i32,

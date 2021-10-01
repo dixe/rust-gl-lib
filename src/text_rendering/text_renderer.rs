@@ -59,36 +59,72 @@ impl TextRenderer {
         }
 
 
+
+        let mut chars_info = Vec::new();
+
+
         let mut x = screen_x;
-        let mut y = screen_y;
         let mut prev_char: Option<PageChar> = None;
+
         for c in text.chars() {
 
             let chr = self.font.get_char(c as u32).unwrap();
 
 
-            let char_quad = objects::char_quad::CharQuad::new(gl, x, y, scale, &chr, (&self.font.image).into());
-            char_quad.render(gl);
-
-
-            x += chr.x_advance * scale;
 
             if let Some(prev) = prev_char {
                 // Lookup potential kerning and apply to x
-
                 let kern = self.font.get_kerning(prev.id, chr.id) * scale;
-
-
                 x += kern;
             }
 
             prev_char = Some(chr);
+
+            chars_info.push(CharPosInfo {
+                x,
+                y: screen_y,
+                is_whitespace: c.is_whitespace(),
+                chr,
+            });
+            x += chr.x_advance * scale;
         }
+
+        // Process chars to wrap newlines, on whole word if possible
+        let mut x_offset = 0.0;
+        let mut y_offset = 0.0;
+
+        for info in chars_info.iter_mut() {
+            // Update x before checking to
+            info.x -= x_offset;
+
+            if (info.x + info.chr.width * scale) >= 1.0 {
+                x_offset +=  info.x - screen_x;
+                y_offset += self.font.info.line_height * scale;
+                info.x = screen_x;
+
+            }
+
+            info.y -= y_offset;
+
+        }
+
+
+        // Draw the chars
+        for info in chars_info.iter() {
+            let char_quad = objects::char_quad::CharQuad::new(gl, info.x, info.y, scale, &info.chr, (&self.font.image).into());
+            char_quad.render(gl);
+        }
+
     }
 }
 
 
-
+struct CharPosInfo {
+    is_whitespace: bool,
+    x: f32,
+    y: f32,
+    chr: PageChar
+}
 
 
 fn create_shader(gl: &gl::Gl) -> Shader {
