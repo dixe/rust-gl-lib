@@ -11,6 +11,9 @@ repository = "https://github.com/dixe/rust-gl-lib"
 keywords = ["graphics", "opengl", "text rendering"]
 categories = ["graphics", "rendering", "gui"]
 
+exclude = [
+    "assets/fonts/*",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -27,7 +30,6 @@ gl_generator = "0.14.0"
 [dev-dependencies.sdl2]
 version = "0.34.3"
 features = ["bundled", "static-link"]
-
 
 [features]
 debug = []
