@@ -11,10 +11,6 @@ repository = "https://github.com/dixe/rust-gl-lib"
 keywords = ["graphics", "opengl", "text rendering"]
 categories = ["graphics", "rendering", "gui"]
 
-exclude = [
-    "assets/fonts/*",
-]
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
