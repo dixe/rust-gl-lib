@@ -91,7 +91,6 @@ impl TextRenderer {
             chars_info.push(CharPosInfo {
                 x,
                 y: screen_y,
-                is_whitespace: c.is_whitespace(),
                 chr,
             });
             x += chr.x_advance * scale;
@@ -128,7 +127,6 @@ impl TextRenderer {
 
 
 struct CharPosInfo {
-    is_whitespace: bool,
     x: f32,
     y: f32,
     chr: PageChar

@@ -1,7 +1,7 @@
 use gl_lib::gl;
 use gl_lib::text_rendering::text_renderer;
 use failure;
-
+use std::path::Path;
 
 fn main() -> Result<(), failure::Error> {
     let sdl = sdl2::init().unwrap();
@@ -21,13 +21,13 @@ fn main() -> Result<(), failure::Error> {
     gl_attr.set_context_version(4,5);
 
 
-    let width = 1920;
-    let height = 1080;
+    let width = 800;
+    let height = 600;
 
     let viewport = gl::viewport::Viewport::for_window(width as i32, height as i32);
 
     let window = video_subsystem
-        .window("Game", width, height)
+        .window("Text example", width, height)
         .opengl()
         .resizable()
         .build()?;
@@ -42,7 +42,8 @@ fn main() -> Result<(), failure::Error> {
     viewport.set_used(&gl);
 
 
-    let text_renderer = text_renderer::TextRenderer::new(&gl);
+    let font_path = Path::new("./assets/fonts/Arial.fnt");
+    let text_renderer = text_renderer::TextRenderer::new(&gl, &font_path);
 
     unsafe {
         // Either disable Depth test or set depth funct to LEQUAL
