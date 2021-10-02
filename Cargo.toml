@@ -8,7 +8,7 @@ description = "This package uses the gl_generator package and add some useful to
 readme = "README.md"
 hgomepage = "https://github.com/dixe/rust-gl-lib"
 repository = "https://github.com/dixe/rust-gl-lib"
-keywords = ["graphics", "opengl", "text rendering"]
+keywords = ["graphics", "opengl"]
 categories = ["graphics", "rendering", "gui"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
