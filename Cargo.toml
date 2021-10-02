@@ -1,8 +1,16 @@
 [package]
 name = "gl_lib"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Nikolaj Østergaard <niko.fris@gmail.com>"]
 edition = "2018"
+license = "MIT"
+description = "This package uses the gl_generator package and add some useful tools on top. An example is a textrenderer that used signed distance field. All the low level access is still avaiable"
+readme = "README.md"
+hgomepage = "https://github.com/dixe/rust-gl-lib"
+repository = "https://github.com/dixe/rust-gl-lib"
+keywords = ["graphics", "opengl", "text rendering"]
+categories = ["graphics", "rendering". "gui"]
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

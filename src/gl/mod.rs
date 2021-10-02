@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 mod bindings {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }

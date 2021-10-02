@@ -21,8 +21,8 @@ fn main() -> Result<(), failure::Error> {
     gl_attr.set_context_version(4,5);
 
 
-    let width = 800;
-    let height = 600;
+    let width = 1920;
+    let height = 1080;
 
     let viewport = gl::viewport::Viewport::for_window(width as i32, height as i32);
 
@@ -59,8 +59,8 @@ fn main() -> Result<(), failure::Error> {
 
         let x = -0.7;
         let y = 0.0;
-        let size = 0.008;
-        text_renderer.render_text(&gl, "Yo Yo ho bjd å øæå please wrap me around", x, y, size);
+        let scale = 1.5;
+        text_renderer.render_text(&gl, "Yo Yo ho bjd å øæå please wrap me around", x, y, scale);
 
         window.gl_swap_window();
     }

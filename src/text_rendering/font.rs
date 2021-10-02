@@ -1,3 +1,5 @@
+//! Signed distance field fonts
+
 use std::path::Path;
 use std::fs;
 use std::error::Error;
@@ -20,7 +22,7 @@ pub struct Font {
 impl Font {
 
     /// Assumes that the png file referred to in the font is located in the same directory as the .fnt file.
-    /// Fonts generated from steps here: https://github.com/libgdx/libgdx/wiki/Distance-field-fonts
+    /// Fonts generated from steps here: <https://github.com/libgdx/libgdx/wiki/Distance-field-fonts>
     pub fn load_fnt_font(fnt_path: &Path) -> Result<Font, Box<dyn Error>> {
 
         let text = fs::read_to_string(fnt_path)?;
@@ -53,7 +55,8 @@ impl Font {
         })
     }
 
-    pub fn get_char(&self, char_id: u32) -> Option<PageChar> {
+    /// Return the page char if it exists in the font
+    pub fn page_char(&self, char_id: u32) -> Option<PageChar> {
 
         for c in &self.page.chars {
 
@@ -64,7 +67,8 @@ impl Font {
         None
     }
 
-    pub fn get_kerning(&self, left: u32, right: u32) -> f32 {
+    /// Return the kerning between a left and a right char. Defaults to 0.0
+    pub fn kerning(&self, left: u32, right: u32) -> f32 {
 
         for kerning in self.page.kernings.iter() {
 
@@ -153,8 +157,6 @@ impl FromStr for FontInfo  {
                 },
                 _ => { }
             }
-
-
         }
 
         Ok(info)
@@ -340,8 +342,8 @@ impl FromStr for Kerning  {
 
 #[derive(Debug, Default)]
 pub struct Scale {
-    pub w: i32,
-    pub h: i32
+    pub w: f32,
+    pub h: f32
 }
 
 
@@ -351,18 +353,6 @@ pub struct Padding {
     pub bottom: i32,
     pub left: i32,
     pub right: i32,
-}
-
-
-impl Padding {
-    fn empty() -> Self {
-        Self {
-            top: 0,
-            bottom: 0,
-            left: 0,
-            right: 0,
-        }
-    }
 }
 
 

@@ -1,3 +1,5 @@
+//! An struct that can be used for easy text rendering
+
 use std::path::Path;
 use crate::na;
 use crate::text_rendering::{font::{Font, PageChar}};
@@ -7,7 +9,7 @@ use crate::gl;
 use crate::objects;
 
 
-
+/// A collections of a font, shader and a texture that can render text using open.
 pub struct TextRenderer {
     font: Font,
     shader: Shader,
@@ -17,11 +19,12 @@ pub struct TextRenderer {
 
 impl TextRenderer {
 
-    pub fn new(gl: &gl::Gl) -> Self {
+    /// Create a new text renderer given a path to a signed distance field font
+    pub fn new(gl: &gl::Gl, font_path: &Path) -> Self {
         // TODO: return result from font load
 
         // TODO maybe take optional font as parameter
-        let font = Font::load_fnt_font(Path::new("./assets/fonts/Arial.fnt")).unwrap();
+        let font = Font::load_fnt_font(font_path).unwrap();
 
         unsafe {
             gl.Enable(gl::BLEND);
@@ -39,18 +42,23 @@ impl TextRenderer {
             shader,
             texture_id
         }
-
     }
 
+    /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered
+    pub fn render_text(&self, gl: &gl::Gl, text: &str, screen_x: f32, screen_y: f32, input_scale: f32) {
+        let scale = input_scale/self.font.info.scale.w;
 
-    pub fn render_text(&self, gl: &gl::Gl, text: &str, screen_x: f32, screen_y: f32, scale: f32) {
         self.shader.set_used();
+
 
         let color = na::Vector3::new(0.0, 0.0, 0.0);
         // set color
         self.shader.set_vec3(gl, "color", &color);
 
+        let base_scale = 8.0;
+        self.shader.set_f32(gl, "scale", input_scale * base_scale);
         self.shader.set_i32(gl, "text_map", (self.texture_id - 1) as i32);
+
         // Most basic way is to generate a new char_quad for each char in text and render it
 
         unsafe {
@@ -68,13 +76,13 @@ impl TextRenderer {
 
         for c in text.chars() {
 
-            let chr = self.font.get_char(c as u32).unwrap();
+            let chr = self.font.page_char(c as u32).unwrap();
 
 
 
             if let Some(prev) = prev_char {
                 // Lookup potential kerning and apply to x
-                let kern = self.font.get_kerning(prev.id, chr.id) * scale;
+                let kern = self.font.kerning(prev.id, chr.id) * scale;
                 x += kern;
             }
 
@@ -148,9 +156,10 @@ void main()
     let frag_source = r"#version 330 core
 out vec4 FragColor;
 uniform vec3 color;
-
+uniform float scale;
 
 uniform sampler2D text_map;
+
 
 in VS_OUTPUT {
    vec2 TexCoords;
@@ -168,7 +177,7 @@ void main()
 
     // Just scale everything below 0.5 (ouside) to 0 and everything inside to 1s
     float u_buffer = 0.5;
-    float smoothing = 1.0/64.0;
+    float smoothing = 1.0/scale;
 
     float alpha = smoothstep(u_buffer - smoothing, u_buffer + smoothing, dist);
 
