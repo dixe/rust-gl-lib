@@ -13,7 +13,8 @@ pub struct TextRenderer {
     font: Font,
     shader: Shader,
     texture_id: TextureId,
-    color: na::Vector3::<f32>
+    color: na::Vector3::<f32>,
+    char_quad: Box<objects::char_quad::CharQuad>
 }
 
 
@@ -26,10 +27,13 @@ impl TextRenderer {
 
         let texture_id = texture::gen_texture_rgba(&gl, &font.image);
 
+
+        let char_quad = Box::new(objects::char_quad::CharQuad::new(gl));
         Self {
             font,
             shader,
             texture_id,
+            char_quad,
             color: Default::default()
         }
     }
@@ -50,7 +54,7 @@ impl TextRenderer {
 
     /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered.
     /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
-    pub fn render_text(&self, gl: &gl::Gl, text: &str, screen_x: f32, screen_y: f32, input_scale: f32) {
+    pub fn render_text(&mut self, gl: &gl::Gl, text: &str, screen_x: f32, screen_y: f32, input_scale: f32) {
         let scale = input_scale/self.font.info.scale.w;
 
         self.shader.set_used();
@@ -114,24 +118,23 @@ impl TextRenderer {
             info.y -= y_offset;
         }
 
-        let mut char_quad = objects::char_quad::CharQuad::new(gl);
         // Draw the chars
-        let buffer_size = char_quad.buffer_size();
+        let buffer_size = self.char_quad.buffer_size();
         let mut i = 0;
         for info in chars_info.iter() {
-            char_quad.update_char(i, info.x, info.y, scale, &info.chr, (&self.font.image).into());
+            self.char_quad.update_char(i, info.x, info.y, scale, &info.chr, (&self.font.image).into());
             i += 1;
 
             if i >= buffer_size {
-                char_quad.render(gl, i);
+                self.char_quad.render(gl, i);
                 i = 0;
             }
             if info.y < -1.0 {
                 break;
             }
-
         }
-        char_quad.render(gl, i);
+
+        self.char_quad.render(gl, i);
 
     }
 }
