@@ -57,6 +57,7 @@ pub fn gen_texture_rgba(gl: &gl::Gl, img: &image::RgbaImage) -> TextureId {
 
 /// Wrapper of BindTexture
 pub fn set_texture(gl: &gl::Gl, texture_id: TextureId) {
+
     unsafe {
         gl.BindTexture(gl::TEXTURE_2D, texture_id);
     }

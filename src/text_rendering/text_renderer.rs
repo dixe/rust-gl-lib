@@ -1,6 +1,5 @@
 //! An struct that can be used for easy text rendering
 
-use std::path::Path;
 use crate::na;
 use crate::text_rendering::{font::{Font, PageChar}};
 use crate::shader::Shader;
@@ -14,49 +13,53 @@ pub struct TextRenderer {
     font: Font,
     shader: Shader,
     texture_id: TextureId,
+    color: na::Vector3::<f32>
 }
 
 
 impl TextRenderer {
 
     /// Create a new text renderer given a path to a signed distance field font
-    pub fn new(gl: &gl::Gl, font_path: &Path) -> Self {
-        // TODO: return result from font load
-
-        // TODO maybe take optional font as parameter
-        let font = Font::load_fnt_font(font_path).unwrap();
-
-        unsafe {
-            gl.Enable(gl::BLEND);
-            gl.BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-        }
+    pub fn new(gl: &gl::Gl, font: Font) -> Self {
 
         let shader = create_shader(gl);
 
-
         let texture_id = texture::gen_texture_rgba(&gl, &font.image);
-
 
         Self {
             font,
             shader,
-            texture_id
+            texture_id,
+            color: Default::default()
         }
     }
 
-    /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered
+    /// Enalbes Gl_BLEND and calls BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    pub fn setup_blend(&self, gl: &gl::Gl) {
+        unsafe {
+            gl.Enable(gl::BLEND);
+            gl.BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+        }
+    }
+
+    /// Set the color that [render_text](Self::render_text) uses.
+    /// The input should be is rgb and each component should be in the range \[0;1\]
+    pub fn set_text_color(&mut self, color: na::Vector3::<f32>) {
+        self.color = color;
+    }
+
+    /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered.
+    /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
     pub fn render_text(&self, gl: &gl::Gl, text: &str, screen_x: f32, screen_y: f32, input_scale: f32) {
         let scale = input_scale/self.font.info.scale.w;
 
         self.shader.set_used();
 
-
-        let color = na::Vector3::new(0.0, 0.0, 0.0);
-        // set color
-        self.shader.set_vec3(gl, "color", &color);
+        self.shader.set_vec3(gl, "color", &self.color);
 
         let base_scale = 8.0;
         self.shader.set_f32(gl, "scale", input_scale * base_scale);
+
         self.shader.set_i32(gl, "text_map", (self.texture_id - 1) as i32);
 
         // Most basic way is to generate a new char_quad for each char in text and render it
@@ -77,8 +80,6 @@ impl TextRenderer {
         for c in text.chars() {
 
             let chr = self.font.page_char(c as u32).unwrap();
-
-
 
             if let Some(prev) = prev_char {
                 // Lookup potential kerning and apply to x
@@ -108,13 +109,9 @@ impl TextRenderer {
                 x_offset +=  info.x - screen_x;
                 y_offset += self.font.info.line_height * scale;
                 info.x = screen_x;
-
             }
-
             info.y -= y_offset;
-
         }
-
 
         // Draw the chars
         for info in chars_info.iter() {
