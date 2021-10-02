@@ -4,10 +4,16 @@ use crate::text_rendering::font;
 use image;
 
 
+const BUFFER_SIZE: usize = 4098;
+// two triangle no EBO
+const ELEMENTS: usize = 6;
+const STRIDE: usize = 4;
+
 pub struct CharQuad {
     vao: buffer::VertexArray,
-    _vbo: buffer::ArrayBuffer,
-    _ebo: buffer::ElementArrayBuffer
+    vbo: buffer::ArrayBuffer,
+    buffer: [f32; ELEMENTS * BUFFER_SIZE * STRIDE]
+
 }
 
 
@@ -30,8 +36,57 @@ impl From<&image::RgbaImage> for ImageInfo {
 
 impl CharQuad {
 
-    pub fn new(gl: &gl::Gl, x: f32, y: f32, scale: f32, &chr: &font::PageChar, image_info: ImageInfo) -> CharQuad {
+    pub fn new(gl: &gl::Gl) -> CharQuad {
+        let vbo = buffer::ArrayBuffer::new(gl);
+        let vao = buffer::VertexArray::new(gl);
 
+        unsafe {
+
+            vao.bind();
+            vbo.bind();
+
+            vbo.dynamic_draw_data((std::mem::size_of::<f32>() * ELEMENTS * BUFFER_SIZE * STRIDE) as u32);
+
+            // Position
+            gl.VertexAttribPointer(
+                0,
+                2,
+                gl::FLOAT,
+                gl::FALSE,
+                (4 * std::mem::size_of::<f32>()) as gl::types::GLint,
+                0 as *const gl::types::GLvoid,
+            );
+            gl.EnableVertexAttribArray(0);
+
+            // Texture coords
+            gl.VertexAttribPointer(
+                1,
+                2,
+                gl::FLOAT,
+                gl::FALSE,
+                (STRIDE * std::mem::size_of::<f32>()) as gl::types::GLint,
+                (2 * std::mem::size_of::<f32>()) as *const gl::types::GLvoid,
+            );
+            gl.EnableVertexAttribArray(1);
+
+
+            vbo.unbind();
+            vao.unbind();
+
+        }
+
+        Self {
+            vbo: vbo,
+            vao: vao,
+            buffer: [0.0; ELEMENTS * BUFFER_SIZE * STRIDE]
+        }
+    }
+
+    pub fn buffer_size(&self) -> usize {
+        BUFFER_SIZE
+    }
+
+    pub fn update_char(&mut self, buffer_index: usize, x: f32, y: f32, scale: f32, &chr: &font::PageChar, image_info: ImageInfo) {
         let padding = 0.0;
         let left = chr.x  / image_info.width - padding;
         let right = (chr.x + chr.width)  / image_info.width + padding;
@@ -40,111 +95,80 @@ impl CharQuad {
         // We subtract chr.height, since the texture is loaded and flipped.
         let bottom = (chr.y  - chr.height) / (image_info.height ) + padding;
 
-        /*
-        println!("(Left, Top) = ({:?} {})",chr.x, chr.y);
-        println!("(Right, Bottom) = ({:?},{})",chr.x + chr.width, chr.y - chr.height);
-        println!("(left, right, top, bottom) ({}, {}, {}, {})" , left, right, top, bottom);
-         */
-        // let all chars have height 1 and then set the x to widht/ height
         let x_l = x + chr.x_offset * scale;
         let x_r = x + chr.width  * scale + chr.x_offset * scale;
         let y_t = y  - chr.y_offset * scale;
         let y_b = y - chr.height  * scale  - chr.y_offset * scale;
 
-        //println!("(x_l, x_r, y_t, y_b) ({}, {}, {}, {})", x_l, x_r, y_t, y_b);
-        let vertices: Vec<f32> = vec![
-            // positions	  // texture coordinates
-            x_r,  y_t,		right, top,  // Right Top
-            x_r, y_b,		right, bottom,  // Right Bottom
-            x_l, y_b,		left, bottom,  // Left Bottom
-            x_l,  y_t,		left, top,  // Left Top
-        ];
 
-        /*
-        let x = (c.width  / c.height );
-
-        let vertices: Vec<f32> = vec![
-        // positions	  // texture coordinates
-        x,  y_pos,		right, top,  // Right Top
-        x, 0.0,		right, bottom,  // Right Bottom
-        0.0, 0.0,		left, bottom,  // Left Bottom
-        0.0,  y_pos,		left, top,  // Left Top
-    ];
-         */
-
-        let indices: Vec<u32> = vec![
-            0,1,3,
-            1,2,3];
+        let start_index = buffer_index * ELEMENTS * STRIDE;
 
 
-        let vbo = buffer::ArrayBuffer::new(gl);
-        let ebo = buffer::ElementArrayBuffer::new(gl);
-        let vao = buffer::VertexArray::new(gl);
 
-        let stride = 4;
-        unsafe {
-            // 1
-            vao.bind();
-
-            // 2.
-            vbo.bind();
-            vbo.static_draw_data(&vertices);
-
-            // 3
-            ebo.bind();
-            gl.BufferData(
-                gl::ELEMENT_ARRAY_BUFFER,
-                (indices.len() * std::mem::size_of::<u32>()) as gl::types::GLsizeiptr,
-                indices.as_ptr() as *const gl::types::GLvoid,
-                gl::STATIC_DRAW);
+        // TRIANGLE 0
+        // RIGHT TOP
+        self.buffer[start_index] = x_r;
+        self.buffer[start_index + 1 ] = y_t;
+        self.buffer[start_index + 2 ] = right;
+        self.buffer[start_index + 3 ] = top;
 
 
-            // 4. Positions
-            gl.VertexAttribPointer(
-                0,
-                2,
-                gl::FLOAT,
-                gl::FALSE,
-                (stride * std::mem::size_of::<f32>()) as gl::types::GLint,
-                0 as *const gl::types::GLvoid,
-            );
-            gl.EnableVertexAttribArray(0);
+        // RIGHT BOTTOM
+        self.buffer[start_index + 4] = x_r;
+        self.buffer[start_index + 5 ] = y_b;
+        self.buffer[start_index + 6 ] = right;
+        self.buffer[start_index + 7 ] = bottom;
 
-            // 5. Texture coords
-            gl.VertexAttribPointer(
-                1,
-                2,
-                gl::FLOAT,
-                gl::FALSE,
-                (stride * std::mem::size_of::<f32>()) as gl::types::GLint,
-                (2 * std::mem::size_of::<f32>()) as *const gl::types::GLvoid,
-            );
-            gl.EnableVertexAttribArray(1);
-        }
+        // LEFT TOP
+        self.buffer[start_index + 8] = x_l;
+        self.buffer[start_index + 9 ] = y_t;
+        self.buffer[start_index + 10 ] = left;
+        self.buffer[start_index + 11 ] = top;
 
-        vbo.unbind();
-        vao.unbind();
 
-        CharQuad {
-            vao,
-            _vbo: vbo,
-            _ebo: ebo,
-        }
+
+        // TRIANGLE 1
+        // RIGHT BOTTOM
+        self.buffer[start_index + 12] = x_r;
+        self.buffer[start_index + 13] = y_b;
+        self.buffer[start_index + 14 ] = right;
+        self.buffer[start_index + 15 ] = bottom;
+
+
+        // LEFT BOTTOM
+        self.buffer[start_index + 16] = x_l;
+        self.buffer[start_index + 17] = y_b;
+        self.buffer[start_index + 18 ] = left;
+        self.buffer[start_index + 19 ] = bottom;
+
+        // LEFT TOP
+        self.buffer[start_index + 20] = x_l;
+        self.buffer[start_index + 21] = y_t;
+        self.buffer[start_index + 22 ] = left;
+        self.buffer[start_index + 23 ] = top;
+
     }
 
 
-    pub fn render(&self, gl: &gl::Gl) {
+
+    pub fn render(&self, gl: &gl::Gl, chars: usize) {
         self.vao.bind();
         unsafe {
-            // draw
-            gl.DrawElements(
-                gl::TRIANGLES,
-                6,
-                gl::UNSIGNED_INT,
-                0 as *const gl::types::GLvoid
+            self.vbo.bind();
+            gl.BufferSubData(
+                gl::ARRAY_BUFFER,
+                0,
+                (chars * ELEMENTS * STRIDE * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
+                self.buffer.as_ptr() as *const gl::types::GLvoid
             );
+        }
+        unsafe {
+            // draw
+
+            gl.DrawArrays(gl::TRIANGLES, 0, (chars * ELEMENTS) as i32);
         }
 
         self.vao.unbind();
+
     }
 }

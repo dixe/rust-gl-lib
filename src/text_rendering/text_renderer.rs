@@ -93,6 +93,7 @@ impl TextRenderer {
                 x,
                 y: screen_y,
                 chr,
+                is_newline: c == '\n'
             });
             x += chr.x_advance * scale;
         }
@@ -105,7 +106,7 @@ impl TextRenderer {
             // Update x before checking to
             info.x -= x_offset;
 
-            if (info.x + info.chr.width * scale) >= 1.0 {
+            if (info.x + info.chr.width * scale) >= 1.0 || info.is_newline {
                 x_offset +=  info.x - screen_x;
                 y_offset += self.font.info.line_height * scale;
                 info.x = screen_x;
@@ -113,11 +114,24 @@ impl TextRenderer {
             info.y -= y_offset;
         }
 
+        let mut char_quad = objects::char_quad::CharQuad::new(gl);
         // Draw the chars
+        let buffer_size = char_quad.buffer_size();
+        let mut i = 0;
         for info in chars_info.iter() {
-            let char_quad = objects::char_quad::CharQuad::new(gl, info.x, info.y, scale, &info.chr, (&self.font.image).into());
-            char_quad.render(gl);
+            char_quad.update_char(i, info.x, info.y, scale, &info.chr, (&self.font.image).into());
+            i += 1;
+
+            if i >= buffer_size {
+                char_quad.render(gl, i);
+                i = 0;
+            }
+            if info.y < -1.0 {
+                break;
+            }
+
         }
+        char_quad.render(gl, i);
 
     }
 }
@@ -126,7 +140,8 @@ impl TextRenderer {
 struct CharPosInfo {
     x: f32,
     y: f32,
-    chr: PageChar
+    chr: PageChar,
+    is_newline: bool
 }
 
 
