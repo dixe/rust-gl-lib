@@ -20,7 +20,7 @@ fn main() -> Result<(), failure::Error> {
     let viewport = gl::viewport::Viewport::for_window(width as i32, height as i32);
 
     let window = video_subsystem
-        .window("Game", width, height)
+        .window("Square", width, height)
         .opengl()
         .resizable()
         .build()?;

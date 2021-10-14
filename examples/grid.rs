@@ -108,7 +108,7 @@ fn render_grid(gl: &gl::Gl, shader: &shader::Shader, square: &square::Square, ro
             shader.set_mat4(gl, "model", trans_mat * scale_mat);
 
             // set color of this square
-            shader.set_vec3(gl, "color", &colors[i]);
+            shader.set_vec3(gl, "color", colors[i]);
 
 
             square.render(&gl);

@@ -1,4 +1,4 @@
-use gl_lib::gl;
+use gl_lib::{ gl, BoxCoords } ;
 use gl_lib::text_rendering::{text_renderer, font};
 use failure;
 use std::path::Path;
@@ -44,7 +44,7 @@ fn main() -> Result<(), failure::Error> {
 
     let font_path = Path::new("./assets/fonts/Arial.fnt");
     let font = font::Font::load_fnt_font(font_path).unwrap();
-    let text_renderer = text_renderer::TextRenderer::new(&gl, font);
+    let mut text_renderer = text_renderer::TextRenderer::new(&gl, font);
 
     text_renderer.setup_blend(&gl);
 
@@ -64,7 +64,8 @@ fn main() -> Result<(), failure::Error> {
         let x = -1.0;
         let y = 1.0;
         let scale = 1.0;
-        text_renderer.render_text(&gl, TEST_TEXT, x, y, scale);
+        let coords = BoxCoords { x, y };
+        text_renderer.render_text_with_box(&gl, TEST_TEXT, coords, None, scale);
 
         window.gl_swap_window();
     }

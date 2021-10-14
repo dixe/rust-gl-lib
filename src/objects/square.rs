@@ -1,5 +1,8 @@
 use crate::buffer;
 use crate::gl;
+use crate::shader::Shader;
+
+use failure;
 
 
 pub struct Square {
@@ -69,6 +72,29 @@ impl Square {
         }
     }
 
+    /// Creates a basic default shader that takes a mat4 transformation uniform transform
+    pub fn default_shader(gl: &gl::Gl) -> Result<Shader, failure::Error> {
+
+        // default program for square
+        let vert_source = r"#version 330 core
+layout (location = 0) in vec3 aPos;
+
+uniform mat4 transform;
+
+void main()
+{
+    gl_Position = transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);
+}";
+
+        let frag_source = r"#version 330 core
+                    out vec4 FragColor;
+                    void main()
+                    {
+                        FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+                    }";
+
+        Shader::new(gl, vert_source, frag_source)
+    }
 
     pub fn render(&self, gl: &gl::Gl) {
         self.vao.bind();

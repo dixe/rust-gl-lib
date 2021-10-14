@@ -6,7 +6,7 @@ use crate::shader::Shader;
 use crate::texture::{self, TextureId};
 use crate::gl;
 use crate::objects;
-
+use crate::*;
 
 /// A collections of a font, shader and a texture that can render text using open.
 pub struct TextRenderer {
@@ -54,12 +54,17 @@ impl TextRenderer {
 
     /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered.
     /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
-    pub fn render_text(&mut self, gl: &gl::Gl, text: &str, screen_x: f32, screen_y: f32, input_scale: f32) {
+    pub fn render_text_with_box(&mut self, gl: &gl::Gl, text: &str, box_coords: BoxCoords, screen_box: Option<ScreenBox>, input_scale: f32) {
         let scale = input_scale/self.font.info.scale.w;
+
+        let screen_box = match screen_box {
+            Some(sb) => sb,
+            None => Default::default()
+        };
 
         self.shader.set_used();
 
-        self.shader.set_vec3(gl, "color", &self.color);
+        self.shader.set_vec3(gl, "color", self.color);
 
         let base_scale = 8.0;
         self.shader.set_f32(gl, "scale", input_scale * base_scale);
@@ -77,6 +82,16 @@ impl TextRenderer {
 
         let mut chars_info = Vec::new();
 
+
+        // TODO: Should be in a screenbox functions file. Will be used
+
+        // Calc the abosulte screen x and y based on the relative
+        let screen_x = (screen_box.coords.x + box_coords.x) * 2.0 - 1.0;
+        let screen_y = -(screen_box.coords.y + box_coords.y) * 2.0 + 1.0;
+
+
+        let bottom = -screen_box.bottom() * 2.0 + 1.0;
+        let right = screen_box.right() * 2.0 - 1.0;
 
         let mut x = screen_x;
         let mut prev_char: Option<PageChar> = None;
@@ -97,54 +112,250 @@ impl TextRenderer {
                 x,
                 y: screen_y,
                 chr,
-                is_newline: c == '\n'
+                is_newline: c == '\n',
+                line_index: 0,
             });
             x += chr.x_advance * scale;
         }
-
         // Process chars to wrap newlines, on whole word if possible
         let mut x_offset = 0.0;
         let mut y_offset = 0.0;
+
 
         for info in chars_info.iter_mut() {
             // Update x before checking to
             info.x -= x_offset;
 
-            if (info.x + info.chr.width * scale) >= 1.0 || info.is_newline {
-                x_offset +=  info.x - screen_x;
+            if (info.x + info.chr.width * scale) >= right  || info.is_newline {
+                x_offset += info.x - screen_x;
                 y_offset += self.font.info.line_height * scale;
                 info.x = screen_x;
+
             }
             info.y -= y_offset;
         }
 
+
+        let mut line_widths = Vec::new();
+        line_widths.push(0.0);
+
+        // Draw the chars
+        let draw_info = DrawInfo {
+            chars_info: &chars_info,
+            line_widths: &line_widths,
+            scale,
+            bottom,
+            screen_box_width: screen_box.width,
+            screen_box_height: screen_box.height,
+            max_height: 0.0,
+        };
+
+        self.render_text_quads(gl, &draw_info);
+    }
+
+    fn setup_shader(&mut self, gl: &gl::Gl, scale: f32) {
+
+        self.shader.set_used();
+
+        self.shader.set_vec3(gl, "color", self.color);
+
+
+        self.shader.set_f32(gl, "scale", scale);
+
+        self.shader.set_i32(gl, "text_map", (self.texture_id - 1) as i32);
+
+        unsafe {
+            gl.ActiveTexture(gl::TEXTURE0);
+            texture::set_texture(gl, self.texture_id);
+        }
+
+
+    }
+
+    /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered.
+    /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
+    pub fn render_text(&mut self, gl: &gl::Gl, text: &str, _alignment: TextAlignment, screen_box: Option<ScreenBox>, input_scale: f32) {
+        let scale = input_scale/self.font.info.scale.w;
+
+        let screen_box = match screen_box {
+            Some(sb) => sb,
+            None => Default::default()
+        };
+
+
+        let base_scale = 8.0;
+        self.setup_shader(gl, base_scale * input_scale);
+
+        let mut chars_info = Vec::new();
+
+        let screen_x = screen_box.coords.x * 2.0 - 1.0;
+        let screen_y = -screen_box.coords.y * 2.0 + 1.0;
+
+        let bottom = -screen_box.bottom() * 2.0 + 1.0;
+        let right = screen_box.right() * 2.0 - 1.0;
+
+        let mut prev_char: Option<PageChar> = None;
+
+        let mut x = screen_x;
+        let mut max_height = 0.0;
+
+        for c in text.chars() {
+
+            let chr = self.font.page_char(c as u32).unwrap();
+
+            if let Some(prev) = prev_char {
+                // Lookup potential kerning and apply to x
+                let kern = self.font.kerning(prev.id, chr.id) * scale;
+                x += kern;
+            }
+
+            max_height = f32::max(max_height, chr.height * scale);
+            prev_char = Some(chr);
+
+            chars_info.push(CharPosInfo {
+                x,
+                y: screen_y,
+                chr,
+                is_newline: c == '\n',
+                line_index: 0,
+            });
+
+            x += chr.x_advance * scale;
+        }
+
+
+        let mut line_widths = Vec::new();
+        let mut line_num = 0;
+        // Process chars to wrap newlines, on whole word if possible
+        let mut x_offset = 0.0;
+        let mut y_offset = 0.0;
+
+
+        for info in chars_info.iter_mut() {
+            // Update x before checkings wrap correctly
+            info.x -= x_offset;
+
+            if (info.x + info.chr.width * scale) >= right  || info.is_newline {
+                // use info.x as replacement for prev char.x
+                line_widths.push((info.x - screen_x) / (right - screen_x));
+                line_num += 1;
+
+                x_offset += info.x - screen_x;
+                y_offset += self.font.info.line_height * scale;
+                info.x = screen_x;
+
+            }
+            info.line_index = line_num;
+            info.y -= y_offset;
+        }
+
+        let last_info = chars_info.last().unwrap();
+
+        // use plus chr.width to get the right side
+        line_widths.push(((last_info.x + last_info.chr.width * scale) - screen_x) / (right - screen_x));
+
+
+        // Draw the chars
+        let draw_info = DrawInfo {
+            chars_info: &chars_info,
+            line_widths: &line_widths,
+            scale,
+            bottom,
+            screen_box_width: screen_box.width,
+            screen_box_height: screen_box.height,
+            max_height,
+        };
+
+        self.render_text_quads(gl, &draw_info);
+
+    }
+
+
+    fn render_text_quads(&mut self , gl: &gl::Gl, draw_info: &DrawInfo) {
         // Draw the chars
         let buffer_size = self.char_quad.buffer_size();
         let mut i = 0;
-        for info in chars_info.iter() {
-            self.char_quad.update_char(i, info.x, info.y, scale, &info.chr, (&self.font.image).into());
+        for info in draw_info.chars_info.iter() {
+
+            if info.bottom(draw_info.scale) < draw_info.bottom {
+                // We cannot writre more text, so just stop
+                break;
+            }
+
+            let line_width = draw_info.line_widths[info.line_index];
+
+            let x_offset = draw_info.screen_box_width * (1.0 - line_width);
+            let y_offset = draw_info.screen_box_height -  draw_info.max_height / 2.0;
+
+
+            self.char_quad.update_char(i, info.x + x_offset, info.y - y_offset, draw_info.scale, &info.chr, (&self.font.image).into());
             i += 1;
 
             if i >= buffer_size {
                 self.char_quad.render(gl, i);
                 i = 0;
             }
-            if info.y < -1.0 {
-                break;
-            }
         }
 
         self.char_quad.render(gl, i);
+    }
 
+
+}
+
+#[derive(Debug)]
+struct DrawInfo<'a>{
+    bottom: f32,
+    screen_box_width: f32,
+    screen_box_height: f32,
+    scale: f32,
+    line_widths: &'a Vec::<f32>,
+    chars_info: &'a Vec::<CharPosInfo>,
+    max_height: f32
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct TextAlignment {
+    pub x: TextAlignmentX,
+    pub y: TextAlignmentY,
+}
+
+impl Default for TextAlignment {
+    fn default() -> Self {
+
+        Self {
+            x: TextAlignmentX::Center,
+            y: TextAlignmentY::Center
+        }
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum TextAlignmentX {
+    Left, Center, Right
+}
 
+#[derive(Debug, Clone, Copy)]
+pub enum TextAlignmentY {
+    Top, Center, Bottom
+}
+
+
+#[derive(Debug, Clone, Copy)]
 struct CharPosInfo {
     x: f32,
     y: f32,
     chr: PageChar,
-    is_newline: bool
+    is_newline: bool,
+    line_index: usize
+}
+
+
+impl CharPosInfo {
+
+    pub fn bottom(&self, scale: f32) -> f32 {
+        self.y - self.chr.height * scale
+    }
 }
 
 

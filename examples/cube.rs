@@ -96,7 +96,7 @@ fn main() -> Result<(), failure::Error> {
 
 
         // set color
-        shader.set_vec3(&gl, "color", &color);
+        shader.set_vec3(&gl, "color", color);
 
 
         cube.render(&gl);

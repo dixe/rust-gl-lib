@@ -4,7 +4,7 @@ use std::ffi::{CString, CStr};
 use failure::*;
 use crate::gl;
 
-
+#[derive(Clone)]
 pub struct Program {
     gl: gl::Gl,
     id: gl::types::GLuint,
@@ -105,15 +105,6 @@ impl Program {
 }
 
 
-impl Drop for Program {
-    fn drop(&mut self) {
-        unsafe {
-            self.gl.DeleteProgram(self.id);
-        }
-    }
-}
-
-
 
 pub struct ShaderSource {
     gl: gl::Gl,
@@ -140,6 +131,7 @@ impl ShaderSource {
 
 impl Drop for ShaderSource {
     fn drop(&mut self) {
+
         unsafe {
             self.gl.DeleteShader(self.id);
         }

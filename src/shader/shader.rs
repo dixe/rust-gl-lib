@@ -1,4 +1,4 @@
-
+use std::fmt;
 use failure;
 use crate::gl;
 
@@ -7,8 +7,15 @@ use crate::shader::*;
 
 /// A shader that has a vertex and fragment shader.
 /// This is also entry point for setting uniforms.
+#[derive(Clone)]
 pub struct Shader {
     program: Program,
+}
+
+impl fmt::Debug for Shader {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("A shader")
+    }
 }
 
 impl Shader {
@@ -31,7 +38,19 @@ impl Shader {
         self.program.set_used();
     }
 
-    pub fn set_vec3(&self, gl: &gl::Gl, name: &str, data: &na::Vector3<f32>) {
+    pub fn set_vec2(&self, gl: &gl::Gl, name: &str, data: na::Vector2<f32>) {
+        self.program.set_used();
+        unsafe {
+            let proj_str = std::ffi::CString::new(name).unwrap();
+
+            let proj_loc = gl.GetUniformLocation(
+                self.program.id(),
+                proj_str.as_ptr() as *mut gl::types::GLchar);
+            gl.Uniform2f(proj_loc, data.x, data.y);
+        }
+    }
+
+    pub fn set_vec3(&self, gl: &gl::Gl, name: &str, data: na::Vector3<f32>) {
         self.program.set_used();
 
 
@@ -42,10 +61,11 @@ impl Shader {
                 self.program.id(),
                 proj_str.as_ptr() as *mut gl::types::GLchar);
 
-            let vec3 = data;
-            gl.Uniform3f(proj_loc, vec3.x, vec3.y, vec3.z);
+
+            gl.Uniform3f(proj_loc, data.x, data.y, data.z);
         }
     }
+
 
     pub fn set_mat4(&self, gl: &gl::Gl, name: &str, data:na::Matrix4<f32>) {
 
