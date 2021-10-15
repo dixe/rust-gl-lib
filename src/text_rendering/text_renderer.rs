@@ -54,13 +54,8 @@ impl TextRenderer {
 
     /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered.
     /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
-    pub fn render_text_with_box(&mut self, gl: &gl::Gl, text: &str, box_coords: BoxCoords, screen_box: Option<ScreenBox>, input_scale: f32) {
+    pub fn render_text_with_box(&mut self, gl: &gl::Gl, text: &str, box_coords: BoxCoords, screen_box: ScreenBox, input_scale: f32) {
         let scale = input_scale/self.font.info.scale.w;
-
-        let screen_box = match screen_box {
-            Some(sb) => sb,
-            None => Default::default()
-        };
 
         self.shader.set_used();
 
@@ -86,8 +81,8 @@ impl TextRenderer {
         // TODO: Should be in a screenbox functions file. Will be used
 
         // Calc the abosulte screen x and y based on the relative
-        let screen_x = (screen_box.coords.x + box_coords.x) * 2.0 - 1.0;
-        let screen_y = -(screen_box.coords.y + box_coords.y) * 2.0 + 1.0;
+        let screen_x = (screen_box.x + box_coords.x) * 2.0 - 1.0;
+        let screen_y = -(screen_box.y + box_coords.y) * 2.0 + 1.0;
 
 
         let bottom = -screen_box.bottom() * 2.0 + 1.0;
@@ -142,12 +137,11 @@ impl TextRenderer {
         // Draw the chars
         let draw_info = DrawInfo {
             chars_info: &chars_info,
-            line_widths: &line_widths,
             scale,
             bottom,
-            screen_box_width: screen_box.width,
-            screen_box_height: screen_box.height,
-            max_height: 0.0,
+            screen_w: screen_box.screen_w,
+            screen_h: screen_box.screen_h,
+
         };
 
         self.render_text_quads(gl, &draw_info);
@@ -172,32 +166,51 @@ impl TextRenderer {
 
     }
 
-    /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered.
-    /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
-    pub fn render_text(&mut self, gl: &gl::Gl, text: &str, _alignment: TextAlignment, screen_box: Option<ScreenBox>, input_scale: f32) {
-        let scale = input_scale/self.font.info.scale.w;
 
-        let screen_box = match screen_box {
-            Some(sb) => sb,
-            None => Default::default()
-        };
+    pub fn render_box(&mut self, text: &str, screen_box: ScreenBox, input_scale: f32) -> TextRenderBox {
+        let scale = input_scale / self.font.info.scale.w;
 
-
-        let base_scale = 8.0;
-        self.setup_shader(gl, base_scale * input_scale);
-
-        let mut chars_info = Vec::new();
-
-        let screen_x = screen_box.coords.x * 2.0 - 1.0;
-        let screen_y = -screen_box.coords.y * 2.0 + 1.0;
-
-        let bottom = -screen_box.bottom() * 2.0 + 1.0;
-        let right = screen_box.right() * 2.0 - 1.0;
 
         let mut prev_char: Option<PageChar> = None;
 
-        let mut x = screen_x;
+        let mut pixel_x = 0.0;
+
         let mut max_height = 0.0;
+
+        // Loop over chars and calc max_x
+        for c in text.chars() {
+            let chr = self.font.page_char(c as u32).unwrap();
+
+            if let Some(prev) = prev_char {
+                let kern = self.font.kerning(prev.id, chr.id) ;
+                pixel_x += kern;
+            }
+            prev_char = Some(chr);
+            pixel_x += chr.x_advance;
+        }
+
+        TextRenderBox {
+            pixel_w: pixel_x,
+            scale,
+            pixel_h: self.font.info.line_height as f32,
+        }
+    }
+
+
+    /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered.
+    /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
+    pub fn render_text(&mut self, gl: &gl::Gl, text: &str, _alignment: TextAlignment, screen_box: ScreenBox, input_scale: f32) {
+
+        let scale = input_scale / self.font.info.scale.w;
+        let base_scale = 8.0;
+        // TODO: fix this so we always render with correct scale
+        self.setup_shader(gl, base_scale);
+
+        let mut chars_info = Vec::new();
+
+        let mut prev_char: Option<PageChar> = None;
+
+        let mut pixel_x = 0.0;
 
         for c in text.chars() {
 
@@ -205,65 +218,78 @@ impl TextRenderer {
 
             if let Some(prev) = prev_char {
                 // Lookup potential kerning and apply to x
-                let kern = self.font.kerning(prev.id, chr.id) * scale;
-                x += kern;
+                let kern = self.font.kerning(prev.id, chr.id);
+                pixel_x += kern;
             }
 
-            max_height = f32::max(max_height, chr.height * scale);
             prev_char = Some(chr);
 
             chars_info.push(CharPosInfo {
-                x,
-                y: screen_y,
+                x: pixel_x,
+                y: 0.0,
                 chr,
                 is_newline: c == '\n',
                 line_index: 0,
             });
 
-            x += chr.x_advance * scale;
+            pixel_x += chr.x_advance;
         }
 
 
         let mut line_widths = Vec::new();
         let mut line_num = 0;
-        // Process chars to wrap newlines, on whole word if possible
+
         let mut x_offset = 0.0;
         let mut y_offset = 0.0;
 
-
+        // Process chars to wrap newlines, on whole word if possible
         for info in chars_info.iter_mut() {
-            // Update x before checkings wrap correctly
+            // Update x before checking to wrap correctly
             info.x -= x_offset;
 
-            if (info.x + info.chr.width * scale) >= right  || info.is_newline {
-                // use info.x as replacement for prev char.x
-                line_widths.push((info.x - screen_x) / (right - screen_x));
+            if ( info.x + info.chr.width) >= screen_box.width  || info.is_newline {
+                line_widths.push(info.x / screen_box.width);
                 line_num += 1;
 
-                x_offset += info.x - screen_x;
-                y_offset += self.font.info.line_height * scale;
-                info.x = screen_x;
-
+                x_offset += info.x;
+                y_offset += self.font.info.line_height;
+                info.x = 0.0;
             }
+
             info.line_index = line_num;
-            info.y -= y_offset;
+            info.y += y_offset;
         }
 
         let last_info = chars_info.last().unwrap();
 
         // use plus chr.width to get the right side
-        line_widths.push(((last_info.x + last_info.chr.width * scale) - screen_x) / (right - screen_x));
+        line_widths.push((last_info.x + last_info.chr.width)  / screen_box.width);
 
+
+        let height_percent = f32::min(1.0, (line_widths.len() as f32 * self.font.info.line_height) /  screen_box.height);
+        //println!("hp={:?}, lines x lh = {}, box_xheight = {}", height_percent, line_widths.len() as f32 * self.font.info.line_height, screen_box.height);
+        // map from pixel space into screen space so we are ready to draw
+        for info in chars_info.iter_mut() {
+            let line_width = line_widths[info.line_index];
+
+            let x_offset = screen_box.x + (screen_box.width * (1.0 - line_width) / 2.0);
+            let y_offset = screen_box.y + (screen_box.height * (1.0 - height_percent) / 2.0)  + self.font.info.line_height / 4.0;
+
+
+
+
+            info.x = info.x + x_offset;
+            info.y = info.y + y_offset;
+        }
 
         // Draw the chars
         let draw_info = DrawInfo {
             chars_info: &chars_info,
-            line_widths: &line_widths,
             scale,
-            bottom,
-            screen_box_width: screen_box.width,
-            screen_box_height: screen_box.height,
-            max_height,
+            bottom: screen_box.height,
+            screen_w: screen_box.screen_w,
+            screen_h: screen_box.screen_h,
+
         };
 
         self.render_text_quads(gl, &draw_info);
@@ -273,22 +299,24 @@ impl TextRenderer {
 
     fn render_text_quads(&mut self , gl: &gl::Gl, draw_info: &DrawInfo) {
         // Draw the chars
+
         let buffer_size = self.char_quad.buffer_size();
         let mut i = 0;
         for info in draw_info.chars_info.iter() {
 
-            if info.bottom(draw_info.scale) < draw_info.bottom {
-                // We cannot writre more text, so just stop
+
+            if info.y > draw_info.bottom {
+
                 break;
             }
 
-            let line_width = draw_info.line_widths[info.line_index];
+            let x = smoothstep(0.0, draw_info.screen_w, info.x) * 2.0 - 1.0;
+            let y = -1.0 * (smoothstep(0.0, draw_info.screen_h, info.y) * 2.0 - 1.0);
 
-            let x_offset = draw_info.screen_box_width * (1.0 - line_width);
-            let y_offset = draw_info.screen_box_height -  draw_info.max_height / 2.0;
+            let top = -1.0 * (smoothstep(0.0, draw_info.screen_h, 10.) * 2.0 - 1.0);
+            let bottom = -1.0 * (smoothstep(0.0, draw_info.screen_h, 60.) * 2.0 - 1.0);
 
-
-            self.char_quad.update_char(i, info.x + x_offset, info.y - y_offset, draw_info.scale, &info.chr, (&self.font.image).into());
+            self.char_quad.update_char(i, x, y, draw_info.scale, &info.chr, (&self.font.image).into());
             i += 1;
 
             if i >= buffer_size {
@@ -299,19 +327,20 @@ impl TextRenderer {
 
         self.char_quad.render(gl, i);
     }
+}
 
-
+fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
+    f32::clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
 }
 
 #[derive(Debug)]
 struct DrawInfo<'a>{
     bottom: f32,
-    screen_box_width: f32,
-    screen_box_height: f32,
     scale: f32,
-    line_widths: &'a Vec::<f32>,
     chars_info: &'a Vec::<CharPosInfo>,
-    max_height: f32
+    screen_w: f32,
+    screen_h: f32,
+
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -351,66 +380,73 @@ struct CharPosInfo {
 }
 
 
+#[derive(Debug, Clone)]
+pub struct TextRenderBox {
+    pub scale: f32,
+    pub pixel_h: f32,
+    pub pixel_w: f32
+}
+
 impl CharPosInfo {
 
-    pub fn bottom(&self, scale: f32) -> f32 {
-        self.y - self.chr.height * scale
+    pub fn bottom(&self) -> f32 {
+        self.y - self.chr.height
     }
 }
 
 
 fn create_shader(gl: &gl::Gl) -> Shader {
     let vert_source = r"#version 330 core
-layout (location = 0) in vec2 pos;
-layout (location = 1) in vec2 aTexCoord;
+        layout (location = 0) in vec2 pos;
+        layout (location = 1) in vec2 aTexCoord;
 
 
-out VS_OUTPUT {
-    vec2 TexCoords;
-} OUT;
+        out VS_OUTPUT {
+        vec2 TexCoords;
+    } OUT;
 
 
-void main()
-{
-    gl_Position = vec4(pos, 0.0, 1.0);
+        void main()
+        {
+        gl_Position = vec4(pos, 0.0, 1.0);
 
-    OUT.TexCoords = aTexCoord;
-}";
+        OUT.TexCoords = aTexCoord;
+    }";
 
     let frag_source = r"#version 330 core
-out vec4 FragColor;
-uniform vec3 color;
-uniform float scale;
+        out vec4 FragColor;
+        uniform vec3 color;
+        uniform float scale;
 
-uniform sampler2D text_map;
-
-
-in VS_OUTPUT {
-   vec2 TexCoords;
-} IN;
-
-void main()
-{
-
-    // Distance from the edge.
-    // [0.0, 0.5[ is outside
-    // ]0.5;1] is inside
-    // And 0.5 is right on the edge
-    float dist = texture(text_map, IN.TexCoords).a;
+        uniform sampler2D text_map;
 
 
-    // Just scale everything below 0.5 (ouside) to 0 and everything inside to 1s
-    float u_buffer = 0.5;
-    float smoothing = 1.0/scale;
+        in VS_OUTPUT {
+        vec2 TexCoords;
+    } IN;
 
-    float alpha = smoothstep(u_buffer - smoothing, u_buffer + smoothing, dist);
+        void main()
+        {
 
-    if(alpha == 0.0)
-    {
+        // Distance from the edge.
+        // [0.0, 0.5[ is outside
+        // ]0.5;1] is inside
+        // And 0.5 is right on the edge
+        float dist = texture(text_map, IN.TexCoords).a;
+
+
+        // Just scale everything below 0.5 (ouside) to 0 and everything inside to 1s
+        float u_buffer = 0.5;
+        float smoothing = 1.0/scale;
+
+        float alpha = smoothstep(u_buffer - smoothing, u_buffer + smoothing, dist);
+
+        if(alpha == 0.0)
+        {
         discard;
     }
-    FragColor = vec4(color, alpha);
-}";
+        FragColor = vec4(color, alpha);
+    }";
 
 
     Shader::new(gl, vert_source, frag_source).unwrap()
