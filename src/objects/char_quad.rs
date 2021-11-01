@@ -86,7 +86,7 @@ impl CharQuad {
         BUFFER_SIZE
     }
 
-    pub fn update_char(&mut self, buffer_index: usize, x: f32, y: f32, scale: f32, &chr: &font::PageChar, image_info: ImageInfo) {
+    pub fn update_char(&mut self, buffer_index: usize, x: f32, y: f32, scale_x: f32, scale_y: f32, &chr: &font::PageChar, image_info: ImageInfo) {
         let padding = 0.0;
         let left = chr.x  / image_info.width - padding;
         let right = (chr.x + chr.width)  / image_info.width + padding;
@@ -95,10 +95,10 @@ impl CharQuad {
         // We subtract chr.height, since the texture is loaded and flipped.
         let bottom = (chr.y  - chr.height) / (image_info.height ) + padding;
 
-        let x_l = x + chr.x_offset * scale;
-        let x_r = x + chr.width  * scale + chr.x_offset * scale;
-        let y_t = y  - chr.y_offset * scale;
-        let y_b = y - chr.height  * scale  - chr.y_offset * scale;
+        let x_l = x + chr.x_offset * scale_x;
+        let x_r = x + chr.width  * scale_x + chr.x_offset * scale_x;
+        let y_t = y  - chr.y_offset * scale_y;
+        let y_b = y - chr.height  * scale_y  - chr.y_offset * scale_y;
 
 
         let start_index = buffer_index * ELEMENTS * STRIDE;

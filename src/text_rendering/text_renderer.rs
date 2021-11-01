@@ -58,8 +58,7 @@ impl TextRenderer {
 
         self.shader.set_vec3(gl, "color", self.color);
 
-
-        self.shader.set_f32(gl, "scale", scale);
+        self.shader.set_f32(gl, "base_scale", scale);
 
         self.shader.set_i32(gl, "text_map", (self.texture_id - 1) as i32);
 
@@ -72,7 +71,7 @@ impl TextRenderer {
     }
 
 
-    pub fn render_box(&mut self, text: &str, screen_box: ScreenBox, input_scale: f32) -> TextRenderBox {
+    pub fn render_box(&self, text: &str, input_scale: f32) -> TextRenderBox {
         let scale = input_scale / self.font.info.scale.w;
 
 
@@ -106,7 +105,17 @@ impl TextRenderer {
     /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
     pub fn render_text(&mut self, gl: &gl::Gl, text: &str, _alignment: TextAlignment, screen_box: ScreenBox, input_scale: f32) {
 
-        let scale = input_scale / self.font.info.scale.w;
+
+        if text == "Sub2" {
+            println!("{:?}", screen_box);
+
+
+        }
+        // Base scale is set using 1.6 and 1.3, since it is a good default size
+        let scale_x = 1.6 / screen_box.screen_w * input_scale;
+
+        let scale_y = 1.3 / screen_box.screen_h * input_scale;
+
         let base_scale = 8.0;
         // TODO: fix this so we always render with correct scale
         self.setup_shader(gl, base_scale);
@@ -181,8 +190,6 @@ impl TextRenderer {
             let y_offset = screen_box.y + (screen_box.height * (1.0 - height_percent) / 2.0)  + self.font.info.line_height / 4.0;
 
 
-
-
             info.x = info.x + x_offset;
             info.y = info.y + y_offset;
         }
@@ -190,7 +197,7 @@ impl TextRenderer {
         // Draw the chars
         let draw_info = DrawInfo {
             chars_info: &chars_info,
-            scale,
+            scale: Scale { x: scale_x, y: scale_y },
             bottom: screen_box.height,
             screen_w: screen_box.screen_w,
             screen_h: screen_box.screen_h,
@@ -209,9 +216,7 @@ impl TextRenderer {
         let mut i = 0;
         for info in draw_info.chars_info.iter() {
 
-
             if info.y > draw_info.bottom {
-
                 break;
             }
 
@@ -221,7 +226,7 @@ impl TextRenderer {
             let top = -1.0 * (smoothstep(0.0, draw_info.screen_h, 10.) * 2.0 - 1.0);
             let bottom = -1.0 * (smoothstep(0.0, draw_info.screen_h, 60.) * 2.0 - 1.0);
 
-            self.char_quad.update_char(i, x, y, draw_info.scale, &info.chr, (&self.font.image).into());
+            self.char_quad.update_char(i, x, y, draw_info.scale.x, draw_info.scale.y, &info.chr, (&self.font.image).into());
             i += 1;
 
             if i >= buffer_size {
@@ -241,11 +246,17 @@ fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
 #[derive(Debug)]
 struct DrawInfo<'a>{
     bottom: f32,
-    scale: f32,
+    scale: Scale,
     chars_info: &'a Vec::<CharPosInfo>,
     screen_w: f32,
     screen_h: f32,
 
+}
+
+#[derive(Debug)]
+struct Scale {
+    pub x:f32,
+    pub y: f32,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -321,7 +332,7 @@ fn create_shader(gl: &gl::Gl) -> Shader {
     let frag_source = r"#version 330 core
         out vec4 FragColor;
         uniform vec3 color;
-        uniform float scale;
+        uniform float base_scale;
 
         uniform sampler2D text_map;
 
@@ -342,14 +353,15 @@ fn create_shader(gl: &gl::Gl) -> Shader {
 
         // Just scale everything below 0.5 (ouside) to 0 and everything inside to 1s
         float u_buffer = 0.5;
-        float smoothing = 1.0/scale;
+        float smoothing = 1.0/base_scale;
 
         float alpha = smoothstep(u_buffer - smoothing, u_buffer + smoothing, dist);
 
         if(alpha == 0.0)
         {
-        discard;
-    }
+            discard;
+        }
+
         FragColor = vec4(color, alpha);
     }";
 
