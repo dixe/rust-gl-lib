@@ -105,12 +105,6 @@ impl TextRenderer {
     /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
     pub fn render_text(&mut self, gl: &gl::Gl, text: &str, _alignment: TextAlignment, screen_box: ScreenBox, input_scale: f32) {
 
-
-        if text == "Sub2" {
-            println!("{:?}", screen_box);
-
-
-        }
         // Base scale is set using 1.6 and 1.3, since it is a good default size
         let scale_x = 1.6 / screen_box.screen_w * input_scale;
 
@@ -149,7 +143,6 @@ impl TextRenderer {
             pixel_x += chr.x_advance;
         }
 
-
         let mut line_widths = Vec::new();
         let mut line_num = 0;
 
@@ -172,7 +165,9 @@ impl TextRenderer {
 
             info.line_index = line_num;
             info.y += y_offset;
+
         }
+
 
         let last_info = chars_info.last().unwrap();
 
@@ -198,7 +193,7 @@ impl TextRenderer {
         let draw_info = DrawInfo {
             chars_info: &chars_info,
             scale: Scale { x: scale_x, y: scale_y },
-            bottom: screen_box.height,
+            bottom: screen_box.bottom(),
             screen_w: screen_box.screen_w,
             screen_h: screen_box.screen_h,
 
