@@ -79,8 +79,6 @@ impl TextRenderer {
 
         let mut pixel_x = 0.0;
 
-        let mut max_height = 0.0;
-
         // Loop over chars and calc max_x
         for c in text.chars() {
             let chr = self.font.page_char(c as u32).unwrap();
@@ -218,9 +216,6 @@ impl TextRenderer {
             let x = smoothstep(0.0, draw_info.screen_w, info.x) * 2.0 - 1.0;
             let y = -1.0 * (smoothstep(0.0, draw_info.screen_h, info.y) * 2.0 - 1.0);
 
-            let top = -1.0 * (smoothstep(0.0, draw_info.screen_h, 10.) * 2.0 - 1.0);
-            let bottom = -1.0 * (smoothstep(0.0, draw_info.screen_h, 60.) * 2.0 - 1.0);
-
             self.char_quad.update_char(i, x, y, draw_info.scale.x, draw_info.scale.y, &info.chr, (&self.font.image).into());
             i += 1;
 
@@ -296,13 +291,6 @@ pub struct TextRenderBox {
     pub scale: f32,
     pub pixel_h: f32,
     pub pixel_w: f32
-}
-
-impl CharPosInfo {
-
-    pub fn bottom(&self) -> f32 {
-        self.y - self.chr.height
-    }
 }
 
 
