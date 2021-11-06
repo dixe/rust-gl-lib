@@ -105,8 +105,6 @@ impl TextRenderer {
         }
 
 
-        let mut line_num = 0;
-
         let mut x_offset = 0.0;
         let mut y_offset = 0.0;
 
@@ -121,16 +119,15 @@ impl TextRenderer {
             info.x -= x_offset;
 
             if ( info.x + info.chr.x_advance) > max_width  || info.is_newline {
-                line_num += 1;
-
                 x_offset += info.x;
                 y_offset += self.font.info.line_height;
                 info.x = 0.0;
 
                 total_height += self.font.info.line_height;
+                total_width = f32::max(current_w, total_width);
                 current_max_h = 0.0;
                 current_w = 0.0;
-                total_width = f32::max(current_w, total_width);
+
             }
 
 
@@ -164,6 +161,8 @@ impl TextRenderer {
         let mut chars_info = Vec::new();
 
         let render_box = self.calc_char_info(text, screen_box.width, input_scale, &mut chars_info);
+
+
 
 
         // map from pixel space into screen space so we are ready to draw
