@@ -95,6 +95,7 @@ pub struct FontInfo {
     pub scale: Scale,
     pub pages: i32,
     pub packed: bool,
+    pub base: i32,
 }
 
 impl FromStr for FontInfo  {
@@ -154,6 +155,9 @@ impl FromStr for FontInfo  {
                 "packed" => {
                     let val : i32 = splitted[1].parse()?;
                     info.packed = val > 0;
+                },
+                "base" => {
+                    info.base = splitted[1].parse()?;
                 },
                 _ => { }
             }

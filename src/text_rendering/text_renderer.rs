@@ -71,51 +71,14 @@ impl TextRenderer {
     }
 
 
-    pub fn render_box(&self, text: &str, input_scale: f32) -> TextRenderBox {
-        let scale = input_scale / self.font.info.scale.w;
-
-
-        let mut prev_char: Option<PageChar> = None;
-
-        let mut pixel_x = 0.0;
-
-        // Loop over chars and calc max_x
-        for c in text.chars() {
-            let chr = self.font.page_char(c as u32).unwrap();
-
-            if let Some(prev) = prev_char {
-                let kern = self.font.kerning(prev.id, chr.id) ;
-                pixel_x += kern;
-            }
-            prev_char = Some(chr);
-            pixel_x += chr.x_advance;
-        }
-
-        TextRenderBox {
-            pixel_w: pixel_x,
-            scale,
-            pixel_h: self.font.info.line_height as f32,
-        }
+    pub fn render_box(&self, text: &str, max_width: f32, input_scale: f32) -> TextRenderBox {
+        self.calc_char_info(text, max_width, input_scale, &mut Vec::new())
     }
 
 
-    /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered.
-    /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
-    pub fn render_text(&mut self, gl: &gl::Gl, text: &str, _alignment: TextAlignment, screen_box: ScreenBox, input_scale: f32) {
-
-        // Base scale is set using 1.6 and 1.3, since it is a good default size
-        let scale_x = 1.6 / screen_box.screen_w * input_scale;
-
-        let scale_y = 1.3 / screen_box.screen_h * input_scale;
-
-        let base_scale = 8.0;
-        // TODO: fix this so we always render with correct scale
-        self.setup_shader(gl, base_scale);
-
-        let mut chars_info = Vec::new();
+    fn  calc_char_info(&self, text: &str, max_width: f32, _input_scale: f32, chars_info: &mut Vec::<CharPosInfo>) -> TextRenderBox {
 
         let mut prev_char: Option<PageChar> = None;
-
         let mut pixel_x = 0.0;
 
         for c in text.chars() {
@@ -135,52 +98,87 @@ impl TextRenderer {
                 y: 0.0,
                 chr,
                 is_newline: c == '\n',
-                line_index: 0,
+
             });
 
             pixel_x += chr.x_advance;
         }
 
-        let mut line_widths = Vec::new();
+
         let mut line_num = 0;
 
         let mut x_offset = 0.0;
         let mut y_offset = 0.0;
 
+        let mut total_height = 0.0;
+        let mut total_width = 0.0;
         // Process chars to wrap newlines, on whole word if possible
+        let mut current_max_h = 0.0;
+
+        let mut current_w = 0.0;
         for info in chars_info.iter_mut() {
             // Update x before checking to wrap correctly
             info.x -= x_offset;
 
-            if ( info.x + info.chr.width) >= screen_box.width  || info.is_newline {
-                line_widths.push(info.x / screen_box.width);
+            if ( info.x + info.chr.x_advance) > max_width  || info.is_newline {
                 line_num += 1;
 
                 x_offset += info.x;
                 y_offset += self.font.info.line_height;
                 info.x = 0.0;
+
+                total_height += self.font.info.line_height;
+                current_max_h = 0.0;
+                current_w = 0.0;
+                total_width = f32::max(current_w, total_width);
             }
 
-            info.line_index = line_num;
+
             info.y += y_offset;
 
+            current_max_h = f32::max(current_max_h, info.chr.height);
+            current_w = info.x + info.chr.x_advance;
         }
 
+        total_height += current_max_h;
+        total_width = f32::max(total_width, current_w);
 
-        let last_info = chars_info.last().unwrap();
+        TextRenderBox {
+            total_width,
+            total_height,
+        }
+    }
 
-        // use plus chr.width to get the right side
-        line_widths.push((last_info.x + last_info.chr.width)  / screen_box.width);
+    /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered.
+    /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
+    pub fn render_text(&mut self, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, input_scale: f32) {
 
 
-        let height_percent = f32::min(1.0, (line_widths.len() as f32 * self.font.info.line_height) /  screen_box.height);
-        //println!("hp={:?}, lines x lh = {}, box_xheight = {}", height_percent, line_widths.len() as f32 * self.font.info.line_height, screen_box.height);
+        let scale_x = 2.0 / screen_box.screen_w * input_scale;
+
+        let scale_y = 2.0 / screen_box.screen_h * input_scale;
+        let base_scale = 8.0;
+        // TODO: fix this so we always render with correct scale
+        self.setup_shader(gl, base_scale);
+
+        let mut chars_info = Vec::new();
+
+        let render_box = self.calc_char_info(text, screen_box.width, input_scale, &mut chars_info);
+
+
         // map from pixel space into screen space so we are ready to draw
         for info in chars_info.iter_mut() {
-            let line_width = line_widths[info.line_index];
+            let x_offset = match alignment.x {
+                TextAlignmentX::Left => screen_box.x,
+                TextAlignmentX::Center => screen_box.x + (screen_box.width - render_box.total_width) / 2.0,
+                TextAlignmentX::Right => screen_box.x + screen_box.width - render_box.total_width,
+            };
 
-            let x_offset = screen_box.x + (screen_box.width * (1.0 - line_width) / 2.0);
-            let y_offset = screen_box.y + (screen_box.height * (1.0 - height_percent) / 2.0)  + self.font.info.line_height / 4.0;
+            let y_offset = match alignment.y {
+                TextAlignmentY::Top => screen_box.y,
+                TextAlignmentY::Center => screen_box.y + (screen_box.height - render_box.total_height) / 2.0,
+                TextAlignmentY::Bottom =>  screen_box.y + screen_box.height - render_box.total_height,
+            };
 
 
             info.x = info.x + x_offset;
@@ -282,15 +280,14 @@ struct CharPosInfo {
     y: f32,
     chr: PageChar,
     is_newline: bool,
-    line_index: usize
+
 }
 
 
 #[derive(Debug, Clone)]
 pub struct TextRenderBox {
-    pub scale: f32,
-    pub pixel_h: f32,
-    pub pixel_w: f32
+    pub total_width: f32,
+    pub total_height: f32,
 }
 
 
@@ -340,8 +337,9 @@ fn create_shader(gl: &gl::Gl) -> Shader {
 
         float alpha = smoothstep(u_buffer - smoothing, u_buffer + smoothing, dist);
 
-        if(alpha == 0.0)
+        if( alpha == 0.0)
         {
+            //alpha = 0.3;
             discard;
         }
 
