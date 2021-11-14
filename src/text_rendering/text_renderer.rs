@@ -126,8 +126,6 @@ impl TextRenderer {
                 total_height += self.font.info.line_height;
                 total_width = f32::max(current_w, total_width);
                 current_max_h = 0.0;
-                current_w = 0.0;
-
             }
 
 

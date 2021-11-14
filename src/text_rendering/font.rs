@@ -18,6 +18,7 @@ pub struct Font {
     pub image: image::RgbaImage
 }
 
+//TODO: use this to calculate the SDF from TTF https://www.youtube.com/watch?v=LaYPoMPRSlk
 
 impl Font {
 
