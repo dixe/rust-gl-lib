@@ -160,11 +160,9 @@ impl TextRenderer {
 
         let render_box = self.calc_char_info(text, screen_box.width, input_scale, &mut chars_info);
 
-
-
-
         // map from pixel space into screen space so we are ready to draw
         for info in chars_info.iter_mut() {
+
             let x_offset = match alignment.x {
                 TextAlignmentX::Left => screen_box.x,
                 TextAlignmentX::Center => screen_box.x + (screen_box.width - render_box.total_width) / 2.0,

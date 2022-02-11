@@ -41,8 +41,6 @@ impl Program {
             message
         })
 
-
-
     }
 
     pub fn from_shaders(gl: &gl::Gl, shaders: &[ShaderSource]) -> Result<Program, String> {

@@ -23,7 +23,12 @@ impl Shader {
     /// A new shader from vertex and fragment sources
     pub fn new(gl: &gl::Gl, vert_shader: &str, frag_shader: &str) -> Result<Shader, failure::Error> {
 
-        let program = Program::from_text(gl, vert_shader, frag_shader)?;
+        let program = match Program::from_text(gl, vert_shader, frag_shader) {
+            Ok(p) => p,
+            Err(msg) => {
+                panic!("Error compiling shader {:#?}", msg);
+            }
+        };
 
         Ok(Shader {
             program
@@ -67,7 +72,24 @@ impl Shader {
     }
 
 
-    pub fn set_mat4(&self, gl: &gl::Gl, name: &str, data:na::Matrix4<f32>) {
+    pub fn set_vec4(&self, gl: &gl::Gl, name: &str, data: na::Vector4<f32>) {
+        self.program.set_used();
+
+
+        unsafe {
+            let proj_str = std::ffi::CString::new(name).unwrap();
+
+            let proj_loc = gl.GetUniformLocation(
+                self.program.id(),
+                proj_str.as_ptr() as *mut gl::types::GLchar);
+
+
+            gl.Uniform4f(proj_loc, data.x, data.y, data.z, data.w);
+        }
+    }
+
+
+    pub fn set_mat4(&self, gl: &gl::Gl, name: &str, data: na::Matrix4<f32>) {
 
         self.program.set_used();
         unsafe {
@@ -75,7 +97,7 @@ impl Shader {
 
             let proj_loc = gl.GetUniformLocation(self.program.id(), proj_str.as_ptr() as *mut gl::types::GLchar);
 
-            gl.UniformMatrix4fv(proj_loc,1, gl::FALSE, data.as_slice().as_ptr() as *const f32);
+            gl.UniformMatrix4fv(proj_loc, 1, gl::FALSE, data.as_slice().as_ptr() as *const f32);
         }
     }
 

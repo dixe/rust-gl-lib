@@ -18,12 +18,63 @@ pub struct Font {
     pub image: image::RgbaImage
 }
 
+static FONT_TEXT: &str = include_str!("../../assets/fonts/Arial.fnt");
+static FONT_IMG: &[u8; 85355] = include_bytes!("../../assets/fonts/Arial.png");
+
+
+
+impl Default for Font {
+    fn default() -> Self {
+
+        let loaded_img = match image::load_from_memory(FONT_IMG) {
+            Ok(img) => img,
+            Err(err) => panic!("Load default font, creating image failed with: {}", err)
+        };
+
+        let image = loaded_img.into_rgba8();
+
+        match Font::load_font(FONT_TEXT, image) {
+            Ok(font) => font,
+            Err(err) => panic!("Load default font failed with: {}", err)
+        }
+    }
+}
+
 //TODO: use this to calculate the SDF from TTF https://www.youtube.com/watch?v=LaYPoMPRSlk
+
 
 impl Font {
 
     /// Assumes that the png file referred to in the font is located in the same directory as the .fnt file.
-    /// Fonts generated from steps here: <https://github.com/libgdx/libgdx/wiki/Distance-field-fonts>
+    /// Fonts generated from steps here: <https://github.com/libgdx/libgdx/wiki/Distance-field-fonts>]
+
+
+    pub fn load_font(text: &str, mut image: image::RgbaImage) -> Result<Font, Box<dyn Error>> {
+
+        let mut lines = text.lines();
+
+        let info_lines: Vec::<&str> = lines.take_while_ref(|l| !l.starts_with("page ")).collect();
+
+        let info: FontInfo = info_lines.join(" ").parse()?;
+
+        // The rest is page. Maybe assuming single page is an error;
+        let mut page: Page = lines.collect::<Vec<&str>>().join("\n").parse()?;
+
+        image = imageops::flip_vertical(&image);
+
+        // image is flipped so also flip chars
+        for c in &mut page.chars {
+            c.y = image.height() as f32 - c.y;
+        }
+
+        Ok(Font {
+            info,
+            page,
+            image,
+        })
+
+    }
+
     pub fn load_fnt_font(fnt_path: &Path) -> Result<Font, Box<dyn Error>> {
 
         let text = fs::read_to_string(fnt_path)?;

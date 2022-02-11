@@ -1,4 +1,4 @@
-use gl_lib::{ gl, BoxCoords } ;
+use gl_lib::{ gl, ScreenBox } ;
 use gl_lib::text_rendering::{text_renderer, font};
 use failure;
 use std::path::Path;
@@ -61,11 +61,9 @@ fn main() -> Result<(), failure::Error> {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        let x = -1.0;
-        let y = 1.0;
         let scale = 1.0;
-        let coords = BoxCoords { x, y };
-        text_renderer.render_text_with_box(&gl, TEST_TEXT, coords, None, scale);
+        let sb  = ScreenBox::full_screen(width as f32, height as f32);
+        text_renderer.render_text(&gl, TEST_TEXT, Default::default(), sb, scale);
 
         window.gl_swap_window();
     }
