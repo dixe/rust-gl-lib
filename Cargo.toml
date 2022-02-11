@@ -19,6 +19,14 @@ nalgebra = "0.25.4"
 image = "0.23.14"
 walkdir = "2.1"
 itertools = "0.10.1"
+deltatime = { git = "https://github.com/dixe/rust-deltatime" }
+num = "0.4.0"
+
+[dependencies.sdl2]
+version = "0.34.3"
+features = ["bundled", "static-link"]
+
+
 
 [build-dependencies]
 gl_generator = "0.14.0"
@@ -26,6 +34,8 @@ gl_generator = "0.14.0"
 [dev-dependencies.sdl2]
 version = "0.34.3"
 features = ["bundled", "static-link"]
+rand = "0.8.4"
+
 
 [features]
 debug = []

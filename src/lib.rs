@@ -22,6 +22,10 @@ pub mod texture;
 
 
 
+pub mod sdl_gui;
+
+
+
 /// Defines point in ScreenBox x,y in \[0.0; 1.0\]
 /// Top left corner is x=0, y=0
 #[derive(Debug, Copy, Clone)]
