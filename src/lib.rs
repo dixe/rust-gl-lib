@@ -20,8 +20,7 @@ pub mod camera;
 pub mod text_rendering;
 pub mod texture;
 
-
-
+//#[cfg(feature = "sdl_gui")]
 pub mod sdl_gui;
 
 

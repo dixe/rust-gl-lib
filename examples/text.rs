@@ -1,74 +1,64 @@
-use gl_lib::{ gl, ScreenBox } ;
-use gl_lib::text_rendering::{text_renderer, font};
+use gl_lib::*;
+use gl_lib::sdl_gui as gls;
 use failure;
-use std::path::Path;
 
 fn main() -> Result<(), failure::Error> {
-    let sdl = sdl2::init().unwrap();
-    let video_subsystem = sdl.video().unwrap();
-
-    //sdl.mouse().show_cursor(false);
-
-    //sdl.mouse().set_relative_mouse_mode(true);
-
-    let controller_subsystem = sdl.game_controller().unwrap();
-
-    controller_subsystem.set_event_state(true);
-
-    let gl_attr = video_subsystem.gl_attr();
-
-    gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
-    gl_attr.set_context_version(4,5);
 
 
     let width = 800;
     let height = 600;
 
-    let viewport = gl::viewport::Viewport::for_window(width as i32, height as i32);
+    let mut window = gls::window::SdlGlWindow::new("Text window", width, height).unwrap();
 
-    let window = video_subsystem
-        .window("Text example", width, height)
-        .opengl()
-        .resizable()
-        .build()?;
+    window.window_access().set_swap_interval(0);
 
+    window.set_background_color(na::Vector4::new(0.9, 0.9, 0.9, 1.0));
 
+    window.setup_blend();
 
-    let _gl_context = window.gl_create_context().unwrap();
-    let gl = gl::Gl::load_with(|s|{
-        video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
-    });
-
-    viewport.set_used(&gl);
-
-
-    let font_path = Path::new("./assets/fonts/Arial.fnt");
-    let font = font::Font::load_fnt_font(font_path).unwrap();
-    let mut text_renderer = text_renderer::TextRenderer::new(&gl, font);
-
-    text_renderer.setup_blend(&gl);
-
-    unsafe {
-        // Either disable Depth test or set depth funct to LEQUAL
-        gl.Enable(gl::DEPTH_TEST);
-        gl.DepthFunc(gl::LEQUAL);
-        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
-    }
-
+    let mut state = State {};
 
     loop {
+
         unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+            window.gl().Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        let scale = 1.0;
-        let sb  = ScreenBox::full_screen(width as f32, height as f32);
-        text_renderer.render_text(&gl, TEST_TEXT, Default::default(), sb, scale);
 
-        window.gl_swap_window();
+        let time_ms =  1.0 / window.deltatime();
+
+
+        window.render_text(&format!("Fps = {}", time_ms));
+        window.render_text(&TEST_TEXT);
+
+
+        window.update(&mut state);
+
+    }
+}
+
+#[derive(Debug, Clone)]
+enum Message {}
+
+struct State {}
+
+
+impl gls::State<Message> for State {
+
+    fn handle_message(&mut self, _message: &Message, _window_access: &gls::window::WindowComponentAccess) {
+
     }
 
+
+    fn view(&self) -> gls::layout::Node<Message> {
+        use gls::layout::*;
+
+        let col = Column::new();
+
+        col.into()
+    }
 }
+
 
 const TEST_TEXT: &str = r"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec eu hendrerit velit. Vestibulum congue dui id laoreet viverra. Suspendisse ornare, velit in facilisis feugiat, elit orci viverra leo, sit amet consectetur nunc enim non mi. Curabitur sed efficitur lacus. Duis eu viverra nunc. Duis cursus maximus turpis. Aenean a convallis nulla.
 
