@@ -7,7 +7,7 @@ use failure;
 use deltatime;
 use sdl2;
 use crate::sdl_gui::components::container::ComponentContainer;
-use crate::sdl_gui::state::State;
+use crate::sdl_gui::ui::Ui;
 use crate::sdl_gui::layout::engine;
 use std::fmt;
 
@@ -122,6 +122,10 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
         &self.sdl
     }
 
+    pub fn set_swap_interval<S: Into<sdl2::video::SwapInterval>>(&mut self, interval: S) {
+        self.window_component_access.video_subsystem.gl_set_swap_interval(interval.into()).unwrap();
+    }
+
     /// Return time last frame took to render in seconds.
     pub fn deltatime(&self) -> f32 {
         self.deltatime.time()
@@ -133,21 +137,20 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
 
     /// Render components, Swap gl window, update internal delta time and handle sdl_events.
     /// Finish with clearing color_buffer_bit and depth_buffer_bit
-    pub fn update(&mut self, state: &mut dyn State<Message>) {
-        self.update_with_handler(state, empty_handler);
+    pub fn update(&mut self, ui: &mut dyn Ui<Message>) {
+        self.update_with_handler(ui, empty_handler);
     }
 
 
     /// Render components, Swap gl window, update internal delta time and handle sdl_events.
     /// Finish with clearing color_buffer_bit and depth_buffer_bit
     /// Passes remaining sdl events to the given handle closure
-    pub fn update_with_handler(&mut self, state: &mut dyn State<Message>, event_handler: impl FnMut(sdl2::event::Event)) {
-
+    pub fn update_with_handler(&mut self, ui: &mut dyn Ui<Message>, event_handler: impl FnMut(sdl2::event::Event)) {
 
         if self.container_dirty {
             let mut cont = ComponentContainer::new();
             let size = (&self.viewport).into();
-            let aligned_tree = engine::align_tree(state.view(), size, &self.text_renderer);
+            let aligned_tree = engine::align_tree(ui.view(), size, &self.text_renderer);
 
             engine::add_tree_to_container(&self.gl, &mut cont, &aligned_tree);
 
@@ -165,13 +168,13 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
 
         self.window.gl_swap_window();
         self.deltatime.update();
-        self.handle_events(event_handler);
+        self.handle_events(ui);
 
-        // handle state update
+        // handle ui update
 
         let mut popped_msg = self.container.messages.pop_front();
         while let Some(msg) = popped_msg {
-            state.handle_message(&msg, &self.window_component_access);
+            ui.handle_message(&msg, &self.window_component_access);
             self.container_dirty = true;
 
             popped_msg = self.container.messages.pop_front();
@@ -221,7 +224,7 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
 
     }
 
-    fn handle_events(&mut self, mut event_handler: impl FnMut(sdl2::event::Event)) {
+    fn handle_events(&mut self, ui: &mut dyn Ui<Message>) {
 
         use sdl2::event::Event;
         for event in self.event_pump.poll_iter() {
@@ -242,7 +245,7 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
             };
 
             self.container.handle_sdl_event(event.clone());
-            event_handler(event);
+            ui.handle_events(event);
         }
     }
 }

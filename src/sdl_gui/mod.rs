@@ -3,8 +3,8 @@ pub mod components;
 
 pub mod layout;
 
-mod state;
+mod ui;
 
-pub use self::state::*;
+pub use self::ui::*;
 
 pub use sdl2;
