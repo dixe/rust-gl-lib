@@ -14,7 +14,7 @@ pub trait Ui<Message> where Message: fmt::Debug {
     /// Define the view of this UI
     fn view(&self) -> Node<Message>;
 
-    fn handle_sdl_event(&mut self, event: sdl2::event::Event) {
+    fn handle_sdl_event(&mut self, _event: sdl2::event::Event) {
 
     }
 

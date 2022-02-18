@@ -39,7 +39,7 @@ struct World {
     v_sync_on: bool
 }
 
-impl gls::State<Message> for World {
+impl gls::Ui<Message> for World {
 
     fn handle_message(&mut self, message: &Message, window_access: &gls::window::WindowComponentAccess) {
 

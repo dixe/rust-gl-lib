@@ -39,7 +39,7 @@ struct World {
     pub total: i32
 }
 
-impl gls::State<Message> for World {
+impl gls::Ui<Message> for World {
 
 
     fn handle_message(&mut self, message: &Message, _window_access: &gls::window::WindowComponentAccess) {

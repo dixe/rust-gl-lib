@@ -42,7 +42,7 @@ struct Ui {
     next: Option<na::Vector2::<i32>>
 }
 
-impl gls::State<Message> for Ui {
+impl gls::Ui<Message> for Ui {
 
     fn handle_message(&mut self, message: &Message, _window_access: &gls::window::WindowComponentAccess) {
 

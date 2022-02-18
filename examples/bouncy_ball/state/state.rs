@@ -33,12 +33,11 @@ impl State {
     }
 
 
-    pub fn handle_events(&mut self, event: sdl2::event::Event) {
+    pub fn handle_sdl_event(&mut self, event: sdl2::event::Event) {
         use sdl2::event::Event;
 
-
         match event {
-            Event::MouseButtonDown {mouse_btn, x, y, ..} => {
+            Event::MouseButtonDown { x, y, ..} => {
                 self.color = Color::new(x as f32 / 600.0, y as f32 / 600.0, 0.0);
             },
             _ => {}

@@ -36,7 +36,7 @@ struct State {
 
 }
 
-impl gls::State<Message> for State {
+impl gls::Ui<Message> for State {
 
     fn handle_message(&mut self, _message: &Message, _window_access: &gls::window::WindowComponentAccess) {
     }

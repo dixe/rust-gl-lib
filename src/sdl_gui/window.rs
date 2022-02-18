@@ -138,15 +138,6 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
     /// Render components, Swap gl window, update internal delta time and handle sdl_events.
     /// Finish with clearing color_buffer_bit and depth_buffer_bit
     pub fn update(&mut self, ui: &mut dyn Ui<Message>) {
-        self.update_with_handler(ui, empty_handler);
-    }
-
-
-    /// Render components, Swap gl window, update internal delta time and handle sdl_events.
-    /// Finish with clearing color_buffer_bit and depth_buffer_bit
-    /// Passes remaining sdl events to the given handle closure
-    pub fn update_with_handler(&mut self, ui: &mut dyn Ui<Message>, event_handler: impl FnMut(sdl2::event::Event)) {
-
         if self.container_dirty {
             let mut cont = ComponentContainer::new();
             let size = (&self.viewport).into();
@@ -245,12 +236,6 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
             };
 
             self.container.handle_sdl_event(event.clone());
-            ui.handle_events(event);
+            ui.handle_sdl_event(event);
         }
-    }
-}
-
-
-fn empty_handler( _:sdl2::event::Event) {
-
-}
+    }}

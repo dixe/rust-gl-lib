@@ -51,7 +51,7 @@ impl gls::Ui<Message> for state::State {
     }
 
 
-    fn handle_events(&mut self, event: sdl2::event::Event) {
-        self.handle_events(event);
+    fn handle_sdl_event(&mut self, event: sdl2::event::Event) {
+        self.handle_sdl_event(event);
     }
 }

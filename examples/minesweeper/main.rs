@@ -157,7 +157,7 @@ impl Default for GameLogic {
 
 
 
-impl gls::State<Message> for GameLogic {
+impl gls::Ui<Message> for GameLogic {
 
     fn handle_message(&mut self, message: &Message, _window_access: &gls::window::WindowComponentAccess) {
 
