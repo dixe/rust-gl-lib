@@ -1,6 +1,6 @@
-use gl_lib::{gl, objects::square, shader};
 use failure;
-
+use gl_lib::{gl, objects::square, shader};
+use image::{Rgba, RgbaImage};
 
 fn main() -> Result<(), failure::Error> {
     // Init sdl to use opengl
@@ -10,8 +10,7 @@ fn main() -> Result<(), failure::Error> {
     let gl_attr = video_subsystem.gl_attr();
 
     gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
-    gl_attr.set_context_version(4,5);
-
+    gl_attr.set_context_version(4, 5);
 
     // Create a window that opengl can draw to
     let width = 800;
@@ -25,10 +24,9 @@ fn main() -> Result<(), failure::Error> {
         .resizable()
         .build()?;
 
-
     // Load gl functions and set to sdl video subsystem
     let _gl_context = window.gl_create_context().unwrap();
-    let gl = gl::Gl::load_with(|s|{
+    let gl = gl::Gl::load_with(|s| {
         video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
     });
     viewport.set_used(&gl);
@@ -39,28 +37,37 @@ fn main() -> Result<(), failure::Error> {
     // and a default square
     let square = square::Square::new(&gl);
 
-
     shader.set_used();
     square.render(&gl);
 
     window.gl_swap_window();
 
-    let size = (height * width *  3) as usize;
+    let size = (height * width * 4) as usize;
 
-    let screenshot_buffer = vec![0.0; size];
+    let screenshot_buffer: Vec::<u8> = vec![0; size];
 
     unsafe {
         gl.ReadBuffer(gl::FRONT);
-        gl.ReadPixels(0,0,width as i32, height as i32, gl::RGB, gl::FLOAT, screenshot_buffer.as_ptr() as *mut std::os::raw::c_void);
+        gl.ReadPixels(
+            0,
+            0,
+            width as i32,
+            height as i32,
+            gl::RGBA,
+            gl::UNSIGNED_BYTE,
+            screenshot_buffer.as_ptr() as *mut std::os::raw::c_void,
+        );
     }
 
-    let mut sum = 0.0;
-    for i in 0..size {
-        sum += screenshot_buffer[i];
+    let mut img = RgbaImage::new(width, height);
+
+    for y in 0..height {
+        for x in 0..width {
+            let i : usize = (y * 4 * width + x * 4) as usize;
+            img.put_pixel(x, y, Rgba([screenshot_buffer[i], screenshot_buffer[i + 1], screenshot_buffer[i + 2], screenshot_buffer[i + 3]]));
+        }
     }
 
-    println!("{:?}", sum);
-
-
+    img.save("screenshot.png").unwrap();
     Ok(())
 }

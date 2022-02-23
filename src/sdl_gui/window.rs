@@ -6,7 +6,7 @@ use crate::text_rendering::{text_renderer, font};
 use failure;
 use deltatime;
 use sdl2;
-use crate::sdl_gui::components::container::ComponentContainer;
+use crate::sdl_gui::components::container::{ComponentContainer, HandleRes};
 use crate::sdl_gui::ui::Ui;
 use crate::sdl_gui::layout::engine;
 use std::fmt;
@@ -235,7 +235,10 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
                 _ => {}
             };
 
-            self.container.handle_sdl_event(event.clone());
-            ui.handle_sdl_event(event);
+            match self.container.handle_sdl_event(event.clone()) {
+                HandleRes::Unused => ui.handle_sdl_event(event),
+                HandleRes::Consumed => {}
+            }
         }
-    }}
+    }
+}
