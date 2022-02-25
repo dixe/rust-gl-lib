@@ -12,16 +12,16 @@ pub type Polygon = Vec<Point>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Triangulation {
-    triangles: Vec<Triangle>,
-    polygon: Polygon,
+    pub triangles: Vec<Triangle>,
+    pub polygon: Polygon,
 }
 
 /// Indexes into a points vec
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Triangle {
-    p0: usize,
-    p1: usize,
-    p2: usize,
+    pub p0: usize,
+    pub p1: usize,
+    pub p2: usize,
 }
 
 

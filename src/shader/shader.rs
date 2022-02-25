@@ -126,26 +126,7 @@ impl Shader {
         }
     }
 
-    /// Creates a basic default shader
-    pub fn default_shader(gl: &gl::Gl) -> Result<Shader, failure::Error> {
 
-        // default program for square
-        let vert_source = r"#version 330 core
-                                   layout (location = 0) in vec3 aPos;
-                                   void main()
-                                   {
-                                       gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
-                                   }";
-
-        let frag_source = r"#version 330 core
-                    out vec4 FragColor;
-                    void main()
-                    {
-                        FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
-                    }";
-
-        Shader::new(gl, vert_source, frag_source)
-    }
 
 
     /// a default shader for rendering a bezier curve

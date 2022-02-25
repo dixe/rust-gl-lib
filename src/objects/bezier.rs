@@ -98,16 +98,3 @@ impl Bezier {
         self.vao.unbind();
     }
 }
-
-
-/*
-fn bezier_quad(p0: na::Vector2::<f32>, p1: na::Vector2::<f32>, p2: na::Vector2::<f32>, t: f32) -> na::Vector2::<f32> {
-p1 + (1.0 - t)* (1.0 - t) * (p0 - p1) + t*t * (p2-p1)
-}
-
-*/
-/*
-fn bezier_cube(curve: &Curve, t: f32) -> na::Vector2::<f32> {
-(1.0 -t) * bezier_quad(curve.p0, curve.p1, curve.p2, t) + t * bezier_quad(curve.p1, curve.p2, curve.p3, t)
-}
-*/

@@ -1,6 +1,9 @@
 use crate::buffer;
 use crate::gl;
 use crate::shader::Shader;
+use nalgebra as na;
+use na::vector;
+
 
 use failure;
 
@@ -110,4 +113,29 @@ void main()
 
         self.vao.unbind();
     }
+
+    pub fn line_2d_transform(from_world: na::Vector2::<f32>, to_world: na::Vector2::<f32>, screen_w: f32, screen_h: f32, width: f32) -> na::Matrix4::<f32> {
+        // use X axis as the long axis, scale y and z to width
+        let screen_from = na::Vector2::new(from_world.x/screen_w * 2.0 - 1.0, from_world.y/screen_h * 2.0 - 1.0);
+        let screen_to = na::Vector2::new(to_world.x/screen_w * 2.0 - 1.0, to_world.y/screen_h * 2.0 - 1.0);
+
+
+        let diff = screen_to - screen_from;
+        let dist = diff.magnitude();
+
+        let s = na::geometry::Scale3::new(dist, width, width);
+
+        let trans = (screen_to + screen_from) / 2.0;
+
+
+        let t = na::geometry::Translation3::new(trans.x, trans.y * - 1.0, 0.0);
+
+        let angle = -(diff.y / diff.x).atan();
+        let r = na::geometry::Rotation3::new(vector![0.0, 0.0, angle]);
+
+        t.to_homogeneous() * r.to_homogeneous() * s.to_homogeneous()
+
+
+    }
+
 }

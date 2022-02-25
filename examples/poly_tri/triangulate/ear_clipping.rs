@@ -84,35 +84,48 @@ fn same_side(point: &na::Vector3::<f32>, ref_point: &na::Vector3::<f32>, a: &na:
 
 // https://www.geometrictools.com/Documentation/TriangulationByEarClipping.pdf
 /// Assume right handed polygon
-pub fn triangulate_ear_clipping(poly: &Polygon) -> Triangulation {
+pub fn triangulate_ear_clipping(input_poly: &Polygon) -> Triangulation {
 
-    let mut list = NodeList::new(poly);
+    let mut polygon = input_poly.clone();
+    let mut num_wide = 0;
+
+    for i in 1..polygon.len() {
+
+        let v1_i = (i + 1) % polygon.len();
+        let v2_i = (i + 2) % polygon.len();
+
+        let v0 = polygon[i].to_vec3();
+        let v1 = polygon[v1_i].to_vec3();
+        let v2 = polygon[v2_i].to_vec3();
+
+        if is_wide_angle(&v0, &v1, &v2) {
+              num_wide += 1;
+        }
+
+    }
+
+
+    if num_wide > (polygon.len()  /2) {
+        polygon.reverse();
+    }
+
+    let mut list = NodeList::new(&polygon);
 
     let ears = find_ears(&list);
 
-/*    if ears.len() == 0 && poly.len() >= 3 {
-        // //try to flip vertices direction
-        let rev = poly.clone();
-        rev.reverse();
-        list = NodeList::new(&rev);
-    }
-*/
-
-
-    println!("{:#?}", ears);
     let mut triangles = vec![];
+
+
     while list.len() >= 3 && list.nodes[list.head].next != list.head  {
 
         let mut ears = find_ears(&list);
-
-        println!("{:#?}", ears);
 
         triangles.push(to_ear_tri(&list, ears[0]));
 
         list.remove_at(ears[0]);
     }
 
-    Triangulation { polygon: poly.clone(), triangles }
+    Triangulation { polygon, triangles }
 }
 
 fn to_ear_tri(poly: &NodeList, index: usize) -> Triangle {
