@@ -1,5 +1,6 @@
 use nalgebra as na;
 use crate::gl;
+use crate::color::*;
 
 mod program;
 mod shader;
@@ -8,11 +9,6 @@ pub use self::shader::*;
 use self::program::*;
 
 //TODO: Maybe move to other place
-pub enum Color {
-    Rgb(u8, u8, u8),
-    RgbA(u8, u8, u8, u8)
-}
-
 
 pub trait TransformationShader {
     fn set_transform(&self, transform: na::Matrix4::<f32>);
@@ -24,18 +20,18 @@ pub trait ColorShader {
 }
 
 
-pub struct BasicShader {
+pub struct PosShader {
     pub shader: Shader,
     gl: gl::Gl
 }
 
-impl BasicShader {
-    /// Creates a basic default shader
+impl PosShader {
+    /// Creates a basic shader with only position data from
+    /// Can set uniform color
     pub fn new(gl: &gl::Gl) -> Result<Self, failure::Error> {
 
            let vert_source = r"#version 330 core
 layout (location = 0) in vec3 aPos;
-
 uniform mat4 transform;
 
 void main()
@@ -51,23 +47,69 @@ void main()
                         FragColor = uColor;
                     }";
 
-        Shader::new(gl, vert_source, frag_source).map(|s| BasicShader { gl: gl.clone(), shader:s})
+        Shader::new(gl, vert_source, frag_source).map(|s| PosShader { gl: gl.clone(), shader:s})
     }
 }
 
-impl TransformationShader for BasicShader {
+impl TransformationShader for PosShader {
     fn set_transform(&self, transform: na::Matrix4::<f32>) {
         self.shader.set_mat4(&self.gl, "transform", transform);
     }
 }
 
-impl ColorShader for BasicShader {
+impl ColorShader for PosShader {
     fn set_color(&self, color: Color) {
-        let col = match color {
-            Color::Rgb(r,g,b) => na::Vector4::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0),
-            Color::RgbA(r,g,b,a) => na::Vector4::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, a as f32 / 255.0),
-        };
+        let col = color.as_vec4();
 
         self.shader.set_vec4(&self.gl, "uColor", col);
+    }
+}
+
+
+pub struct PosColorShader {
+    pub shader: Shader,
+    gl: gl::Gl
+}
+
+impl PosColorShader {
+    /// Creates shader with position and color from vertices data
+    pub fn new(gl: &gl::Gl) -> Result<Self, failure::Error> {
+
+           let vert_source = r"#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec4 aColor;
+
+uniform mat4 transform;
+
+out VS_OUTPUT {
+        vec4 Color;
+    } OUT;
+
+void main()
+{
+    OUT.Color = aColor;
+    gl_Position = transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);
+}";
+
+        let frag_source = r"#version 330 core
+                    out vec4 FragColor;
+
+in VS_OUTPUT {
+        vec4 Color;
+    } IN;
+
+                    void main()
+                    {
+                        vec4 c = IN.Color;
+                        FragColor = IN.Color;
+                    }";
+
+        Shader::new(gl, vert_source, frag_source).map(|s| PosColorShader { gl: gl.clone(), shader:s})
+    }
+}
+
+impl TransformationShader for PosColorShader {
+    fn set_transform(&self, transform: na::Matrix4::<f32>) {
+        self.shader.set_mat4(&self.gl, "transform", transform);
     }
 }

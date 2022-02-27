@@ -116,8 +116,8 @@ void main()
 
     pub fn line_2d_transform(from_world: na::Vector2::<f32>, to_world: na::Vector2::<f32>, screen_w: f32, screen_h: f32, width: f32) -> na::Matrix4::<f32> {
         // use X axis as the long axis, scale y and z to width
-        let screen_from = na::Vector2::new(from_world.x/screen_w * 2.0 - 1.0, from_world.y/screen_h * 2.0 - 1.0);
-        let screen_to = na::Vector2::new(to_world.x/screen_w * 2.0 - 1.0, to_world.y/screen_h * 2.0 - 1.0);
+        let screen_from = na::Vector2::new(from_world.x/screen_w * 2.0 - 1.0, (screen_h - from_world.y)/screen_h * 2.0 - 1.0);
+        let screen_to = na::Vector2::new(to_world.x/screen_w * 2.0 - 1.0, (screen_h - to_world.y)/screen_h * 2.0 - 1.0);
 
 
         let diff = screen_to - screen_from;

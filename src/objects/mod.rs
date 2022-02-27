@@ -12,3 +12,5 @@ pub mod cube;
 pub mod bezier;
 
 pub mod char_quad;
+
+pub mod polygon;
