@@ -9,7 +9,7 @@ pub fn char_to_poly(chr: char, face: &ttf_parser::Face, screen_w: f32, screen_h:
     let g_id = face.glyph_index(chr).unwrap();
 
     let mut builder = ConturBuilder(vec![]);
-    let bbox = face.outline_glyph(g_id, &mut builder).unwrap();
+    let _bbox = face.outline_glyph(g_id, &mut builder).unwrap();
 
     let scale = 0.4;
     let mut res = vec![];
@@ -28,11 +28,11 @@ pub fn char_to_poly(chr: char, face: &ttf_parser::Face, screen_w: f32, screen_h:
                 add_scaled(p, &mut current_poly, scale, x_offset, y_offset);
                 cur_p = *p;
             },
-            Segment::Curve(p0, p1, p2) => {
+            Segment::Curve(p0, _p1, p2) => {
 
                 add_scaled(p0, &mut current_poly, scale, x_offset, y_offset);
-                for i in 0..=samples {
-                    println!("{:?}", i);
+                for _i in 1..=samples {
+                    todo!("Do correct correct CUBE BEZIER (Curve)");
                 }
 
                 cur_p = *p2;

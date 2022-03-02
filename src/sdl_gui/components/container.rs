@@ -113,7 +113,7 @@ where
                     Some(hover_no_match),
                 );
             }
-            Event::KeyDown {keycode, keymod,..} => {
+            Event::KeyDown {keycode, ..} => {
                 if let Some(focus_id) = self.focused_component {
                     // only check if anything is in focus
                     if let Some(kc) = keycode {

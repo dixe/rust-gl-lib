@@ -28,7 +28,7 @@ impl<'a> NodeList<'a> {
 
         let mut list = NodeList{ head: 0, nodes: vec![], points: poly, len: poly.len() };
 
-        for p in poly {
+        for _ in poly {
             list.push_end();
         }
 
@@ -43,8 +43,7 @@ impl<'a> NodeList<'a> {
             self.head = self.nodes[index].next;
         }
 
-        let len = self.nodes.len();
-        let mut n = &mut self.nodes[index];
+        let mut n = &mut self.nodes[index];0
         let n_prev = n.prev;
         let n_next = n.next;
 
@@ -84,6 +83,8 @@ impl<'a> NodeList<'a> {
         }
     }
 
+    // used for debugging
+    #[allow(dead_code)]
     fn print(&self) {
         for (i, node) in self.nodes.iter().enumerate() {
             println!("{} <- {:?} -> {}", node.prev, i, node.next);

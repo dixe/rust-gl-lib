@@ -48,14 +48,13 @@ fn main() -> Result<(), failure::Error> {
             triangulations: vec![],
             filled_polys: vec![],
         }),
-        triangulation: None,
         face
     };
 
     let point_square = gl_lib::objects::square::Square::new(gl);
-    let mut shader = gl_lib::shader::PosShader::new(gl).unwrap();
+    let shader = gl_lib::shader::PosShader::new(gl).unwrap();
 
-    let mut polygon_shader = gl_lib::shader::PosColorShader::new(gl).unwrap();
+    let polygon_shader = gl_lib::shader::PosColorShader::new(gl).unwrap();
 
     let line_drawer = LineDrawer {
         gl,
@@ -127,7 +126,6 @@ fn transform_2d(scale: f32, location: Point, window_w: f32, window_h: f32) -> na
 struct Model<'a> {
     mode: Mode,
     gl: gl::Gl,
-    triangulation: Option<Triangulation>,
     face: ttf_parser::Face<'a>,
 }
 
@@ -190,7 +188,7 @@ impl Mode {
             }
             Mode::Glyph(ref mut model) => {
                 model.filled_polys.clear();
-                for (i, triang) in model.triangulations.iter().enumerate() {
+                for triang in &model.triangulations {
                     let color = if triang.dir == Direction::Right {
                         Color::Rgb(0, 0, 0)
                     } else {
@@ -253,9 +251,6 @@ fn render_poly(poly: &Polygon, render_info: &RenderInfo) {
 
     if poly.len() > 1 {
         render_info.shader.set_color(Color::Rgb(0, 0, 0));
-        let mut cur = 0;
-        let mut next = 1;
-
         for i in 0..poly.len() {
             let next = (i + 1) % poly.len();
 
@@ -288,8 +283,6 @@ fn render_triangulation(triang: &Triangulation, render_info: &RenderInfo) {
 }
 
 fn render_draw(model: &DrawModel, render_info: &RenderInfo) {
-    let gl = render_info.gl;
-
     render_info.shader.set_color(Color::Rgb(52, 235, 225));
 
     render_poly(&model.poly, render_info);
@@ -436,6 +429,8 @@ fn create_filled_poly_packed(
     gl_lib::objects::polygon::Polygon::new(gl, &indices, &vertices, Some(&colors))
 }
 
+
+#[allow(dead_code)]
 fn create_filled_poly_indiv_triangles(
     gl: &gl::Gl,
     triang: &Triangulation,

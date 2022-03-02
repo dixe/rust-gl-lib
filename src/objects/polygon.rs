@@ -1,10 +1,6 @@
 use crate::buffer;
 use crate::color::Color;
 use crate::gl;
-use crate::shader::Shader;
-use failure;
-use na::vector;
-use nalgebra as na;
 
 pub struct Polygon {
     vao: buffer::VertexArray,
@@ -31,10 +27,12 @@ impl Polygon {
 
         let mut data = vec![];
 
-                let mut stride = 3;
+        let mut stride = 3;
+        let mut has_color = false;
 
         let mut data_ref = vertices;
         if let Some(ref c) = colors {
+            has_color = true;
             stride += 4;
             assert_eq!(
                 vertices.len() / 3,
@@ -94,8 +92,7 @@ impl Polygon {
             gl.EnableVertexAttribArray(0);
 
             // Color if any
-
-            if let Some(cl) = colors {
+            if has_color {
                 // Use asnwer for subData maybe
                 gl.VertexAttribPointer(
                     1,

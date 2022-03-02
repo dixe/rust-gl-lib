@@ -1,12 +1,11 @@
 use crate::sdl_gui::layout::*;
 use crate::sdl_gui::components::base::*;
 use crate::sdl_gui::components::text_box as comp_text_box;
-use crate::sdl_gui::layout::attributes::{self, Length, LengthConstraint, Attributes, Attribute, AlignmentY, AlignmentX};
+use crate::sdl_gui::layout::attributes::Attributes;
 use crate::text_rendering::{ text_renderer::TextRenderer };
 use crate::gl;
 use crate::sdl_gui::layout::node::Node;
 use std::fmt;
-use num;
 
 
 #[derive(Clone, Debug)]

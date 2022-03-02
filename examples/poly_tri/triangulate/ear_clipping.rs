@@ -3,12 +3,9 @@ use crate::triangulate::*;
 use crate::triangulate::node_list::*;
 
 fn find_ears(poly: &NodeList) -> Vec<usize> {
-    let points = &poly.points;
 
     let mut ears = vec![];
 
-    let start = poly.head;
-    let mut cur = poly.head;
     for node_i in poly.into_iter() {
         if is_ear_tip(poly, node_i) {
             ears.push(node_i);
@@ -20,7 +17,6 @@ fn find_ears(poly: &NodeList) -> Vec<usize> {
 
 fn is_ear_tip(poly: &NodeList, index: usize) -> bool {
 
-    let total = poly.points.len();
     let left = poly.nodes[index].prev;
     let middle = index;
     let right = poly.nodes[index].next;
@@ -114,14 +110,12 @@ pub fn triangulate_ear_clipping(input_poly: &Polygon) -> Triangulation {
 
     let mut list = NodeList::new(&polygon);
 
-    let ears = find_ears(&list);
 
     let mut triangles = vec![];
 
-
     while list.len() >= 3 && list.nodes[list.head].next != list.head  {
 
-        let mut ears = find_ears(&list);
+        let ears = find_ears(&list);
 
         triangles.push(to_ear_tri(&list, ears[0]));
 

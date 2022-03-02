@@ -1,6 +1,6 @@
 pub use crate::sdl_gui::components::base::*;
 use crate::text_rendering::{ text_renderer::TextRenderer };
-use crate::{gl, shader::{Shader, TransformationShader}, objects::square, ScreenBox};
+use crate::{gl, shader::TransformationShader, objects::square, ScreenBox};
 use std::fmt;
 use crate::shader::rounded_rect_shader::{RoundedRectShader, Uniforms};
 
