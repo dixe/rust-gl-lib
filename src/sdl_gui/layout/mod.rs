@@ -15,6 +15,9 @@ pub use self::button::*;
 mod element;
 pub use self::element::*;
 
+mod text_box;
+pub use self::text_box::*;
+
 mod node;
 pub use self::node::*;
 
@@ -26,7 +29,8 @@ pub struct RealizedSize {
     pub x: f32,
     pub y: f32,
     pub width: f32,
-    pub height: f32
+    pub height: f32,
+    pub disabled: bool
 }
 
 
@@ -37,7 +41,8 @@ impl From<&viewport::Viewport> for RealizedSize {
             x: 0.0,
             y: 0.0,
             width: viewport.w as f32,
-            height: viewport.h as f32
+            height: viewport.h as f32,
+            disabled: false
         }
     }
 }
@@ -52,7 +57,8 @@ impl From<engine::Size> for RealizedSize {
             x: 0.0,
             y: 0.0,
             width: size.w,
-            height: size.h
+            height: size.h,
+            disabled: false
         }
 
     }

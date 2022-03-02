@@ -69,6 +69,11 @@ impl gls::Ui<Message> for World {
                       .width(Px(140))
                       .height(Px(100))
                  )
+                 .add(Button::new( "Center 1\nmetrol 2", Some(Message::Add))
+
+                      .width(Px(140))
+                      .height(Px(100))
+                 )
             );
 
         col.into()

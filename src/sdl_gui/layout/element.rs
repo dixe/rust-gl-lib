@@ -15,7 +15,6 @@ pub enum Direction {
 
 pub trait Element<Message> : fmt::Debug where Message: fmt::Debug {
 
-
     fn name(&self) -> String;
 
     fn height_children(&self) -> i32 {
@@ -130,7 +129,6 @@ pub trait Element<Message> : fmt::Debug where Message: fmt::Debug {
         self.add_attribute(Attribute::Height(h))
     }
 
-
     fn max_width<T: num::NumCast>(self, max: T) -> Self where Self: Sized {
         self.add_attribute(Attribute::WidthConstraint(LengthConstraint::Max(num::cast(max).unwrap())))
     }
@@ -192,6 +190,10 @@ pub trait Element<Message> : fmt::Debug where Message: fmt::Debug {
 
     fn align_right(self) -> Self where Self: Sized {
         self.add_attribute(Attribute::AlignmentX(AlignmentX::Right))
+    }
+
+    fn disabled(self, is_disabled: bool) -> Self where Self: Sized {
+        self.add_attribute(Attribute::Disabled(is_disabled))
     }
 
     fn add_attribute(mut self, attribute: Attribute) -> Self where Self: Sized {
@@ -261,8 +263,11 @@ pub trait Element<Message> : fmt::Debug where Message: fmt::Debug {
             AlignmentY(y) => {
                 cur.align.y = y;
             },
-
+            Attribute::Disabled(is_disabled) => {
+                cur.disabled = is_disabled;
+            }
         };
+
         self
     }
 }

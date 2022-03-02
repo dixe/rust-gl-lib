@@ -14,7 +14,15 @@ pub type Polygon = Vec<Point>;
 pub struct Triangulation {
     pub triangles: Vec<Triangle>,
     pub polygon: Polygon,
+    pub dir: Direction
 }
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Direction {
+    Right,
+    Left
+}
+
 
 /// Indexes into a points vec
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -26,7 +34,6 @@ pub struct Triangle {
 
 
 trait ToVec3 {
-
     fn to_vec3(&self) -> na::Vector3::<f32>;
 }
 

@@ -65,9 +65,6 @@ impl Polygon {
             data_ref = &data;
         }
 
-        println!("{:?}", data_ref);
-
-
         unsafe {
             // 1
             vao.bind();

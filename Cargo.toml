@@ -31,6 +31,7 @@ features = ["bundled", "static-link"]
 [dev-dependencies]
 rand = "0.8.4"
 image = "0.23.14"
+ttf-parser = "0.14.0"
 
 
 [build-dependencies]

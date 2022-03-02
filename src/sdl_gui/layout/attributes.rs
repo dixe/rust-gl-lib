@@ -6,7 +6,8 @@ pub struct Attributes {
     pub height_constraint: LengthConstraint,
     pub align: Alignment,
     pub padding: Padding,
-    pub spacing: Spacing
+    pub spacing: Spacing,
+    pub disabled: bool
 }
 
 
@@ -87,7 +88,7 @@ pub enum Attribute {
     Alignment(Alignment),
     AlignmentX(AlignmentX),
     AlignmentY(AlignmentY),
-
+    Disabled(bool)
 }
 
 #[derive(Debug, Clone, Copy, Default)]

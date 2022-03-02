@@ -12,9 +12,11 @@ pub enum ComponentEvent {
     Clicked(ClickType, na::Vector2::<i32>),
     Hover,
     HoverEnd,
+    AlphaNumChar(char)
 }
 
-#[derive(Debug,Clone,Copy)]
+
+#[derive(Debug,Clone,Copy, PartialEq)]
 pub enum ClickType {
     Left,
     Right,
@@ -35,18 +37,20 @@ pub struct ComponentBase {
     pub y: f32,
     pub level: Level,
     pub hover: bool,
+    pub disabled: bool
 }
 
 
 impl ComponentBase {
-    pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
+    pub fn new(x: f32, y: f32, width: f32, height: f32, disabled: bool) -> Self {
         Self {
             width,
             height,
             x,
             y,
             hover: false,
-            level: 0 ,
+            level: 0,
+            disabled
         }
     }
 
@@ -65,6 +69,14 @@ impl ComponentBase {
 
     pub fn height(&self) -> f32 {
         self.height
+    }
+
+    pub fn color_scale(&self) -> f32 {
+        let mut cs = if self.hover { 0.6 } else { 1.0 };
+        if self.disabled {
+            cs = 0.4;
+        }
+        cs
     }
 
     pub fn unit_square_transform_matrix(&self, screen_w: f32, screen_h: f32) -> na::Matrix4::<f32> {
@@ -102,7 +114,7 @@ impl ComponentBase {
 
 impl From<layout::RealizedSize> for ComponentBase {
     fn from(rs: layout::RealizedSize) -> Self {
-        Self::new(rs.x, rs.y, rs.width, rs.height)
+        Self::new(rs.x, rs.y, rs.width, rs.height, rs.disabled)
     }
 }
 
@@ -129,7 +141,16 @@ pub trait ComponentTrait<Message>: Debug where Message: Clone {
         if x >= self.base().x && x <= self.base().x + self.base().width && y >= self.base().y && y <= self.base().y + self.base().height {
             return OnTop::OnTop(self.base().level)
         }
+
         OnTop::No
+    }
+
+    fn focus_on_click(&self) -> bool {
+        false
+    }
+
+    fn disabled(&self) -> bool {
+        self.base().disabled
     }
 
     fn render(&self, gl: &gl::Gl, tr: &mut TextRenderer, render_square: &square::Square, screen_w: f32, screen_h: f32);

@@ -47,7 +47,7 @@ pub struct SdlGlWindow<Message> {
     window_component_access: WindowComponentAccess,
     container: ComponentContainer<Message>,
     container_dirty: bool,
-    last_mouse_event: Option<sdl2::event::Event>
+    last_mouse_event: Option<sdl2::event::Event>,
 }
 
 
@@ -166,6 +166,7 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
         let mut popped_msg = self.container.messages.pop_front();
         while let Some(msg) = popped_msg {
             ui.handle_message(&msg, &self.window_component_access);
+            //TODO: Figure out when to set dirty. Setting dirty redraws the whole ui, clearing focus and thus breaks
             self.container_dirty = true;
 
             popped_msg = self.container.messages.pop_front();
@@ -231,7 +232,7 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
                 },
                 Event::MouseMotion {..}  => {
                     self.last_mouse_event = Some(event.clone());
-                }
+                },
                 _ => {}
             };
 

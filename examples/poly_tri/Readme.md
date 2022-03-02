@@ -11,4 +11,6 @@ This example might be part of the library if it proves useful and turn out with 
 
 # MileStones
 
-- [ ] triangulate Monotone polygon
+- [x] Triangulate Monotone polygon
+- [ ] Load curves
+- [ ] Triangulate Curves

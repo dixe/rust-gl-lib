@@ -15,7 +15,8 @@ impl From<LayoutElement> for RealizedSize {
             x: layout.position.x,
             y: layout.position.y,
             width: layout.content_size.w,
-            height: layout.content_size.h
+            height: layout.content_size.h,
+            disabled: layout.attributes.disabled
         }
 
     }
@@ -48,6 +49,7 @@ pub struct EngineAttributes {
     pub spacing: Spacing,
     pub children_width_count: i32,
     pub children_height_count: i32,
+    pub disabled: bool
 }
 
 
@@ -73,7 +75,8 @@ impl LayoutElement {
                 padding: attributes.padding,
                 spacing: attributes.spacing,
                 children_width_count,
-                children_height_count
+                children_height_count,
+                disabled: attributes.disabled,
             },
             content_size,
             position: Point::default(),

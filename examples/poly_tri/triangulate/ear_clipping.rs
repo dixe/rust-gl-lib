@@ -89,6 +89,7 @@ pub fn triangulate_ear_clipping(input_poly: &Polygon) -> Triangulation {
     let mut polygon = input_poly.clone();
     let mut num_wide = 0;
 
+    let mut dir = Direction::Right;
     for i in 1..polygon.len() {
 
         let v1_i = (i + 1) % polygon.len();
@@ -105,9 +106,11 @@ pub fn triangulate_ear_clipping(input_poly: &Polygon) -> Triangulation {
     }
 
 
-    if num_wide > (polygon.len()  /2) {
+    if num_wide > (polygon.len()  / 2) {
+        dir = Direction::Left;
         polygon.reverse();
     }
+
 
     let mut list = NodeList::new(&polygon);
 
@@ -125,7 +128,7 @@ pub fn triangulate_ear_clipping(input_poly: &Polygon) -> Triangulation {
         list.remove_at(ears[0]);
     }
 
-    Triangulation { polygon, triangles }
+    Triangulation { polygon, triangles, dir }
 }
 
 fn to_ear_tri(poly: &NodeList, index: usize) -> Triangle {

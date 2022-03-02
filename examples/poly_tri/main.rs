@@ -4,23 +4,36 @@ use gl_lib::na::vector;
 use gl_lib::sdl_gui as gls;
 use gl_lib::shader::{ColorShader, TransformationShader};
 use gl_lib::{gl, na};
+use ttf_parser;
+use rand::Rng;
 
 mod triangulate;
 use triangulate::*;
 
+mod ttf;
+
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
     Triangulate,
-    Step,
     Clear,
-    Render,
+    Fill,
+    Switch,
+    RandomChar,
 }
 
 fn main() -> Result<(), failure::Error> {
-    let width = 1000;
-    let height = 800;
+    let width = 1000.0;
+    let height = 800.0;
 
-    let mut window = gls::window::SdlGlWindow::new("Polygon triangulation", width, height).unwrap();
+    let data = include_bytes!("../../assets/fonts/calibri.ttf");
+
+    let face = ttf_parser::Face::from_slice(data.as_slice(), 0).unwrap();
+
+    let polygons = ttf::char_to_poly('8', &face, width, height, 1);
+
+    let mut window =
+        gls::window::SdlGlWindow::new("Polygon triangulation", width as u32, height as u32)
+            .unwrap();
 
     window.set_background_color(na::Vector4::new(0.9, 0.9, 0.9, 1.0));
 
@@ -30,9 +43,13 @@ fn main() -> Result<(), failure::Error> {
 
     let mut model = Model {
         gl: gl.clone(),
-        poly: vec![],
+        mode: Mode::Glyph(GlyphModel {
+            polys: polygons,
+            triangulations: vec![],
+            filled_polys: vec![],
+        }),
         triangulation: None,
-        filled_poly: None,
+        face
     };
 
     let point_square = gl_lib::objects::square::Square::new(gl);
@@ -48,51 +65,18 @@ fn main() -> Result<(), failure::Error> {
         square: &point_square,
     };
 
+    let render_info = RenderInfo {
+        gl,
+        shader: &shader,
+        point_square: &point_square,
+        polygon_shader: &polygon_shader,
+        line_drawer: &line_drawer,
+        height,
+        width,
+    };
+
     while !window.should_quit() {
-        shader.shader.set_used();
-
-        shader.set_color(Color::Rgb(52, 235, 225));
-        for p in &model.poly {
-            let transform = transform_2d(0.05, *p, width as f32, height as f32);
-            shader.shader.set_mat4(gl, "transform", transform);
-
-            point_square.render(gl);
-        }
-
-        if model.poly.len() > 1 {
-            shader.set_color(Color::Rgb(0, 0, 0));
-            let mut cur = 0;
-            let mut next = 1;
-
-            for i in 0..model.poly.len() {
-                let next = (i + 1) % model.poly.len();
-
-                let p0 = model.poly[i];
-                let p1 = model.poly[next];
-
-                line_drawer.draw_line(p0, p1);
-            }
-        }
-
-        if let Some(ref triang) = model.triangulation {
-            for tri in &triang.triangles {
-                let p0 = triang.polygon[tri.p0];
-                let p1 = triang.polygon[tri.p1];
-                let p2 = triang.polygon[tri.p2];
-
-                line_drawer.draw_line(p0, p1);
-                line_drawer.draw_line(p1, p2);
-                line_drawer.draw_line(p2, p0);
-            }
-        }
-
-        if let Some(ref filled) = model.filled_poly {
-            let trans = na::Matrix4::identity();
-
-            polygon_shader.set_transform(trans);
-
-            filled.render(gl);
-        }
+        model.mode.render(&render_info);
 
         window.update(&mut model);
     }
@@ -140,71 +124,298 @@ fn transform_2d(scale: f32, location: Point, window_w: f32, window_h: f32) -> na
     t.to_homogeneous() * s.to_homogeneous()
 }
 
-struct Model {
-    poly: Polygon,
+struct Model<'a> {
+    mode: Mode,
     gl: gl::Gl,
+    triangulation: Option<Triangulation>,
+    face: ttf_parser::Face<'a>,
+}
+
+enum Mode {
+    Draw(DrawModel),
+    Glyph(GlyphModel),
+}
+
+struct DrawModel {
+    poly: Polygon,
     triangulation: Option<Triangulation>,
     filled_poly: Option<gl_lib::objects::polygon::Polygon>,
 }
 
-impl gls::Ui<Message> for Model {
+struct GlyphModel {
+    polys: Vec<Polygon>,
+    triangulations: Vec<Triangulation>,
+    filled_polys: Vec<gl_lib::objects::polygon::Polygon>,
+}
+
+impl Mode {
+    fn clear(&mut self) {
+        match self {
+            Mode::Draw(ref mut d) => {
+                d.poly.clear();
+                d.triangulation = None;
+                d.filled_poly = None;
+            }
+            Mode::Glyph(ref mut dm) => {
+                dm.polys.clear();
+                dm.triangulations.clear();
+                dm.filled_polys.clear();
+            }
+        }
+    }
+
+    fn render(&self, ri: &RenderInfo) {
+        match self {
+            Mode::Draw(ref d) => {
+                render_draw(d, ri);
+            }
+            Mode::Glyph(ref dm) => {
+                render_glyph(dm, ri);
+            }
+        }
+    }
+
+    fn fill(&mut self, gl: &gl::Gl, width: f32, height: f32) {
+        match self {
+            Mode::Draw(ref mut draw) => {
+                if let Some(ref triang) = draw.triangulation {
+                    draw.filled_poly = Some(create_filled_poly_packed(
+                        gl,
+                        triang,
+                        width,
+                        height,
+                        &[Color::Rgb(255, 0, 0)],
+                    ));
+                }
+            }
+            Mode::Glyph(ref mut model) => {
+                model.filled_polys.clear();
+                for (i, triang) in model.triangulations.iter().enumerate() {
+                    let color = if triang.dir == Direction::Right {
+                        Color::Rgb(0, 0, 0)
+                    } else {
+                        Color::Rgb(255, 255, 255)
+                    };
+                    model.filled_polys.push(create_filled_poly_packed(
+                        gl,
+                        triang,
+                        width,
+                        height,
+                        &[color],
+                    ));
+                }
+            }
+        }
+    }
+}
+
+struct RenderInfo<'a> {
+    gl: &'a gl::Gl,
+    shader: &'a gl_lib::shader::PosShader,
+    point_square: &'a gl_lib::objects::square::Square,
+    polygon_shader: &'a gl_lib::shader::PosColorShader,
+    line_drawer: &'a LineDrawer<'a, gl_lib::shader::PosShader>,
+    height: f32,
+    width: f32,
+}
+
+fn render_glyph(model: &GlyphModel, render_info: &RenderInfo) {
+    render_info.shader.shader.set_used();
+
+    for poly in &model.polys {
+        render_poly(poly, render_info);
+    }
+
+    for triang in &model.triangulations {
+        render_triangulation(triang, render_info);
+    }
+
+    for filled in &model.filled_polys {
+        render_filled(filled, render_info);
+    }
+}
+
+fn render_poly(poly: &Polygon, render_info: &RenderInfo) {
+    let gl = render_info.gl;
+    render_info.shader.shader.set_used();
+
+    // points color
+    render_info.shader.set_color(Color::Rgb(52, 235, 225));
+    for point in poly {
+        let transform = transform_2d(0.05, *point, render_info.width, render_info.height);
+        render_info
+            .shader
+            .shader
+            .set_mat4(gl, "transform", transform);
+
+        render_info.point_square.render(gl);
+    }
+
+    if poly.len() > 1 {
+        render_info.shader.set_color(Color::Rgb(0, 0, 0));
+        let mut cur = 0;
+        let mut next = 1;
+
+        for i in 0..poly.len() {
+            let next = (i + 1) % poly.len();
+
+            let p0 = poly[i];
+            let p1 = poly[next];
+
+            render_info.line_drawer.draw_line(p0, p1);
+        }
+    }
+}
+
+fn render_filled(filled: &gl_lib::objects::polygon::Polygon, render_info: &RenderInfo) {
+    let trans = na::Matrix4::identity();
+
+    render_info.polygon_shader.set_transform(trans);
+
+    filled.render(&render_info.gl);
+}
+
+fn render_triangulation(triang: &Triangulation, render_info: &RenderInfo) {
+    for tri in &triang.triangles {
+        let p0 = triang.polygon[tri.p0];
+        let p1 = triang.polygon[tri.p1];
+        let p2 = triang.polygon[tri.p2];
+
+        render_info.line_drawer.draw_line(p0, p1);
+        render_info.line_drawer.draw_line(p1, p2);
+        render_info.line_drawer.draw_line(p2, p0);
+    }
+}
+
+fn render_draw(model: &DrawModel, render_info: &RenderInfo) {
+    let gl = render_info.gl;
+
+    render_info.shader.set_color(Color::Rgb(52, 235, 225));
+
+    render_poly(&model.poly, render_info);
+
+    if let Some(ref triang) = model.triangulation {
+        render_triangulation(triang, render_info);
+    }
+
+    if let Some(ref filled) = model.filled_poly {
+        render_filled(filled, render_info);
+    }
+}
+
+impl gls::Ui<Message> for Model<'_> {
     fn handle_message(&mut self, msg: &Message, _: &gls::window::WindowComponentAccess) {
         let width = 1000.0;
         let height = 800.0;
         match msg {
-            Message::Triangulate => self.triangulation = Some(triangulate_ear_clipping(&self.poly)),
-            Message::Clear => {
-                self.triangulation = None;
-                self.filled_poly = None;
-                self.poly = vec![];
-            }
-            Message::Render => {
-                if let Some(ref triang) = self.triangulation {
-                    self.filled_poly = Some(create_filled_poly_indiv_triangles(&self.gl, triang, width, height));
+            Message::Triangulate => match self.mode {
+                Mode::Draw(ref mut draw) => {
+                    draw.triangulation = Some(triangulate_ear_clipping(&draw.poly));
                 }
+                Mode::Glyph(ref mut model) => {
+                    model.triangulations.clear();
+                    for poly in &model.polys {
+                        model.triangulations.push(triangulate_ear_clipping(poly));
+                    }
+                }
+            },
+            Message::Clear => {
+                self.mode.clear();
             }
-            _ => {}
+            Message::Fill => {
+                self.mode.fill(&self.gl, width, height);
+            }
+            Message::Switch => match self.mode {
+                Mode::Draw(_) => {
+                    self.mode = Mode::Glyph(GlyphModel {
+                        polys: vec![],
+                        triangulations: vec![],
+                        filled_polys: vec![],
+                    })
+                }
+                Mode::Glyph(_) => {
+                    self.mode = Mode::Draw(DrawModel {
+                        poly: vec![],
+                        filled_poly: None,
+                        triangulation: None,
+                    });
+                }
+            },
+            Message::RandomChar => match self.mode {
+                Mode::Glyph(ref mut mode) => {
+                    let charset: Vec::<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZÆØa\
+                            abcdefghijklmnopqrstuvwxyzæøå\
+                            0123456789)(*&^%$#@!~".chars().collect();
+
+                    let mut rng = rand::thread_rng();
+                    let idx = rng.gen_range(0..charset.len());
+                    let polys = ttf::char_to_poly(charset[idx], &self.face, width, height, 1);
+                    mode.polys = polys;
+                    mode.triangulations.clear();
+                    mode.filled_polys.clear();
+                }
+                _ => {}
+            },
         }
     }
 
     fn view(&self) -> gls::layout::Node<Message> {
+        use crate::gls::layout::Length::*;
         use gls::layout::*;
 
+        let has_tri;
         let mut row = Row::new()
-            .spacing(5)
-            .add(Button::new("Triangulate", Some(Message::Triangulate)))
-            .add(Button::new("Clear", Some(Message::Clear)))
-            .add(Button::new("Render", Some(Message::Render)));
+            .spacing(5.0)
+            .add(Button::new("Triangulate", Some(Message::Triangulate)));
+        match self.mode {
+            Mode::Glyph(ref mode) => {
+                row = row.add(Button::new("Rand Char", Some(Message::RandomChar)));
+                has_tri = mode.triangulations.len() > 0;
+            },
+            Mode::Draw(ref mode) => {
+                row = row.add(Button::new("Clear", Some(Message::Clear)));
+                has_tri = mode.triangulation != None;
+            }
+        }
+
+        row = row.add(Button::new("Fill", Some(Message::Fill))
+                      .width(Px(80))
+                      .disabled(!has_tri))
+            .add(Button::new("Switch", Some(Message::Switch))
+                 .align_right())
+            .add(TextBox::new(None));
 
         row.into()
     }
 
     fn handle_sdl_event(&mut self, event: sdl2::event::Event) {
         use sdl2::event::Event;
-        match event {
-            Event::MouseButtonDown {
-                mouse_btn, x, y, ..
-            } => {
-                if mouse_btn == sdl2::mouse::MouseButton::Left {
-                    self.poly.push(vector!(x as f32, 800.0 - y as f32));
-                    println!("{:?}", (x, y));
+        match self.mode {
+            Mode::Draw(ref mut draw) => match event {
+                Event::MouseButtonDown {
+                    mouse_btn, x, y, ..
+                } => {
+                    if mouse_btn == sdl2::mouse::MouseButton::Left {
+                        draw.poly.push(vector!(x as f32, 800.0 - y as f32));
+                    }
                 }
-            }
+                _ => {}
+            },
             _ => {}
-        }
+        };
     }
 }
 
-fn create_filled_poly_packed(gl: &gl::Gl, triang: &Triangulation, width: f32, height: f32) -> gl_lib::objects::polygon::Polygon {
+fn create_filled_poly_packed(
+    gl: &gl::Gl,
+    triang: &Triangulation,
+    width: f32,
+    height: f32,
+    all_colors: &[Color],
+) -> gl_lib::objects::polygon::Polygon {
     let mut indices = vec![];
     let mut vertices = vec![];
     let mut colors = vec![];
-
-    let all_colors = [
-        Color::Rgb(255, 0, 0),
-        Color::Rgb(0, 255, 0),
-        Color::Rgb(0, 0, 255),
-    ];
 
     let mut i = 0;
     for point in &triang.polygon {
@@ -222,18 +433,15 @@ fn create_filled_poly_packed(gl: &gl::Gl, triang: &Triangulation, width: f32, he
         indices.push(tri.p2 as u32);
     }
 
-    println!("{:?}", colors);
-
-    gl_lib::objects::polygon::Polygon::new(
-        gl,
-        &indices,
-        &vertices,
-        Some(&colors),
-    )
+    gl_lib::objects::polygon::Polygon::new(gl, &indices, &vertices, Some(&colors))
 }
 
-
-fn create_filled_poly_indiv_triangles(gl: &gl::Gl, triang: &Triangulation, width: f32, height: f32) -> gl_lib::objects::polygon::Polygon {
+fn create_filled_poly_indiv_triangles(
+    gl: &gl::Gl,
+    triang: &Triangulation,
+    width: f32,
+    height: f32,
+) -> gl_lib::objects::polygon::Polygon {
     let mut indices = vec![];
     let mut vertices = vec![];
     let mut colors = vec![];
@@ -244,11 +452,9 @@ fn create_filled_poly_indiv_triangles(gl: &gl::Gl, triang: &Triangulation, width
         Color::Rgb(0, 0, 255),
     ];
 
-
     let mut idx = 0;
     let mut col_idx = 0;
     for tri in &triang.triangles {
-
         let col = all_colors[col_idx % all_colors.len()];
 
         col_idx += 1;
@@ -263,29 +469,18 @@ fn create_filled_poly_indiv_triangles(gl: &gl::Gl, triang: &Triangulation, width
         vertices.push(0.0);
         colors.push(col);
 
-
         let v1 = triang.polygon[tri.p1];
         vertices.push(v1.x / width * 2.0 - 1.0);
         vertices.push(v1.y / height * 2.0 - 1.0);
         vertices.push(0.0);
         colors.push(col);
 
-
         let v2 = triang.polygon[tri.p2];
         vertices.push(v2.x / width * 2.0 - 1.0);
         vertices.push(v2.y / height * 2.0 - 1.0);
         vertices.push(0.0);
         colors.push(col);
-
     }
 
-    println!("{:?}", colors);
-
-
-    gl_lib::objects::polygon::Polygon::new(
-        gl,
-        &indices,
-        &vertices,
-        Some(&colors),
-    )
+    gl_lib::objects::polygon::Polygon::new(gl, &indices, &vertices, Some(&colors))
 }
