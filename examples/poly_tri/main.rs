@@ -4,21 +4,23 @@ use gl_lib::na::vector;
 use gl_lib::sdl_gui as gls;
 use gl_lib::shader::{ColorShader, TransformationShader};
 use gl_lib::{gl, na};
-use ttf_parser;
 use rand::Rng;
+use ttf_parser;
+use image::{Rgba, RgbaImage};
 
 mod triangulate;
 use triangulate::*;
-
+mod framebuffer;
 mod ttf;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Message {
     Triangulate,
     Clear,
     Fill,
     Switch,
     RandomChar,
+    TextChanged(String),
 }
 
 fn main() -> Result<(), failure::Error> {
@@ -48,7 +50,9 @@ fn main() -> Result<(), failure::Error> {
             triangulations: vec![],
             filled_polys: vec![],
         }),
-        face
+        text_box_content: "".to_string(),
+        face,
+        framebuffer: framebuffer::FrameBuffer::new(gl, width as i32, height as i32),
     };
 
     let point_square = gl_lib::objects::square::Square::new(gl);
@@ -74,7 +78,10 @@ fn main() -> Result<(), failure::Error> {
         width,
     };
 
+    let size = width as usize * height as usize * 4;
+    let screenshot_buffer: Vec<u8> = vec![0; size];
     while !window.should_quit() {
+
         model.mode.render(&render_info);
 
         window.update(&mut model);
@@ -82,6 +89,7 @@ fn main() -> Result<(), failure::Error> {
 
     Ok(())
 }
+
 
 struct LineDrawer<'a, TShader>
 where
@@ -127,6 +135,8 @@ struct Model<'a> {
     mode: Mode,
     gl: gl::Gl,
     face: ttf_parser::Face<'a>,
+    text_box_content: String,
+    framebuffer: framebuffer::FrameBuffer,
 }
 
 enum Mode {
@@ -336,9 +346,11 @@ impl gls::Ui<Message> for Model<'_> {
             },
             Message::RandomChar => match self.mode {
                 Mode::Glyph(ref mut mode) => {
-                    let charset: Vec::<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZÆØa\
+                    let charset: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZÆØa\
                             abcdefghijklmnopqrstuvwxyzæøå\
-                            0123456789)(*&^%$#@!~".chars().collect();
+                            0123456789)(*&^%$#@!~"
+                        .chars()
+                        .collect();
 
                     let mut rng = rand::thread_rng();
                     let idx = rng.gen_range(0..charset.len());
@@ -349,6 +361,9 @@ impl gls::Ui<Message> for Model<'_> {
                 }
                 _ => {}
             },
+            Message::TextChanged(s) => {
+                self.text_box_content = s.to_string();
+            }
         }
     }
 
@@ -359,24 +374,27 @@ impl gls::Ui<Message> for Model<'_> {
         let has_tri;
         let mut row = Row::new()
             .spacing(5.0)
+            .width(Fill)
             .add(Button::new("Triangulate", Some(Message::Triangulate)));
         match self.mode {
             Mode::Glyph(ref mode) => {
                 row = row.add(Button::new("Rand Char", Some(Message::RandomChar)));
                 has_tri = mode.triangulations.len() > 0;
-            },
+            }
             Mode::Draw(ref mode) => {
                 row = row.add(Button::new("Clear", Some(Message::Clear)));
                 has_tri = mode.triangulation != None;
             }
         }
 
-        row = row.add(Button::new("Fill", Some(Message::Fill))
-                      .width(Px(80))
-                      .disabled(!has_tri))
-            .add(Button::new("Switch", Some(Message::Switch))
-                 .align_right())
-            .add(TextBox::new(None));
+        row = row
+            .add(
+                Button::new("Fill", Some(Message::Fill))
+                    .width(Px(80))
+                    .disabled(!has_tri),
+            )
+            .add(Button::new("Switch", Some(Message::Switch)).align_right())
+            .add(TextBox::new(&self.text_box_content, Message::TextChanged).width(Fill));
 
         row.into()
     }
@@ -428,7 +446,6 @@ fn create_filled_poly_packed(
 
     gl_lib::objects::polygon::Polygon::new(gl, &indices, &vertices, Some(&colors))
 }
-
 
 #[allow(dead_code)]
 fn create_filled_poly_indiv_triangles(

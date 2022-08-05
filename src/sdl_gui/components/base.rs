@@ -12,7 +12,13 @@ pub enum ComponentEvent {
     Clicked(ClickType, na::Vector2::<i32>),
     Hover,
     HoverEnd,
-    AlphaNumChar(char)
+    KeyboardInput(KeyInfo)
+}
+
+#[derive(Debug,Clone,Copy)]
+pub struct KeyInfo {
+    pub keycode: sdl2::keyboard::Keycode,
+    pub keymod: sdl2::keyboard::Mod,
 }
 
 

@@ -12,15 +12,15 @@ use std::fmt;
 pub struct TextBox<Message> {
     content: String,
     attributes: Attributes,
-    on_input_msg: Option<Message>
+    on_change: fn(String) -> Message,
 }
 
 impl<Message> TextBox<Message> where Message: Clone + fmt::Debug {
-    pub fn new(msg: Option<Message>) -> Self {
+    pub fn new(content: &str, msg: fn(String) -> Message) -> Self {
         Self {
-            content: "".to_string(),
+            content: content.to_string(),
             attributes: Default::default(),
-            on_input_msg: msg
+            on_change: msg
         }
     }
 }
@@ -42,7 +42,7 @@ impl<Message> Element<Message> for TextBox<Message> where Message: 'static + Clo
     fn content_height(&self, available_space: &RealizedSize, text_renderer: &TextRenderer) -> f32 {
         let max_width = self.contrainted_width(available_space);
         let content_min = text_renderer.render_box("TextBox", max_width, 1.0).total_height;
-        let content_h = text_renderer.render_box(&self.content, max_width, 1.0).total_width;
+        let content_h = text_renderer.render_box(&self.content, max_width, 1.0).total_height;
         f32::max(content_min, content_h)
     }
 
@@ -58,7 +58,7 @@ impl<Message> Element<Message> for TextBox<Message> where Message: 'static + Clo
     }
 
     fn create_component(&self, gl: &gl::Gl, comp_base: ComponentBase) -> Option<Component<Message>> {
-        let mut tb: Component<Message> = comp_text_box::TextBox::new(gl, &self.content, self.on_input_msg.clone());
+        let mut tb: Component<Message> = comp_text_box::TextBox::new(gl, &self.content, self.on_change);
         tb.set_base(comp_base);
         Some(tb)
     }

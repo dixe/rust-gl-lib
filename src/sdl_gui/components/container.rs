@@ -1,5 +1,5 @@
 use crate::na;
-use crate::sdl_gui::components::base::{ClickType, Component, ComponentEvent, OnTop};
+use crate::sdl_gui::components::base::{KeyInfo, ClickType, Component, ComponentEvent, OnTop};
 
 pub enum HandleRes {
     Consumed,
@@ -30,6 +30,13 @@ where
             messages: std::collections::VecDeque::new(),
             focused_component: None,
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.next_id = 1;
+        self.components.clear();
+        self.messages.clear();
+        self.component_events.clear();
     }
 
     pub fn add_component(&mut self, component: Component<Message>) -> usize {
@@ -113,22 +120,24 @@ where
                     Some(hover_no_match),
                 );
             }
-            Event::KeyDown {keycode, ..} => {
+            Event::KeyDown {keycode, keymod, ..} => {
+                // only check if anything is in focus
                 if let Some(focus_id) = self.focused_component {
-                    // only check if anything is in focus
+
                     if let Some(kc) = keycode {
-                        let name = kc.name();
-                        let is_alpha_num = name.chars().all(|c| c.is_alphanumeric());
-                        if is_alpha_num {
-                            // handle alpha num chars
-                            res = push_component_event(
-                                ComponentEvent::AlphaNumChar(name.chars().next().unwrap()),
-                                ComponentMatch::ById(focus_id),
-                                &self.components,
-                                &mut self.component_events,
-                                None,
-                            );
-                        }
+
+                        let info = KeyInfo {
+                            keycode: kc,
+                            keymod
+                        };
+
+                        res = push_component_event(
+                            ComponentEvent::KeyboardInput(info),
+                            ComponentMatch::ById(focus_id),
+                            &self.components,
+                            &mut self.component_events,
+                            None,
+                        );
                     }
                 }
             }

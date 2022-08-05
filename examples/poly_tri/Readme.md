@@ -12,5 +12,6 @@ This example might be part of the library if it proves useful and turn out with 
 # MileStones
 
 - [x] Triangulate Monotone polygon
-- [ ] Load curves
-- [ ] Triangulate Curves
+- [x] Load curves
+- [x] Triangulate Curves
+- [ ] Rasterize curve using https://www.youtube.com/watch?v=LaYPoMPRSlk

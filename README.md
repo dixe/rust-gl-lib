@@ -10,6 +10,9 @@ The TextRenderer can be used to render text using signed distance filed given a 
 
 # Sdl gui
 A elm inspired gui lib/framework. Builds on top of the regular gl lib.
+
+
+
 ## Tests
 
 Run with `cargo t -- --test-threads=1` to only have 1 sdl instance at a time.

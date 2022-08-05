@@ -32,7 +32,7 @@ fn main() -> Result<(), failure::Error> {
     viewport.set_used(&gl);
 
     // Create a default shader
-    let shader = shader::Shader::default_shader(&gl)?;
+    let shader = create_shader(&gl);
 
     // and a default square
     let square = square::Square::new(&gl);
@@ -70,4 +70,42 @@ fn main() -> Result<(), failure::Error> {
 
     img.save("screenshot.png").unwrap();
     Ok(())
+}
+
+
+fn create_shader(gl: &gl::Gl) -> shader::Shader {
+    let vert_source = r"#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aColor;
+
+out VS_OUTPUT {
+   flat vec3 Color;
+} OUT;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+void main()
+{
+    OUT.Color = aColor;
+    gl_Position =  projection * view * model * vec4(aPos.x, aPos.y, aPos.z, 1.0);
+}";
+
+    let frag_source = r"#version 330 core
+out vec4 FragColor;
+uniform vec3 color;
+
+
+in VS_OUTPUT {
+    flat vec3 Color;
+} IN;
+
+void main()
+{
+    FragColor = vec4(IN.Color * color, 1.0f);
+}";
+
+
+    shader::Shader::new(gl, vert_source, frag_source).unwrap()
 }

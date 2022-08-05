@@ -43,7 +43,7 @@ impl<'a> NodeList<'a> {
             self.head = self.nodes[index].next;
         }
 
-        let mut n = &mut self.nodes[index];0
+        let mut n = &mut self.nodes[index];
         let n_prev = n.prev;
         let n_next = n.next;
 

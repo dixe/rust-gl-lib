@@ -139,13 +139,12 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
     /// Finish with clearing color_buffer_bit and depth_buffer_bit
     pub fn update(&mut self, ui: &mut dyn Ui<Message>) {
         if self.container_dirty {
-            let mut cont = ComponentContainer::new();
+            self.container.reset();
             let size = (&self.viewport).into();
             let aligned_tree = engine::align_tree(ui.view(), size, &self.text_renderer);
 
-            engine::add_tree_to_container(&self.gl, &mut cont, &aligned_tree);
+            engine::add_tree_to_container(&self.gl, &mut self.container, &aligned_tree);
 
-            self.container = cont;
             self.container_dirty = false;
             // Handle keeping hover
             if let Some(mouse_move) = &self.last_mouse_event {
