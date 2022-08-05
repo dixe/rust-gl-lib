@@ -21,6 +21,8 @@ pub mod text_rendering;
 pub mod texture;
 pub mod color;
 
+pub mod widget_gui;
+
 //#[cfg(feature = "sdl_gui")]
 pub mod sdl_gui;
 
