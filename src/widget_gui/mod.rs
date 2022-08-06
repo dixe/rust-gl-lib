@@ -1,12 +1,13 @@
 use std::collections::{VecDeque};
 use std::any::Any;
+use crate::text_rendering::font::Font;
 
 
 pub mod widgets;
 
 pub type Id = usize;
 
-pub type Pixel = i64;
+pub type Pixel = i32;
 
 pub struct UiState {
     next_id: Id,
@@ -15,7 +16,8 @@ pub struct UiState {
     parents: Vec<Id>,
     pub geom: Vec<Geometry>,
     listeners: Vec<Box<dyn FnMut(&mut dyn Any, ListenerCtx)>>,
-    size_constraints: Vec::<WidgetConstraint>
+    size_constraints: Vec::<WidgetConstraint>,
+    font: Font,
 }
 
 
@@ -29,7 +31,8 @@ impl UiState {
             parents: Vec::new(),
             geom: Vec::new(),
             listeners: Vec::new(),
-            size_constraints: Vec::new()
+            size_constraints: Vec::new(),
+            font: Default::default()
         }
     }
 
@@ -81,14 +84,14 @@ impl WidgetConstraint {
     }
 
 
-    pub fn flex_width(factor: u32) -> Self {
+    pub fn flex_width(factor: u8) -> Self {
         Self {
             width: SizeConstraint::Flex(factor.into()),
             height: SizeConstraint::NoFlex
         }
     }
 
-    pub fn flex_height(factor: u32) -> Self {
+    pub fn flex_height(factor: u8) -> Self {
         Self {
             width: SizeConstraint::NoFlex,
             height: SizeConstraint::Flex(factor.into())
@@ -107,7 +110,7 @@ impl WidgetConstraint {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SizeConstraint {
     NoFlex,
-    Flex(i64),
+    Flex(u8),
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
@@ -192,16 +195,17 @@ impl BoxContraint {
 #[derive(Debug, Clone)]
 pub struct LayoutContext<'a> {
     widget_geometry : Vec::<Option<Geometry>>,
-    size_constraints : &'a Vec::<WidgetConstraint>
-
+    size_constraints : &'a Vec::<WidgetConstraint>,
+    font: &'a Font
 }
 
 impl<'a> LayoutContext<'a>{
 
-    fn new(widgets: usize, size_constraints: &'a Vec::<WidgetConstraint>) -> Self {
+    fn new(widgets: usize, size_constraints: &'a Vec::<WidgetConstraint>, font: &'a Font ) -> Self {
         let mut res = Self {
             widget_geometry: vec![],
-            size_constraints
+            size_constraints,
+            font
         };
 
         for _ in 0..widgets {
@@ -256,7 +260,7 @@ pub fn layout_widgets(root_bc: &BoxContraint, state: &mut UiState) {
 
     let mut process_queue = VecDeque::new();
 
-    let mut ctx = LayoutContext::new(state.widgets.len(), &state.size_constraints);
+    let mut ctx = LayoutContext::new(state.widgets.len(), &state.size_constraints, &state.font);
 
     // Start by processing the root
     process_queue.push_back(ProcessData::new(0, *root_bc));

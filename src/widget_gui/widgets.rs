@@ -1,20 +1,24 @@
 use crate::widget_gui::*;
+use crate::text_rendering::text_renderer::TextRenderer;
 
 #[derive(Debug, Clone)]
 pub struct TextWidget {
-     pub text: String
+    pub text: String,
+    pub scale: f32
 }
 
 
 impl Widget for TextWidget {
-    fn layout(&mut self, bc: &BoxContraint, _children: &[Id], _ctx: &mut LayoutContext) -> LayoutResult {
-        println!("TexBox Bc{:?}", bc);
+    fn layout(&mut self, bc: &BoxContraint, _children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
+
+        let text_size = TextRenderer::render_box(ctx.font, &self.text, bc.max_w as f32, self.scale);
         LayoutResult::Size(Size {
-            pixel_w: Pixel::min(bc.max_w, Pixel::max(100, bc.min_w)),
-            pixel_h: Pixel::min(bc.max_h, Pixel::max(30, bc.min_h))
+            pixel_w: Pixel::min(bc.max_w, Pixel::max(text_size.total_width as i32, bc.min_w)),
+            pixel_h: Pixel::min(bc.max_h, Pixel::max(text_size.total_height as i32, bc.min_h))
         })
     }
 }
+
 
 #[derive(Debug, Clone)]
 pub struct RowWidget {
@@ -63,8 +67,8 @@ fn preprocess_children(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutConte
         // Process flex children when we have the total flex
         for &child_id in children {
 
-            let flex_factor = match ctx.size_constraints[child_id].constraint(flex_dir) {
-                SizeConstraint::Flex(factor) => factor,
+            let flex_factor : Pixel = match ctx.size_constraints[child_id].constraint(flex_dir) {
+                SizeConstraint::Flex(factor) => factor.into(),
                 SizeConstraint::NoFlex => continue,
             };
 
@@ -102,7 +106,7 @@ fn calc_flex_info(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, f
     };
 
 
-    let mut sum_flex_factor = 0;
+    let mut sum_flex_factor : Pixel = 0;
 
     for &child_id in children {
 
@@ -111,12 +115,12 @@ fn calc_flex_info(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, f
                 free_space -= ctx.widget_geometry[child_id].as_ref().unwrap().size.from_flex(flex_dir);
             },
             SizeConstraint::Flex(factor) => {
-                sum_flex_factor += factor;
+                sum_flex_factor += Pixel::from(factor);
             }
         };
     }
 
-    let mut space_per_flex = 0;
+    let mut space_per_flex : Pixel = 0;
 
     if sum_flex_factor != 0 {
         space_per_flex = free_space / sum_flex_factor

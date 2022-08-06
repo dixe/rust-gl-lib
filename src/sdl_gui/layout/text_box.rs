@@ -41,17 +41,17 @@ impl<Message> Element<Message> for TextBox<Message> where Message: 'static + Clo
 
     fn content_height(&self, available_space: &RealizedSize, text_renderer: &TextRenderer) -> f32 {
         let max_width = self.contrainted_width(available_space);
-        let content_min = text_renderer.render_box("TextBox", max_width, 1.0).total_height;
-        let content_h = text_renderer.render_box(&self.content, max_width, 1.0).total_height;
+        let content_min = TextRenderer::render_box(text_renderer.font(), "TextBox", max_width, 1.0).total_height;
+        let content_h = TextRenderer::render_box(text_renderer.font(), &self.content, max_width, 1.0).total_height;
         f32::max(content_min, content_h)
     }
 
     fn content_width(&self, available_space: &RealizedSize, text_renderer: &TextRenderer) -> f32 {
         let max_width = self.contrainted_width(available_space);
 
-        let content_min = text_renderer.render_box("TextBox", max_width, 1.0).total_width;
+        let content_min = TextRenderer::render_box(&text_renderer.font(), "TextBox", max_width, 1.0).total_width;
 
-        let content_w = text_renderer.render_box(&self.content, max_width, 1.0).total_width;
+        let content_w = TextRenderer::render_box(&text_renderer.font(), &self.content, max_width, 1.0).total_width;
 
         f32::max(content_min, content_w)
 

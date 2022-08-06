@@ -22,7 +22,6 @@ static FONT_TEXT: &str = include_str!("../../assets/fonts/Arial.fnt");
 static FONT_IMG: &[u8; 85355] = include_bytes!("../../assets/fonts/Arial.png");
 
 
-
 impl Default for Font {
     fn default() -> Self {
 

@@ -11,7 +11,7 @@ fn text_widget() {
 
     let mut ui_state = UiState::new();
 
-    let text_widget = TextWidget { text: "Hello".to_string() };
+    let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
 
     let _ = ui_state.add_widget(Box::new(text_widget), None, None);
@@ -19,13 +19,9 @@ fn text_widget() {
     let screen_contraint = BoxContraint::new(width, height);
     layout_widgets(&screen_contraint, &mut ui_state);
 
-
-
     assert_eq!(1, ui_state.geom.len());
-    for geo in &ui_state.geom {
-        assert_eq!(100, geo.size.pixel_w);
-        assert_eq!(30, geo.size.pixel_h);
-    }
+    assert_eq!(71, ui_state.geom[0].size.pixel_w);
+    assert_eq!(32, ui_state.geom[0].size.pixel_h);
 
 }
 
@@ -44,7 +40,7 @@ fn row_widget_1() {
 
     let row_id = ui_state.add_widget(Box::new(row_widget), None, None);
 
-    let text_widget = TextWidget { text: "Hello".to_string() };
+    let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
     let _ = ui_state.add_widget(Box::new(text_widget), Some(row_id), None);
 
@@ -57,8 +53,8 @@ fn row_widget_1() {
 
     assert_eq!(2, ui_state.geom.len());
 
-    assert_eq!(100, ui_state.geom[0].size.pixel_w);
-    assert_eq!(30, ui_state.geom[0].size.pixel_h);
+    assert_eq!(71, ui_state.geom[0].size.pixel_w);
+    assert_eq!(32, ui_state.geom[0].size.pixel_h);
 }
 
 
@@ -75,7 +71,7 @@ fn row_widget_2() {
 
     let row_id = ui_state.add_widget(Box::new(row_widget), None, None);
 
-    let text_widget = TextWidget { text: "Hello".to_string() };
+    let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
     let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id), None);
     let _ = ui_state.add_widget(Box::new(text_widget), Some(row_id), None);
@@ -89,10 +85,10 @@ fn row_widget_2() {
 
     assert_eq!(3, ui_state.geom.len());
 
-    assert_eq!(200, ui_state.geom[0].size.pixel_w);
-    assert_eq!(30, ui_state.geom[0].size.pixel_h);
+    assert_eq!(2 * 71, ui_state.geom[0].size.pixel_w);
+    assert_eq!(32, ui_state.geom[0].size.pixel_h);
 
-    assert_eq!(100, ui_state.geom[2].pos.x);
+    assert_eq!(71, ui_state.geom[2].pos.x);
 
 }
 
@@ -111,7 +107,7 @@ fn row_widget_3() {
 
     let row_id = ui_state.add_widget(Box::new(row_widget), None, None);
 
-    let text_widget = TextWidget { text: "Hello".to_string() };
+    let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
     let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id), None);
     let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id), None);
@@ -126,10 +122,10 @@ fn row_widget_3() {
 
     assert_eq!(4, ui_state.geom.len());
 
-    assert_eq!(300, ui_state.geom[0].size.pixel_w);
-    assert_eq!(30, ui_state.geom[0].size.pixel_h);
+    assert_eq!(3 * 71, ui_state.geom[0].size.pixel_w);
+    assert_eq!(32, ui_state.geom[0].size.pixel_h);
 
-    assert_eq!(200, ui_state.geom[3].pos.x);
+    assert_eq!(2 * 71, ui_state.geom[3].pos.x);
 
 }
 
@@ -149,7 +145,7 @@ fn row_of_columns_widget_1() {
 
     let column = ColumnWidget { };
 
-    let text_widget = TextWidget { text: "Hello".to_string() };
+    let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
 
     // Setup column 1 with 2 texts
@@ -174,8 +170,8 @@ fn row_of_columns_widget_1() {
 
     assert_eq!(8, ui_state.geom.len());
 
-    assert_eq!(200, ui_state.geom[0].size.pixel_w);
-    assert_eq!(90, ui_state.geom[0].size.pixel_h);
+    assert_eq!(2 * 71, ui_state.geom[0].size.pixel_w);
+    assert_eq!(3 * 32, ui_state.geom[0].size.pixel_h);
 }
 
 
@@ -194,7 +190,7 @@ fn widget_flex_1() {
 
     let row_id = ui_state.add_widget(Box::new(row_widget), None, None);
 
-    let text_widget = TextWidget { text: "Hello".to_string() };
+    let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
     let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id), Some(WidgetConstraint::flex_width(2)));
 
@@ -209,7 +205,7 @@ fn widget_flex_1() {
 
 
     assert_eq!(3, ui_state.geom.len());
-    assert_eq!(30, ui_state.geom[0].size.pixel_h);
+    assert_eq!(32, ui_state.geom[0].size.pixel_h);
 
     assert_eq!(200, ui_state.geom[1].size.pixel_w);
     assert_eq!(100, ui_state.geom[2].size.pixel_w);
@@ -231,7 +227,7 @@ fn widget_flex_2() {
 
     let column_id = ui_state.add_widget(Box::new(column_widget), None, None);
 
-    let text_widget = TextWidget { text: "Hello".to_string() };
+    let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
     let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(column_id), Some(WidgetConstraint::flex_height(2)));
 
@@ -246,7 +242,7 @@ fn widget_flex_2() {
 
 
     assert_eq!(3, ui_state.geom.len());
-    assert_eq!(100, ui_state.geom[0].size.pixel_w);
+    assert_eq!(71, ui_state.geom[0].size.pixel_w);
     assert_eq!(600, ui_state.geom[0].size.pixel_h);
 
     assert_eq!(400, ui_state.geom[1].size.pixel_h);

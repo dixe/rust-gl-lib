@@ -8,6 +8,7 @@ use crate::gl;
 use crate::objects;
 use crate::*;
 
+
 /// A collections of a font, shader and a texture that can render text using open.
 pub struct TextRenderer {
     font: Font,
@@ -71,23 +72,25 @@ impl TextRenderer {
     }
 
 
-    pub fn render_box(&self, text: &str, max_width: f32, input_scale: f32) -> TextRenderBox {
-        self.calc_char_info(text, max_width, input_scale, &mut Vec::new())
+    /// user this to get size info on how a text will be rendered. Can be used in layout phase, to get side of
+    /// fx a text box
+    pub fn render_box(font: &Font, text: &str, max_width: f32, input_scale: f32) -> TextRenderBox {
+        Self::calc_char_info(font, text, max_width, input_scale, &mut Vec::new())
     }
 
 
-    fn  calc_char_info(&self, text: &str, max_width: f32, _input_scale: f32, chars_info: &mut Vec::<CharPosInfo>) -> TextRenderBox {
+    fn  calc_char_info(font: &Font, text: &str, max_width: f32, _input_scale: f32, chars_info: &mut Vec::<CharPosInfo>) -> TextRenderBox {
 
         let mut prev_char: Option<PageChar> = None;
         let mut pixel_x = 0.0;
 
         for c in text.chars() {
 
-            let chr = self.font.page_char(c as u32).unwrap();
+            let chr = font.page_char(c as u32).unwrap();
 
             if let Some(prev) = prev_char {
                 // Lookup potential kerning and apply to x
-                let kern = self.font.kerning(prev.id, chr.id);
+                let kern = font.kerning(prev.id, chr.id);
                 pixel_x += kern;
             }
 
@@ -120,10 +123,10 @@ impl TextRenderer {
 
             if ( info.x + info.chr.x_advance) > max_width  || info.is_newline {
                 x_offset += info.x;
-                y_offset += self.font.info.line_height;
+                y_offset += font.info.line_height;
                 info.x = 0.0;
 
-                total_height += self.font.info.line_height;
+                total_height += font.info.line_height;
                 total_width = f32::max(current_w, total_width);
                 current_max_h = 0.0;
             }
@@ -158,7 +161,7 @@ impl TextRenderer {
 
         let mut chars_info = Vec::new();
 
-        let render_box = self.calc_char_info(text, screen_box.width, input_scale, &mut chars_info);
+        let render_box = Self::calc_char_info(&self.font, text, screen_box.width, input_scale, &mut chars_info);
 
         // map from pixel space into screen space so we are ready to draw
         for info in chars_info.iter_mut() {
@@ -219,6 +222,10 @@ impl TextRenderer {
         }
 
         self.char_quad.render(gl, i);
+    }
+
+    pub fn font(&self) -> &Font {
+        &self.font
     }
 }
 
