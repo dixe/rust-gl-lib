@@ -103,7 +103,6 @@ where
             // Maybe handle all of this in the window, since we want to maybe capture some keys there??
             ComponentEvent::KeyboardInput(info) => {
                 let val = info.keycode as i32;
-                use sdl2::keyboard::Keycode::*;
                 let kc = info.keycode as u8;
                 if val < 256 {
                     // ascii char, do the easy thing
