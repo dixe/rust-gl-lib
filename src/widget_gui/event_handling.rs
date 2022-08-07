@@ -23,8 +23,8 @@ pub fn handle_events(state: &mut UiState, event: &event::Event) {
 
 
 
-    while let Some(mut event) = state.queues[id].data.pop_front() {
-        listener(&mut event, &mut listen_ctx);
+    while let Some(event) = state.queues[id].data.pop_front() {
+        listener(event, &mut listen_ctx);
     }
 
 

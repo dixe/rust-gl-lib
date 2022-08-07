@@ -14,7 +14,7 @@ pub type Pixel = i32;
 
 pub type Handler = Box<dyn FnMut(&event::Event, &mut EventQueue)>;
 
-pub type Listener = Box<dyn FnMut(&mut dyn Any, &mut ListenerCtx)>;
+pub type Listener = Box<dyn FnMut(Box::<Any>, &mut ListenerCtx)>;
 
 pub struct UiState {
     next_id: Id,
@@ -288,7 +288,7 @@ pub trait Widget {
 
     }
 
-    fn handle_event(&mut self, event: &mut dyn Any) {
+    fn handle_event(&mut self, event: Box::<Any>) {
 
     }
 
@@ -362,6 +362,6 @@ fn empty_handler(_: &event::Event, _: &mut EventQueue) {
 }
 
 
-fn empty_listener(_: &mut dyn Any, _: &mut ListenerCtx) {
+fn empty_listener(_: Box::<Any>, _: &mut ListenerCtx) {
 
 }

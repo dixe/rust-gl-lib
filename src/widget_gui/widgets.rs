@@ -51,15 +51,11 @@ impl Widget for CounterWidget {
     }
 
 
-    fn handle_event(&mut self, event: &mut dyn Any) {
+    fn handle_event(&mut self, event: Box::<Any>) {
 
-        println!("Handling event {:?}", event);
-        println!("bool {:?}", event.is::<i32>());
-
-        println!("{:#?}", *event);
-        let value = match event.downcast_mut::<i32>() {
-            Some(val) => val,
-            None => return
+        let value = match event.downcast::<i32>() {
+            Ok(val) => val,
+            Err(_) => return
         };
 
         self.count += *value;

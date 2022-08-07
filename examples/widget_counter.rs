@@ -71,7 +71,7 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
     loop {
-
+        layout_widgets(&root_box, &mut ui_state);
         // handle events
 
         for event in event_pump.poll_iter() {
@@ -128,13 +128,13 @@ fn counter_handler(event: &event::Event, queue: &mut EventQueue) {
 }
 
 
-fn counter_listener(event: &mut dyn Any, ctx: &mut ListenerCtx) {
+fn counter_listener(event: Box::<Any>, ctx: &mut ListenerCtx) {
 
     let mut widget = &mut ctx.widgets[ctx.id];
 
+    println!("{:?}", event);
     widget.handle_event(event);
 
-    println!("{:?}", event);
 
 
 }
