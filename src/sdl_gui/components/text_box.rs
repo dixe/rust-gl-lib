@@ -91,6 +91,7 @@ where
             screen_h,
         );
 
+
         let align = TextAlignment {
             x: TextAlignmentX::Left,
             y: TextAlignmentY::Center,

@@ -193,6 +193,7 @@ impl TextRenderer {
 
         };
 
+
         self.render_text_quads(gl, &draw_info);
 
     }

@@ -1,4 +1,5 @@
 use crate::widget_gui::*;
+use crate::widget_gui::render;
 use crate::text_rendering::text_renderer::TextRenderer;
 
 #[derive(Debug, Clone)]
@@ -17,14 +18,20 @@ impl Widget for TextWidget {
             pixel_h: Pixel::min(bc.max_h, Pixel::max(text_size.total_height as i32, bc.min_h))
         })
     }
+
+
+    fn render(&self, geom: &Geometry, ctx: &mut render::RenderContext) {
+        render::render_text(&self.text, self.scale, geom, ctx);
+    }
+
+
 }
 
 
 #[derive(Debug, Clone)]
 pub struct RowWidget {
-    // info about how to expand maybe??
-}
 
+}
 
 
 impl Widget for RowWidget {
@@ -36,7 +43,14 @@ impl Widget for RowWidget {
 
 #[derive(Debug, Clone)]
 pub struct ColumnWidget {
-    // info about how to expand maybe??
+
+}
+
+impl Widget for ColumnWidget {
+    fn layout(&mut self, bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
+        fill_container(bc, children, ctx, FlexDir::Y)
+    }
+
 }
 
 
@@ -52,7 +66,6 @@ fn preprocess_children(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutConte
 
         // Child without flex
         if ctx.widget_geometry[child_id] == None {
-            println!("NO FLEX");
             // TODO: Maybe not use bc, but create new with width inf, pr https://www.youtube.com/watch?v=UUfXWzp0-DU
             return Some(LayoutResult::RequestChild(child_id, bc.clone()));
         }
@@ -175,12 +188,4 @@ fn fill_container(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, f
 
 
     LayoutResult::Size(size)
-}
-
-
-
-impl Widget for ColumnWidget {
-    fn layout(&mut self, bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
-        fill_container(bc, children, ctx, FlexDir::Y)
-    }
 }

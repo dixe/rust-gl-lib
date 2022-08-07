@@ -16,3 +16,7 @@ A elm inspired gui lib/framework. Builds on top of the regular gl lib.
 ## Tests
 
 Run with `cargo t -- --test-threads=1` to only have 1 sdl instance at a time.
+
+# Bugs
+
+[ ] Text renderer ignores scale when calling render box.

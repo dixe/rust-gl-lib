@@ -4,6 +4,7 @@ use crate::text_rendering::font::Font;
 
 
 pub mod widgets;
+pub mod render;
 
 pub type Id = usize;
 
@@ -144,21 +145,20 @@ pub struct ListenerCtx {
 }
 
 
+
+#[derive(Debug, Clone, Copy)]
+pub enum FlexDir {
+    X,
+    Y
+}
+
+
 #[derive(Default, Debug, Clone, Copy)]
 pub struct BoxContraint {
     pub min_w: Pixel,
     pub min_h: Pixel,
     pub max_w: Pixel,
     pub max_h: Pixel
-}
-
-
-
-
-#[derive(Debug, Clone, Copy)]
-pub enum FlexDir {
-    X,
-    Y
 }
 
 impl BoxContraint {
@@ -235,6 +235,11 @@ impl Size {
 
 pub trait Widget {
     fn layout(&mut self, bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> LayoutResult;
+
+
+    fn render(&self, geom: &Geometry, ctx: &mut render::RenderContext) {
+
+    }
 }
 
 
@@ -288,17 +293,13 @@ pub fn layout_widgets(root_bc: &BoxContraint, state: &mut UiState) {
             }
         };
 
+
         for (id, geom) in ctx.widget_geometry.iter().enumerate() {
 
             if let Some(g) = geom {
                 state.geom[id].pos = g.pos;
             }
-
-
         }
     }
-
-
-
 
 }
