@@ -28,6 +28,47 @@ impl Widget for TextWidget {
 }
 
 
+
+#[derive(Debug, Clone)]
+pub struct CounterWidget {
+    pub count: i32
+}
+
+
+impl Widget for CounterWidget {
+    fn layout(&mut self, bc: &BoxContraint, _children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
+
+        let text_size = TextRenderer::render_box(ctx.font, &format!("{}", self.count), bc.max_w as f32, 1.0);
+        LayoutResult::Size(Size {
+            pixel_w: Pixel::min(bc.max_w, Pixel::max(text_size.total_width as i32, bc.min_w)),
+            pixel_h: Pixel::min(bc.max_h, Pixel::max(text_size.total_height as i32, bc.min_h))
+        })
+    }
+
+
+    fn render(&self, geom: &Geometry, ctx: &mut render::RenderContext) {
+        render::render_text(&format!("{}", self.count), 1.0, geom, ctx);
+    }
+
+
+    fn handle_event(&mut self, event: &mut dyn Any) {
+
+        println!("Handling event {:?}", event);
+        println!("bool {:?}", event.is::<i32>());
+
+        println!("{:#?}", *event);
+        let value = match event.downcast_mut::<i32>() {
+            Some(val) => val,
+            None => return
+        };
+
+        self.count += *value;
+    }
+}
+
+
+
+
 #[derive(Debug, Clone)]
 pub struct RowWidget {
 

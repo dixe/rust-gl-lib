@@ -1,14 +1,20 @@
 use std::collections::{VecDeque};
 use std::any::Any;
 use crate::text_rendering::font::Font;
+use sdl2::event;
 
 
 pub mod widgets;
 pub mod render;
+pub mod event_handling;
 
 pub type Id = usize;
 
 pub type Pixel = i32;
+
+pub type Handler = Box<dyn FnMut(&event::Event, &mut EventQueue)>;
+
+pub type Listener = Box<dyn FnMut(&mut dyn Any, &mut ListenerCtx)>;
 
 pub struct UiState {
     next_id: Id,
@@ -16,9 +22,11 @@ pub struct UiState {
     children: Vec<Vec<Id>>,
     parents: Vec<Id>,
     pub geom: Vec<Geometry>,
-    listeners: Vec<Box<dyn FnMut(&mut dyn Any, ListenerCtx)>>,
+    listeners: Vec<Listener>,
     size_constraints: Vec::<WidgetConstraint>,
     font: Font,
+    handlers: Vec<Handler>,
+    queues: Vec<EventQueue>
 }
 
 
@@ -33,7 +41,9 @@ impl UiState {
             geom: Vec::new(),
             listeners: Vec::new(),
             size_constraints: Vec::new(),
-            font: Default::default()
+            font: Default::default(),
+            handlers: Vec::new(),
+            queues: Vec::new(),
         }
     }
 
@@ -43,6 +53,9 @@ impl UiState {
         self.next_id += 1;
         self.widgets.push(widget);
         self.children.push(Vec::new());
+        self.queues.push(EventQueue::new());
+        self.handlers.push(Box::new(empty_handler));
+        self.listeners.push(Box::new(empty_listener));
 
         let parent_id = match parent {
             Some(p_id) => p_id,
@@ -65,8 +78,40 @@ impl UiState {
 
         id
     }
+
+    pub fn set_widget_handler(&mut self, id: Id, handler: Handler) {
+        self.handlers[id] = handler;
+    }
+
+    pub fn set_widget_listener(&mut self, id: Id, listener: Listener) {
+        self.listeners[id] = listener;
+    }
 }
 
+
+
+pub struct EventQueue {
+    data: VecDeque<Box<dyn Any>>
+}
+
+
+impl EventQueue {
+
+    pub fn new() -> Self {
+        Self {
+            data: VecDeque::new()
+        }
+    }
+
+    pub fn push_value<T>(&mut self, event: T) where T: Sized + 'static {
+        self.data.push_back(Box::new(event));
+    }
+
+    pub fn push_back(&mut self, event: Box<Any>) {
+        self.data.push_back(event);
+    }
+
+}
 
 #[derive(Debug, Clone)]
 pub struct WidgetConstraint {
@@ -140,8 +185,10 @@ pub struct Geometry {
 }
 
 
-#[derive(Default, Debug, Clone)]
-pub struct ListenerCtx {
+#[derive(Default)]
+pub struct ListenerCtx<'a> {
+    pub id: Id,
+    pub widgets: &'a mut [Box<dyn Widget>]
 }
 
 
@@ -240,6 +287,11 @@ pub trait Widget {
     fn render(&self, geom: &Geometry, ctx: &mut render::RenderContext) {
 
     }
+
+    fn handle_event(&mut self, event: &mut dyn Any) {
+
+    }
+
 }
 
 
@@ -301,5 +353,15 @@ pub fn layout_widgets(root_bc: &BoxContraint, state: &mut UiState) {
             }
         }
     }
+
+}
+
+
+fn empty_handler(_: &event::Event, _: &mut EventQueue) {
+
+}
+
+
+fn empty_listener(_: &mut dyn Any, _: &mut ListenerCtx) {
 
 }
