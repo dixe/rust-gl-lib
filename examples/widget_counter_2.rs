@@ -6,6 +6,8 @@ use gl_lib::widget_gui::widgets::*;
 use gl_lib::widget_gui::event_handling::{handle_events, run_listeners};
 use sdl2::event;
 use std::any::Any;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 fn main() -> Result<(), failure::Error> {
 
@@ -44,7 +46,7 @@ fn main() -> Result<(), failure::Error> {
     // Setup widget ui
 
 
-    let mut ui_state = create_ui();
+    let (ui_info, mut ui_state) = create_ui();
 
     let font = Default::default();
 
@@ -82,11 +84,11 @@ fn main() -> Result<(), failure::Error> {
             handle_widget_event(2, 1, event, &mut ui_state.queues);
         }
 
-
-
-        write_count(1, &ui_state);
-
         run_listeners(&mut ui_state);
+
+        write_count(&ui_info);
+
+
         // rendering
         unsafe {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -99,25 +101,15 @@ fn main() -> Result<(), failure::Error> {
 }
 
 
-fn write_count(id:Id, state: &UiState) {
-
-    let w = match state.widgets()[id].as_any().downcast_ref::<CounterWidget>() {
-        Some(counter) => counter,
-        None => {
-            println!("Failed to downcast {:?} to counter",id);
-            return;
-        }
-    };
-
-    println!("{:?}", w.count);
-
+fn write_count(info: &UiInfo) {
+    println!("{:?}", info.counter_ref);
 }
+
 
 fn handle_widget_event(add_button_id: Id, counter_id: Id, event: HandlerEvent, widget_queues: &mut [EventQueue]) {
 
     match event.target_id {
         add_button_id => {
-
             widget_queues[counter_id].push_back(Box::new(1));
         }
 
@@ -125,8 +117,14 @@ fn handle_widget_event(add_button_id: Id, counter_id: Id, event: HandlerEvent, w
 
 }
 
+struct UiInfo {
+    counter_ref: Rc<RefCell::<i32>>,
+    counter_id: Id,
+    button_id: Id
+}
 
-fn create_ui() -> UiState {
+
+fn create_ui() -> (UiInfo, UiState) {
 
 
     let mut ui_state = UiState::new();
@@ -134,7 +132,9 @@ fn create_ui() -> UiState {
 
     let row_id = ui_state.add_widget(Box::new(row), None, None);
 
-    let counter_widget_1 = CounterWidget { count: 0 };
+    let counter_ref = Rc::new(RefCell::new(0));
+
+    let counter_widget_1 = CounterWidget { count: Rc::clone(&counter_ref) };
     let counter_id = ui_state.add_widget(Box::new(counter_widget_1), Some(row_id), None);
 
     // Add listener for counter
@@ -151,10 +151,8 @@ fn create_ui() -> UiState {
     // Add listener for button
     ui_state.set_widget_listener(button_id, Box::new(button_listener));
 
-    println!("Counter_id {:?}", counter_id);
 
-
-    ui_state
+    (UiInfo {counter_id, button_id, counter_ref }, ui_state)
 
 }
 
@@ -174,7 +172,6 @@ fn button_handler(event: &event::Event, self_id: Id, queue: &mut HandlerQueue) {
     use event::Event::*;
     match event {
         MouseButtonUp { mouse_btn, ..} => {
-
             // TODO: only on left click
             queue.push_back(HandlerEvent { target_id: self_id, event: Box::new(1)});
         },
@@ -187,7 +184,6 @@ fn button_handler(event: &event::Event, self_id: Id, queue: &mut HandlerQueue) {
 
 fn button_listener(event: Box::<dyn Any>, ctx: &mut ListenerCtx) {
 
-    println!("BTN LISTEN {:?}", event);
     let widget = &mut ctx.widgets[ctx.id];
 
     widget.handle_event(event);

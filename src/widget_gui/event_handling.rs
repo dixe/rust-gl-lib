@@ -10,7 +10,6 @@ pub fn handle_events(state: &mut UiState, event: &event::Event) {
     let handler = &mut state.handlers[id];
 
     handler(&event, id, &mut state.handler_queue);
-
 }
 
 
