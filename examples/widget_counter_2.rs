@@ -84,6 +84,8 @@ fn main() -> Result<(), failure::Error> {
 
 
 
+        write_count(1, &ui_state);
+
         run_listeners(&mut ui_state);
         // rendering
         unsafe {
@@ -97,11 +99,25 @@ fn main() -> Result<(), failure::Error> {
 }
 
 
+fn write_count(id:Id, state: &UiState) {
+
+    let w = match state.widgets()[id].as_any().downcast_ref::<CounterWidget>() {
+        Some(counter) => counter,
+        None => {
+            println!("Failed to downcast {:?} to counter",id);
+            return;
+        }
+    };
+
+    println!("{:?}", w.count);
+
+}
+
 fn handle_widget_event(add_button_id: Id, counter_id: Id, event: HandlerEvent, widget_queues: &mut [EventQueue]) {
 
     match event.target_id {
         add_button_id => {
-            println!("add to counter {:?}", counter_id);
+
             widget_queues[counter_id].push_back(Box::new(1));
         }
 
@@ -135,6 +151,8 @@ fn create_ui() -> UiState {
     // Add listener for button
     ui_state.set_widget_listener(button_id, Box::new(button_listener));
 
+    println!("Counter_id {:?}", counter_id);
+
 
     ui_state
 
@@ -156,7 +174,7 @@ fn button_handler(event: &event::Event, self_id: Id, queue: &mut HandlerQueue) {
     use event::Event::*;
     match event {
         MouseButtonUp { mouse_btn, ..} => {
-            println!("{:?}", event);
+
             // TODO: only on left click
             queue.push_back(HandlerEvent { target_id: self_id, event: Box::new(1)});
         },
@@ -169,7 +187,7 @@ fn button_handler(event: &event::Event, self_id: Id, queue: &mut HandlerQueue) {
 
 fn button_listener(event: Box::<dyn Any>, ctx: &mut ListenerCtx) {
 
-    println!("{:?}", event);
+    println!("BTN LISTEN {:?}", event);
     let widget = &mut ctx.widgets[ctx.id];
 
     widget.handle_event(event);

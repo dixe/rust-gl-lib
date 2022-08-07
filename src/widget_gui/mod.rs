@@ -94,6 +94,10 @@ impl UiState {
         self.listeners[id] = listener;
     }
 
+    pub fn widgets(&self) -> &[Box::<dyn Widget>] {
+        &self.widgets
+    }
+
 
 }
 
@@ -138,6 +142,7 @@ impl EventQueue {
 
 
 }
+
 
 #[derive(Debug, Clone)]
 pub struct WidgetConstraint {
@@ -318,6 +323,17 @@ pub trait Widget {
 
     }
 
+}
+
+
+pub trait AToAny: 'static {
+    fn as_any(&self) -> &dyn Any;
+}
+
+impl<T: 'static> AToAny for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 
