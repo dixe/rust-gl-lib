@@ -1,6 +1,6 @@
 use crate::widget_gui::*;
-use crate::text_rendering::{text_renderer::TextRenderer, font::Font};
-use crate::{gl::{self, viewport}, shader::TransformationShader, objects::square, ScreenBox};
+use crate::text_rendering::{text_renderer::TextRenderer};
+use crate::{gl::{self, viewport}, ScreenBox};
 
 
 pub struct RenderContext<'a> {

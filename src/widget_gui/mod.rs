@@ -12,9 +12,9 @@ pub type Id = usize;
 
 pub type Pixel = i32;
 
-pub type Handler = Box<dyn FnMut(&event::Event, &mut EventQueue)>;
+pub type Handler = Box<dyn FnMut(&event::Event, Id, &mut HandlerQueue)>;
 
-pub type Listener = Box<dyn FnMut(Box::<Any>, &mut ListenerCtx)>;
+pub type Listener = Box<dyn FnMut(Box::<dyn Any>, &mut ListenerCtx)>;
 
 pub struct UiState {
     next_id: Id,
@@ -26,7 +26,8 @@ pub struct UiState {
     size_constraints: Vec::<WidgetConstraint>,
     font: Font,
     handlers: Vec<Handler>,
-    queues: Vec<EventQueue>
+    pub queues: Vec<EventQueue>,
+    handler_queue: HandlerQueue
 }
 
 
@@ -44,6 +45,7 @@ impl UiState {
             font: Default::default(),
             handlers: Vec::new(),
             queues: Vec::new(),
+            handler_queue: VecDeque::new()
         }
     }
 
@@ -54,7 +56,8 @@ impl UiState {
         self.widgets.push(widget);
         self.children.push(Vec::new());
         self.queues.push(EventQueue::new());
-        self.handlers.push(Box::new(empty_handler));
+        let eh = empty_handler;
+        self.handlers.push(Box::new(eh));
         self.listeners.push(Box::new(empty_listener));
 
         let parent_id = match parent {
@@ -79,6 +82,10 @@ impl UiState {
         id
     }
 
+    pub fn poll_widget_event(&mut self) -> Option<HandlerEvent> {
+        self.handler_queue.pop_front()
+    }
+
     pub fn set_widget_handler(&mut self, id: Id, handler: Handler) {
         self.handlers[id] = handler;
     }
@@ -86,8 +93,22 @@ impl UiState {
     pub fn set_widget_listener(&mut self, id: Id, listener: Listener) {
         self.listeners[id] = listener;
     }
+
+
 }
 
+
+
+
+pub type HandlerQueue = VecDeque::<HandlerEvent>;
+
+
+
+#[derive(Debug)]
+pub struct HandlerEvent {
+    pub event: Box::<dyn Any>,
+    pub target_id: Id
+}
 
 
 pub struct EventQueue {
@@ -107,9 +128,14 @@ impl EventQueue {
         self.data.push_back(Box::new(event));
     }
 
-    pub fn push_back(&mut self, event: Box<Any>) {
+    pub fn push_back(&mut self, event: Box<dyn Any>) {
         self.data.push_back(event);
     }
+
+    pub fn pop_front(&mut self) -> Option<Box<dyn Any>> {
+        self.data.pop_front()
+    }
+
 
 }
 
@@ -188,7 +214,7 @@ pub struct Geometry {
 #[derive(Default)]
 pub struct ListenerCtx<'a> {
     pub id: Id,
-    pub widgets: &'a mut [Box<dyn Widget>]
+    pub widgets: &'a mut [Box<dyn Widget>],
 }
 
 
@@ -284,11 +310,11 @@ pub trait Widget {
     fn layout(&mut self, bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> LayoutResult;
 
 
-    fn render(&self, geom: &Geometry, ctx: &mut render::RenderContext) {
+    fn render(&self, _: &Geometry, _: &mut render::RenderContext) {
 
     }
 
-    fn handle_event(&mut self, event: Box::<Any>) {
+    fn handle_event(&mut self, _: Box::<dyn Any>) {
 
     }
 
@@ -357,11 +383,11 @@ pub fn layout_widgets(root_bc: &BoxContraint, state: &mut UiState) {
 }
 
 
-fn empty_handler(_: &event::Event, _: &mut EventQueue) {
+fn empty_handler(_: &event::Event, _: Id, _: &mut HandlerQueue) {
 
 }
 
 
-fn empty_listener(_: Box::<Any>, _: &mut ListenerCtx) {
+fn empty_listener(_: Box::<dyn Any>, _: &mut ListenerCtx) {
 
 }

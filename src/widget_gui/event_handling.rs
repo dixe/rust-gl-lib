@@ -7,25 +7,34 @@ pub fn handle_events(state: &mut UiState, event: &event::Event) {
     // for now use the first widget
 
 
-    let id = 0;
+    let id = 2;
     let handler = &mut state.handlers[id];
 
-    handler(&event, &mut state.queues[id]);
+    handler(&event, id, &mut state.handler_queue);
 
 
 
-    let mut listen_ctx = ListenerCtx {
-        id,
-        widgets: state.widgets.as_mut_slice()
-    };
-
-    let listener = &mut state.listeners[id];
+}
 
 
+pub fn run_listeners(state: &mut UiState) {
 
-    while let Some(event) = state.queues[id].data.pop_front() {
-        listener(event, &mut listen_ctx);
+    for id in 0..state.queues.len() {
+
+        let mut listen_ctx = ListenerCtx {
+            id,
+            widgets: state.widgets.as_mut_slice(),
+
+        };
+
+        while let Some(e) = state.queues[id].pop_front() {
+
+            println!("id  ={:?} , {:?}", id, e);
+
+        let listener = &mut state.listeners[id];
+            listener(e, &mut listen_ctx);
+        }
+
     }
-
 
 }
