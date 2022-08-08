@@ -1,12 +1,17 @@
+use crate::na::{self, Matrix4, Translation3};
 use crate::widget_gui::*;
 use crate::text_rendering::{text_renderer::TextRenderer};
-use crate::{gl::{self, viewport}, ScreenBox};
+use crate::{gl::{self, viewport}, ScreenBox, ScreenCoords};
+use crate::shader::{ TransformationShader, rounded_rect_shader::{RoundedRectShader, Uniforms}};
+use crate::objects::square;
 
 
 pub struct RenderContext<'a> {
     pub gl: &'a gl::Gl,
     pub tr: &'a mut TextRenderer,
-    pub viewport: &'a viewport::Viewport
+    pub viewport: &'a viewport::Viewport,
+    pub render_square: &'a square::Square,
+    pub rounded_rect_shader: &'a mut RoundedRectShader
 }
 
 
@@ -38,5 +43,60 @@ pub fn transform_to_screen_space(geom: &Geometry, viewport: &viewport::Viewport)
 pub fn render_text(text: &str, scale: f32, geom: &Geometry, ctx: &mut RenderContext) {
 
     let sb = transform_to_screen_space(geom, &ctx.viewport);
+
+    //println!("{:?}", sb);
+    //println!("{:?}", geom);
     ctx.tr.render_text(ctx.gl, &text,  Default::default(), sb, scale);
+}
+
+
+pub fn render_round_rect(geom: &Geometry, ctx: &mut RenderContext) {
+    ctx.rounded_rect_shader.shader.set_used();
+
+    let transform = unit_square_transform_matrix(geom, ctx);
+
+    ctx.rounded_rect_shader.set_transform(transform);
+
+    let color_scale = 1.0;
+    ctx.rounded_rect_shader.set_uniforms(Uniforms { color_scale,
+                                        h_half: geom.size.pixel_h as f32 / ctx.viewport.h as f32,
+                                        w_half: geom.size.pixel_w as f32 /  ctx.viewport.w as f32,
+                                        radius: 0.3
+    });
+
+
+    ctx.render_square.render(ctx.gl);
+}
+
+
+
+pub fn unit_square_transform_matrix(geom: &Geometry, ctx: &RenderContext) -> na::Matrix4::<f32> {
+
+    let sc_top_left = window_to_screen_coords(geom.pos.x as f32, geom.pos.y as f32, ctx.viewport.w as f32, ctx.viewport.h as f32);
+
+    let x_scale = geom.size.pixel_w as f32 / ctx.viewport.w as f32 * 2.0;
+    let y_scale = geom.size.pixel_h as f32  / ctx.viewport.h as f32 * 2.0;
+
+    let mut model = na::Matrix4::<f32>::identity();
+
+    // Scale to size
+    model[0] = x_scale;
+    model[5] = y_scale;
+
+    // move to position
+
+    let x_move = sc_top_left.x + x_scale * 0.5;
+    let y_move = sc_top_left.y - y_scale * 0.5;
+
+    let trans = Translation3::new(x_move, y_move, 0.0);
+
+    model = trans.to_homogeneous() * model;
+
+    model
+}
+
+
+
+pub fn window_to_screen_coords(x: f32, y: f32, w: f32, h: f32) -> ScreenCoords {
+    ScreenCoords {x : x *2.0/ w  - 1.0, y: -y *2.0 / h + 1.0 }
 }

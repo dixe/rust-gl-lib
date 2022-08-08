@@ -12,7 +12,7 @@ pub type Id = usize;
 
 pub type Pixel = i32;
 
-pub type Handler = Box<dyn FnMut(&event::Event, Id, &mut HandlerQueue)>;
+pub type Dispatcher = Box<dyn FnMut(&event::Event, Id, &mut DispatcherQueue)>;
 
 pub type Listener = Box<dyn FnMut(Box::<dyn Any>, &mut ListenerCtx)>;
 
@@ -25,9 +25,9 @@ pub struct UiState {
     listeners: Vec<Listener>,
     size_constraints: Vec::<WidgetConstraint>,
     font: Font,
-    handlers: Vec<Handler>,
+    dispatchers: Vec<Dispatcher>,
     pub queues: Vec<EventQueue>,
-    handler_queue: HandlerQueue
+    dispatcher_queue: DispatcherQueue
 }
 
 
@@ -43,9 +43,9 @@ impl UiState {
             listeners: Vec::new(),
             size_constraints: Vec::new(),
             font: Default::default(),
-            handlers: Vec::new(),
+            dispatchers: Vec::new(),
             queues: Vec::new(),
-            handler_queue: VecDeque::new()
+            dispatcher_queue: VecDeque::new()
         }
     }
 
@@ -56,8 +56,8 @@ impl UiState {
         self.widgets.push(widget);
         self.children.push(Vec::new());
         self.queues.push(EventQueue::new());
-        let eh = empty_handler;
-        self.handlers.push(Box::new(eh));
+        let eh = empty_dispatcher;
+        self.dispatchers.push(Box::new(eh));
         self.listeners.push(Box::new(empty_listener));
 
         let parent_id = match parent {
@@ -82,12 +82,12 @@ impl UiState {
         id
     }
 
-    pub fn poll_widget_event(&mut self) -> Option<HandlerEvent> {
-        self.handler_queue.pop_front()
+    pub fn poll_widget_event(&mut self) -> Option<DispatcherEvent> {
+        self.dispatcher_queue.pop_front()
     }
 
-    pub fn set_widget_handler(&mut self, id: Id, handler: Handler) {
-        self.handlers[id] = handler;
+    pub fn set_widget_dispatcher(&mut self, id: Id, dispatcher: Dispatcher) {
+        self.dispatchers[id] = dispatcher;
     }
 
     pub fn set_widget_listener(&mut self, id: Id, listener: Listener) {
@@ -99,17 +99,40 @@ impl UiState {
     }
 
 
+    fn get_widget(&self, pos: Position) -> Option<Id> {
+
+        // For now use invariant that children has higher id than parents, so reverse the search order to highest id to lowest
+        // First match is a leaf in the tree
+        // return the deepest node in tree that macthes
+
+        let mut match_id = None;
+
+        for id in (0..self.geom.len()).rev() {
+            if self.geom[id].contains_position(pos) {
+                match_id = Some(id);
+                println!("{:?} MATCHED  id={:?} with geom =  {:?} ", pos, id, &self.geom[id]);
+                break;
+            }
+            else {
+                println!("{:?} did not match id={:?} with geom =  {:?} ", pos, id, &self.geom[id]);
+            }
+        }
+
+        match_id
+    }
 }
 
 
 
 
-pub type HandlerQueue = VecDeque::<HandlerEvent>;
+
+
+pub type DispatcherQueue = VecDeque::<DispatcherEvent>;
 
 
 
 #[derive(Debug)]
-pub struct HandlerEvent {
+pub struct DispatcherEvent {
     pub event: Box::<dyn Any>,
     pub target_id: Id
 }
@@ -215,6 +238,16 @@ pub struct Geometry {
     pub size: Size
 }
 
+impl Geometry {
+
+    fn contains_position(&self, pos: Position) -> bool {
+
+        pos.x >= self.pos.x && pos.x <= (self.pos.x + self.size.pixel_w) &&
+            pos.y >= self.pos.y && pos.y <= (self.pos.y + self.size.pixel_h)
+
+    }
+
+}
 
 #[derive(Default)]
 pub struct ListenerCtx<'a> {
@@ -399,7 +432,7 @@ pub fn layout_widgets(root_bc: &BoxContraint, state: &mut UiState) {
 }
 
 
-fn empty_handler(_: &event::Event, _: Id, _: &mut HandlerQueue) {
+fn empty_dispatcher(_: &event::Event, _: Id, _: &mut DispatcherQueue) {
 
 }
 

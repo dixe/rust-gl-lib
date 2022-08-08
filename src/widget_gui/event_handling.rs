@@ -1,15 +1,32 @@
 use crate::widget_gui::*;
 use sdl2::event;
 
-pub fn handle_events(state: &mut UiState, event: &event::Event) {
+pub fn dispatch_events(state: &mut UiState, event: &event::Event) {
 
-    // TODO: figure out which widget gets the event, then from there propagate up usig parent
-    // for now use the first widget
+    use event::Event::*;
 
-    let id = 2;
-    let handler = &mut state.handlers[id];
+    // Text events. Dispatch to the current focus
+    if event.is_text() {
+        return;
+    }
 
-    handler(&event, id, &mut state.handler_queue);
+    // Mouse events are dispatches to the matching widget, given position
+    if event.is_mouse() {
+        match event {
+            MouseButtonUp { mouse_btn, x, y, ..} => {
+
+                let pos = Position {x: *x, y: *y};
+                if let Some(id) = state.get_widget(pos) {
+                    println!("{:?}", id);
+                    let dispatcher = &mut state.dispatchers[id];
+                    dispatcher(&event, id, &mut state.dispatcher_queue);
+                }
+
+            },
+            _ => {}
+        };
+        return;
+    }
 }
 
 

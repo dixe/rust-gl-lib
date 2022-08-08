@@ -26,9 +26,9 @@ impl<State> Widget for ButtonWidget<State> {
 
 
     fn render(&self, geom: &Geometry, ctx: &mut render::RenderContext) {
-
+        //println!("rneder button");
+        render::render_round_rect(geom, ctx);
         render::render_text(&self.text, 1.0, geom, ctx);
-
     }
 
 
