@@ -131,10 +131,9 @@ impl TextRenderer {
                 current_max_h = 0.0;
             }
 
-
             info.y += y_offset;
 
-            current_max_h = f32::max(current_max_h, info.chr.height);
+            current_max_h = f32::max(current_max_h, info.chr.height + info.chr.y_offset);
             current_w = info.x + info.chr.x_advance;
         }
 
@@ -150,7 +149,6 @@ impl TextRenderer {
     /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered.
     /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
     pub fn render_text(&mut self, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, input_scale: f32) {
-
 
         let scale_x = 2.0 / screen_box.screen_w * input_scale;
 
@@ -179,6 +177,7 @@ impl TextRenderer {
             };
 
 
+
             info.x = info.x + x_offset;
             info.y = info.y + y_offset;
         }
@@ -195,13 +194,12 @@ impl TextRenderer {
 
 
         self.render_text_quads(gl, &draw_info);
-
     }
 
 
     fn render_text_quads(&mut self , gl: &gl::Gl, draw_info: &DrawInfo) {
-        // Draw the chars
 
+        // Draw the chars
         let buffer_size = self.char_quad.buffer_size();
         let mut i = 0;
         for info in draw_info.chars_info.iter() {
@@ -223,6 +221,8 @@ impl TextRenderer {
         }
 
         self.char_quad.render(gl, i);
+
+
     }
 
     pub fn font(&self) -> &Font {
