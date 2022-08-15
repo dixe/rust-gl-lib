@@ -114,7 +114,8 @@ impl TextRenderer {
         let mut total_height = 0.0;
         let mut total_width = 0.0;
         // Process chars to wrap newlines, on whole word if possible
-        let mut current_max_h = 0.0;
+        let mut current_max_h = font.info.line_height;
+
 
         let mut current_w = 0.0;
         for info in chars_info.iter_mut() {
@@ -203,7 +204,6 @@ impl TextRenderer {
         let buffer_size = self.char_quad.buffer_size();
         let mut i = 0;
         for info in draw_info.chars_info.iter() {
-
             if info.y > draw_info.bottom {
                 break;
             }
