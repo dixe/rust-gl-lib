@@ -66,7 +66,7 @@ fn preprocess_children(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutConte
     None
 }
 
-
+#[derive(Debug)]
 struct FlexInfo {
     space_per_flex: Pixel,
     sum_flex_factor: Pixel,

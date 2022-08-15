@@ -17,7 +17,6 @@ pub fn dispatch_events(state: &mut UiState, event: &event::Event) {
 
                 let pos = Position {x: *x, y: *y};
                 if let Some(id) = state.get_widget(pos) {
-                    println!("{:?}", id);
                     let dispatcher = &mut state.dispatchers[id];
                     dispatcher(&event, id, &mut state.dispatcher_queue);
                 }

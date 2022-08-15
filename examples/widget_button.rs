@@ -11,6 +11,8 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+
+
 fn main() -> Result<(), failure::Error> {
 
     // Init sdl to use opengl
@@ -48,8 +50,7 @@ fn main() -> Result<(), failure::Error> {
     // Setup widget ui
 
 
-    let mut ui_state = create_ui();
-
+    let (mut ui_info, mut ui_state) = create_ui();
 
     let font = Default::default();
     let mut text_renderer = TextRenderer::new(&gl, font) ;
@@ -79,14 +80,24 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
     loop {
-        layout_widgets(&root_box, &mut ui_state);
+
         // dispatch events
 
         for event in event_pump.poll_iter() {
             dispatch_events(&mut ui_state, &event);
         }
 
+        // handle events for each widget
+        while let Some(event) = ui_state.poll_widget_event() {
+            handle_widget_event(&mut ui_info, event, &mut ui_state.queues);
+        }
 
+        run_listeners(&mut ui_state);
+
+        //write_count(&ui_info);
+
+
+        layout_widgets(&root_box, &mut ui_state);
 
         // rendering
         unsafe {
@@ -101,38 +112,37 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-fn create_ui() -> UiState {
+
+fn handle_widget_event(ui_info: &mut UiInfo, event: DispatcherEvent, widget_queues: &mut [EventQueue]) {
+    if event.target_id == ui_info.button_id {
+        println!("pressed");
+    }
+}
+
+struct UiInfo {
+    button_id: Id,
+}
+
+
+fn create_ui() -> (UiInfo, UiState) {
+
 
     let mut ui_state = UiState::new();
-    let counter_widget_1 = CounterWidget { count: Rc::new(RefCell::new(0)) };
-    let counter_id = ui_state.add_widget(Box::new(counter_widget_1), None, None);
+    let row = RowWidget {};
 
-    // Add dispatcher for counter
-    ui_state.set_widget_dispatcher(counter_id, Box::new(counter_dispatcher));
+    //let row_id = ui_state.add_widget(Box::new(row), None, None);
+    let button_widget = ButtonWidget::<Id> { text: "+".to_string(), text_scale: 1.0, state: 0  };
 
-    // Add listener for counter
-    ui_state.set_widget_listener(counter_id, Box::new(counter_listener));
+    let button_id = ui_state.add_widget(Box::new(button_widget), None, None);
 
-    ui_state
-
-}
+    // Add dispatcher for add button
+    ui_state.set_widget_dispatcher(button_id, Box::new(button_dispatcher));
 
 
-fn counter_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
-    use event::Event::*;
-    match event {
-        TextInput { text, ..} => {
-            match text.as_str() {
-                " " => {
-                    queue.push_back(DispatcherEvent {target_id: self_id, event: Box::new(42i32)});
-                },
-                _ => {}
-            }
-        }
-        _ => {}
-    };
+    (UiInfo {button_id }, ui_state)
 
 }
+
 
 
 fn counter_listener(event: Box::<dyn Any>, ctx: &mut ListenerCtx) {
@@ -140,4 +150,18 @@ fn counter_listener(event: Box::<dyn Any>, ctx: &mut ListenerCtx) {
     let widget = &mut ctx.widgets[ctx.id];
 
     widget.handle_event(event);
+}
+
+
+
+
+fn button_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
+    use event::Event::*;
+    match event {
+        MouseButtonUp { mouse_btn, ..} => {
+            // TODO: only on left click
+            queue.push_back(DispatcherEvent { target_id: self_id, event: Box::new(())});
+        },
+        _ => {}
+    };
 }

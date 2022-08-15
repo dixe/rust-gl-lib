@@ -5,15 +5,14 @@ use crate::text_rendering::text_renderer::TextRenderer;
 
 
 #[derive(Debug, Clone)]
-pub struct ButtonWidget<State> {
+pub struct ButtonWidget {
     pub text: String,
     pub text_scale: f32,
-    pub state: State
 
 }
 
 
-impl<State> Widget for ButtonWidget<State> {
+impl Widget for ButtonWidget {
     fn layout(&mut self, bc: &BoxContraint, _children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
 
         let text_size = TextRenderer::render_box(ctx.font, &self.text, bc.max_w as f32, 1.0);

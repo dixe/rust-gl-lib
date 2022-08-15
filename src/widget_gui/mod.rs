@@ -110,11 +110,11 @@ impl UiState {
         for id in (0..self.geom.len()).rev() {
             if self.geom[id].contains_position(pos) {
                 match_id = Some(id);
-                println!("{:?} MATCHED  id={:?} with geom =  {:?} ", pos, id, &self.geom[id]);
+                //println!("{:?} MATCHED  id={:?} with geom =  {:?} ", pos, id, &self.geom[id]);
                 break;
             }
             else {
-                println!("{:?} did not match id={:?} with geom =  {:?} ", pos, id, &self.geom[id]);
+                //println!("{:?} did not match id={:?} with geom =  {:?} ", pos, id, &self.geom[id]);
             }
         }
 

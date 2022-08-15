@@ -3,11 +3,15 @@ use failure;
 use gl_lib::widget_gui::*;
 use gl_lib::text_rendering::text_renderer::TextRenderer;
 use gl_lib::widget_gui::widgets::*;
-use gl_lib::widget_gui::event_handling::{handle_events, run_listeners};
+use gl_lib::widget_gui::event_handling::{dispatch_events, run_listeners};
+use gl_lib::shader::rounded_rect_shader::RoundedRectShader;
+use gl_lib::objects::square::Square;
 use sdl2::event;
 use std::any::Any;
 use std::cell::RefCell;
 use std::rc::Rc;
+
+
 
 fn main() -> Result<(), failure::Error> {
 
@@ -46,18 +50,21 @@ fn main() -> Result<(), failure::Error> {
     // Setup widget ui
 
 
-    let (ui_info, mut ui_state) = create_ui();
+    let (mut ui_info, mut ui_state) = create_ui();
 
     let font = Default::default();
-
     let mut text_renderer = TextRenderer::new(&gl, font) ;
-
-
     text_renderer.setup_blend(&gl);
+    let mut rrs = RoundedRectShader::new(&gl).unwrap();
+
+    let square = Square::new(&gl);
+
     let mut render_ctx = render::RenderContext {
         gl: &gl,
         viewport: &viewport,
-        tr: &mut text_renderer
+        tr: &mut text_renderer,
+        rounded_rect_shader: &mut rrs,
+        render_square: &square
     };
 
 
@@ -73,21 +80,24 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
     loop {
-        layout_widgets(&root_box, &mut ui_state);
-        // handle events
+
+        // dispatch events
 
         for event in event_pump.poll_iter() {
-            handle_events(&mut ui_state, &event);
+            dispatch_events(&mut ui_state, &event);
         }
 
+        // handle events for each widget
         while let Some(event) = ui_state.poll_widget_event() {
-            handle_widget_event(2, 1, event, &mut ui_state.queues);
+            handle_widget_event(&mut ui_info, event, &mut ui_state.queues);
         }
 
         run_listeners(&mut ui_state);
 
-        write_count(&ui_info);
+        //write_count(&ui_info);
 
+
+        layout_widgets(&root_box, &mut ui_state);
 
         // rendering
         unsafe {
@@ -101,26 +111,29 @@ fn main() -> Result<(), failure::Error> {
 }
 
 
+
+
 fn write_count(info: &UiInfo) {
-    println!("{:?}", info.counter_ref);
+    println!("Counter is {:?}", info.counter_ref);
 }
 
 
-fn handle_widget_event(add_button_id: Id, counter_id: Id, event: HandlerEvent, widget_queues: &mut [EventQueue]) {
+fn handle_widget_event(ui_info: &mut UiInfo, event: DispatcherEvent, widget_queues: &mut [EventQueue]) {
+    if event.target_id == ui_info.add_button_id {
+        widget_queues[ui_info.counter_id].push_back(Box::new(1));;
+    }
 
-    match event.target_id {
-        add_button_id => {
-            widget_queues[counter_id].push_back(Box::new(1));
-        }
+    if event.target_id == ui_info.sub_button_id {
 
-    };
+    }
 
 }
 
 struct UiInfo {
     counter_ref: Rc<RefCell::<i32>>,
     counter_id: Id,
-    button_id: Id
+    add_button_id: Id,
+    sub_button_id: Id,
 }
 
 
@@ -141,18 +154,23 @@ fn create_ui() -> (UiInfo, UiState) {
     ui_state.set_widget_listener(counter_id, Box::new(counter_listener));
 
 
-    let button_widget = ButtonWidget::<Id> { text: " + ".to_string(), text_scale: 1.0, state: counter_id  };
+    let add_button_widget = ButtonWidget { text: " + ".to_string(), text_scale: 1.0  };
 
-    let button_id = ui_state.add_widget(Box::new(button_widget), Some(row_id), None);
+    let add_button_id = ui_state.add_widget(Box::new(add_button_widget), Some(row_id), None);
 
-    // Add handler for button
-    ui_state.set_widget_handler(button_id, Box::new(button_handler));
-
-    // Add listener for button
-    ui_state.set_widget_listener(button_id, Box::new(button_listener));
+    // Add dispatcher for add button
+    ui_state.set_widget_dispatcher(add_button_id, Box::new(button_dispatcher));
 
 
-    (UiInfo {counter_id, button_id, counter_ref }, ui_state)
+    let sub_button_widget = ButtonWidget { text: " - ".to_string(), text_scale: 1.0  };
+
+    let sub_button_id = ui_state.add_widget(Box::new(sub_button_widget), Some(row_id), None);
+
+    // Add dispatcher for sub button
+    ui_state.set_widget_dispatcher(sub_button_id, Box::new(button_dispatcher));
+
+
+    (UiInfo {counter_id, add_button_id, sub_button_id, counter_ref }, ui_state)
 
 }
 
@@ -168,23 +186,13 @@ fn counter_listener(event: Box::<dyn Any>, ctx: &mut ListenerCtx) {
 
 
 
-fn button_handler(event: &event::Event, self_id: Id, queue: &mut HandlerQueue) {
+fn button_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
     use event::Event::*;
     match event {
         MouseButtonUp { mouse_btn, ..} => {
             // TODO: only on left click
-            queue.push_back(HandlerEvent { target_id: self_id, event: Box::new(1)});
+            queue.push_back(DispatcherEvent { target_id: self_id, event: Box::new(())});
         },
         _ => {}
     };
-
-
-}
-
-
-fn button_listener(event: Box::<dyn Any>, ctx: &mut ListenerCtx) {
-
-    let widget = &mut ctx.widgets[ctx.id];
-
-    widget.handle_event(event);
 }
