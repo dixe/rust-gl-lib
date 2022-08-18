@@ -14,7 +14,6 @@ pub fn dispatch_events(state: &mut UiState, event: &event::Event) {
     if event.is_mouse() {
         match event {
             MouseButtonUp { mouse_btn, x, y, ..} => {
-
                 let pos = Position {x: *x, y: *y};
                 if let Some(id) = state.get_widget(pos) {
                     let dispatcher = &mut state.dispatchers[id];

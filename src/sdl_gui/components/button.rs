@@ -55,10 +55,11 @@ impl<Message> ComponentTrait<Message> for Button<Message> where Message: Clone +
 
         self.shader.set_transform(transform);
 
+        //println!(" h_half= {:?} w_half = {}", self.base.height / screen_h, self.base.width / screen_w);
         self.shader.set_uniforms(Uniforms { color_scale,
-                                       h_half: self.base.height / screen_h,
-                                       w_half: self.base.width / screen_w,
-                                       radius: 0.3
+                                            pixel_height: self.base.height,
+                                            pixel_width: self.base.width,
+                                            radius: 50.0
         });
 
         render_square.render(&gl);

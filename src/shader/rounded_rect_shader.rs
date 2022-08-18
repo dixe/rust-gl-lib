@@ -26,9 +26,9 @@ impl RoundedRectShader {
 
         self.shader.set_f32(&self.gl, "color_scale", uni.color_scale);
 
-        self.shader.set_f32(&self.gl, "h_half", uni.h_half);
+        self.shader.set_f32(&self.gl, "pixel_height", uni.pixel_height);
 
-        self.shader.set_f32(&self.gl, "w_half", uni.w_half);
+        self.shader.set_f32(&self.gl, "pixel_width", uni.pixel_width);
 
         self.shader.set_f32(&self.gl, "radius", uni.radius);
     }
@@ -37,13 +37,13 @@ impl RoundedRectShader {
 #[derive(Clone, Debug, Copy)]
 pub struct Uniforms {
     pub color_scale: f32,
-    pub h_half : f32,
-    pub w_half: f32,
+    pub pixel_height : f32,
+    pub pixel_width: f32,
     pub radius: f32
 }
 
 impl TransformationShader for RoundedRectShader {
-  fn set_transform(&self, transform: na::Matrix4::<f32>) {
+    fn set_transform(&self, transform: na::Matrix4::<f32>) {
         self.shader.set_mat4(&self.gl, "transform", transform);
     }
 }
@@ -86,17 +86,19 @@ in VS_OUTPUT {
 
 out vec4 FragColor;
 
-uniform float w_half;
-uniform float h_half;
+uniform float pixel_width;
+uniform float pixel_height;
 
 uniform float radius;
 
 uniform float color_scale;
 
-float roundedRectangle(vec2 uv, vec2 size, float radius, float thickness)
+float roundedRectangle(vec2 p, vec2 size, float radius)
 {
-  float d = length(max(abs(uv), size) - size) - radius;
-  return smoothstep(0.66, 0.33, d / thickness);
+
+   return length(max(abs(p) - size + radius,0.0)) - radius;
+//   vec2 q = abs(uv) - size;
+  // return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
 }
 
 
@@ -108,25 +110,24 @@ void main()
 
     // Square is defined with corners in 0.5 and -0.5 on both x and y axis.
     // multiply by 2 to get -1.0...1.0 range
-    float u = IN.FragPos.x * 2.0;
+    float u = IN.FragPos.x * 2.0 ;
     float v = IN.FragPos.y * 2.0;
 
 
-    float aspect = w_half / h_half;
-
-    vec2 uv = vec2(u * aspect, v);
+    // uv but in screen space.
+    vec2 uv =  vec2(u * pixel_width , v * pixel_height);
 
     vec3 col = vec3(.8, 0.8, .8) * color_scale;
 
     // size = aspect - radius, 1.0 - radius
-    vec2 size = vec2(aspect - radius, 1.0 - radius);
+    vec2 size = vec2(pixel_width , pixel_height);
 
     // higher is more blur, and also thicker corners
-    float aa = 0.05;
-    float dist = roundedRectangle(uv, size, radius, aa);
-    col =  col * dist;
+    float dist = roundedRectangle(uv , size  , radius) ;
 
-    FragColor = vec4(col, smoothstep(0.9, 1.0, dist));
+
+    float alpha =  (1.0 - smoothstep(0.0, 1.0, dist));
+    FragColor = vec4(col, alpha);
 
 }";
 

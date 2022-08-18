@@ -1,3 +1,4 @@
+use std::ops;
 use std::collections::{VecDeque};
 use std::any::Any;
 use crate::text_rendering::font::Font;
@@ -7,6 +8,8 @@ use sdl2::event;
 pub mod widgets;
 pub mod render;
 pub mod event_handling;
+pub mod layout;
+use layout::*;
 
 pub type Id = usize;
 
@@ -23,7 +26,7 @@ pub struct UiState {
     parents: Vec<Id>,
     pub geom: Vec<Geometry>,
     listeners: Vec<Listener>,
-    size_constraints: Vec::<WidgetConstraint>,
+    attributes: Vec::<LayoutAttributes>,
     font: Font,
     dispatchers: Vec<Dispatcher>,
     pub queues: Vec<EventQueue>,
@@ -41,7 +44,7 @@ impl UiState {
             parents: Vec::new(),
             geom: Vec::new(),
             listeners: Vec::new(),
-            size_constraints: Vec::new(),
+            attributes: Vec::new(),
             font: Default::default(),
             dispatchers: Vec::new(),
             queues: Vec::new(),
@@ -49,7 +52,7 @@ impl UiState {
         }
     }
 
-    pub fn add_widget(&mut self, widget: Box<dyn Widget>, parent: Option<Id>, widget_constraint: Option::<WidgetConstraint>) -> Id {
+    pub fn add_widget(&mut self, widget: Box<dyn Widget>, parent: Option<Id>) -> Id {
 
         let id = self.next_id;
         self.next_id += 1;
@@ -71,12 +74,7 @@ impl UiState {
             self.children[parent_id].push(id);
         }
 
-        self.size_constraints.push(match widget_constraint {
-            Some(cons) => cons,
-            None => WidgetConstraint::no_flex()
-        });
-
-
+        self.attributes.push(Default::default());
         self.geom.push(Default::default());
 
         id
@@ -98,6 +96,9 @@ impl UiState {
         &self.widgets
     }
 
+    pub fn set_widget_attributes(&mut self, id: Id, attribs: LayoutAttributes) {
+        self.attributes[id] = attribs;
+    }
 
     fn get_widget(&self, pos: Position) -> Option<Id> {
 
@@ -167,35 +168,43 @@ impl EventQueue {
 }
 
 
-#[derive(Debug, Clone)]
-pub struct WidgetConstraint {
+
+#[derive(Default, Debug, Clone)]
+pub struct LayoutAttributes {
+    height: SizeConstraint,
     width: SizeConstraint,
-    height: SizeConstraint
+
 }
 
 
-impl WidgetConstraint {
+impl LayoutAttributes {
 
-    pub fn no_flex() -> Self {
-        Self {
-            width: SizeConstraint::NoFlex,
-            height: SizeConstraint::NoFlex
-        }
+    pub fn no_flex(mut self) -> Self {
+        self.width = SizeConstraint::NoFlex;
+        self.height = SizeConstraint::NoFlex;
+        self
     }
 
 
-    pub fn flex_width(factor: u8) -> Self {
-        Self {
-            width: SizeConstraint::Flex(factor.into()),
-            height: SizeConstraint::NoFlex
-        }
+    pub fn flex_width(mut self, factor: u8) -> Self {
+        self.width =SizeConstraint::Flex(factor.into());
+        self
     }
 
-    pub fn flex_height(factor: u8) -> Self {
-        Self {
-            width: SizeConstraint::NoFlex,
-            height: SizeConstraint::Flex(factor.into())
-        }
+    pub fn flex_height(mut self, factor: u8) -> Self {
+        self.height = SizeConstraint::Flex(factor.into());
+        self
+    }
+
+
+    pub fn width(mut self, width: SizeConstraint) -> Self {
+        self.width = width;
+        self
+    }
+
+    pub fn height(mut self, h: SizeConstraint) -> Self {
+        self.height = h;
+        self
     }
 
     pub fn constraint(&self, flex_dir: FlexDir) -> SizeConstraint {
@@ -206,18 +215,38 @@ impl WidgetConstraint {
     }
 }
 
-
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub enum SizeConstraint {
+    #[default]
     NoFlex,
+    Fixed(Pixel),
     Flex(u8),
 }
+
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct Position {
     pub x: Pixel,
     pub y: Pixel,
 }
+
+impl ops::Add for Position {
+    type Output = Position;
+
+    fn add(self, rhs: Self) -> Self {
+        Position { x: self.x + rhs.x, y: self.y + rhs.y}
+    }
+}
+
+
+impl ops::AddAssign for Position {
+
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
+}
+
 
 impl Position {
     pub fn add_by_flex(&mut self, val: Pixel, flex: FlexDir) {
@@ -305,28 +334,34 @@ impl BoxContraint {
 
 #[derive(Debug, Clone)]
 pub struct LayoutContext<'a> {
-    widget_geometry : Vec::<Option<Geometry>>,
-    size_constraints : &'a Vec::<WidgetConstraint>,
-    font: &'a Font
+    //widget_geometry : Vec::<Option<Geometry>>,
+    attributes : &'a Vec::<LayoutAttributes>,
+    font: &'a Font,
+    layout_geom: Vec::<Option<Geometry>>
+
 }
 
 impl<'a> LayoutContext<'a>{
 
-    fn new(widgets: usize, size_constraints: &'a Vec::<WidgetConstraint>, font: &'a Font ) -> Self {
+    fn new(widgets: usize, attributes: &'a Vec::<LayoutAttributes>, font: &'a Font ) -> Self {
         let mut res = Self {
-            widget_geometry: vec![],
-            size_constraints,
-            font
+            //idget_geometry: vec![],
+            attributes,
+            font,
+            layout_geom: vec![]
         };
 
         for _ in 0..widgets {
-            res.widget_geometry.push(None);
+            //res.widget_geometry.push(None);
+            res.layout_geom.push(None);
         }
 
         res
 
     }
 }
+
+
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct Size {
@@ -392,7 +427,7 @@ pub fn layout_widgets(root_bc: &BoxContraint, state: &mut UiState) {
 
     let mut process_queue = VecDeque::new();
 
-    let mut ctx = LayoutContext::new(state.widgets.len(), &state.size_constraints, &state.font);
+    let mut ctx = LayoutContext::new(state.widgets.len(), &state.attributes, &state.font);
 
     // Start by processing the root
     process_queue.push_back(ProcessData::new(0, *root_bc));
@@ -404,31 +439,71 @@ pub fn layout_widgets(root_bc: &BoxContraint, state: &mut UiState) {
 
         let children = &state.children[process_data.id];
 
-
         match widget.layout(&process_data.bc, children, &mut ctx) {
-            LayoutResult::Size(size) => {
+            LayoutResult::Size(mut size) => {
+
+                match state.attributes[process_data.id].width {
+                    SizeConstraint::NoFlex => {},
+                    SizeConstraint::Fixed(px) => {
+                        size.pixel_w = px;
+                    }
+                    SizeConstraint::Flex(_) => {
+                        size.pixel_w = process_data.bc.max_w;
+                    }
+                };
+
+                match state.attributes[process_data.id].height {
+                    SizeConstraint::NoFlex => {},
+                    SizeConstraint::Fixed(px) => {
+                        size.pixel_h = px;
+                    }
+                    SizeConstraint::Flex(_) => {
+                        size.pixel_h = process_data.bc.max_h;
+                    }
+                };
+
                 let mut geom : Geometry = Default::default();
                 geom.size = size;
-                ctx.widget_geometry[process_data.id] = Some(geom);
+                ctx.layout_geom[process_data.id]= Some(geom);
                 let geom = &mut state.geom[process_data.id];
                 geom.size = size;
             },
+
+
+
 
             LayoutResult::RequestChild(child_id, child_constraint) => {
                 process_queue.push_front(process_data);
                 process_queue.push_front(ProcessData::new(child_id, child_constraint));
             }
+
+
         };
 
 
-        for (id, geom) in ctx.widget_geometry.iter().enumerate() {
-
+        for (id, geom) in ctx.layout_geom.iter().enumerate() {
             if let Some(g) = geom {
                 state.geom[id].pos = g.pos;
+
             }
         }
     }
 
+
+    // propagate geom positions
+
+    for id in 0..state.geom.len() {
+        propagate_positions(id, &state.children[id], &mut state.geom);
+    }
+}
+
+
+fn propagate_positions(id: Id, children: &[Id], geoms: &mut[Geometry]) {
+    let pos = geoms[id].pos;
+
+    for &child_id in children {
+        geoms[child_id].pos += pos;
+    }
 }
 
 

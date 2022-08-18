@@ -32,7 +32,7 @@ fn main() -> Result<(), failure::Error> {
     let viewport = gl::viewport::Viewport::for_window(width as i32, height as i32);
 
     let window = video_subsystem
-        .window("Square", width, height)
+        .window("3D tic tac toe", width, height)
         .opengl()
         .resizable()
         .build()?;
@@ -43,6 +43,7 @@ fn main() -> Result<(), failure::Error> {
     let gl = gl::Gl::load_with(|s|{
         video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
     });
+
     viewport.set_used(&gl);
 
 
@@ -74,8 +75,7 @@ fn main() -> Result<(), failure::Error> {
     }
 
 
-    let root_box = BoxContraint::new(viewport.w, viewport.h);
-    layout_widgets(&root_box, &mut ui_state);
+    let root_box = BoxContraint::new(viewport.w/2, viewport.h/2);
 
     let mut event_pump = sdl.event_pump().unwrap();
 
@@ -99,6 +99,7 @@ fn main() -> Result<(), failure::Error> {
 
         layout_widgets(&root_box, &mut ui_state);
 
+
         // rendering
         unsafe {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -106,6 +107,9 @@ fn main() -> Result<(), failure::Error> {
 
         render::render_ui(&ui_state, &mut render_ctx);
 
+
+
+//        panic!("STOP");
         window.gl_swap_window();
     }
 }
@@ -113,27 +117,14 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-fn write_count(info: &UiInfo) {
-    println!("Counter is {:?}", info.counter_ref);
-}
-
 
 fn handle_widget_event(ui_info: &mut UiInfo, event: DispatcherEvent, widget_queues: &mut [EventQueue]) {
-    if event.target_id == ui_info.add_button_id {
-        widget_queues[ui_info.counter_id].push_back(Box::new(1));;
-    }
-
-    if event.target_id == ui_info.sub_button_id {
-        widget_queues[ui_info.counter_id].push_back(Box::new(-1));;
-    }
+    println!("event: {:?}", event);
 
 }
 
 struct UiInfo {
-    counter_ref: Rc<RefCell::<i32>>,
-    counter_id: Id,
-    add_button_id: Id,
-    sub_button_id: Id,
+    grid_info: GridInfo
 }
 
 
@@ -141,64 +132,59 @@ fn create_ui() -> (UiInfo, UiState) {
 
 
     let mut ui_state = UiState::new();
-    let row = ColumnWidget {};
 
-    let row_id = ui_state.add_widget(Box::new(row), None);
+    let grid_info = create_2d_grid(&mut ui_state);
 
-    let counter_ref = Rc::new(RefCell::new(0));
+    (UiInfo {grid_info }, ui_state)
 
-    let counter_widget_1 = CounterWidget { count: Rc::clone(&counter_ref) };
-    let counter_id = ui_state.add_widget(Box::new(counter_widget_1), Some(row_id));
+}
 
-    // Add listener for counter
-    ui_state.set_widget_listener(counter_id, Box::new(counter_listener));
+#[derive(Debug)]
+struct GridInfo {
+    ids: [Id; 4*4]
+}
 
 
-    let add_button_widget = ButtonWidget { text: " + ".to_string(), text_scale: 1.0  };
+fn create_2d_grid(ui_state: &mut UiState) -> GridInfo {
 
-    let add_button_id = ui_state.add_widget(Box::new(add_button_widget), Some(row_id));
-
+    let col = ColumnWidget {};
 
     let mut attribs = LayoutAttributes::default();
     attribs = attribs.flex_width(1)
         .flex_height(1);
-    ui_state.set_widget_attributes(add_button_id, attribs.clone());
+
+    let col_id = ui_state.add_widget(Box::new(col), None);
+    ui_state.set_widget_attributes(col_id, attribs.clone());
+    let mut grid_info = GridInfo { ids: [0;4*4] };
+    let mut i = 0;
+    for _ in 0..4 {
+        let row = RowWidget {};
+        let row_id = ui_state.add_widget(Box::new(row), Some(col_id));
+        ui_state.set_widget_attributes(row_id, attribs.clone());
+
+        for _ in 0..4 {
+            let button_widget = ButtonWidget { text: format!("{}", i).to_string(), text_scale: 1.0  };
+
+            let button_id = ui_state.add_widget(Box::new(button_widget), Some(row_id));
 
 
-    // Add dispatcher for add button
-    ui_state.set_widget_dispatcher(add_button_id, Box::new(button_dispatcher));
+            ui_state.set_widget_attributes(button_id, attribs.clone());
 
+            grid_info.ids[i] = button_id;
+            i += 1;
+        }
+    }
 
-    let sub_button_widget = ButtonWidget { text: " - ".to_string(), text_scale: 1.0  };
-
-    let sub_button_id = ui_state.add_widget(Box::new(sub_button_widget), Some(row_id));
-    ui_state.set_widget_attributes(sub_button_id, attribs.clone());
-
-
-    // Add dispatcher for sub button
-    ui_state.set_widget_dispatcher(sub_button_id, Box::new(button_dispatcher));
-
-
-    (UiInfo {counter_id, add_button_id, sub_button_id, counter_ref }, ui_state)
+    grid_info
 
 }
 
 
-
-fn counter_listener(event: Box::<dyn Any>, ctx: &mut ListenerCtx) {
-
-    let widget = &mut ctx.widgets[ctx.id];
-
-    widget.handle_event(event);
-}
-
-
-
-
+// Can this be on the button is self? Basically buttons always just react to mouse up event. Or make it just default
 fn button_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
     use event::Event::*;
     match event {
-        MouseButtonUp { mouse_btn, ..} => {
+        MouseButtonUp {..} => {
             // TODO: only on left click
             queue.push_back(DispatcherEvent { target_id: self_id, event: Box::new(())});
         },

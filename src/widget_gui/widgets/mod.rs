@@ -1,4 +1,5 @@
 use crate::widget_gui::*;
+use crate::widget_gui::layout::*;
 
 
 mod text_widget;
@@ -15,20 +16,20 @@ pub use self::container_widgets::*;
 mod button_widget;
 pub use self::button_widget::*;
 
-
 // TODO: belongs in layout not widgets
 fn preprocess_children(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, flex_dir: FlexDir) -> Option<LayoutResult> {
 
     // Process unflexible children first
     for &child_id in children {
 
-        if ctx.size_constraints[child_id].constraint(flex_dir) != SizeConstraint::NoFlex {
-            continue
-        }
+        match ctx.attributes[child_id].constraint(flex_dir) {
+            SizeConstraint::Flex(_) => continue,
+            _ => {}
+        };
 
 
         // Child without flex
-        if ctx.widget_geometry[child_id] == None {
+        if ctx.layout_geom[child_id] == None {
             // TODO: Maybe not use bc, but create new with width inf, pr https://www.youtube.com/watch?v=UUfXWzp0-DU
             return Some(LayoutResult::RequestChild(child_id, bc.clone()));
         }
@@ -37,26 +38,26 @@ fn preprocess_children(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutConte
 
     let flex_info = calc_flex_info(bc, children, ctx, flex_dir);
 
+
     // Flex children
     if flex_info.sum_flex_factor !=  0 {
 
         // Process flex children when we have the total flex
         for &child_id in children {
 
-            let flex_factor : Pixel = match ctx.size_constraints[child_id].constraint(flex_dir) {
+            let flex_factor : Pixel = match ctx.attributes[child_id].constraint(flex_dir) {
                 SizeConstraint::Flex(factor) => factor.into(),
+                SizeConstraint::Fixed(_) => continue,
                 SizeConstraint::NoFlex => continue,
             };
 
-            // Flex children here
-            if ctx.widget_geometry[child_id] == None {
-                // TODO: match on fill dir
 
+            // Flex children here
+            if ctx.layout_geom[child_id] == None {
                 let bc_child = match flex_dir {
                     FlexDir::X => BoxContraint::fixed_width(flex_factor * flex_info.space_per_flex, bc.max_h),
                     FlexDir::Y => BoxContraint::fixed_height(bc.max_w, flex_factor * flex_info.space_per_flex)
                 };
-
 
                 return Some(LayoutResult::RequestChild(child_id, bc_child));
             };
@@ -64,12 +65,6 @@ fn preprocess_children(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutConte
     }
 
     None
-}
-
-#[derive(Debug)]
-struct FlexInfo {
-    space_per_flex: Pixel,
-    sum_flex_factor: Pixel,
 }
 
 
@@ -86,9 +81,12 @@ fn calc_flex_info(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, f
 
     for &child_id in children {
 
-        match ctx.size_constraints[child_id].constraint(flex_dir) {
+        match ctx.attributes[child_id].constraint(flex_dir) {
             SizeConstraint::NoFlex => {
-                free_space -= ctx.widget_geometry[child_id].as_ref().unwrap().size.from_flex(flex_dir);
+                free_space -= ctx.layout_geom[child_id].as_ref().unwrap().size.from_flex(flex_dir);
+            },
+            SizeConstraint::Fixed(px) => {
+                free_space -= px;
             },
             SizeConstraint::Flex(factor) => {
                 sum_flex_factor += Pixel::from(factor);
@@ -116,12 +114,12 @@ fn fill_container(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, f
             return lr;
         },
         None => {}
-    }
+    };
 
 
     let mut child_geoms = vec![];
     for &id in children.iter() {
-        if let Some(geom) = &ctx.widget_geometry[id] {
+        if let Some(geom) = &ctx.layout_geom[id] {
             child_geoms.push((id, geom.clone()));
         }
     }
@@ -131,10 +129,10 @@ fn fill_container(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, f
     let mut offset = 0;
 
     for (id, child) in child_geoms {
-        if let Some(ref mut g) = &mut ctx.widget_geometry[id] {
+        if let Some(ref mut g) = &mut ctx.layout_geom[id] {
             g.pos.add_by_flex(offset, flex_dir);
-        }
 
+        }
 
         size.pixel_w = match flex_dir {
             FlexDir::X => size.pixel_w + child.size.pixel_w,
@@ -148,7 +146,6 @@ fn fill_container(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, f
 
         offset += child.size.from_flex(flex_dir);
     }
-
 
     LayoutResult::Size(size)
 }

@@ -57,7 +57,11 @@ impl gls::Ui<Message> for World {
 
         use Length::*;
 
-        let col = Column::new()
+        /*
+        let layout = Button::new( "Center 1\nmetrol 2", Some(Message::Add))
+            .width(Fill);
+*/
+        let layout = Column::new()
             .width(Fill)
             .height(FitContent)
             .padding(100.0)
@@ -76,6 +80,23 @@ impl gls::Ui<Message> for World {
                  )
             );
 
-        col.into()
+
+        /*
+        let layout = Column::new()
+            .width(Fill)
+            .height(Fill)
+            .add(
+                Row::new()
+                    .width(Fill)
+                    .height(Fill)
+                    .add(Button::new( "Center 1\nmetrol 2", Some(Message::Add))
+                         .width(Px(300))
+                         .height(Px(300))
+                         .align_center())
+            );
+        */
+
+
+        layout.into()
     }
 }

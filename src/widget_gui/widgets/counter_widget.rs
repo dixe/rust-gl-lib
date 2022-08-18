@@ -27,7 +27,6 @@ impl Widget for CounterWidget {
 
 
     fn handle_event(&mut self, event: Box::<dyn Any>) {
-
         let value = match event.downcast::<i32>() {
             Ok(val) => val,
             Err(_) => return

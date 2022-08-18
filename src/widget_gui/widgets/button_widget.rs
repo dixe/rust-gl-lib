@@ -14,7 +14,6 @@ pub struct ButtonWidget {
 
 impl Widget for ButtonWidget {
     fn layout(&mut self, bc: &BoxContraint, _children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
-
         let text_size = TextRenderer::render_box(ctx.font, &self.text, bc.max_w as f32, 1.0);
         LayoutResult::Size(Size {
             pixel_w: Pixel::min(bc.max_w, Pixel::max(text_size.total_width as i32, bc.min_w)),
@@ -25,7 +24,6 @@ impl Widget for ButtonWidget {
 
 
     fn render(&self, geom: &Geometry, ctx: &mut render::RenderContext) {
-        //println!("rneder button");
         render::render_round_rect(geom, ctx);
         render::render_text(&self.text, 1.0, geom, ctx);
     }
@@ -33,5 +31,6 @@ impl Widget for ButtonWidget {
 
     fn handle_event(&mut self, event: Box::<dyn Any>) {
         // Maybe some set new button text
+
     }
 }

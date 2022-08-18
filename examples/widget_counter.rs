@@ -105,7 +105,7 @@ fn create_ui() -> UiState {
 
     let mut ui_state = UiState::new();
     let counter_widget_1 = CounterWidget { count: Rc::new(RefCell::new(0)) };
-    let counter_id = ui_state.add_widget(Box::new(counter_widget_1), None, None);
+    let counter_id = ui_state.add_widget(Box::new(counter_widget_1), None);
 
     // Add dispatcher for counter
     ui_state.set_widget_dispatcher(counter_id, Box::new(counter_dispatcher));

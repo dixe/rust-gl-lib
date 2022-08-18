@@ -75,9 +75,9 @@ where
 
         self.shader.set_uniforms(Uniforms {
             color_scale,
-            h_half: self.base.height / screen_h,
-            w_half: self.base.width / screen_w,
-            radius: 0.3,
+            pixel_height: self.base.height,
+            pixel_width: self.base.width,
+            radius: 30.0
         });
 
         render_square.render(&gl);
