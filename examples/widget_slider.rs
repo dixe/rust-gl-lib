@@ -149,7 +149,8 @@ fn create_ui() -> (UiInfo, UiState) {
     let counter_id = ui_state.add_widget(Box::new(counter_widget_1), Some(row_id));
 
 
-    let slider_widget = SliderWidget::<i32>::new(None, None,0,5,100);
+
+    let slider_widget = SliderWidget::new(None, None, 50.0 ,0.0, 100.0);
 
     let slider_id = ui_state.add_widget(Box::new(slider_widget), Some(row_id));
 
