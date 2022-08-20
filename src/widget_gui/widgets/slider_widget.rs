@@ -5,41 +5,42 @@ use crate::text_rendering::text_renderer::TextRenderer;
 
 
 #[derive(Debug, Clone)]
-pub struct ButtonWidget {
-    pub text: String,
-    pub text_scale: f32,
-
+pub struct SliderWidget {
+    pub text_left: Option<String>,
+    pub text_right: Option<String>,
 }
 
 
-impl Widget for ButtonWidget {
+impl Widget for SliderWidget {
+
     fn layout(&mut self, bc: &BoxContraint, _children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
-        let text_size = TextRenderer::render_box(ctx.font, &self.text, bc.max_w as f32, 1.0);
+        let text_size = TextRenderer::render_box(ctx.font, "a", bc.max_w as f32, 1.0);
+
+        // TODO: Implement infinite max width, here to let layout plugin sa, I don't care aboubt my width, but i want to be as wide as i can get to be
         LayoutResult::Size(Size {
-            pixel_w: Pixel::min(bc.max_w, Pixel::max(text_size.total_width as i32, bc.min_w)),
+            pixel_w: bc.max_w,
             pixel_h: Pixel::min(bc.max_h, Pixel::max(text_size.total_height as i32, bc.min_h))
         })
     }
 
 
-
     fn render(&self, geom: &Geometry, ctx: &mut render::RenderContext) {
+        println!("{:?}", geom);
         render::render_round_rect(geom, ctx);
-        render::render_text(&self.text, 1.0, geom, ctx);
     }
+
 
     fn dispatcher(&self) -> Dispatcher {
-        Box::new(button_dispatcher)
+        Box::new(slider_dispatcher)
     }
+
 }
 
 
-
-fn button_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
+fn slider_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
     use event::Event::*;
     match event {
         MouseButtonUp {..} => {
-            // TODO: only on left click
             queue.push_back(DispatcherEvent { target_id: self_id, event: Box::new(())});
         },
         _ => {}

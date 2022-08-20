@@ -25,13 +25,24 @@ impl Widget for CounterWidget {
         render::render_text(&format!("{}", self.count.borrow()), 1.0, geom, ctx);
     }
 
-
-    fn handle_event(&mut self, event: Box::<dyn Any>) {
-        let value = match event.downcast::<i32>() {
-            Ok(val) => val,
-            Err(_) => return
-        };
-
-        *self.count.borrow_mut() += *value;
+    fn dispatcher(&self) -> Dispatcher {
+        Box::new(counter_dispatcher)
     }
+}
+
+
+fn counter_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
+    use event::Event::*;
+    match event {
+        TextInput { text, ..} => {
+            match text.as_str() {
+                " " => {
+                    queue.push_back(DispatcherEvent {target_id: self_id, event: Box::new(42i32)});
+                },
+                _ => {}
+            }
+        }
+        _ => {}
+    };
+
 }

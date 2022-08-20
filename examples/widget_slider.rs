@@ -11,6 +11,8 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+
+
 fn main() -> Result<(), failure::Error> {
 
     // Init sdl to use opengl
@@ -48,8 +50,7 @@ fn main() -> Result<(), failure::Error> {
     // Setup widget ui
 
 
-    let mut ui_state = create_ui();
-
+    let (mut ui_info, mut ui_state) = create_ui();
 
     let font = Default::default();
     let mut text_renderer = TextRenderer::new(&gl, font) ;
@@ -79,14 +80,24 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
     loop {
-        layout_widgets(&root_box, &mut ui_state);
+
         // dispatch events
 
         for event in event_pump.poll_iter() {
             dispatch_events(&mut ui_state, &event);
         }
 
+        // handle events for each widget
+        while let Some(event) = ui_state.poll_widget_event() {
+            handle_widget_event(&mut ui_info, event, &mut ui_state.queues);
+        }
 
+        run_listeners(&mut ui_state);
+
+        //write_count(&ui_info);
+
+
+        layout_widgets(&root_box, &mut ui_state);
 
         // rendering
         unsafe {
@@ -101,29 +112,43 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-fn create_ui() -> UiState {
 
-    let mut ui_state = UiState::new();
-    let counter_widget_1 = CounterWidget { count: Rc::new(RefCell::new(0)) };
-    let counter_id = ui_state.add_widget(Box::new(counter_widget_1), None);
-
-    // Add dispatcher for counter
-    //ui_state.set_widget_dispatcher(counter_id, Box::new(counter_dispatcher));
-
-    // Add listener for counter
-    ui_state.set_widget_listener(counter_id, Box::new(counter_listener));
-
-    ui_state
-
+fn write_count(info: &UiInfo) {
+    println!("Counter is {:?}", info.counter_ref);
 }
 
-/*
 
-*/
+fn handle_widget_event(ui_info: &mut UiInfo, event: DispatcherEvent, widget_queues: &mut [EventQueue]) {
+    if event.target_id == ui_info.slider_id {
+        println!("slider_event {:?}",event)
 
-fn counter_listener(event: Box::<dyn Any>, ctx: &mut ListenerCtx) {
+    }
+}
 
-    let widget = &mut ctx.widgets[ctx.id];
+struct UiInfo {
+    counter_ref: Rc<RefCell::<i32>>,
+    counter_id: Id,
+    slider_id: Id,
+}
 
-    widget.handle_event(event);
+
+fn create_ui() -> (UiInfo, UiState) {
+
+    let mut ui_state = UiState::new();
+    let row = RowWidget {};
+
+    let row_id = ui_state.add_widget(Box::new(row), None);
+
+    let counter_ref = Rc::new(RefCell::new(0));
+
+    let counter_widget_1 = CounterWidget { count: Rc::clone(&counter_ref) };
+    let counter_id = ui_state.add_widget(Box::new(counter_widget_1), Some(row_id));
+
+
+    let slider_widget = SliderWidget { text_left: None, text_right: None };
+
+    let slider_id = ui_state.add_widget(Box::new(slider_widget), Some(row_id));
+
+    (UiInfo {counter_id, slider_id, counter_ref }, ui_state)
+
 }

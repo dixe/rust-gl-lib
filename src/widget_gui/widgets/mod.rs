@@ -16,6 +16,10 @@ pub use self::container_widgets::*;
 mod button_widget;
 pub use self::button_widget::*;
 
+mod slider_widget;
+pub use self::slider_widget::*;
+
+
 // TODO: belongs in layout not widgets
 fn preprocess_children(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, flex_dir: FlexDir) -> Option<LayoutResult> {
 
@@ -139,10 +143,12 @@ fn fill_container(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, f
             FlexDir::Y => Pixel::max(size.pixel_w, child.size.pixel_w)
         };
 
+
         size.pixel_h = match flex_dir {
             FlexDir::X => Pixel::max(size.pixel_h, child.size.pixel_h),
             FlexDir::Y => size.pixel_h + child.size.pixel_h
         };
+
 
         offset += child.size.from_flex(flex_dir);
     }

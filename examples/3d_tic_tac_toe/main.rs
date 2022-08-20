@@ -9,7 +9,6 @@ use gl_lib::objects::square::Square;
 use sdl2::event;
 use std::any::Any;
 use std::cell::RefCell;
-use std::rc::Rc;
 
 
 
@@ -118,7 +117,7 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-fn handle_widget_event(ui_info: &mut UiInfo, event: DispatcherEvent, widget_queues: &mut [EventQueue]) {
+fn handle_widget_event(_ui_info: &mut UiInfo, event: DispatcherEvent, _widget_queues: &mut [EventQueue]) {
     println!("event: {:?}", event);
 
 }
@@ -177,17 +176,4 @@ fn create_2d_grid(ui_state: &mut UiState) -> GridInfo {
 
     grid_info
 
-}
-
-
-// Can this be on the button is self? Basically buttons always just react to mouse up event. Or make it just default
-fn button_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
-    use event::Event::*;
-    match event {
-        MouseButtonUp {..} => {
-            // TODO: only on left click
-            queue.push_back(DispatcherEvent { target_id: self_id, event: Box::new(())});
-        },
-        _ => {}
-    };
 }

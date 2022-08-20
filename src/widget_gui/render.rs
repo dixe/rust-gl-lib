@@ -61,7 +61,7 @@ pub fn render_round_rect(geom: &Geometry, ctx: &mut RenderContext) {
     ctx.rounded_rect_shader.set_uniforms(Uniforms { color_scale,
                                                     pixel_height: geom.size.pixel_h as f32,
                                                     pixel_width: geom.size.pixel_w as f32,
-                                                    radius: 50.0
+                                                    radius: 20.0
     });
 
 

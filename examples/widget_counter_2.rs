@@ -120,11 +120,12 @@ fn write_count(info: &UiInfo) {
 
 fn handle_widget_event(ui_info: &mut UiInfo, event: DispatcherEvent, widget_queues: &mut [EventQueue]) {
     if event.target_id == ui_info.add_button_id {
-        widget_queues[ui_info.counter_id].push_back(Box::new(1));;
+        *ui_info.counter_ref.borrow_mut() += 1;
+
     }
 
     if event.target_id == ui_info.sub_button_id {
-        widget_queues[ui_info.counter_id].push_back(Box::new(-1));;
+        *ui_info.counter_ref.borrow_mut() -= 1
     }
 
 }
@@ -141,7 +142,7 @@ fn create_ui() -> (UiInfo, UiState) {
 
 
     let mut ui_state = UiState::new();
-    let row = ColumnWidget {};
+    let row = RowWidget {};
 
     let row_id = ui_state.add_widget(Box::new(row), None);
 
@@ -150,23 +151,15 @@ fn create_ui() -> (UiInfo, UiState) {
     let counter_widget_1 = CounterWidget { count: Rc::clone(&counter_ref) };
     let counter_id = ui_state.add_widget(Box::new(counter_widget_1), Some(row_id));
 
-    // Add listener for counter
-    ui_state.set_widget_listener(counter_id, Box::new(counter_listener));
-
-
     let add_button_widget = ButtonWidget { text: " + ".to_string(), text_scale: 1.0  };
 
     let add_button_id = ui_state.add_widget(Box::new(add_button_widget), Some(row_id));
 
 
     let mut attribs = LayoutAttributes::default();
-    attribs = attribs.flex_width(1)
-        .flex_height(1);
+
+
     ui_state.set_widget_attributes(add_button_id, attribs.clone());
-
-
-    // Add dispatcher for add button
-    ui_state.set_widget_dispatcher(add_button_id, Box::new(button_dispatcher));
 
 
     let sub_button_widget = ButtonWidget { text: " - ".to_string(), text_scale: 1.0  };
@@ -175,33 +168,6 @@ fn create_ui() -> (UiInfo, UiState) {
     ui_state.set_widget_attributes(sub_button_id, attribs.clone());
 
 
-    // Add dispatcher for sub button
-    ui_state.set_widget_dispatcher(sub_button_id, Box::new(button_dispatcher));
-
-
     (UiInfo {counter_id, add_button_id, sub_button_id, counter_ref }, ui_state)
 
-}
-
-
-
-fn counter_listener(event: Box::<dyn Any>, ctx: &mut ListenerCtx) {
-
-    let widget = &mut ctx.widgets[ctx.id];
-
-    widget.handle_event(event);
-}
-
-
-
-
-fn button_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
-    use event::Event::*;
-    match event {
-        MouseButtonUp { mouse_btn, ..} => {
-            // TODO: only on left click
-            queue.push_back(DispatcherEvent { target_id: self_id, event: Box::new(())});
-        },
-        _ => {}
-    };
 }

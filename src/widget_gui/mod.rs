@@ -56,11 +56,13 @@ impl UiState {
 
         let id = self.next_id;
         self.next_id += 1;
+
+        self.attributes.push(LayoutAttributes::for_widget(&widget));
+
+        self.dispatchers.push(Box::new(widget.dispatcher()));
         self.widgets.push(widget);
         self.children.push(Vec::new());
         self.queues.push(EventQueue::new());
-        let eh = empty_dispatcher;
-        self.dispatchers.push(Box::new(eh));
         self.listeners.push(Box::new(empty_listener));
 
         let parent_id = match parent {
@@ -74,7 +76,6 @@ impl UiState {
             self.children[parent_id].push(id);
         }
 
-        self.attributes.push(Default::default());
         self.geom.push(Default::default());
 
         id
@@ -125,10 +126,13 @@ impl UiState {
 
 
 
+enum UiEvent {
+    Pressed(Id),
+}
 
 
 
-pub type DispatcherQueue = VecDeque::<DispatcherEvent>;
+type DispatcherQueue = VecDeque::<DispatcherEvent>;
 
 
 
@@ -169,7 +173,7 @@ impl EventQueue {
 
 
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct LayoutAttributes {
     height: SizeConstraint,
     width: SizeConstraint,
@@ -178,6 +182,14 @@ pub struct LayoutAttributes {
 
 
 impl LayoutAttributes {
+
+    pub fn for_widget(widget: &Box<dyn Widget>) -> Self {
+        Self {
+            width: widget.default_width(),
+            height: widget.default_height(),
+
+        }
+    }
 
     pub fn no_flex(mut self) -> Self {
         self.width = SizeConstraint::NoFlex;
@@ -387,8 +399,16 @@ pub trait Widget {
 
     }
 
-    fn handle_event(&mut self, _: Box::<dyn Any>) {
+    fn dispatcher(&self) -> Dispatcher {
+        Box::new(empty_dispatcher)
+    }
 
+    fn default_width(&self) -> SizeConstraint {
+        SizeConstraint::NoFlex
+    }
+
+    fn default_height(&self) -> SizeConstraint {
+        SizeConstraint::NoFlex
     }
 
 }
@@ -404,11 +424,6 @@ impl<T: 'static> AToAny for T {
     }
 }
 
-
-pub enum LayoutResult {
-    Size(Size),
-    RequestChild(Id, BoxContraint)
-}
 
 #[derive(Debug,Clone, Copy)]
 struct ProcessData {
