@@ -411,6 +411,10 @@ pub trait Widget {
         SizeConstraint::NoFlex
     }
 
+    fn handle_sdl_event(&mut self, event: &event::Event, geom: &Geometry, self_id: Id, queue: &mut DispatcherQueue) {
+
+    }
+
 }
 
 

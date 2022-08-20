@@ -11,23 +11,41 @@ pub fn dispatch_events(state: &mut UiState, event: &event::Event) {
     }
 
 
+    //println!("{:?}", event);
+
 
     // Mouse events are dispatches to the matching widget, given position
     if event.is_mouse() {
         match event {
-            MouseButtonUp { mouse_btn, x, y, ..} => {
+            MouseButtonUp { x, y, ..} => {
                 let pos = Position {x: *x, y: *y};
                 if let Some(id) = state.get_widget(pos) {
-                    let dispatcher = &mut state.dispatchers[id];
-                    dispatcher(&event, id, &mut state.dispatcher_queue);
+                    widget_handle_event(id, state, &event);
                 }
 
             },
+            MouseButtonDown { x, y, ..} => {
+                let pos = Position {x: *x, y: *y};
+                if let Some(id) = state.get_widget(pos) {
+                    widget_handle_event(id, state, &event);
+                }
+            },
+            MouseMotion { x, y, ..} => {
+                let pos = Position {x: *x, y: *y};
+                if let Some(id) = state.get_widget(pos) {
+                    widget_handle_event(id, state, &event);
+                }
+
+             },
             _ => {}
         };
         return;
     }
+}
 
+fn widget_handle_event(id: Id, state: &mut UiState, event: &event::Event, ) {
+    let widget = &mut state.widgets[id];
+    widget.handle_sdl_event(event, &state.geom[id], id, &mut state.dispatcher_queue);
 }
 
 

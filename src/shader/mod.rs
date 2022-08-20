@@ -5,6 +5,7 @@ use crate::color::*;
 mod program;
 mod shader;
 pub mod rounded_rect_shader;
+pub mod circle_shader;
 
 pub use self::shader::*;
 use self::program::*;

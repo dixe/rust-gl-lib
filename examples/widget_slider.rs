@@ -5,6 +5,7 @@ use gl_lib::text_rendering::text_renderer::TextRenderer;
 use gl_lib::widget_gui::widgets::*;
 use gl_lib::widget_gui::event_handling::{dispatch_events, run_listeners};
 use gl_lib::shader::rounded_rect_shader::RoundedRectShader;
+use gl_lib::shader::circle_shader::CircleShader;
 use gl_lib::objects::square::Square;
 use sdl2::event;
 use std::any::Any;
@@ -56,6 +57,7 @@ fn main() -> Result<(), failure::Error> {
     let mut text_renderer = TextRenderer::new(&gl, font) ;
     text_renderer.setup_blend(&gl);
     let mut rrs = RoundedRectShader::new(&gl).unwrap();
+    let mut cs = CircleShader::new(&gl).unwrap();
 
     let square = Square::new(&gl);
 
@@ -64,7 +66,9 @@ fn main() -> Result<(), failure::Error> {
         viewport: &viewport,
         tr: &mut text_renderer,
         rounded_rect_shader: &mut rrs,
-        render_square: &square
+        render_square: &square,
+        circle_shader: &mut cs
+
     };
 
 
@@ -145,7 +149,7 @@ fn create_ui() -> (UiInfo, UiState) {
     let counter_id = ui_state.add_widget(Box::new(counter_widget_1), Some(row_id));
 
 
-    let slider_widget = SliderWidget { text_left: None, text_right: None };
+    let slider_widget = SliderWidget::<i32>::new(None, None,0,5,100);
 
     let slider_id = ui_state.add_widget(Box::new(slider_widget), Some(row_id));
 

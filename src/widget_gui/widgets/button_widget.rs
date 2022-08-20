@@ -28,20 +28,14 @@ impl Widget for ButtonWidget {
         render::render_text(&self.text, 1.0, geom, ctx);
     }
 
-    fn dispatcher(&self) -> Dispatcher {
-        Box::new(button_dispatcher)
+    fn handle_sdl_event(&mut self, event: &event::Event, geom: &Geometry, self_id: Id, queue: &mut DispatcherQueue) {
+        use event::Event::*;
+        match event {
+            MouseButtonUp {..} => {
+                // TODO: only on left click
+                queue.push_back(DispatcherEvent { target_id: self_id, event: Box::new(())});
+            },
+            _ => {}
+        };
     }
-}
-
-
-
-fn button_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
-    use event::Event::*;
-    match event {
-        MouseButtonUp {..} => {
-            // TODO: only on left click
-            queue.push_back(DispatcherEvent { target_id: self_id, event: Box::new(())});
-        },
-        _ => {}
-    };
 }

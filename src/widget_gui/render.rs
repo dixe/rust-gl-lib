@@ -2,7 +2,7 @@ use crate::na::{self, Matrix4, Translation3};
 use crate::widget_gui::*;
 use crate::text_rendering::{text_renderer::TextRenderer};
 use crate::{gl::{self, viewport}, ScreenBox, ScreenCoords};
-use crate::shader::{ TransformationShader, rounded_rect_shader::{RoundedRectShader, Uniforms}};
+use crate::shader::{ TransformationShader, rounded_rect_shader::{self as rrs, RoundedRectShader}, circle_shader::{self as cs, CircleShader}};
 use crate::objects::square;
 
 
@@ -11,9 +11,9 @@ pub struct RenderContext<'a> {
     pub tr: &'a mut TextRenderer,
     pub viewport: &'a viewport::Viewport,
     pub render_square: &'a square::Square,
-    pub rounded_rect_shader: &'a mut RoundedRectShader
+    pub rounded_rect_shader: &'a mut RoundedRectShader,
+    pub circle_shader: &'a mut CircleShader,
 }
-
 
 pub fn render_ui(state: &UiState, ctx: &mut RenderContext) {
 
@@ -50,6 +50,28 @@ pub fn render_text(text: &str, scale: f32, geom: &Geometry, ctx: &mut RenderCont
 }
 
 
+pub fn render_circle(geom: &Geometry, radius: Pixel, ctx: &mut RenderContext) {
+
+    ctx.circle_shader.shader.set_used();
+
+    let transform = unit_square_transform_matrix(geom, ctx);
+
+    ctx.circle_shader.set_transform(transform);
+
+    let color_scale = 2.0;
+    ctx.circle_shader.set_uniforms(cs::Uniforms { color_scale,
+                                              pixel_height: geom.size.pixel_h as f32,
+                                              pixel_width: geom.size.pixel_w as f32,
+                                              radius: radius as f32
+    });
+
+
+    ctx.render_square.render(ctx.gl);
+
+
+}
+
+
 pub fn render_round_rect(geom: &Geometry, ctx: &mut RenderContext) {
     ctx.rounded_rect_shader.shader.set_used();
 
@@ -58,10 +80,10 @@ pub fn render_round_rect(geom: &Geometry, ctx: &mut RenderContext) {
     ctx.rounded_rect_shader.set_transform(transform);
 
     let color_scale = 1.0;
-    ctx.rounded_rect_shader.set_uniforms(Uniforms { color_scale,
-                                                    pixel_height: geom.size.pixel_h as f32,
-                                                    pixel_width: geom.size.pixel_w as f32,
-                                                    radius: 20.0
+    ctx.rounded_rect_shader.set_uniforms(rrs::Uniforms { color_scale,
+                                                         pixel_height: geom.size.pixel_h as f32,
+                                                         pixel_width: geom.size.pixel_w as f32,
+                                                         radius: 20.0
     });
 
 
