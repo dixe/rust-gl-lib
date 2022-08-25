@@ -18,7 +18,7 @@ impl<T: Num + std::fmt::Display> Widget for CounterWidget<T> {
         let text_size = TextRenderer::render_box(ctx.font, &format!("{:.2}", self.count.borrow()), bc.max_w as f32, 1.0);
 
         LayoutResult::Size(Size {
-            pixel_w: Pixel::min(bc.max_w, Pixel:m:ax(text_size.total_width as i32, bc.min_w)),
+            pixel_w: Pixel::min(bc.max_w, Pixel::max(text_size.total_width as i32, bc.min_w)),
             pixel_h: Pixel::min(bc.max_h, Pixel::max(text_size.total_height as i32, bc.min_h))
         })
     }

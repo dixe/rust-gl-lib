@@ -30,7 +30,8 @@ pub struct UiState {
     font: Font,
     dispatchers: Vec<Dispatcher>,
     pub queues: Vec<EventQueue>,
-    dispatcher_queue: DispatcherQueue
+    dispatcher_queue: DispatcherQueue,
+    active_widget: Option<Id>
 }
 
 
@@ -48,7 +49,8 @@ impl UiState {
             font: Default::default(),
             dispatchers: Vec::new(),
             queues: Vec::new(),
-            dispatcher_queue: VecDeque::new()
+            dispatcher_queue: VecDeque::new(),
+            active_widget: None,
         }
     }
 

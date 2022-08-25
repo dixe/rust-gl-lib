@@ -12,16 +12,16 @@ pub struct SliderWidget {
     in_motion: bool,
     value: Rc<RefCell::<f64>>,
     max: f64,
-    min: f64
+    min: f64,
+    circle_r: Pixel
 
 }
 
 impl SliderWidget {
     pub fn new(text_left: Option<String>, text_right: Option<String>, start: Rc<RefCell::<f64>>, min:f64, max: f64) -> Self {
 
-        Self { text_left, text_right, in_motion: false, value: start, min, max }
+        Self { text_left, text_right, in_motion: false, value: start, min, max, circle_r: 10}
     }
-
 
 }
 
@@ -41,10 +41,10 @@ impl Widget for SliderWidget {
     fn render(&self, geom: &Geometry, ctx: &mut render::RenderContext) {
         render::render_round_rect(geom, ctx);
 
-        let circle_pos = (*self.value.borrow() - self.min) / (self.max - self.min) * geom.size.pixel_w as f64;
+        let circle_pos = (*self.value.borrow() - self.min) / (self.max - self.min) * geom.size.pixel_w as f64 ;
         let mut circle_geom = geom.clone();
-        circle_geom.size.pixel_w = 20;
-        circle_geom.pos.x += circle_pos as Pixel;
+        circle_geom.size.pixel_w = self.circle_r * 2;
+        circle_geom.pos.x += circle_pos as Pixel - self.circle_r;
 
         render::render_circle(&circle_geom, 20, ctx);
     }
@@ -63,25 +63,41 @@ impl Widget for SliderWidget {
                 queue.push_back(DispatcherEvent { target_id: self_id, event: Box::new(())});
                 self.in_motion = false;
             },
-            MouseButtonDown { .. } => {
+            MouseButtonDown { x, .. } => {
                 // snap slider to current pos, register slider start, to react to mouse motion
                 self.in_motion = true;
+                let click_pos = (*x - geom.pos.x) as f64;
+                *self.value.borrow_mut() = (click_pos / geom.size.pixel_w as f64) * (self.max - self.min);
+
             },
 
-            MouseMotion { xrel, ..} => {
+            MouseMotion { xrel, x, ..} => {
                 if self.in_motion {
-                    let width_rel = (*xrel as f64 / geom.size.pixel_w as f64) * (self.max - self.min);
 
-                    let new_value = f64::max(self.min, f64::min(self.max, *self.value.borrow() + width_rel));
-                    *self.value.borrow_mut() = new_value;
+
+                    if *x <= geom.pos.x {
+                        *self.value.borrow_mut() = self.min;
+                    }
+
+                    if *x >= (geom.pos.x + geom.size.pixel_w)  {
+                        *self.value.borrow_mut() = self.max;
+                    }
+
+                    // check if position of mouse is inside slider, else ignore event
+                    if *x >= geom.pos.x && *x <= (geom.pos.x + geom.size.pixel_w) {
+                        let width_rel = (*xrel as f64 / geom.size.pixel_w as f64) * (self.max - self.min);
+                        let new_value = f64::max(self.min, f64::min(self.max, *self.value.borrow() + width_rel));
+                        *self.value.borrow_mut() = new_value;
+
+                    }
                 }
             },
-
             _ => {}
         };
     }
-
 }
+
+
 
 
 fn slider_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
