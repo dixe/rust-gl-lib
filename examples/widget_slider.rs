@@ -118,19 +118,19 @@ fn main() -> Result<(), failure::Error> {
 
 
 fn write_count(info: &UiInfo) {
-    println!("Counter is {:?}", info.counter_ref);
+    //println!("Counter is {:?}", info.counter_ref);
 }
 
 
 fn handle_widget_event(ui_info: &mut UiInfo, event: DispatcherEvent, widget_queues: &mut [EventQueue]) {
     if event.target_id == ui_info.slider_id {
-        println!("slider_event {:?}",event)
+        //println!("slider_event {:?}",event)
 
     }
 }
 
 struct UiInfo {
-    counter_ref: Rc<RefCell::<i32>>,
+    counter_ref: Rc<RefCell::<f64>>,
     counter_id: Id,
     slider_id: Id,
 }
@@ -143,16 +143,15 @@ fn create_ui() -> (UiInfo, UiState) {
 
     let row_id = ui_state.add_widget(Box::new(row), None);
 
-    let counter_ref = Rc::new(RefCell::new(0));
+    let counter_ref = Rc::new(RefCell::new(50.0));
+
+
+    let slider_widget = SliderWidget::new(None, None, Rc::clone(&counter_ref) ,0.0, 100.0);
+
+    let slider_id = ui_state.add_widget(Box::new(slider_widget), Some(row_id));
 
     let counter_widget_1 = CounterWidget { count: Rc::clone(&counter_ref) };
     let counter_id = ui_state.add_widget(Box::new(counter_widget_1), Some(row_id));
-
-
-
-    let slider_widget = SliderWidget::new(None, None, 50.0 ,0.0, 100.0);
-
-    let slider_id = ui_state.add_widget(Box::new(slider_widget), Some(row_id));
 
     (UiInfo {counter_id, slider_id, counter_ref }, ui_state)
 

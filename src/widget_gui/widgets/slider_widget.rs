@@ -1,24 +1,25 @@
 use crate::widget_gui::*;
 use crate::widget_gui::render;
 use crate::text_rendering::text_renderer::TextRenderer;
-use num_traits::Num;
-use num_traits::cast::AsPrimitive;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 
 #[derive(Debug, Clone)]
 pub struct SliderWidget {
     pub text_left: Option<String>,
     pub text_right: Option<String>,
     in_motion: bool,
-    position: f64,
+    value: Rc<RefCell::<f64>>,
     max: f64,
     min: f64
 
 }
 
 impl SliderWidget {
-    pub fn new(text_left: Option<String>, text_right: Option<String>, start: f64, min:f64, max: f64) -> Self {
+    pub fn new(text_left: Option<String>, text_right: Option<String>, start: Rc<RefCell::<f64>>, min:f64, max: f64) -> Self {
 
-        Self { text_left, text_right, in_motion: false, position: start, min, max }
+        Self { text_left, text_right, in_motion: false, value: start, min, max }
     }
 
 
@@ -40,7 +41,7 @@ impl Widget for SliderWidget {
     fn render(&self, geom: &Geometry, ctx: &mut render::RenderContext) {
         render::render_round_rect(geom, ctx);
 
-        let circle_pos = (self.position - self.min) / (self.max - self.min) * geom.size.pixel_w as f64;
+        let circle_pos = (*self.value.borrow() - self.min) / (self.max - self.min) * geom.size.pixel_w as f64;
         let mut circle_geom = geom.clone();
         circle_geom.size.pixel_w = 20;
         circle_geom.pos.x += circle_pos as Pixel;
@@ -71,7 +72,8 @@ impl Widget for SliderWidget {
                 if self.in_motion {
                     let width_rel = (*xrel as f64 / geom.size.pixel_w as f64) * (self.max - self.min);
 
-                    self.position = f64::max(self.min, f64::min(self.max, self.position + width_rel));
+                    let new_value = f64::max(self.min, f64::min(self.max, *self.value.borrow() + width_rel));
+                    *self.value.borrow_mut() = new_value;
                 }
             },
 
