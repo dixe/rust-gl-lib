@@ -2,17 +2,16 @@
 
 use crate::na;
 use crate::text_rendering::{font::{Font, PageChar}};
-use crate::shader::Shader;
+use crate::shader::{BaseShader,Shader};
 use crate::texture::{self, TextureId};
 use crate::gl;
 use crate::objects;
 use crate::*;
 
-
 /// A collections of a font, shader and a texture that can render text using open.
 pub struct TextRenderer {
     font: Font,
-    shader: Shader,
+    shader: BaseShader,
     texture_id: TextureId,
     color: na::Vector3::<f32>,
     char_quad: Box<objects::char_quad::CharQuad>
@@ -294,7 +293,7 @@ pub struct TextRenderBox {
 }
 
 
-fn create_shader(gl: &gl::Gl) -> Shader {
+fn create_shader(gl: &gl::Gl) -> BaseShader {
     let vert_source = r"#version 330 core
         layout (location = 0) in vec2 pos;
         layout (location = 1) in vec2 aTexCoord;
@@ -350,5 +349,5 @@ fn create_shader(gl: &gl::Gl) -> Shader {
     }";
 
 
-    Shader::new(gl, vert_source, frag_source).unwrap()
+    BaseShader::new(gl, vert_source, frag_source).unwrap()
 }

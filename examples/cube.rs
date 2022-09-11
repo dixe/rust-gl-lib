@@ -1,4 +1,4 @@
-use gl_lib::{gl, objects::cube, shader, camera};
+use gl_lib::{gl, objects::cube, shader::{self, Shader}, camera};
 use failure;
 use std::time::Instant;
 
@@ -83,15 +83,14 @@ fn main() -> Result<(), failure::Error> {
         let z = f32::sin(2.0 * angle);
 
         camera.update_pos(na::Vector3::new(x * dist, y * dist, 2.0 * z));
+
         unsafe {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
         // Set the model matrix
         shader.set_mat4(&gl, "model", model_mat);
-
         shader.set_mat4(&gl, "view", camera.view());
-
         shader.set_mat4(&gl, "projection", camera.projection());
 
 
@@ -124,7 +123,7 @@ fn main() -> Result<(), failure::Error> {
 }
 
 
-fn create_shader(gl: &gl::Gl) -> shader::Shader {
+fn create_shader(gl: &gl::Gl) -> shader::BaseShader {
     let vert_source = r"#version 330 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aColor;
@@ -158,5 +157,5 @@ void main()
 }";
 
 
-    shader::Shader::new(gl, vert_source, frag_source).unwrap()
+    shader::BaseShader::new(gl, vert_source, frag_source).unwrap()
 }

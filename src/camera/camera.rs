@@ -3,6 +3,7 @@ use crate::na;
 
 /// A general 3d camera
 /// Default is right hand coordinate system with z as up, x horizontal and y going into the screen
+#[derive(Debug, Clone)]
 pub struct Camera {
     pos: na::Vector3::<f32>,
     target: na::Vector3::<f32>,
@@ -22,7 +23,7 @@ impl Camera {
     pub fn new(width: f32, height: f32) -> Camera {
 
 
-        let pos = na::Vector3::new(-5.0, 0.0, 5.0);
+        let pos = na::Vector3::new(0.0, 0.0, 5.0);
         let target = na::Vector3::new(0.0, 0.0, 0.0);
         let look_dir = na::Vector3::new(1.0, 0.0, 0.0);
         let up = na::Vector3::new(0.0, 0.0, 1.0);

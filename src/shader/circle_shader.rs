@@ -6,7 +6,7 @@ use super::*;
 #[derive( Clone)]
 pub struct CircleShader {
     gl: gl::Gl,
-    pub shader: Shader,
+    pub shader: BaseShader,
 }
 
 impl fmt::Debug for CircleShader {
@@ -53,7 +53,7 @@ impl TransformationShader for CircleShader {
 
 
 /// Creates a basic default shader that takes a mat4 transformation uniform transform
-fn create_shader(gl: &gl::Gl) -> Result<Shader, failure::Error> {
+fn create_shader(gl: &gl::Gl) -> Result<BaseShader, failure::Error> {
 
     // default program for square
     let vert_source = r"#version 330 core
@@ -125,5 +125,5 @@ void main()
 
 }";
 
-    Shader::new(gl, vert_source, frag_source)
+    BaseShader::new(gl, vert_source, frag_source)
 }

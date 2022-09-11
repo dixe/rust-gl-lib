@@ -6,7 +6,7 @@ use super::*;
 #[derive( Clone)]
 pub struct RoundedRectShader {
     gl: gl::Gl,
-    pub shader: Shader,
+    pub shader: BaseShader,
 }
 
 impl fmt::Debug for RoundedRectShader {
@@ -53,7 +53,7 @@ impl TransformationShader for RoundedRectShader {
 
 
 /// Creates a basic default shader that takes a mat4 transformation uniform transform
-fn create_shader(gl: &gl::Gl) -> Result<Shader, failure::Error> {
+fn create_shader(gl: &gl::Gl) -> Result<BaseShader, failure::Error> {
 
     // default program for square
     let vert_source = r"#version 330 core
@@ -95,10 +95,7 @@ uniform float color_scale;
 
 float roundedRectangle(vec2 p, vec2 size, float radius)
 {
-
    return length(max(abs(p) - size + radius,0.0)) - radius;
-//   vec2 q = abs(uv) - size;
-  // return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
 }
 
 
@@ -131,5 +128,5 @@ void main()
 
 }";
 
-    Shader::new(gl, vert_source, frag_source)
+    BaseShader::new(gl, vert_source, frag_source)
 }

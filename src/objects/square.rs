@@ -1,6 +1,6 @@
 use crate::buffer;
 use crate::gl;
-use crate::shader::Shader;
+use crate::shader::BaseShader;
 use nalgebra as na;
 use na::vector;
 
@@ -76,7 +76,7 @@ impl Square {
     }
 
     /// Creates a basic default shader that takes a mat4 transformation uniform transform
-    pub fn default_shader(gl: &gl::Gl) -> Result<Shader, failure::Error> {
+    pub fn default_shader(gl: &gl::Gl) -> Result<BaseShader, failure::Error> {
 
         // default program for square
         let vert_source = r"#version 330 core
@@ -96,7 +96,7 @@ void main()
                         FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
                     }";
 
-        Shader::new(gl, vert_source, frag_source)
+        BaseShader::new(gl, vert_source, frag_source)
     }
 
     pub fn render(&self, gl: &gl::Gl) {

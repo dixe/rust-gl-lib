@@ -23,7 +23,7 @@ pub trait ColorShader {
 
 
 pub struct PosShader {
-    pub shader: Shader,
+    pub shader: BaseShader,
     gl: gl::Gl
 }
 
@@ -49,7 +49,7 @@ void main()
                         FragColor = uColor;
                     }";
 
-        Shader::new(gl, vert_source, frag_source).map(|s| PosShader { gl: gl.clone(), shader:s})
+        BaseShader::new(gl, vert_source, frag_source).map(|s| PosShader { gl: gl.clone(), shader:s})
     }
 }
 
@@ -69,7 +69,7 @@ impl ColorShader for PosShader {
 
 
 pub struct PosColorShader {
-    pub shader: Shader,
+    pub shader: BaseShader,
     gl: gl::Gl
 }
 
@@ -82,7 +82,7 @@ layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec4 aColor;
 
 uniform mat4 transform;
-
+//
 out VS_OUTPUT {
         vec4 Color;
     } OUT;
@@ -106,7 +106,7 @@ in VS_OUTPUT {
                         FragColor = IN.Color;
                     }";
 
-        Shader::new(gl, vert_source, frag_source).map(|s| PosColorShader { gl: gl.clone(), shader:s})
+        BaseShader::new(gl, vert_source, frag_source).map(|s| PosColorShader { gl: gl.clone(), shader:s})
     }
 }
 
