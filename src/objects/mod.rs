@@ -9,6 +9,8 @@ pub mod square;
 
 pub mod cube;
 
+pub mod sphere;
+
 pub mod bezier;
 
 pub mod char_quad;
