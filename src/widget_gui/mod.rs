@@ -126,14 +126,6 @@ impl UiState {
     }
 }
 
-
-
-enum UiEvent {
-    Pressed(Id),
-}
-
-
-
 type DispatcherQueue = VecDeque::<DispatcherEvent>;
 
 
@@ -413,7 +405,7 @@ pub trait Widget {
         SizeConstraint::NoFlex
     }
 
-    fn handle_sdl_event(&mut self, event: &event::Event, geom: &Geometry, self_id: Id, queue: &mut DispatcherQueue) {
+    fn handle_sdl_event(&mut self, _event: &event::Event, _geom: &Geometry, _self_id: Id, _queue: &mut DispatcherQueue) {
 
     }
 

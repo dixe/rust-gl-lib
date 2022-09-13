@@ -11,7 +11,7 @@ pub struct Sphere {
 
 impl Sphere {
 
-    pub fn new(gl: &gl::Gl, mut slices: u32, mut lines: u32) -> Sphere {
+    pub fn new(gl: &gl::Gl, slices: u32, mut lines: u32) -> Sphere {
 
         // there is slices + 2 rows, since we always use 2 points for the poles
 
@@ -51,8 +51,6 @@ impl Sphere {
                 vertices.push(y);
                 vertices.push(z);
 
-                let k1 = (slice - 1) * lines;
-                let k2 = k1 + lines + 1;
             }
         }
 

@@ -28,7 +28,7 @@ impl Widget for ButtonWidget {
         render::render_text(&self.text, 1.0, geom, ctx);
     }
 
-    fn handle_sdl_event(&mut self, event: &event::Event, geom: &Geometry, self_id: Id, queue: &mut DispatcherQueue) {
+    fn handle_sdl_event(&mut self, event: &event::Event, _geom: &Geometry, self_id: Id, queue: &mut DispatcherQueue) {
         use event::Event::*;
         match event {
             MouseButtonUp {..} => {

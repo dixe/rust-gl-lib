@@ -111,10 +111,10 @@ pub struct WidgetSetup {
 pub fn setup_widgets(gl: &gl::Gl) -> Result<WidgetSetup, SetupError> {
 
     let font = Default::default();
-    let mut text_renderer = TextRenderer::new(gl, font);
+    let text_renderer = TextRenderer::new(gl, font);
     text_renderer.setup_blend(gl);
-    let mut rrs = RoundedRectShader::new(gl)?;
-    let mut cs = CircleShader::new(gl)?;
+    let rrs = RoundedRectShader::new(gl)?;
+    let cs = CircleShader::new(gl)?;
 
     let square = Square::new(gl);
 

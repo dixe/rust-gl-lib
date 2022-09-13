@@ -1,4 +1,4 @@
-use crate::na::{self, Matrix4, Translation3};
+use crate::na::{self, Translation3};
 use crate::widget_gui::*;
 use crate::text_rendering::{text_renderer::TextRenderer};
 use crate::{gl::{self, viewport}, ScreenBox, ScreenCoords};
