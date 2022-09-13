@@ -1,15 +1,10 @@
 use crate::gl;
-use sdl2::event;
-use std::any::Any;
-use std::cell::RefCell;
-use std::rc::Rc;
 use sdl2;
 use failure::Fail;
 use crate::shader::rounded_rect_shader::RoundedRectShader;
 use crate::shader::circle_shader::CircleShader;
 use crate::objects::square::Square;
 use crate::text_rendering::text_renderer::TextRenderer;
-use crate::text_rendering::font::Font;
 
 
 #[derive(Debug, Fail)]

@@ -1,7 +1,7 @@
 use crate::buffer;
 use crate::gl;
 
-
+// Shpere with radius 1, thus the input pos is also the normals
 pub struct Sphere {
     vao: buffer::VertexArray,
     _vbo: buffer::ArrayBuffer,
@@ -20,7 +20,6 @@ impl Sphere {
         vertices.push(0.0); // x
         vertices.push(0.0); // y
         vertices.push(1.0); // z
-
 
         let mut indices: Vec<u32> = vec![ ];
 

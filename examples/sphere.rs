@@ -49,7 +49,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut camera = camera::Camera::new( width as f32, height as f32);
     let shader = create_shader(&gl);
-    let sphere = sphere::Sphere::new(&gl, 11, 11);
+    let sphere = sphere::Sphere::new(&gl, 50, 50);
 
     let model_mat = na::Matrix4::identity();
 
@@ -59,10 +59,12 @@ fn main() -> Result<(), failure::Error> {
 
 
     unsafe {
-        //gl.PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+        //gl.PolygonMode(gl::FRONT, gl::LINE);
 
         // background color
         gl.ClearColor(0.85, 0.8, 0.7, 1.0);
+
+        gl.CullFace(gl::FRONT);
     }
 
     let mut instant = Instant::now();
@@ -70,6 +72,9 @@ fn main() -> Result<(), failure::Error> {
     let mut angle = 0.0;
 
     let mut line = false;
+    let mut r = 1.0;
+
+
     loop {
 
         let delta = (instant.elapsed().as_millis() as f32) / 1000.0;
@@ -92,6 +97,9 @@ fn main() -> Result<(), failure::Error> {
         shader.set_mat4(&gl, "model", model_mat);
         shader.set_mat4(&gl, "view", camera.view());
         shader.set_mat4(&gl, "projection", camera.projection());
+
+        r = (angle /2.0).sin();
+        shader.set_f32(&gl, "radius", r);
 
 
         // set color
@@ -133,11 +141,13 @@ out VS_OUTPUT {
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform float radius;
 
 void main()
 {
     OUT.Color = aPos;
-    gl_Position =  projection * view * model * vec4(aPos.x, aPos.y, aPos.z, 1.0);
+    vec3 pos = aPos * radius;
+    gl_Position =  projection * view * model * vec4(pos.x, pos.y, pos.z, 1.0);
 }";
 
     let frag_source = r"#version 330 core
