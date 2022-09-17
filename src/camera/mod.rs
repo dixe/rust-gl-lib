@@ -6,18 +6,22 @@ use sdl2::keyboard::Keycode::{self, * };
 use std::collections::HashMap;
 
 
-
 #[derive(Debug, Clone)]
 pub struct Controller {
     movement: na::Vector3::<f32>,
     mapping: KeyMapping,
-    pub speed: f32
+    pub speed: f32,
+    mouse_movement: MouseMovement,
+    pub sens: f32,
+    inverse_y: f32, // should be -1 or 1. 1 for normal, -1 for inverse
+    mouse_pos: Option<(i32, i32)>
 }
 
 impl Controller {
 
-    pub fn update_events(&mut self, event: Event) {
+    pub fn update_events(&mut self, mouse: &sdl2::mouse::MouseUtil, window: &sdl2::video::Window, event: Event) {
         // update state based on event
+
 
         match event {
             Event::KeyDown{keycode: Some(kc), .. } => {
@@ -33,12 +37,30 @@ impl Controller {
                     self.movement -= dir;
                 }
             },
+            Event::MouseMotion{mousestate, xrel, yrel, x, y, .. } => {
+                if mousestate.right() {
+                    self.mouse_movement.xrel = xrel as f32;
+                    self.mouse_movement.yrel = yrel as f32;
+                    if self.mouse_pos == None {
+                        self.mouse_pos = Some((x,y));
+                    }
+                    mouse.set_relative_mouse_mode(true);
+                }
+            },
+            Event::MouseButtonUp{ mouse_btn: sdl2::mouse::MouseButton::Right, .. } => {
+                mouse.set_relative_mouse_mode(false);
+                println!("warp to {:?}", self.mouse_pos);
+                if let Some(mp) = self.mouse_pos {
+                    mouse.warp_mouse_in_window(window, mp.0, mp.1);
+                }
+                self.mouse_pos = None;
+            },
             _ => {}
         };
 
     }
 
-    pub fn update_camera(&self, camera: &mut Camera, dt: f32){
+    pub fn update_camera(&mut self, camera: &mut Camera, dt: f32){
 
         // do the actual update
         let mut pos = camera.pos();
@@ -50,6 +72,16 @@ impl Controller {
         pos += camera.front * dir.x * dt_speed;
         pos += camera.right * dir.y * dt_speed;
 
+
+
+        camera.yaw -= self.mouse_movement.xrel * self.sens * dt;
+
+        camera.pitch = f32::max((-70.0_f32).to_radians(), f32::min((70.0_f32).to_radians(), camera.pitch + self.mouse_movement.yrel* self.sens * self.inverse_y *  dt));
+
+        self.mouse_movement.xrel = 0.0;
+        self.mouse_movement.yrel = 0.0;
+
+
         camera.move_to(pos);
 
     }
@@ -57,14 +89,26 @@ impl Controller {
 }
 
 
+
 impl Default for Controller {
     fn default() -> Self {
         Controller {
             movement: na::Vector3::new(0.0, 0.0, 0.0),
             mapping: Default::default(),
-            speed: 1.0
+            speed: 2.0,
+            mouse_movement: Default::default(),
+            sens: 0.5,
+            inverse_y : -1.0,
+            mouse_pos : None,
         }
     }
+}
+
+
+#[derive(Debug, Clone, Default)]
+struct MouseMovement {
+    xrel: f32,
+    yrel: f32
 }
 
 
@@ -81,10 +125,8 @@ impl Default for KeyMapping {
         map.insert(W, na::Vector3::new(1.0, 0.0, 0.0));
         // Backward
         map.insert(S, na::Vector3::new(-1.0, 0.0, 0.0));
-
         // Left
         map.insert(A, na::Vector3::new(0.0, -1.0, 0.0));
-
         //Right
         map.insert(D, na::Vector3::new(0.0, 1.0, 0.0));
 
