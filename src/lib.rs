@@ -11,6 +11,7 @@
 use std::default::Default;
 
 pub use nalgebra as na;
+pub use sdl2;
 
 pub mod gl;
 pub mod shader;
@@ -28,6 +29,7 @@ pub mod widget_gui;
 //#[cfg(feature = "sdl_gui")]
 pub mod sdl_gui;
 
+pub mod controller;
 
 
 /// Defines point in ScreenBox x,y in \[0.0; 1.0\]

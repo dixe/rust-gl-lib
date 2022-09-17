@@ -53,11 +53,11 @@ impl Controller {
         let mut pos = camera.pos();
         let dir = self.movement;
 
-
         let dt_speed = dt * self.speed;
 
         pos += camera.front * dir.x * dt_speed;
         pos += camera.right * dir.y * dt_speed;
+        pos += camera.up * dir.z * dt_speed;
 
 
 
@@ -115,6 +115,10 @@ impl Default for KeyMapping {
         map.insert(A, na::Vector3::new(0.0, -1.0, 0.0));
         //Right
         map.insert(D, na::Vector3::new(0.0, 1.0, 0.0));
+        // Up
+        map.insert(Space, na::Vector3::new(0.0, 0.0, 1.0));
+        // Down
+        map.insert(LShift, na::Vector3::new(0.0, 0.0, -1.0));
 
 
         Self {
