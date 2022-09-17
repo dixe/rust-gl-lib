@@ -14,12 +14,11 @@ pub struct Controller {
     mouse_movement: MouseMovement,
     pub sens: f32,
     inverse_y: f32, // should be -1 or 1. 1 for normal, -1 for inverse
-    mouse_pos: Option<(i32, i32)>
 }
 
 impl Controller {
 
-    pub fn update_events(&mut self, mouse: &sdl2::mouse::MouseUtil, window: &sdl2::video::Window, event: Event) {
+    pub fn update_events(&mut self, mouse: &sdl2::mouse::MouseUtil, event: Event) {
         // update state based on event
 
 
@@ -41,19 +40,7 @@ impl Controller {
                 if mousestate.right() {
                     self.mouse_movement.xrel = xrel as f32;
                     self.mouse_movement.yrel = yrel as f32;
-                    if self.mouse_pos == None {
-                        self.mouse_pos = Some((x,y));
-                    }
-                    mouse.set_relative_mouse_mode(true);
                 }
-            },
-            Event::MouseButtonUp{ mouse_btn: sdl2::mouse::MouseButton::Right, .. } => {
-                mouse.set_relative_mouse_mode(false);
-                println!("warp to {:?}", self.mouse_pos);
-                if let Some(mp) = self.mouse_pos {
-                    mouse.warp_mouse_in_window(window, mp.0, mp.1);
-                }
-                self.mouse_pos = None;
             },
             _ => {}
         };
@@ -97,9 +84,8 @@ impl Default for Controller {
             mapping: Default::default(),
             speed: 2.0,
             mouse_movement: Default::default(),
-            sens: 0.5,
+            sens: 0.2,
             inverse_y : -1.0,
-            mouse_pos : None,
         }
     }
 }
