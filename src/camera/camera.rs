@@ -94,6 +94,11 @@ impl Camera {
        na::Matrix::look_at_rh(&point_pos, &target, &self.up)
     }
 
+    pub fn set_zfar(&mut self, zfar: f32) {
+
+        self.zfar = zfar;
+    }
+
 
     fn update_camera_vectors(&mut self) {
         self.front = na::Vector3::new(

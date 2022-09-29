@@ -1,66 +1,45 @@
 use gl_lib::{gl, objects::square, shader};
 use failure;
 use gl_lib::widget_gui::*;
-use gl_lib::text_rendering::text_renderer::TextRenderer;
+use gl_lib::text_rendering::{text_renderer::TextRenderer, font::Font};
 use gl_lib::widget_gui::widgets::{RowWidget, TextWidget};
+use gl_lib::helpers;
+use std::path::Path;
 
 fn main() -> Result<(), failure::Error> {
 
-    // Init sdl to use opengl
-    let sdl = sdl2::init().unwrap();
-    let video_subsystem = sdl.video().unwrap();
 
-    let gl_attr = video_subsystem.gl_attr();
-
-    gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
-    gl_attr.set_context_version(4,5);
-
-
-    // Create a window that opengl can draw to
-    let width = 800;
-    let height = 600;
-
-    let viewport = gl::viewport::Viewport::for_window(width as i32, height as i32);
-
-    let window = video_subsystem
-        .window("Square", width, height)
-        .opengl()
-        .resizable()
-        .build()?;
-
-
-    // Load gl functions and set to sdl video subsystem
-    let _gl_context = window.gl_create_context().unwrap();
-    let gl = gl::Gl::load_with(|s|{
-        video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
-    });
-    viewport.set_used(&gl);
-
-
-
-    // Setup widget ui
-
-
-    let mut ui_state = create_ui();
-
-    let font = Default::default();
-
-    let mut text_renderer = TextRenderer::new(&gl, font) ;
-
-
-    text_renderer.setup_blend(&gl);
-    let mut render_ctx = render::RenderContext {
-        gl: &gl,
-        viewport: &viewport,
-        tr: &mut text_renderer
-    };
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let window = sdl_setup.window;
+    let sdl = sdl_setup.sdl;
+    let viewport = sdl_setup.viewport;
+    let gl = &sdl_setup.gl;
 
 
     // Set background color to white
     unsafe {
-        gl.ClearColor(1.0, 1.0, 1.0, 1.0);
+        gl.ClearColor(0.5, 0.5, 0.5, 0.5);
     }
 
+
+    let mut widget_setup = helpers::setup_widgets(gl)?;
+
+
+    let mut render_ctx = render::RenderContext {
+        gl: gl,
+        viewport: &viewport,
+        tr: &mut widget_setup.text_renderer,
+        rounded_rect_shader: &mut widget_setup.rounded_rect_shader,
+        render_square: &widget_setup.render_square,
+        circle_shader: &mut widget_setup.circle_shader
+
+    };
+
+
+
+
+    // Setup widget ui
+    let mut ui_state = create_ui();
 
     let root_box = BoxContraint::new(viewport.w, viewport.h);
     layout_widgets(&root_box, &mut ui_state);
@@ -74,6 +53,7 @@ fn main() -> Result<(), failure::Error> {
         render::render_ui(&ui_state, &mut render_ctx);
 
         window.gl_swap_window();
+
     }
 }
 
@@ -83,21 +63,21 @@ fn create_ui() -> UiState {
 
     let mut ui_state = UiState::new();
     let row_widget = RowWidget {};
-    let row_id = ui_state.add_widget(Box::new(row_widget), None, None);
+    let row_id = ui_state.add_widget(Box::new(row_widget), None);
 
 
-    let text_widget_1 = TextWidget { text: "Hello".to_string(), scale: 1.0 };
-    let _ = ui_state.add_widget(Box::new(text_widget_1), Some(row_id), None);
+    let text_widget_1 = TextWidget { text: "W".to_string(), scale: 1.0 };
+    let _ = ui_state.add_widget(Box::new(text_widget_1), Some(row_id));
 
-    let text_widget_2 = TextWidget { text: "World".to_string(), scale: 1.0 };
-    let _ = ui_state.add_widget(Box::new(text_widget_2), Some(row_id), None);
+    //let text_widget_2 = TextWidget { text: "World".to_string(), scale: 1.0 };
+    //let _ = ui_state.add_widget(Box::new(text_widget_2), Some(row_id));
 
     ui_state
 
 }
 
 
-fn create_shader(gl: &gl::Gl) -> shader::Shader {
+fn create_shader(gl: &gl::Gl) -> shader::BaseShader {
     let vert_source = r"#version 330 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aColor;
@@ -131,5 +111,5 @@ void main()
 }";
 
 
-    shader::Shader::new(gl, vert_source, frag_source).unwrap()
+    shader::BaseShader::new(gl, vert_source, frag_source).unwrap()
 }

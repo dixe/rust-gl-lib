@@ -1,7 +1,7 @@
-use gl_lib::gl;
+use gl_lib::{gl, ScreenBox};
 use failure;
 use gl_lib::widget_gui::*;
-use gl_lib::text_rendering::text_renderer::TextRenderer;
+use gl_lib::text_rendering::text_renderer::{TextRenderer, TextAlignment, TextAlignmentX::*};
 use gl_lib::widget_gui::widgets::*;
 use gl_lib::widget_gui::event_handling::{dispatch_events, run_listeners};
 use gl_lib::shader::rounded_rect_shader::RoundedRectShader;
@@ -38,8 +38,8 @@ fn main() -> Result<(), failure::Error> {
         rounded_rect_shader: &mut widget_setup.rounded_rect_shader,
         render_square: &widget_setup.render_square,
         circle_shader: &mut widget_setup.circle_shader
-
     };
+
 
     // Setup widget ui
     let (mut ui_info, mut ui_state) = create_ui();
@@ -49,11 +49,20 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    loop {
+    let mut run = true;
+    while run {
 
         // dispatch events
-
         for event in event_pump.poll_iter() {
+
+            match event {
+                event::Event::Quit {..} => {
+                    run = false;
+                },
+                _ => {}
+            };
+
+
             dispatch_events(&mut ui_state, &event);
         }
 
@@ -64,9 +73,6 @@ fn main() -> Result<(), failure::Error> {
 
         run_listeners(&mut ui_state);
 
-        //write_count(&ui_info);
-
-
         layout_widgets(&root_box, &mut ui_state);
 
         // rendering
@@ -76,28 +82,29 @@ fn main() -> Result<(), failure::Error> {
 
         render::render_ui(&ui_state, &mut render_ctx);
 
+
+        // Render text that outside ui, is affected by out ui_info.slider_ref, that our slider also controlls
+        render_ctx.tr.render_text(render_ctx.gl, "Hello", TextAlignment::default(), ScreenBox::new(00.0, 00.0, 1200.0, 700.0, 1200.0, 700.0), *ui_info.slider_ref.borrow() as f32);
+
         window.gl_swap_window();
     }
+
+    Ok(())
 }
-
-
-
 
 fn write_count(info: &UiInfo) {
     //println!("Counter is {:?}", info.counter_ref);
 }
 
-
 fn handle_widget_event(ui_info: &mut UiInfo, event: DispatcherEvent, widget_queues: &mut [EventQueue]) {
     if event.target_id == ui_info.slider_id {
         //println!("slider_event {:?}",event)
-
     }
 }
 
+
 struct UiInfo {
-    counter_ref: Rc<RefCell::<f64>>,
-    counter_id: Id,
+    slider_ref: Rc<RefCell::<f64>>,
     slider_id: Id,
 }
 
@@ -109,16 +116,14 @@ fn create_ui() -> (UiInfo, UiState) {
 
     let row_id = ui_state.add_widget(Box::new(row), None);
 
-    let counter_ref = Rc::new(RefCell::new(50.0));
+    let slider_ref = Rc::new(RefCell::new(4.0));
 
 
-    let slider_widget = SliderWidget::new(None, None, Rc::clone(&counter_ref) ,0.0, 100.0);
+    let slider_widget = SliderWidget::new(None, None, Rc::clone(&slider_ref), 0.5, 15.0);
 
     let slider_id = ui_state.add_widget(Box::new(slider_widget), Some(row_id));
 
-    let counter_widget_1 = CounterWidget { count: Rc::clone(&counter_ref) };
-    let counter_id = ui_state.add_widget(Box::new(counter_widget_1), Some(row_id));
 
-    (UiInfo {counter_id, slider_id, counter_ref }, ui_state)
+    (UiInfo { slider_id, slider_ref }, ui_state)
 
 }
