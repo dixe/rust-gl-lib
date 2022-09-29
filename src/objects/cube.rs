@@ -13,17 +13,91 @@ impl Cube {
     pub fn new(gl: &gl::Gl) -> Cube {
 
 
+
+        let mut vertices : Vec::<f32> = vec![
+
+            // TOP FACE
+            0.5,	0.5,	0.5,   0.0, 0.0, 1.0,
+            0.5,	-0.5,	0.5,   0.0, 0.0, 1.0,
+            -0.5,	0.5,	0.5,   0.0, 0.0, 1.0,
+
+            0.5,	-0.5,	0.5,   0.0, 0.0, 1.0,
+            -0.5,	-0.5,	0.5,   0.0, 0.0, 1.0,
+            -0.5,	0.5,	0.5,   0.0, 0.0, 1.0,
+
+            // BACK FACE
+            -0.5, 0.5, 0.5,      0.0, 1.0, 0.0,
+            -0.5, 0.5, -0.5,    0.0, 1.0, 0.0,
+            0.5, 0.5, 0.5,     0.0, 1.0, 0.0,
+
+            -0.5, 0.5, -0.5,    0.0, 1.0, 0.0,
+            0.5, 0.5, -0.5,     0.0, 1.0, 0.0,
+            0.5, 0.5, 0.5,      0.0, 1.0, 0.0,
+
+
+            // RIGHT SIDE
+            0.5, 0.5, -0.5,      1.0, 0.0, 0.0,
+            0.5, -0.5, -0.5,      1.0, 0.0, 0.0,
+            0.5, 0.5, 0.5,      1.0, 0.0, 0.0,
+
+            0.5, -0.5, -0.5,      1.0, 0.0, 0.0,
+            0.5, -0.5, 0.5,      1.0, 0.0, 0.0,
+            0.5, 0.5, 0.5,      1.0, 0.0, 0.0,
+
+
+            // FRONT FACE
+            -0.5, -0.5, 0.5,      0.0, -1.0, 0.0,
+            0.5, -0.5, 0.5,     0.0, -1.0, 0.0,
+            -0.5, -0.5, -0.5,    0.0, -1.0, 0.0,
+
+            0.5, -0.5, -0.5,     0.0, -1.0, 0.0,
+            -0.5, -0.5, -0.5,    0.0, -1.0, 0.0,
+            0.5, -0.5, 0.5,      0.0, -1.0, 0.0,
+
+
+            // RIGHT SIDE
+            -0.5, -0.5, -0.5,      -1.0, 0.0, 0.0,
+            -0.5, 0.5, -0.5,      -1.0, 0.0, 0.0,
+            -0.5, 0.5, 0.5,      -1.0, 0.0, 0.0,
+
+            -0.5, 0.5, 0.5,      -1.0, 0.0, 0.0,
+            -0.5, -0.5, 0.5,      -1.0, 0.0, 0.0,
+            -0.5, -0.5, -0.5,      -1.0, 0.0, 0.0,
+
+
+            // BOTTOM FACE
+            0.5,	-0.5,	-0.5,   0.0, 0.0, -1.0,
+            0.5,	0.5,	-0.5,   0.0, 0.0, -1.0,
+            -0.5,	0.5,	-0.5,   0.0, 0.0, -1.0,
+
+
+            0.5,	-0.5,	-0.5,   0.0, 0.0, -1.0,
+            -0.5,	0.5,	-0.5,   0.0, 0.0, -1.0,
+            -0.5,	-0.5,	-0.5,   0.0, 0.0, -1.0,
+
+
+        ];
+
+
+        let indices: Vec<u32> =  (0..(vertices.len() as u32)).collect();
+
+        let indices2 : Vec::<u32>= vec![
+            0,1,2,
+            3,4,5
+
+        ];
+
         // https://programming.vip/docs/vao-and-ebo-representation-of-cube-in-opengl.html
-        let vertices: Vec<f32> = vec![
+        let vertices2: Vec<f32> = vec![
             //                                             X    Y     Z
-            -0.5,	0.5,	0.5,   1.0, 0.0, 0.0,	// Left Front Top		- Red	- 0
-	    0.5,	0.5,	0.5,   0.0, 1.0, 0.0,	// Right Front Top		- Green	- 1
-	    0.5,	0.5,	-0.5,   0.0, 0.0, 1.0,	// Right Front Bottom		- Blue	- 2
-	    -0.5,	0.5,	-0.5,   0.0, 1.0, 1.0,	// Left Front Bottom		- Cyan	- 3
-	    -0.5,	-0.5,	0.5,   1.0, 0.0, 1.0,	// Left Back Top		- Pink	- 4
-	    0.5,	-0.5,	0.5,   1.0, 1.0, 0.0,	// Right Back Top		- Yellow- 5
-	    0.5,	-0.5,	-0.5,   0.1, 0.1, 0.1,	// Right Back Bottom		- White - 6
-	    -0.5,	-0.5,	-0.5,   1.0, 1.0, 1.0,	// Let Back Bottom		- Gray  - 7
+            -0.5,	0.5,	0.5,   1.0, 0.0, 0.0,	// Left Front Top
+	    0.5,	0.5,	0.5,   0.0, 1.0, 0.0,	// Right Front Top
+	    0.5,	0.5,	-0.5,   0.0, 0.0, 1.0,	// Right Front Bottom
+	    -0.5,	0.5,	-0.5,   0.0, 1.0, 1.0,	// Left Front Bottom
+	    -0.5,	-0.5,	0.5,   1.0, 0.0, 1.0,	// Left Back Top
+	    0.5,	-0.5,	0.5,   1.0, 1.0, 0.0,	// Right Back Top
+	    0.5,	-0.5,	-0.5,   0.1, 0.1, 0.1,	// Right Back Bottom
+	    -0.5,	-0.5,	-0.5,   1.0, 1.0, 1.0,	// Let Back Bottom
         ];
 
         // https://programming.vip/docs/vao-and-ebo-representation-of-cube-in-opengl.html
@@ -39,7 +113,8 @@ impl Cube {
         ];
 
 
-        let indices: Vec<u32> = vec![
+
+        let indices2: Vec<u32> = vec![
 	    3,2,6,	//Bottom
 	    6,7,3,
             0,3,2,	//Front
@@ -54,6 +129,22 @@ impl Cube {
 	    1,0,4,
         ];
 
+
+        let vertices2: Vec::<f32> = vec![
+             0.5,  0.5, 0.0,  // top right
+            0.5, -0.5, 0.0,  // bottom right
+            -0.5, -0.5, 0.0,  // bottom left
+            -0.5,  0.5, 0.0   // top left
+        ];
+
+        let indices2 : Vec::<u32> = vec![
+            0, 1, 3,   // first triangle
+            1, 2, 3
+        ];
+
+
+        println!("{:?}", vertices);
+        println!("{:?}", indices);
 
 
         let vbo = buffer::ArrayBuffer::new(gl);
@@ -91,7 +182,7 @@ impl Cube {
             gl.EnableVertexAttribArray(0);
 
             // 4.
-            // Colors
+            // Normals
             gl.VertexAttribPointer(
                 1,
                 3,
