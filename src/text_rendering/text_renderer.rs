@@ -25,6 +25,7 @@ impl TextRenderer {
 
         let shader = create_shader(gl);
 
+
         let texture_id = texture::gen_texture_rgba(&gl, &font.image);
 
 
@@ -58,7 +59,7 @@ impl TextRenderer {
 
         self.shader.set_vec3(gl, "color", self.color);
 
-        self.shader.set_f32(gl, "base_scale", scale);
+        self.shader.set_f32(gl, "scale", scale);
 
         self.shader.set_i32(gl, "text_map", (self.texture_id - 1) as i32);
 
@@ -66,8 +67,6 @@ impl TextRenderer {
             gl.ActiveTexture(gl::TEXTURE0);
             texture::set_texture(gl, self.texture_id);
         }
-
-
     }
 
 
@@ -78,14 +77,20 @@ impl TextRenderer {
     }
 
 
-    fn  calc_char_info(font: &Font, text: &str, max_width: f32, _input_scale: f32, chars_info: &mut Vec::<CharPosInfo>) -> TextRenderBox {
+    fn  calc_char_info(font: &Font, text: &str, max_width: f32, input_scale: f32, chars_info: &mut Vec::<CharPosInfo>) -> TextRenderBox {
 
         let mut prev_char: Option<PageChar> = None;
         let mut pixel_x = 0.0;
 
         for c in text.chars() {
-
-            let chr = font.page_char(c as u32).unwrap();
+            let chr = match font.page_char(c as u32) {
+                Some(chr) => chr,
+                None => {
+                    // TODO: maybe in release just use unicode replacement char instead of panic
+                    // TODO: Also maybe replace \t with a space, so we can render tabs
+                    panic!("No char with code '{}' ({}) found in font", c, c as u32)
+                }
+            };
 
             if let Some(prev) = prev_char {
                 // Lookup potential kerning and apply to x
@@ -103,7 +108,7 @@ impl TextRenderer {
 
             });
 
-            pixel_x += chr.x_advance;
+            pixel_x += chr.x_advance * input_scale;
         }
 
 
@@ -113,28 +118,30 @@ impl TextRenderer {
         let mut total_height = 0.0;
         let mut total_width = 0.0;
         // Process chars to wrap newlines, on whole word if possible
-        let mut current_max_h = font.info.line_height;
+        let line_height =  font.info.line_height * input_scale;
+        let mut current_max_h = line_height;
 
 
         let mut current_w = 0.0;
         for info in chars_info.iter_mut() {
             // Update x before checking to wrap correctly
             info.x -= x_offset;
+            let x_advance = info.chr.x_advance * input_scale;
 
-            if ( info.x + info.chr.x_advance) > max_width  || info.is_newline {
+            if ( info.x + x_advance) > max_width  || info.is_newline {
                 x_offset += info.x;
-                y_offset += font.info.line_height;
+                y_offset += line_height;
                 info.x = 0.0;
 
-                total_height += font.info.line_height;
+                total_height += line_height;
                 total_width = f32::max(current_w, total_width);
                 current_max_h = 0.0;
             }
 
             info.y += y_offset;
 
-            current_max_h = f32::max(current_max_h, info.chr.height + info.chr.y_offset);
-            current_w = info.x + info.chr.x_advance;
+            current_max_h = f32::max(current_max_h, (info.chr.height + info.chr.y_offset) * input_scale);
+            current_w = info.x + x_advance;
         }
 
         total_height += current_max_h;
@@ -153,13 +160,13 @@ impl TextRenderer {
         let scale_x = 2.0 / screen_box.screen_w * input_scale;
 
         let scale_y = 2.0 / screen_box.screen_h * input_scale;
-        let base_scale = 8.0;
         // TODO: fix this so we always render with correct scale
-        self.setup_shader(gl, base_scale);
+        self.setup_shader(gl, input_scale);
 
         let mut chars_info = Vec::new();
 
         let render_box = Self::calc_char_info(&self.font, text, screen_box.width, input_scale, &mut chars_info);
+
 
         // map from pixel space into screen space so we are ready to draw
         for info in chars_info.iter_mut() {
@@ -175,8 +182,6 @@ impl TextRenderer {
                 TextAlignmentY::Center => screen_box.y + (screen_box.height - render_box.total_height) / 2.0,
                 TextAlignmentY::Bottom =>  screen_box.y + screen_box.height - render_box.total_height,
             };
-
-
 
             info.x = info.x + x_offset;
             info.y = info.y + y_offset;
@@ -211,6 +216,7 @@ impl TextRenderer {
             let y = -1.0 * (smoothstep(0.0, draw_info.screen_h, info.y) * 2.0 - 1.0);
 
             self.char_quad.update_char(i, x, y, draw_info.scale.x, draw_info.scale.y, &info.chr, (&self.font.image).into());
+            //self.char_quad.render_full_texture(i);
             i += 1;
 
             if i >= buffer_size {
@@ -249,31 +255,35 @@ struct Scale {
     pub y: f32,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct TextAlignment {
     pub x: TextAlignmentX,
     pub y: TextAlignmentY,
 }
 
-impl Default for TextAlignment {
-    fn default() -> Self {
-
-        Self {
-            x: TextAlignmentX::Center,
-            y: TextAlignmentY::Center
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy)]
 pub enum TextAlignmentX {
     Left, Center, Right
 }
 
+impl Default for TextAlignmentX {
+    fn default() -> Self {
+        TextAlignmentX::Center
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum TextAlignmentY {
     Top, Center, Bottom
 }
+
+impl Default for TextAlignmentY {
+    fn default() -> Self {
+        TextAlignmentY::Center
+    }
+}
+
 
 
 #[derive(Debug, Clone, Copy)]
@@ -314,7 +324,7 @@ fn create_shader(gl: &gl::Gl) -> BaseShader {
     let frag_source = r"#version 330 core
         out vec4 FragColor;
         uniform vec3 color;
-        uniform float base_scale;
+        uniform float scale;
 
         uniform sampler2D text_map;
 
@@ -335,7 +345,9 @@ fn create_shader(gl: &gl::Gl) -> BaseShader {
 
         // Just scale everything below 0.5 (ouside) to 0 and everything inside to 1s
         float u_buffer = 0.5;
-        float smoothing = 1.0/base_scale;
+
+        // allow some smoothing for AA at edges
+        float smoothing = 0.125/scale;
 
         float alpha = smoothstep(u_buffer - smoothing, u_buffer + smoothing, dist);
 
@@ -345,6 +357,12 @@ fn create_shader(gl: &gl::Gl) -> BaseShader {
             discard;
         }
 
+        vec3 rgb = texture(text_map, IN.TexCoords).rgb;
+        //FragColor = vec4(IN.TexCoords.y, 0.0, 0.0, 1.0);
+
+        FragColor = texture(text_map, IN.TexCoords).rgba;
+
+        //FragColor = vec4(IN.TexCoords.y, 0.0, 0.0, 1.0);
         FragColor = vec4(color, alpha);
     }";
 

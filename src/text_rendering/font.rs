@@ -18,8 +18,12 @@ pub struct Font {
     pub image: image::RgbaImage
 }
 
+
 static FONT_TEXT: &str = include_str!("../../assets/fonts/Arial.fnt");
 static FONT_IMG: &[u8; 85355] = include_bytes!("../../assets/fonts/Arial.png");
+
+//static FONT_TEXT: &str = include_str!("E:/repos/rust-sdf-tool/Calibri.fnt");
+//static FONT_IMG: &[u8; 87666] = include_bytes!("E:/repos/rust-sdf-tool/Calibri_0.png");
 
 
 impl Default for Font {
@@ -76,6 +80,9 @@ impl Font {
 
     pub fn load_fnt_font(fnt_path: &Path) -> Result<Font, Box<dyn Error>> {
 
+
+
+
         let text = fs::read_to_string(fnt_path)?;
 
         let mut lines = text.lines();
@@ -92,6 +99,10 @@ impl Font {
         let img_path = parent.join(&page.info.file_name);
 
         let mut image = ImageReader::open(img_path)?.decode()?.into_rgba8();
+
+        return Self::load_font(&text, image);
+
+        /*
         image = imageops::flip_vertical(&image);
 
         // image is flipped so also flip chars
@@ -104,6 +115,7 @@ impl Font {
             page,
             image,
         })
+*/
     }
 
     /// Return the page char if it exists in the font
