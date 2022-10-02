@@ -40,7 +40,7 @@ pub fn dispatch_events(state: &mut UiState, event: &event::Event) {
                     widget_handle_event(id, state, &event);
                 }
 
-             },
+            }
             _ => {}
         };
         return;
