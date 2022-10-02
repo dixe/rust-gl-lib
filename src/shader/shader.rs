@@ -24,12 +24,7 @@ impl BaseShader {
     /// A new shader from vertex and fragment sources
     pub fn new(gl: &gl::Gl, vert_shader: &str, frag_shader: &str) -> Result<BaseShader, failure::Error> {
 
-        let program = match Program::from_text(gl, vert_shader, frag_shader) {
-            Ok(p) => p,
-            Err(msg) => {
-                panic!("Error compiling shader {:#?}", msg);
-            }
-        };
+        let program = Program::from_text(gl, vert_shader, frag_shader)?;
 
         Ok(BaseShader {
             program
