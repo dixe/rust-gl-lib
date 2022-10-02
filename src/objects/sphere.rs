@@ -1,22 +1,25 @@
 use crate::buffer;
 use crate::gl;
+use crate::objects::mesh::Mesh;
 
 // Shpere with radius 1, thus the input pos is also the normals
-pub struct Sphere {
-    vao: buffer::VertexArray,
-    _vbo: buffer::ArrayBuffer,
-    elements: i32
-}
-
+pub struct Sphere;
 
 impl Sphere {
 
-    pub fn new(gl: &gl::Gl, slices: u32, mut lines: u32) -> Sphere {
+    pub fn new(gl: &gl::Gl, slices: u32, mut lines: u32) -> Mesh {
 
         // there is slices + 2 rows, since we always use 2 points for the poles
 
         let mut vertices: Vec<f32> = vec![];
         // push north pole
+        vertices.push(0.0); // x
+        vertices.push(0.0); // y
+        vertices.push(1.0); // z
+
+
+
+        // normal
         vertices.push(0.0); // x
         vertices.push(0.0); // y
         vertices.push(1.0); // z
@@ -51,6 +54,15 @@ impl Sphere {
                 vertices.push(y);
                 vertices.push(z);
 
+
+                // push normal
+                // all vertices has distance of 1 from center
+                // so the positions are the normals.
+                // still push them, since then we can use the same mesh shader as other objects
+                // TODO: Should be xyz
+                vertices.push(x);
+                vertices.push(y);
+                vertices.push(z);
             }
         }
 
@@ -66,14 +78,12 @@ impl Sphere {
                 let i0 = first_index + (i % lines);
                 let i1 = first_index + ( (i+1) % lines);
                 indices.push(i0);
-                indices.push(i1 );
                 indices.push(i1 + lines);
+                indices.push(i1 );
 
                 indices.push(i0 + lines);
-                indices.push(i0);
                 indices.push(i1 + lines);
-
-
+                indices.push(i0);
 
             }
         }
@@ -95,11 +105,17 @@ impl Sphere {
         vertices.push(0.0); // y
         vertices.push(-1.0); // z
 
+
+        // Normal
+        vertices.push(0.0); // x
+        vertices.push(0.0); // y
+        vertices.push(-1.0); // z
+
         let vbo = buffer::ArrayBuffer::new(gl);
         let ebo = buffer::ElementArrayBuffer::new(gl);
         let vao = buffer::VertexArray::new(gl);
 
-        let stride = 3;
+        let stride = 6;
         unsafe {
             // 1
             vao.bind();
@@ -128,30 +144,31 @@ impl Sphere {
                 0 as *const gl::types::GLvoid,
             );
             gl.EnableVertexAttribArray(0);
+
+            // 5.
+            // Normals
+            gl.VertexAttribPointer(
+                1,
+                3,
+                gl::FLOAT,
+                gl::FALSE,
+                (stride * std::mem::size_of::<f32>()) as gl::types::GLint,
+                (3 * std::mem::size_of::<f32>()) as *const gl::types::GLvoid,
+            );
+            gl.EnableVertexAttribArray(1);
         }
 
         vbo.unbind();
         vao.unbind();
 
 
-        Sphere {
+        Mesh {
             vao,
             _vbo: vbo,
+            _ebo: ebo,
             elements: indices.len() as i32
         }
     }
 
-    pub fn render(&self, gl: &gl::Gl) {
 
-        self.vao.bind();
-        unsafe {
-            // draw
-            gl.DrawElements(
-                gl::TRIANGLES,
-                self.elements,
-                gl::UNSIGNED_INT,
-                0 as *const gl::types::GLvoid
-            );
-        }
-    }
 }

@@ -16,3 +16,11 @@ pub mod bezier;
 pub mod char_quad;
 
 pub mod polygon;
+
+pub mod plane;
+
+pub mod mesh;
+
+pub mod shadow_map;
+
+pub mod texture_quad;
