@@ -58,7 +58,7 @@ impl Camera {
 
     pub fn look_at(&mut self, target: na::Vector3::<f32>) {
 
-        // calc yaw and pitch, only worth because we don't have roll.
+        // calc yaw and pitch, only works because we don't have roll.
 
         let diff = target - self.pos;
         let height = diff.z; // always height
@@ -66,15 +66,18 @@ impl Camera {
         self.pitch = (height / horizontal_len).atan();
 
 
-        let base = na::Vector2::new(1.0, 0.0);
-        let new = diff.xy().normalize();
-        self.yaw =  new.y.signum() * base.dot(&new).acos();
+        let base = na::Vector3::new(1.0, 0.0, 0.0);
+        let new = diff.normalize();
+        self.yaw = new.y.signum() * base.dot(&new).acos();
 
         self.update_camera_vectors();
+
+
     }
 
 
     pub fn projection(&self) -> na::Matrix4::<f32> {
+        //na::Matrix4::new_orthographic(left, right, bottom, top, self.znear, self.zfar)
         na::Matrix4::new_perspective(self.width / self.height, self.fov.to_radians(), self.znear, self.zfar)
     }
 
@@ -91,7 +94,8 @@ impl Camera {
         let pos = self.pos();
         let point_pos = na::Point3::new(pos.x, pos.y, pos.z);
 
-       na::Matrix::look_at_rh(&point_pos, &target, &self.up)
+
+        na::Matrix::look_at_rh(&point_pos, &target, &self.up)
     }
 
     pub fn set_zfar(&mut self, zfar: f32) {
@@ -106,6 +110,7 @@ impl Camera {
             self.yaw.sin() * self.pitch.cos(),
             self.pitch.sin(),
         ).normalize();
+
 
         self.right = self.front.cross(&self.world_up).normalize();
 

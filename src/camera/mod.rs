@@ -65,6 +65,8 @@ impl Controller {
 
         camera.pitch = f32::max((-70.0_f32).to_radians(), f32::min((70.0_f32).to_radians(), camera.pitch + self.mouse_movement.yrel* self.sens * self.inverse_y *  dt));
 
+        //camera.pitch = camera.pitch + self.mouse_movement.yrel* self.sens * self.inverse_y *  dt;
+
         self.mouse_movement.xrel = 0.0;
         self.mouse_movement.yrel = 0.0;
 
