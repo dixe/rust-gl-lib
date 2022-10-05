@@ -37,7 +37,7 @@ impl Controller {
             Event::MouseMotion{mousestate, xrel, yrel, .. } => {
                 if mousestate.right() {
                     self.mouse_movement.xrel = xrel as f32;
-                    self.mouse_movement.yrel = self.inverse * yrel as f32;
+                    self.mouse_movement.yrel = self.inverse_y * yrel as f32;
                 }
             },
             _ => {}
