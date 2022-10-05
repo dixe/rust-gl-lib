@@ -1,11 +1,10 @@
-use crate::buffer;
 use crate::gl;
 use crate::texture;
 use crate::na;
 use crate::shader::{self, Shader};
 
 pub struct ShadowMap {
-    depth_map_FBO: u32,
+    depth_map_fbo: u32,
     pub depth_map: texture::TextureId,
     pub shader: shader::BaseShader
 }
@@ -14,18 +13,18 @@ impl ShadowMap {
 
     pub fn new(gl: &gl::Gl) -> Self {
 
-        let mut depth_map_FBO = 0;
+        let mut depth_map_fbo = 0;
 
         unsafe {
 
-            gl.GenFramebuffers(1, &mut depth_map_FBO);
+            gl.GenFramebuffers(1, &mut depth_map_fbo);
         }
 
 
         let depth_map = texture::gen_texture_depth(gl, 1024, 1024);
 
         unsafe {
-            gl.BindFramebuffer(gl::FRAMEBUFFER, depth_map_FBO);
+            gl.BindFramebuffer(gl::FRAMEBUFFER, depth_map_fbo);
             gl.FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, gl::TEXTURE_2D, depth_map, 0);
             gl.DrawBuffer(gl::NONE);
             gl.ReadBuffer(gl::NONE);
@@ -35,7 +34,7 @@ impl ShadowMap {
 
         let shader = create_shader(gl);
         ShadowMap {
-            depth_map_FBO,
+            depth_map_fbo,
             depth_map,
             shader,
         }
@@ -46,7 +45,7 @@ impl ShadowMap {
 
         unsafe {
             gl.Viewport(0, 0, 1024, 1024);
-            gl.BindFramebuffer(gl::FRAMEBUFFER, self.depth_map_FBO);
+            gl.BindFramebuffer(gl::FRAMEBUFFER, self.depth_map_fbo);
             gl.Clear(gl::DEPTH_BUFFER_BIT);
         }
 
@@ -59,13 +58,7 @@ impl ShadowMap {
 
 
     pub fn light_space_mat(&self, light_pos: na::Vector3::<f32>) -> na::Matrix4::<f32> {
-
-        let z_near = 0.5;
-        let z_far = 7.5;
-        let size = 5.0;
-
         self.projection() * self.view(light_pos)
-
     }
 
     pub fn projection(&self) -> na::Matrix4::<f32> {
@@ -78,28 +71,12 @@ impl ShadowMap {
 
     pub fn view(&self, light_pos: na::Vector3::<f32>) -> na::Matrix4::<f32> {
 
-/*        // define your up vector
-        let upVector = na::Vector3(0.0, 0.0, 0.1);
-        // rotate around to a given bearing: yaw
-        glm::mat4 camera = glm::rotate(glm::mat4(), bearing, upVector);
-        // Define the 'look up' axis, should be orthogonal to the up axis
-        glm::vec3 pitchVector = glm::vec3(1, 0, 0);
-        // rotate around to the required head tilt: pitch
-        camera = glm::rotate(camera, tilt, pitchVector);
-
-        // now get the view matrix by taking the camera inverse
-        glm::mat4 view = glm::inverse(camera);
-*/
-
-        let target = na::Point3::new(light_pos.x, light_pos.y, 0.0);
-
         let target = na::Point3::new(0.0, 0.0, 0.0);
 
         let point_pos = na::Point3::new(light_pos.x, light_pos.y, light_pos.z);
 
         let up = na::Vector3::new(0.0, 1.0, 0.0);
 
-        //println!("light {:?}",(point_pos, target, up));
         na::Matrix::look_at_rh(&point_pos, &target, &up)
 
     }

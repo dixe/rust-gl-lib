@@ -80,25 +80,22 @@ impl Font {
 
     pub fn load_fnt_font(fnt_path: &Path) -> Result<Font, Box<dyn Error>> {
 
-
-
-
         let text = fs::read_to_string(fnt_path)?;
 
-        let mut lines = text.lines();
+        let lines = text.lines();
 
-        let info_lines: Vec::<&str> = lines.take_while_ref(|l| !l.starts_with("page ")).collect();
+        //let info_lines: Vec::<&str> = lines.take_while_ref(|l| !l.starts_with("page ")).collect();
 
-        let info: FontInfo = info_lines.join(" ").parse()?;
+        //let info: FontInfo = info_lines.join(" ").parse()?;
 
         // The rest is page. Maybe assuming single page is an error;
-        let mut page: Page = lines.collect::<Vec<&str>>().join("\n").parse()?;
+        let page: Page = lines.collect::<Vec<&str>>().join("\n").parse()?;
 
 
         let parent = fnt_path.parent().ok_or(ParseFontError::PathHasNotParent)?;
         let img_path = parent.join(&page.info.file_name);
 
-        let mut image = ImageReader::open(img_path)?.decode()?.into_rgba8();
+        let image = ImageReader::open(img_path)?.decode()?.into_rgba8();
 
         return Self::load_font(&text, image);
 

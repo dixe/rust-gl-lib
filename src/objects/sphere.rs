@@ -164,8 +164,8 @@ impl Sphere {
 
         Mesh {
             vao,
-            _vbo: vbo,
-            _ebo: ebo,
+            vbo,
+            ebo,
             elements: indices.len() as i32
         }
     }

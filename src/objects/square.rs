@@ -18,12 +18,13 @@ impl Square {
 
     pub fn new(gl: &gl::Gl) -> Square {
 
+
         let vertices: Vec<f32> = vec![
             // positions
-            0.5,  0.5, 0.0,
             0.5, -0.5, 0.0,
-            -0.5, -0.5, 0.0,
+            0.5,  0.5, 0.0,
             -0.5,  0.5, 0.0,
+            -0.5, -0.5, 0.0,
         ];
 
         let indices: Vec<u32> = vec![

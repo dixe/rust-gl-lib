@@ -79,8 +79,8 @@ impl Plane {
 
         Mesh {
             vao,
-            _vbo: vbo,
-            _ebo: ebo,
+            vbo,
+            ebo,
             elements: 6
         }
     }

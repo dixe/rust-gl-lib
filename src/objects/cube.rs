@@ -10,7 +10,7 @@ impl Cube {
 
     pub fn new(gl: &gl::Gl) -> Mesh {
 
-        let mut vertices : Vec::<f32> = vec![
+        let vertices : Vec::<f32> = vec![
 
             // TOP FACE
             0.5,	0.5,	0.5,   0.0, 0.0, 1.0,
@@ -132,8 +132,8 @@ impl Cube {
 
         Mesh {
             vao,
-            _vbo: vbo,
-            _ebo: ebo,
+            vbo,
+            ebo,
             elements: indices.len() as i32
         }
     }
