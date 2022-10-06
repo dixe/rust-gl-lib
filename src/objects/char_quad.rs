@@ -45,7 +45,7 @@ impl CharQuad {
             vao.bind();
             vbo.bind();
 
-            vbo.dynamic_draw_data((std::mem::size_of::<f32>() * ELEMENTS * BUFFER_SIZE * STRIDE) as u32);
+            vbo.dynamic_draw_size((std::mem::size_of::<f32>() * ELEMENTS * BUFFER_SIZE * STRIDE) as u32);
 
             // Position
             gl.VertexAttribPointer(

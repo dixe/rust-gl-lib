@@ -11,7 +11,7 @@ use failure;
 pub struct Square {
     vao: buffer::VertexArray,
     _vbo: buffer::ArrayBuffer,
-    _ebo: buffer::ElementArrayBuffer
+    _ebo: buffer::ElementArrayBuffer,
 }
 
 impl Square {
@@ -19,7 +19,7 @@ impl Square {
     pub fn new(gl: &gl::Gl) -> Square {
 
 
-        let vertices: Vec<f32> = vec![
+        let vertices: [f32; 3*4] = [
             // positions
             0.5, -0.5, 0.0,
             0.5,  0.5, 0.0,
@@ -35,13 +35,14 @@ impl Square {
         let ebo = buffer::ElementArrayBuffer::new(gl);
         let vao = buffer::VertexArray::new(gl);
 
+        let stride = 3;
         unsafe {
             // 1
             vao.bind();
 
             // 2.
             vbo.bind();
-            vbo.static_draw_data(&vertices);
+            vbo.dynamic_draw_data(&vertices);
 
             // 3
             ebo.bind();
@@ -74,6 +75,28 @@ impl Square {
         }
     }
 
+    /// Only works for dynamic draw I think
+    pub fn sub_data(&self, gl: &gl::Gl, left: f32, right: f32, top: f32, bottom: f32) {
+
+        let data = [
+            right, bottom, 0.0,
+            right, top, 0.0,
+            left, top, 0.0,
+            left, bottom, 0.0
+        ];
+
+        self._vbo.bind();
+        unsafe {
+            gl.BufferSubData(
+                gl::ARRAY_BUFFER,
+                0,
+                3* 4 * std::mem::size_of::<f32>() as gl::types::GLsizeiptr,
+                data.as_ptr() as *const gl::types::GLvoid
+            );
+        }
+        self._vbo.unbind();
+    }
+
     /// Creates a basic default shader that takes a mat4 transformation uniform transform
     pub fn default_shader(gl: &gl::Gl) -> Result<BaseShader, failure::Error> {
 
@@ -100,6 +123,7 @@ void main()
 
     pub fn render(&self, gl: &gl::Gl) {
         self.vao.bind();
+        self._vbo.bind();
         unsafe {
             // draw
             gl.DrawElements(
@@ -109,7 +133,7 @@ void main()
                 0 as *const gl::types::GLvoid
             );
         }
-
+        self._vbo.unbind();
         self.vao.unbind();
     }
 

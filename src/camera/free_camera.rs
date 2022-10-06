@@ -14,6 +14,7 @@ pub struct Controller {
     mouse_movement: MouseMovement,
     pub sens: f32,
     inverse_y: f32, // should be -1 or 1. 1 for normal, -1 for inverse
+    inverse_x: f32,
 }
 
 impl Controller {
@@ -61,7 +62,7 @@ impl Controller {
 
 
 
-        camera.yaw -= self.mouse_movement.xrel * self.sens * dt;
+        camera.yaw -= self.mouse_movement.xrel * self.sens * dt * self.inverse_x;
 
         camera.pitch = f32::max((-70.0_f32).to_radians(), f32::min((70.0_f32).to_radians(), camera.pitch + self.mouse_movement.yrel* self.sens * self.inverse_y *  dt));
 
@@ -86,8 +87,9 @@ impl Default for Controller {
             mapping: Default::default(),
             speed: 2.0,
             mouse_movement: Default::default(),
-            sens: 0.2,
-            inverse_y : -1.0,
+            sens: 0.15,
+            inverse_y : 1.0,
+            inverse_x : -1.0,
         }
     }
 }
