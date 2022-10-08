@@ -5,18 +5,18 @@ use crate::na;
 /// Default is right hand coordinate system with z as up, x horizontal and y going into the screen
 #[derive(Debug, Clone)]
 pub struct Camera {
-    pub(crate)pos: na::Vector3::<f32>,
-    pub(crate) front: na::Vector3::<f32>,
-    pub(crate) up: na::Vector3::<f32>,
-    pub(crate) world_up: na::Vector3::<f32>,
-    pub(crate) right: na::Vector3::<f32>,
-    pub(crate) yaw: f32,
-    pub(crate) pitch: f32,
-    pub(crate) width: f32,
-    pub(crate) height: f32,
-    pub(crate) fov: f32,
-    pub(crate) zfar: f32,
-    pub(crate) znear: f32,
+    pub pos: na::Vector3::<f32>,
+    pub front: na::Vector3::<f32>,
+    pub up: na::Vector3::<f32>,
+    pub world_up: na::Vector3::<f32>,
+    pub right: na::Vector3::<f32>,
+    pub yaw: f32,
+    pub pitch: f32,
+    pub width: f32,
+    pub height: f32,
+    pub fov: f32,
+    pub zfar: f32,
+    pub znear: f32,
 }
 
 impl Camera {
@@ -51,6 +51,22 @@ impl Camera {
         self.pos
     }
 
+    pub fn fov(&self) -> f32 {
+        self.fov
+    }
+
+    pub fn right(&self) -> na::Vector3::<f32> {
+        self.right
+    }
+
+    pub fn up(&self) -> na::Vector3::<f32> {
+        self.up
+    }
+
+    pub fn front(&self) -> na::Vector3::<f32> {
+        self.front
+    }
+
     pub fn move_to(&mut self, new_pos: na::Vector3::<f32>) {
         self.pos = new_pos;
         self.update_camera_vectors();
@@ -59,7 +75,6 @@ impl Camera {
     pub fn look_at(&mut self, target: na::Vector3::<f32>) {
 
         // calc yaw and pitch, only works because we don't have roll.
-
         let diff = target - self.pos;
         let height = diff.z; // always height
         let horizontal_len = (diff.x*diff.x + diff.y * diff.y).sqrt();
@@ -77,7 +92,6 @@ impl Camera {
 
 
     pub fn projection(&self) -> na::Matrix4::<f32> {
-        //na::Matrix4::new_orthographic(left, right, bottom, top, self.znear, self.zfar)
         na::Matrix4::new_perspective(self.width / self.height, self.fov.to_radians(), self.znear, self.zfar)
     }
 
@@ -108,6 +122,8 @@ impl Camera {
     }
 
 
+
+
     fn update_camera_vectors(&mut self) {
         self.front = na::Vector3::new(
             self.yaw.cos() * self.pitch.cos(),
@@ -117,7 +133,46 @@ impl Camera {
 
 
         self.right = self.front.cross(&self.world_up).normalize();
-
     }
 
+    pub fn rotation(&self) -> na::Rotation::<f32, 3> {
+        na::geometry::Rotation::from_euler_angles(0.0, self.pitch, self.yaw)
+    }
+
+
+
+    /// 0,0 in screen space is lower left, 1,1 is upper right
+    pub fn screen_to_ray(&self, screen_x: f32, screen_y: f32) -> na::Vector3::<f32> {
+
+        // first transform to clip space
+
+        //first from [0;1] then to [-1;]
+        let clip_x = ((screen_x / self.width) - 0.5) * 2.0;
+        let clip_y = ((screen_y / self.height) - 0.5) * 2.0;
+
+        let mut clip_space = na::Vector3::new(clip_x, clip_y, 1.0).to_homogeneous();
+        clip_space.w = 1.0;
+
+        let transform = (self.projection() * self.view() ).try_inverse().unwrap();
+
+        let transformed = transform * clip_space;
+
+        (transformed.xyz() / transformed.w - self.pos).normalize()
+    }
+
+    pub fn world_pos_to_screen(&self, world_pos: na::Vector3::<f32>) -> na::Vector2::<f32> {
+        let transform = self.projection() * self.view();
+        let mut homo_pos = world_pos.to_homogeneous();
+
+        homo_pos.w = 1.0;
+        let mut sp = transform * homo_pos;
+        sp = sp / sp.w;
+
+        let mut xy = sp.xy();
+
+        xy.x = (xy.x + 1.0) * self.width / 2.0;
+        xy.y = self.height - ((xy.y + 1.0) * self.height / 2.0);
+
+        xy
+    }
 }

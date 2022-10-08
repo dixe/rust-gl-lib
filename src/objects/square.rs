@@ -59,7 +59,7 @@ impl Square {
                 3,
                 gl::FLOAT,
                 gl::FALSE,
-                (3 * std::mem::size_of::<f32>()) as gl::types::GLint,
+                (stride * std::mem::size_of::<f32>()) as gl::types::GLint,
                 0 as *const gl::types::GLvoid,
             );
             gl.EnableVertexAttribArray(0);
