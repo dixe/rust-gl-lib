@@ -10,7 +10,7 @@ use failure;
 
 pub struct Square {
     vao: buffer::VertexArray,
-    _vbo: buffer::ArrayBuffer,
+    vbo: buffer::ArrayBuffer,
     _ebo: buffer::ElementArrayBuffer,
 }
 
@@ -19,12 +19,12 @@ impl Square {
     pub fn new(gl: &gl::Gl) -> Square {
 
 
-        let vertices: [f32; 3*4] = [
+        let vertices: [f32; 2 * 4] = [
             // positions
-            0.5, -0.5, 0.0,
-            0.5,  0.5, 0.0,
-            -0.5,  0.5, 0.0,
-            -0.5, -0.5, 0.0,
+            0.5, -0.5,
+            0.5,  0.5,
+            -0.5,  0.5,
+            -0.5, -0.5,
         ];
 
         let indices: Vec<u32> = vec![
@@ -35,7 +35,7 @@ impl Square {
         let ebo = buffer::ElementArrayBuffer::new(gl);
         let vao = buffer::VertexArray::new(gl);
 
-        let stride = 3;
+        let stride = 2;
         unsafe {
             // 1
             vao.bind();
@@ -56,7 +56,7 @@ impl Square {
             // 4.
             gl.VertexAttribPointer(
                 0,
-                3,
+                2,
                 gl::FLOAT,
                 gl::FALSE,
                 (stride * std::mem::size_of::<f32>()) as gl::types::GLint,
@@ -70,7 +70,7 @@ impl Square {
 
         Square {
             vao,
-            _vbo: vbo,
+            vbo,
             _ebo: ebo,
         }
     }
@@ -79,22 +79,22 @@ impl Square {
     pub fn sub_data(&self, gl: &gl::Gl, left: f32, right: f32, top: f32, bottom: f32) {
 
         let data = [
-            right, bottom, 0.0,
-            right, top, 0.0,
-            left, top, 0.0,
-            left, bottom, 0.0
+            right, bottom,
+            right, top,
+            left, top,
+            left, bottom,
         ];
 
-        self._vbo.bind();
+        self.vbo.bind();
         unsafe {
             gl.BufferSubData(
                 gl::ARRAY_BUFFER,
                 0,
-                3* 4 * std::mem::size_of::<f32>() as gl::types::GLsizeiptr,
+                2 * 4 * std::mem::size_of::<f32>() as gl::types::GLsizeiptr,
                 data.as_ptr() as *const gl::types::GLvoid
             );
         }
-        self._vbo.unbind();
+        self.vbo.unbind();
     }
 
     /// Creates a basic default shader that takes a mat4 transformation uniform transform
@@ -123,7 +123,7 @@ void main()
 
     pub fn render(&self, gl: &gl::Gl) {
         self.vao.bind();
-        self._vbo.bind();
+
         unsafe {
             // draw
             gl.DrawElements(
@@ -133,7 +133,7 @@ void main()
                 0 as *const gl::types::GLvoid
             );
         }
-        self._vbo.unbind();
+
         self.vao.unbind();
     }
 

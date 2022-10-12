@@ -53,7 +53,7 @@ impl CharQuad {
                 2,
                 gl::FLOAT,
                 gl::FALSE,
-                (4 * std::mem::size_of::<f32>()) as gl::types::GLint,
+                (STRIDE * std::mem::size_of::<f32>()) as gl::types::GLint,
                 0 as *const gl::types::GLvoid,
             );
             gl.EnableVertexAttribArray(0);

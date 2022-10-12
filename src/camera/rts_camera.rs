@@ -8,37 +8,58 @@ use std::collections::HashMap;
 ///Rts like camera, up/down moves Y rihgt left moves x. Looks down at scene
 #[derive(Debug, Clone)]
 pub struct Controller {
-    movement: na::Vector3::<f32>,
+    //movement: na::Vector3::<f32>,
     mapping: KeyMapping,
     pub speed: f32,
-    mouse_movement: MouseMovement,
     pub sens: f32,
-    inverse_y: f32, // should be -1 or 1. 1 for normal, -1 for inverse
+    inverse_y: f32,// should be -1 or 1. 1 for normal, -1 for inverse
+    pub screen_w: i32,
+    pub screen_h: i32,
+    // movement is left, right up down
+    keyboard_movement: [bool; 4],
+    mouse_movement: [bool; 4],
+
+}
+
+#[derive(Default, Debug, Clone, Copy)]
+struct Movement {
+    // movement is left, right up down
+    movement: [bool; 4],
 }
 
 impl Controller {
 
     pub fn update_events(&mut self, event: Event) {
+
         // update state based on event
         match event {
             Event::KeyDown{keycode: Some(kc), .. } => {
                 if let Some(dir) = self.mapping.move_mapping.get(&kc) {
-                    // Clamp x,y,z in dependently to discrete [-1, 0, 1]
-                    self.movement.x = f32::max(-1.0, f32::min(1.0, self.movement.x + dir.x));
-                    self.movement.y = f32::max(-1.0, f32::min(1.0, self.movement.y + dir.y));
-                    self.movement.z = f32::max(-1.0, f32::min(1.0, self.movement.z + dir.z));
+
+                    // Set which movement keys are pressed
+                    self.keyboard_movement[0] = dir[0] || self.keyboard_movement[0];
+                    self.keyboard_movement[1] = dir[1] || self.keyboard_movement[1];
+
+                    self.keyboard_movement[2] = dir[2] || self.keyboard_movement[2];
+                    self.keyboard_movement[3] = dir[3] || self.keyboard_movement[3];
+
                 }
             },
             Event::KeyUp{keycode: Some(kc), .. } => {
-                 if let Some(dir) = self.mapping.move_mapping.get(&kc) {
-                    self.movement -= dir;
+                if let Some(dir) = self.mapping.move_mapping.get(&kc) {
+                    self.keyboard_movement[0] = !dir[0] && self.keyboard_movement[0];
+                    self.keyboard_movement[1] = !dir[1] && self.keyboard_movement[1];
+                    self.keyboard_movement[2] = !dir[2] && self.keyboard_movement[2];
+                    self.keyboard_movement[3] = !dir[3] && self.keyboard_movement[3];
+
                 }
             },
-            Event::MouseMotion{mousestate, xrel, yrel, .. } => {
-                if mousestate.right() {
-                    self.mouse_movement.xrel = xrel as f32;
-                    self.mouse_movement.yrel = self.inverse_y * yrel as f32;
-                }
+            Event::MouseMotion{mousestate, x, y, .. } => {
+                // set mouse move direction
+                self.mouse_movement[0] = x == 0;
+                self.mouse_movement[1] = x + 1 == self.screen_w;
+                self.mouse_movement[2] = y == 0;
+                self.mouse_movement[3] = y + 1 == self.screen_h;
             },
             _ => {}
         };
@@ -48,11 +69,27 @@ impl Controller {
     pub fn update_camera(&mut self, camera: &mut Camera, dt: f32){
 
         // do the actual update
+
         let dt_speed = dt * self.speed;
-        let new_pos = camera.pos() + self.movement * dt_speed;
-        let new_target = camera.target() + self.movement * dt_speed;
+
+        // cast bool to float and multiple with the direction. x is left * -1.0 + right * 1.0
+        let x = -1.0 * (self.keyboard_movement[0] || self.mouse_movement[0]) as i32 as f32 +
+            1.0 * (self.keyboard_movement[1] || self.mouse_movement[1]) as i32 as f32;
+
+        let y = 1.0 * (self.keyboard_movement[2] || self.mouse_movement[2]) as i32 as f32 +
+            -1.0 * (self.keyboard_movement[3] || self.mouse_movement[3]) as i32 as f32;
+
+
+        let dir = na::Vector3::new(x,y,0.0);
+
+        let mut new_pos = camera.pos();
+        let mut forward = camera.right;
+
+        new_pos += camera.right * dir.x * dt_speed;
+
+        new_pos += na::Vector3::new(-camera.right.y, camera.right.x, camera.right.z) * dir.y * dt_speed;
+
         camera.move_to(new_pos);
-        camera.look_at(new_target);
 
     }
 
@@ -63,45 +100,35 @@ impl Controller {
 impl Default for Controller {
     fn default() -> Self {
         Controller {
-            movement: na::Vector3::new(0.0, 0.0, 0.0),
+            //movement: na::Vector3::new(0.0, 0.0, 0.0),
             mapping: Default::default(),
             speed: 2.0,
-            mouse_movement: Default::default(),
             sens: 0.2,
             inverse_y : -1.0,
+            screen_w: 1200,
+            screen_h: 700,
+            keyboard_movement: Default::default(),
+            mouse_movement: Default::default(),
         }
     }
 }
 
 
-#[derive(Debug, Clone, Default)]
-struct MouseMovement {
-    xrel: f32,
-    yrel: f32
-}
-
 
 #[derive(Debug,Clone)]
 pub struct KeyMapping {
-    pub(crate) move_mapping: HashMap::<Keycode, na::Vector3::<f32>>
+    pub(crate) move_mapping: HashMap::<Keycode, [bool;4]>
 }
 
 impl Default for KeyMapping {
     fn default() -> Self {
 
         let mut map = HashMap::new();
-        // Forward
-        map.insert(W, na::Vector3::new(0.0, 1.0, 0.0));
-        // Backward
-        map.insert(S, na::Vector3::new(0.0, -1.0, 0.0));
-        // Left
-        map.insert(A, na::Vector3::new(-1.0, 0.0, 0.0));
-        //Right
-        map.insert(D, na::Vector3::new(1.0, 0.0, 0.0));
-         // Up
-        map.insert(Space, na::Vector3::new(0.0, 0.0, 1.0));
-        // Down
-        map.insert(LShift, na::Vector3::new(0.0, 0.0, -1.0));
+        map.insert(Left, [true, false, false, false]);
+        map.insert(Right, [false, true, false, false]);
+        map.insert(Up, [false, false, true, false]);
+        map.insert(Down, [false, false, false, true]);
+
         Self {
             move_mapping: map
         }

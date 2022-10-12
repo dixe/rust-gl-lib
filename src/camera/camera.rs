@@ -122,8 +122,6 @@ impl Camera {
     }
 
 
-
-
     fn update_camera_vectors(&mut self) {
         self.front = na::Vector3::new(
             self.yaw.cos() * self.pitch.cos(),
@@ -135,12 +133,8 @@ impl Camera {
         self.right = self.front.cross(&self.world_up).normalize();
     }
 
-    pub fn rotation(&self) -> na::Rotation::<f32, 3> {
-        na::geometry::Rotation::from_euler_angles(0.0, self.pitch, self.yaw)
-    }
-
-
-
+    /// Given a screen x,y return the ray shooting fom camera.pos(origin), throught that pixel, into the world.
+    /// Returned ray direction is in world space
     /// 0,0 in screen space is lower left, 1,1 is upper right
     pub fn screen_to_ray(&self, screen_x: f32, screen_y: f32) -> na::Vector3::<f32> {
 
@@ -160,6 +154,8 @@ impl Camera {
         (transformed.xyz() / transformed.w - self.pos).normalize()
     }
 
+
+    /// Given a world position, return the screen position
     pub fn world_pos_to_screen(&self, world_pos: na::Vector3::<f32>) -> na::Vector2::<f32> {
         let transform = self.projection() * self.view();
         let mut homo_pos = world_pos.to_homogeneous();
