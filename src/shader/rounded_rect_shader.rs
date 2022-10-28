@@ -107,7 +107,7 @@ void main()
 
     // Square is defined with corners in 0.5 and -0.5 on both x and y axis.
     // multiply by 2 to get -1.0...1.0 range
-    float u = IN.FragPos.x * 2.0 ;
+    float u = IN.FragPos.x * 2.0;
     float v = IN.FragPos.y * 2.0;
 
 

@@ -171,4 +171,23 @@ impl Camera {
 
         xy
     }
+
+    pub fn to_clip_space(&self, top_left: na::Vector2::<f32>, w: f32, h: f32) -> ClipSpace {
+
+        ClipSpace {
+            left: (-0.5 + top_left.x / self.width) * 2.0,
+            right: (-0.5 + (top_left.x + w) / self.width) * 2.0,
+            top:  (-0.5 + (top_left.y) / self.height) * -2.0,
+            bottom:  (-0.5 + (top_left.y + h) / self.height) * -2.0
+        }
+    }
+}
+
+
+#[derive(Debug, Copy, Clone)]
+pub struct ClipSpace {
+    pub left: f32,
+    pub right: f32,
+    pub top: f32,
+    pub bottom: f32
 }

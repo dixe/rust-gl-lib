@@ -18,8 +18,11 @@ pub struct Controller {
     // movement is left, right up down
     keyboard_movement: [bool; 4],
     mouse_movement: [bool; 4],
+    zoom: f32,
+    zoom_speed: f32
 
 }
+
 
 #[derive(Default, Debug, Clone, Copy)]
 struct Movement {
@@ -61,6 +64,16 @@ impl Controller {
                 self.mouse_movement[2] = y == 0;
                 self.mouse_movement[3] = y + 1 == self.screen_h;
             },
+
+            Event::MouseWheel{y, .. } => {
+                let y_signum = (y as f32).signum();
+                if self.zoom.signum() != y_signum {
+                    self.zoom = y as f32;
+                } else {
+                    self.zoom = y_signum * self.zoom_speed;
+                }
+
+            },
             _ => {}
         };
 
@@ -69,7 +82,6 @@ impl Controller {
     pub fn update_camera(&mut self, camera: &mut Camera, dt: f32){
 
         // do the actual update
-
         let dt_speed = dt * self.speed;
 
         // cast bool to float and multiple with the direction. x is left * -1.0 + right * 1.0
@@ -89,8 +101,15 @@ impl Controller {
 
         new_pos += na::Vector3::new(-camera.right.y, camera.right.x, camera.right.z) * dir.y * dt_speed;
 
+        new_pos += camera.front * dt * self.zoom * self.zoom_speed;
+
+
         camera.move_to(new_pos);
 
+
+        if self.zoom.abs() < 2.0 {
+            self.zoom = 0.0;
+        }
     }
 
 }
@@ -109,6 +128,8 @@ impl Default for Controller {
             screen_h: 700,
             keyboard_movement: Default::default(),
             mouse_movement: Default::default(),
+            zoom: 0.0,
+            zoom_speed: 3.0
         }
     }
 }
