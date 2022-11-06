@@ -108,7 +108,7 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
                     data[i] = match index_map.get(&inter_joint_index[*index as usize]) {
                         Some(mapping) => *mapping,
                         None => {
-                            println!("{}, {:?}\n{:?}", c, j, weights_data[c]);
+                            println!("c={}, j={:?}\nWeihtData = {:?}", c, j, weights_data[c]);
                             panic!("Non mapped bone has weights. Check weight paint for {}", *index)
                         }
                     };
