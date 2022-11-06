@@ -1,3 +1,5 @@
+
+
 use crate::camera::*;
 use crate::na;
 use sdl2::event::Event;
@@ -7,6 +9,7 @@ use std::collections::HashMap;
 
 ///Rts like camera, up/down moves Y rihgt left moves x. Looks down at scene
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Controller {
     //movement: na::Vector3::<f32>,
     mapping: KeyMapping,
@@ -23,12 +26,6 @@ pub struct Controller {
 
 }
 
-
-#[derive(Default, Debug, Clone, Copy)]
-struct Movement {
-    // movement is left, right up down
-    movement: [bool; 4],
-}
 
 impl Controller {
 
@@ -57,7 +54,7 @@ impl Controller {
 
                 }
             },
-            Event::MouseMotion{mousestate, x, y, .. } => {
+            Event::MouseMotion{x, y, .. } => {
                 // set mouse move direction
                 self.mouse_movement[0] = x == 0;
                 self.mouse_movement[1] = x + 1 == self.screen_w;
@@ -66,13 +63,15 @@ impl Controller {
             },
 
             Event::MouseWheel{y, .. } => {
+                self.zoom = y as f32;
+                /*
                 let y_signum = (y as f32).signum();
                 if self.zoom.signum() != y_signum {
                     self.zoom = y as f32;
                 } else {
                     self.zoom = y_signum * self.zoom_speed;
                 }
-
+*/
             },
             _ => {}
         };
@@ -95,7 +94,6 @@ impl Controller {
         let dir = na::Vector3::new(x,y,0.0);
 
         let mut new_pos = camera.pos();
-        let mut forward = camera.right;
 
         new_pos += camera.right * dir.x * dt_speed;
 
@@ -129,7 +127,7 @@ impl Default for Controller {
             keyboard_movement: Default::default(),
             mouse_movement: Default::default(),
             zoom: 0.0,
-            zoom_speed: 3.0
+            zoom_speed: 20.0
         }
     }
 }
