@@ -51,11 +51,6 @@ impl Widget for SliderWidget {
     }
 
 
-    fn dispatcher(&self) -> Dispatcher {
-        Box::new(slider_dispatcher)
-    }
-
-
     // this is basically just a dispatcher, but where we have access to self, and thus can store internal state
     fn handle_sdl_event(&mut self, event: &event::Event, geom: &Geometry, self_id: Id, queue: &mut WidgetOutputQueue) {
         use event::Event::*;

@@ -15,20 +15,14 @@ pub type Id = usize;
 
 pub type Pixel = i32;
 
-pub type Dispatcher = Box<dyn FnMut(&event::Event, Id, &mut WidgetOutputQueue)>;
-
-pub type Listener = Box<dyn FnMut(Box::<dyn Any>, &mut ListenerCtx)>;
-
 pub struct UiState {
     next_id: Id,
     widgets: Vec<Box<dyn Widget>>,
     children: Vec<Vec<Id>>,
     parents: Vec<Id>,
     pub geom: Vec<Geometry>,
-    listeners: Vec<Listener>,
     attributes: Vec::<LayoutAttributes>,
     font: Font,
-    dispatchers: Vec<Dispatcher>,
     pub queues: Vec<EventQueue>,
     widget_output_queue: WidgetOutputQueue,
     active_widget: Option<Id>
@@ -44,10 +38,8 @@ impl UiState {
             children: Vec::new(),
             parents: Vec::new(),
             geom: Vec::new(),
-            listeners: Vec::new(),
             attributes: Vec::new(),
             font: Default::default(),
-            dispatchers: Vec::new(),
             queues: Vec::new(),
             widget_output_queue: VecDeque::new(),
             active_widget: None,
@@ -61,11 +53,10 @@ impl UiState {
 
         self.attributes.push(LayoutAttributes::for_widget(&widget));
 
-        self.dispatchers.push(Box::new(widget.dispatcher()));
         self.widgets.push(widget);
         self.children.push(Vec::new());
         self.queues.push(EventQueue::new());
-        self.listeners.push(Box::new(empty_listener));
+
 
         let parent_id = match parent {
             Some(p_id) => p_id,
@@ -89,13 +80,7 @@ impl UiState {
         self.widget_output_queue.pop_front()
     }
 
-    pub fn set_widget_dispatcher(&mut self, id: Id, dispatcher: Dispatcher) {
-        self.dispatchers[id] = dispatcher;
-    }
 
-    pub fn set_widget_listener(&mut self, id: Id, listener: Listener) {
-        self.listeners[id] = listener;
-    }
 
     pub fn widgets(&self) -> &[Box::<dyn Widget>] {
         &self.widgets
@@ -284,14 +269,6 @@ impl Geometry {
 
 }
 
-#[derive(Default)]
-pub struct ListenerCtx<'a> {
-    pub id: Id,
-    pub widgets: &'a mut [Box<dyn Widget>],
-}
-
-
-
 #[derive(Debug, Clone, Copy)]
 pub enum FlexDir {
     X,
@@ -393,9 +370,6 @@ pub trait Widget {
 
     }
 
-    fn dispatcher(&self) -> Dispatcher {
-        Box::new(empty_dispatcher)
-    }
 
     fn default_width(&self) -> SizeConstraint {
         SizeConstraint::NoFlex
@@ -518,14 +492,4 @@ fn propagate_positions(id: Id, children: &[Id], geoms: &mut[Geometry]) {
     for &child_id in children {
         geoms[child_id].pos += pos;
     }
-}
-
-
-fn empty_dispatcher(_: &event::Event, _: Id, _: &mut WidgetOutputQueue) {
-
-}
-
-
-fn empty_listener(_: Box::<dyn Any>, _: &mut ListenerCtx) {
-
 }

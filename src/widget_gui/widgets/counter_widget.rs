@@ -27,25 +27,4 @@ impl<T: Num + std::fmt::Display> Widget for CounterWidget<T> {
     fn render(&self, geom: &Geometry, ctx: &mut render::RenderContext) {
         render::render_text(&format!("{:.2}", self.count.borrow()), 1.0, geom, ctx);
     }
-
-    fn dispatcher(&self) -> Dispatcher {
-        Box::new(counter_dispatcher)
-    }
-}
-
-
-fn counter_dispatcher(event: &event::Event, self_id: Id, queue: &mut WidgetOutputQueue) {
-    use event::Event::*;
-    match event {
-        TextInput { text, ..} => {
-            match text.as_str() {
-                " " => {
-                    queue.push_back(WidgetOutput {widget_id: self_id, event: Box::new(42i32)});
-                },
-                _ => {}
-            }
-        }
-        _ => {}
-    };
-
 }

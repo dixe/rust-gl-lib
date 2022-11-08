@@ -64,21 +64,3 @@ fn widget_handle_event(id: Id, state: &mut UiState, event: &event::Event, ) {
     let widget = &mut state.widgets[id];
     widget.handle_sdl_event(event, &state.geom[id], id, &mut state.widget_output_queue);
 }
-
-
-pub fn run_listeners(state: &mut UiState) {
-
-    for id in 0..state.queues.len() {
-
-        let mut listen_ctx = ListenerCtx {
-            id,
-            widgets: state.widgets.as_mut_slice(),
-
-        };
-
-        while let Some(e) = state.queues[id].pop_front() {
-            let listener = &mut state.listeners[id];
-            listener(e, &mut listen_ctx);
-        }
-    }
-}
