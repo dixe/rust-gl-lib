@@ -3,7 +3,7 @@ use failure;
 use gl_lib::widget_gui::*;
 use gl_lib::text_rendering::text_renderer::{TextRenderer, TextAlignment, TextAlignmentX::*};
 use gl_lib::widget_gui::widgets::*;
-use gl_lib::widget_gui::event_handling::{dispatch_events, run_listeners};
+use gl_lib::widget_gui::event_handling::{dispatch_events};
 use gl_lib::shader::rounded_rect_shader::RoundedRectShader;
 use gl_lib::shader::circle_shader::CircleShader;
 use gl_lib::objects::square::Square;
@@ -71,7 +71,6 @@ fn main() -> Result<(), failure::Error> {
             handle_widget_event(&mut ui_info, event, &mut ui_state.queues);
         }
 
-        run_listeners(&mut ui_state);
 
         layout_widgets(&root_box, &mut ui_state);
 
@@ -84,7 +83,7 @@ fn main() -> Result<(), failure::Error> {
 
 
         // Render text that outside ui, is affected by out ui_info.slider_ref, that our slider also controlls
-        render_ctx.tr.render_text(render_ctx.gl, "Hello", TextAlignment::default(), ScreenBox::new(00.0, 00.0, 1200.0, 700.0, 1200.0, 700.0), *ui_info.slider_ref.borrow() as f32);
+        render_ctx.tr.render_text(render_ctx.gl, "Hello", TextAlignment::default(), ScreenBox::new(00.0, 00.0, 1200.0, 700.0, 1200.0, 700.0), ui_info.slider_ref as f32);
 
         window.gl_swap_window();
     }
@@ -96,15 +95,17 @@ fn write_count(info: &UiInfo) {
     //println!("Counter is {:?}", info.counter_ref);
 }
 
-fn handle_widget_event(ui_info: &mut UiInfo, event: DispatcherEvent, widget_queues: &mut [EventQueue]) {
-    if event.target_id == ui_info.slider_id {
-        //println!("slider_event {:?}",event)
+fn handle_widget_event(ui_info: &mut UiInfo, event: WidgetOutput, widget_queues: &mut [EventQueue]) {
+    if event.widget_id == ui_info.slider_id {
+        if let Some(&v) = event.event.downcast_ref::<f64>() {
+            ui_info.slider_ref = v;
+        }
     }
 }
 
 
 struct UiInfo {
-    slider_ref: Rc<RefCell::<f64>>,
+    slider_ref: f64,
     slider_id: Id,
 }
 
@@ -116,10 +117,10 @@ fn create_ui() -> (UiInfo, UiState) {
 
     let row_id = ui_state.add_widget(Box::new(row), None);
 
-    let slider_ref = Rc::new(RefCell::new(4.0));
+    let slider_ref = 4.0;
 
 
-    let slider_widget = SliderWidget::new(None, None, Rc::clone(&slider_ref), 0.5, 15.0);
+    let slider_widget = SliderWidget::new(None, None, 4.0, 0.5, 15.0);
 
     let slider_id = ui_state.add_widget(Box::new(slider_widget), Some(row_id));
 
