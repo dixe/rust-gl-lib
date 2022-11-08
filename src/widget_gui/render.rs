@@ -11,8 +11,8 @@ pub struct RenderContext<'a> {
     pub tr: &'a mut TextRenderer,
     pub viewport: &'a viewport::Viewport,
     pub render_square: &'a square::Square,
-    pub rounded_rect_shader: &'a mut RoundedRectShader,
-    pub circle_shader: &'a mut CircleShader,
+    pub rounded_rect_shader: &'a RoundedRectShader,
+    pub circle_shader: &'a CircleShader,
 }
 
 pub fn render_ui(state: &UiState, ctx: &mut RenderContext) {
@@ -84,6 +84,26 @@ pub fn render_round_rect(geom: &Geometry, ctx: &mut RenderContext) {
                                                          pixel_height: geom.size.pixel_h as f32,
                                                          pixel_width: geom.size.pixel_w as f32,
                                                          radius: 20.0
+    });
+
+
+    ctx.render_square.render(ctx.gl);
+}
+
+
+
+pub fn render_rect(geom: &Geometry, ctx: &mut RenderContext) {
+    ctx.rounded_rect_shader.shader.set_used();
+
+    let transform = unit_square_transform_matrix(geom, ctx);
+
+    ctx.rounded_rect_shader.set_transform(transform);
+
+    let color_scale = 1.0;
+    ctx.rounded_rect_shader.set_uniforms(rrs::Uniforms { color_scale,
+                                                         pixel_height: geom.size.pixel_h as f32,
+                                                         pixel_width: geom.size.pixel_w as f32,
+                                                         radius: 0.0
     });
 
 

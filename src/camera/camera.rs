@@ -1,4 +1,5 @@
 use crate::na;
+use crate::gl::viewport::*;
 
 
 /// A general 3d camera
@@ -179,6 +180,15 @@ impl Camera {
             right: (-0.5 + (top_left.x + w) / self.width) * 2.0,
             top:  (-0.5 + (top_left.y) / self.height) * -2.0,
             bottom:  (-0.5 + (top_left.y + h) / self.height) * -2.0
+        }
+    }
+
+    pub fn viewport(&self) -> Viewport {
+        Viewport {
+            x: 0,
+            y: 0,
+            w: self.width as i32,
+            h: self.height as i32
         }
     }
 }

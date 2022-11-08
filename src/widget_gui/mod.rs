@@ -126,7 +126,7 @@ impl UiState {
     }
 }
 
-type DispatcherQueue = VecDeque::<DispatcherEvent>;
+pub type DispatcherQueue = VecDeque::<DispatcherEvent>;
 
 
 
