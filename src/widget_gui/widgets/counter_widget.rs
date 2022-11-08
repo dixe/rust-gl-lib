@@ -34,13 +34,13 @@ impl<T: Num + std::fmt::Display> Widget for CounterWidget<T> {
 }
 
 
-fn counter_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
+fn counter_dispatcher(event: &event::Event, self_id: Id, queue: &mut WidgetOutputQueue) {
     use event::Event::*;
     match event {
         TextInput { text, ..} => {
             match text.as_str() {
                 " " => {
-                    queue.push_back(DispatcherEvent {target_id: self_id, event: Box::new(42i32)});
+                    queue.push_back(WidgetOutput {widget_id: self_id, event: Box::new(42i32)});
                 },
                 _ => {}
             }

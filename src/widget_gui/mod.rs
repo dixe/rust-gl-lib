@@ -15,7 +15,7 @@ pub type Id = usize;
 
 pub type Pixel = i32;
 
-pub type Dispatcher = Box<dyn FnMut(&event::Event, Id, &mut DispatcherQueue)>;
+pub type Dispatcher = Box<dyn FnMut(&event::Event, Id, &mut WidgetOutputQueue)>;
 
 pub type Listener = Box<dyn FnMut(Box::<dyn Any>, &mut ListenerCtx)>;
 
@@ -30,7 +30,7 @@ pub struct UiState {
     font: Font,
     dispatchers: Vec<Dispatcher>,
     pub queues: Vec<EventQueue>,
-    dispatcher_queue: DispatcherQueue,
+    widget_output_queue: WidgetOutputQueue,
     active_widget: Option<Id>
 }
 
@@ -49,7 +49,7 @@ impl UiState {
             font: Default::default(),
             dispatchers: Vec::new(),
             queues: Vec::new(),
-            dispatcher_queue: VecDeque::new(),
+            widget_output_queue: VecDeque::new(),
             active_widget: None,
         }
     }
@@ -83,8 +83,10 @@ impl UiState {
         id
     }
 
-    pub fn poll_widget_event(&mut self) -> Option<DispatcherEvent> {
-        self.dispatcher_queue.pop_front()
+
+
+    pub fn poll_widget_event(&mut self) -> Option<WidgetOutput> {
+        self.widget_output_queue.pop_front()
     }
 
     pub fn set_widget_dispatcher(&mut self, id: Id, dispatcher: Dispatcher) {
@@ -126,16 +128,14 @@ impl UiState {
     }
 }
 
-pub type DispatcherQueue = VecDeque::<DispatcherEvent>;
-
+pub type WidgetOutputQueue = VecDeque::<WidgetOutput>;
 
 
 #[derive(Debug)]
-pub struct DispatcherEvent {
+pub struct WidgetOutput {
     pub event: Box::<dyn Any>,
-    pub target_id: Id
+    pub widget_id: Id
 }
-
 
 pub struct EventQueue {
     data: VecDeque<Box<dyn Any>>
@@ -405,7 +405,7 @@ pub trait Widget {
         SizeConstraint::NoFlex
     }
 
-    fn handle_sdl_event(&mut self, _event: &event::Event, _geom: &Geometry, _self_id: Id, _queue: &mut DispatcherQueue) {
+    fn handle_sdl_event(&mut self, _event: &event::Event, _geom: &Geometry, _self_id: Id, _queue: &mut WidgetOutputQueue) {
 
     }
 
@@ -521,7 +521,7 @@ fn propagate_positions(id: Id, children: &[Id], geoms: &mut[Geometry]) {
 }
 
 
-fn empty_dispatcher(_: &event::Event, _: Id, _: &mut DispatcherQueue) {
+fn empty_dispatcher(_: &event::Event, _: Id, _: &mut WidgetOutputQueue) {
 
 }
 

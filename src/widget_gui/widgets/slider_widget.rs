@@ -57,11 +57,11 @@ impl Widget for SliderWidget {
 
 
     // this is basically just a dispatcher, but where we have access to self, and thus can store internal state
-    fn handle_sdl_event(&mut self, event: &event::Event, geom: &Geometry, self_id: Id, queue: &mut DispatcherQueue) {
+    fn handle_sdl_event(&mut self, event: &event::Event, geom: &Geometry, self_id: Id, queue: &mut WidgetOutputQueue) {
         use event::Event::*;
         match event {
             MouseButtonUp {..} => {
-                queue.push_back(DispatcherEvent { target_id: self_id, event: Box::new(())});
+                queue.push_back(WidgetOutput { widget_id: self_id, event: Box::new(())});
                 self.in_motion = false;
             },
             MouseButtonDown { x, .. } => {
@@ -99,13 +99,11 @@ impl Widget for SliderWidget {
 }
 
 
-
-
-fn slider_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
+fn slider_dispatcher(event: &event::Event, self_id: Id, queue: &mut WidgetOutputQueue) {
     use event::Event::*;
     match event {
         MouseButtonUp {..} => {
-            queue.push_back(DispatcherEvent { target_id: self_id, event: Box::new(())});
+            queue.push_back(WidgetOutput { widget_id: self_id, event: Box::new(())});
         },
 
         _ => {}

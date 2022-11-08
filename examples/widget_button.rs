@@ -136,7 +136,7 @@ fn create_ui() -> (UiInfo, UiState) {
     let button_id = ui_state.add_widget(Box::new(button_widget), None, None);
 
     // Add dispatcher for add button
-    ui_state.set_widget_dispatcher(button_id, Box::new(button_dispatcher));
+    //ui_state.set_widget_dispatcher(button_id, Box::new(button_dispatcher));
 
 
     (UiInfo {button_id }, ui_state)
@@ -146,22 +146,6 @@ fn create_ui() -> (UiInfo, UiState) {
 
 
 fn counter_listener(event: Box::<dyn Any>, ctx: &mut ListenerCtx) {
-
     let widget = &mut ctx.widgets[ctx.id];
-
     widget.handle_event(event);
-}
-
-
-
-
-fn button_dispatcher(event: &event::Event, self_id: Id, queue: &mut DispatcherQueue) {
-    use event::Event::*;
-    match event {
-        MouseButtonUp { mouse_btn, ..} => {
-            // TODO: only on left click
-            queue.push_back(DispatcherEvent { target_id: self_id, event: Box::new(())});
-        },
-        _ => {}
-    };
 }

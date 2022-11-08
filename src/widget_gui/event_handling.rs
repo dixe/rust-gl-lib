@@ -62,7 +62,7 @@ fn dispatched_widget_id(state: &UiState, pos: Position) -> Option<Id> {
 
 fn widget_handle_event(id: Id, state: &mut UiState, event: &event::Event, ) {
     let widget = &mut state.widgets[id];
-    widget.handle_sdl_event(event, &state.geom[id], id, &mut state.dispatcher_queue);
+    widget.handle_sdl_event(event, &state.geom[id], id, &mut state.widget_output_queue);
 }
 
 
