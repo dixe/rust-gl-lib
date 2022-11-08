@@ -52,9 +52,8 @@ fn main() -> Result<(), failure::Error> {
     let mut run = true;
     while run {
 
-        // dispatch events
-        for event in event_pump.poll_iter() {
 
+        for event in event_pump.poll_iter() {
             match event {
                 event::Event::Quit {..} => {
                     run = false;
@@ -62,17 +61,18 @@ fn main() -> Result<(), failure::Error> {
                 _ => {}
             };
 
-
+            // dispatch sdl events to widget
             dispatch_events(&mut ui_state, &event);
         }
 
-        // handle events for each widget
-        while let Some(event) = ui_state.poll_widget_event() {
-            handle_widget_event(&mut ui_info, event, &mut ui_state.queues);
+        // Handle each widget output to update our state accordingly
+        while let Some(event) = ui_state.poll_widget_output() {
+            handle_widget_outputs(&mut ui_info, event, &mut ui_state.queues);
         }
 
-
+        // Layout widget. could be skipped since we don't resize any widgets
         layout_widgets(&root_box, &mut ui_state);
+
 
         // rendering
         unsafe {
@@ -81,9 +81,9 @@ fn main() -> Result<(), failure::Error> {
 
         render::render_ui(&ui_state, &mut render_ctx);
 
-
         // Render text that outside ui, is affected by out ui_info.slider_ref, that our slider also controlls
         render_ctx.tr.render_text(render_ctx.gl, "Hello", TextAlignment::default(), ScreenBox::new(00.0, 00.0, 1200.0, 700.0, 1200.0, 700.0), ui_info.slider_ref as f32);
+
 
         window.gl_swap_window();
     }
@@ -91,11 +91,8 @@ fn main() -> Result<(), failure::Error> {
     Ok(())
 }
 
-fn write_count(info: &UiInfo) {
-    //println!("Counter is {:?}", info.counter_ref);
-}
 
-fn handle_widget_event(ui_info: &mut UiInfo, event: WidgetOutput, widget_queues: &mut [EventQueue]) {
+fn handle_widget_outptus(ui_info: &mut UiInfo, event: WidgetOutput, widget_queues: &mut [EventQueue]) {
     if event.widget_id == ui_info.slider_id {
         if let Some(&v) = event.event.downcast_ref::<f64>() {
             ui_info.slider_ref = v;

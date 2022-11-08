@@ -74,13 +74,9 @@ impl UiState {
         id
     }
 
-
-
-    pub fn poll_widget_event(&mut self) -> Option<WidgetOutput> {
+    pub fn poll_widget_outputs(&mut self) -> Option<WidgetOutput> {
         self.widget_output_queue.pop_front()
     }
-
-
 
     pub fn widgets(&self) -> &[Box::<dyn Widget>] {
         &self.widgets

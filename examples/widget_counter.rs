@@ -1,9 +1,10 @@
 use gl_lib::gl;
+use gl_lib::helpers;
 use failure;
 use gl_lib::widget_gui::*;
 use gl_lib::text_rendering::text_renderer::TextRenderer;
 use gl_lib::widget_gui::widgets::*;
-use gl_lib::widget_gui::event_handling::{dispatch_events, run_listeners};
+use gl_lib::widget_gui::event_handling::dispatch_events;
 use gl_lib::shader::rounded_rect_shader::RoundedRectShader;
 use gl_lib::objects::square::Square;
 use sdl2::event;
@@ -13,64 +14,36 @@ use std::rc::Rc;
 
 fn main() -> Result<(), failure::Error> {
 
-    // Init sdl to use opengl
-    let sdl = sdl2::init().unwrap();
-    let video_subsystem = sdl.video().unwrap();
 
-    let gl_attr = video_subsystem.gl_attr();
-
-    gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
-    gl_attr.set_context_version(4,5);
-
-
-    // Create a window that opengl can draw to
-    let width = 800;
-    let height = 600;
-
-    let viewport = gl::viewport::Viewport::for_window(width as i32, height as i32);
-
-    let window = video_subsystem
-        .window("Square", width, height)
-        .opengl()
-        .resizable()
-        .build()?;
-
-
-    // Load gl functions and set to sdl video subsystem
-    let _gl_context = window.gl_create_context().unwrap();
-    let gl = gl::Gl::load_with(|s|{
-        video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
-    });
-    viewport.set_used(&gl);
-
-
-
-    // Setup widget ui
-
-
-    let mut ui_state = create_ui();
-
-
-    let font = Default::default();
-    let mut text_renderer = TextRenderer::new(&gl, font) ;
-    text_renderer.setup_blend(&gl);
-    let mut rrs = RoundedRectShader::new(&gl).unwrap();
-
-    let square = Square::new(&gl);
-
-    let mut render_ctx = render::RenderContext {
-        gl: &gl,
-        viewport: &viewport,
-        tr: &mut text_renderer,
-        rounded_rect_shader: &mut rrs,
-        render_square: &square
-    };
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let window = sdl_setup.window;
+    let sdl = sdl_setup.sdl;
+    let viewport = sdl_setup.viewport;
+    let gl = &sdl_setup.gl;
 
 
     // Set background color to white
     unsafe {
         gl.ClearColor(1.0, 1.0, 1.0, 1.0);
     }
+
+    let mut widget_setup = helpers::setup_widgets(gl)?;
+
+
+    let mut render_ctx = render::RenderContext {
+        gl: gl,
+        viewport: &viewport,
+        tr: &mut widget_setup.text_renderer,
+        rounded_rect_shader: &mut widget_setup.rounded_rect_shader,
+        render_square: &widget_setup.render_square,
+        circle_shader: &mut widget_setup.circle_shader
+    };
+
+
+    // Setup widget ui
+
+
+    let mut ui_state = create_ui();
 
 
     let root_box = BoxContraint::new(viewport.w, viewport.h);
@@ -111,7 +84,7 @@ fn create_ui() -> UiState {
     //ui_state.set_widget_dispatcher(counter_id, Box::new(counter_dispatcher));
 
     // Add listener for counter
-    ui_state.set_widget_listener(counter_id, Box::new(counter_listener));
+    //ui_state.set_widget_listener(counter_id, Box::new(counter_listener));
 
     ui_state
 
@@ -120,10 +93,11 @@ fn create_ui() -> UiState {
 /*
 
 */
-
+/*
 fn counter_listener(event: Box::<dyn Any>, ctx: &mut ListenerCtx) {
 
     let widget = &mut ctx.widgets[ctx.id];
 
     widget.handle_event(event);
 }
+*/
