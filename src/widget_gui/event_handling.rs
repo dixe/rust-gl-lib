@@ -1,7 +1,7 @@
 use crate::widget_gui::*;
 use sdl2::event;
 
-pub fn dispatch_events(state: &mut UiState, event: &event::Event) {
+pub fn dispatch_event(state: &mut UiState, event: &event::Event) {
 
     use event::Event::*;
 
@@ -9,10 +9,6 @@ pub fn dispatch_events(state: &mut UiState, event: &event::Event) {
     if event.is_text() {
         return;
     }
-
-
-    //println!("{:?}", event);
-
 
     // Mouse events are dispatches to the matching widget, given position
     if event.is_mouse() {
@@ -45,6 +41,15 @@ pub fn dispatch_events(state: &mut UiState, event: &event::Event) {
         };
         return;
     }
+}
+
+
+pub fn dispatch_widget_inputs(state: &mut UiState) {
+
+    while let Some(wi) = state.widget_input_queue.0.pop_front() {
+        state.widgets[wi.widget_id].handle_widget_input(wi.input);
+    }
+
 }
 
 fn dispatched_widget_id(state: &UiState, pos: Position) -> Option<Id> {

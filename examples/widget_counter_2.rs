@@ -2,20 +2,13 @@ use gl_lib::gl;
 use gl_lib::helpers;
 use failure;
 use gl_lib::widget_gui::*;
-use gl_lib::text_rendering::text_renderer::TextRenderer;
 use gl_lib::widget_gui::widgets::*;
-use gl_lib::widget_gui::event_handling::dispatch_events;
-use gl_lib::shader::rounded_rect_shader::RoundedRectShader;
-use gl_lib::objects::square::Square;
-use sdl2::event;
-use std::any::Any;
-use std::cell::RefCell;
-use std::rc::Rc;
+use gl_lib::widget_gui::event_handling::{dispatch_event, dispatch_widget_inputs};
 
 
 
 fn main() -> Result<(), failure::Error> {
- let mut sdl_setup = helpers::setup_sdl()?;
+    let sdl_setup = helpers::setup_sdl()?;
     let window = sdl_setup.window;
     let sdl = sdl_setup.sdl;
     let viewport = sdl_setup.viewport;
@@ -54,15 +47,15 @@ fn main() -> Result<(), failure::Error> {
         // dispatch events
 
         for event in event_pump.poll_iter() {
-            dispatch_events(&mut ui_state, &event);
+            dispatch_event(&mut ui_state, &event);
         }
+
+        dispatch_widget_inputs(&mut ui_state);
 
         // handle events for each widget
         while let Some(event) = ui_state.poll_widget_outputs() {
-            handle_widget_outputs(&mut ui_info, event, &mut ui_state.queues);
+            handle_widget_outputs(&mut ui_info, event, &mut ui_state.widget_input_queue);
         }
-
-        //run_listeners(&mut ui_state);
 
         //write_count(&ui_info);
 
@@ -84,26 +77,28 @@ fn main() -> Result<(), failure::Error> {
 
 
 fn write_count(info: &UiInfo) {
-    println!("Counter is {:?}", info.counter_ref);
+    println!("Count is {:?}", info.count);
 }
 
 
-fn handle_widget_outputs(ui_info: &mut UiInfo, event: WidgetOutput, widget_queues: &mut [EventQueue]) {
+fn handle_widget_outputs(ui_info: &mut UiInfo, event: WidgetOutput, widget_input_queue: &mut WidgetInputQueue) {
     if event.widget_id == ui_info.add_button_id {
         // we don't case about the message, just that add was pressed
-        *ui_info.counter_ref.borrow_mut() += 1;
-
+        ui_info.count += 1;
+        // push into counter event queue a message with the count
+        widget_input_queue.push_value(ui_info.counter_id, ui_info.count);
 
     }
 
     if event.widget_id == ui_info.sub_button_id {
         // we don't case about the message, just that sub was pressed
-        *ui_info.counter_ref.borrow_mut() -= 1
+        ui_info.count -= 1;
+        widget_input_queue.push_value(ui_info.counter_id, ui_info.count);
     }
 }
 
 struct UiInfo {
-    counter_ref: Rc<RefCell::<i32>>,
+    count: i32,
     counter_id: Id,
     add_button_id: Id,
     sub_button_id: Id,
@@ -118,9 +113,9 @@ fn create_ui() -> (UiInfo, UiState) {
 
     let row_id = ui_state.add_widget(Box::new(row), None);
 
-    let counter_ref = Rc::new(RefCell::new(0));
+    let count = 0;
 
-    let counter_widget_1 = CounterWidget { count: Rc::clone(&counter_ref) };
+    let counter_widget_1 = CounterWidget{ count };
     let counter_id = ui_state.add_widget(Box::new(counter_widget_1), Some(row_id));
 
     let add_button_widget = ButtonWidget { text: " + ".to_string(), text_scale: 1.0  };
@@ -133,6 +128,6 @@ fn create_ui() -> (UiInfo, UiState) {
     let sub_button_id = ui_state.add_widget(Box::new(sub_button_widget), Some(row_id));
 
 
-    (UiInfo {counter_id, add_button_id, sub_button_id, counter_ref }, ui_state)
+    (UiInfo {counter_id, add_button_id, sub_button_id, count }, ui_state)
 
 }

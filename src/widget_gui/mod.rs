@@ -23,7 +23,7 @@ pub struct UiState {
     pub geom: Vec<Geometry>,
     attributes: Vec::<LayoutAttributes>,
     font: Font,
-    pub queues: Vec<EventQueue>,
+    pub widget_input_queue: WidgetInputQueue,
     widget_output_queue: WidgetOutputQueue,
     active_widget: Option<Id>
 }
@@ -40,7 +40,7 @@ impl UiState {
             geom: Vec::new(),
             attributes: Vec::new(),
             font: Default::default(),
-            queues: Vec::new(),
+            widget_input_queue: WidgetInputQueue(VecDeque::new()),
             widget_output_queue: VecDeque::new(),
             active_widget: None,
         }
@@ -55,8 +55,6 @@ impl UiState {
 
         self.widgets.push(widget);
         self.children.push(Vec::new());
-        self.queues.push(EventQueue::new());
-
 
         let parent_id = match parent {
             Some(p_id) => p_id,
@@ -111,6 +109,18 @@ impl UiState {
 
 pub type WidgetOutputQueue = VecDeque::<WidgetOutput>;
 
+pub struct WidgetInputQueue(VecDeque::<WidgetInput>);
+
+impl WidgetInputQueue {
+
+    pub fn push_value<T: 'static>(&mut self, widget_id: usize, input: T) {
+        self.0.push_back(WidgetInput { widget_id, input: Box::new(input)});
+    }
+
+    pub fn push_input(&mut self, widget_input: WidgetInput) {
+        self.0.push_back(widget_input);
+    }
+}
 
 #[derive(Debug)]
 pub struct WidgetOutput {
@@ -118,34 +128,11 @@ pub struct WidgetOutput {
     pub widget_id: Id
 }
 
-pub struct EventQueue {
-    data: VecDeque<Box<dyn Any>>
+#[derive(Debug)]
+pub struct WidgetInput {
+    pub input: Box::<dyn Any>,
+    pub widget_id: Id
 }
-
-
-impl EventQueue {
-
-    pub fn new() -> Self {
-        Self {
-            data: VecDeque::new()
-        }
-    }
-
-    pub fn push_value<T>(&mut self, event: T) where T: Sized + 'static {
-        self.data.push_back(Box::new(event));
-    }
-
-    pub fn push_back(&mut self, event: Box<dyn Any>) {
-        self.data.push_back(event);
-    }
-
-    pub fn pop_front(&mut self) -> Option<Box<dyn Any>> {
-        self.data.pop_front()
-    }
-
-
-}
-
 
 
 #[derive(Debug, Clone)]
@@ -373,6 +360,10 @@ pub trait Widget {
 
     fn default_height(&self) -> SizeConstraint {
         SizeConstraint::NoFlex
+    }
+
+    fn handle_widget_input(&mut self, _input: Box::<dyn Any>) {
+
     }
 
     fn handle_sdl_event(&mut self, _event: &event::Event, _geom: &Geometry, _self_id: Id, _queue: &mut WidgetOutputQueue) {

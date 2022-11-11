@@ -1,22 +1,16 @@
 use gl_lib::{gl, ScreenBox};
 use failure;
 use gl_lib::widget_gui::*;
-use gl_lib::text_rendering::text_renderer::{TextRenderer, TextAlignment, TextAlignmentX::*};
+use gl_lib::text_rendering::text_renderer::TextAlignment;
 use gl_lib::widget_gui::widgets::*;
-use gl_lib::widget_gui::event_handling::{dispatch_events};
-use gl_lib::shader::rounded_rect_shader::RoundedRectShader;
-use gl_lib::shader::circle_shader::CircleShader;
-use gl_lib::objects::square::Square;
+use gl_lib::widget_gui::event_handling::{dispatch_event};
 use sdl2::event;
-use std::any::Any;
-use std::cell::RefCell;
-use std::rc::Rc;
 use gl_lib::helpers;
 
 
 fn main() -> Result<(), failure::Error> {
 
-    let mut sdl_setup = helpers::setup_sdl()?;
+    let sdl_setup = helpers::setup_sdl()?;
     let window = sdl_setup.window;
     let sdl = sdl_setup.sdl;
     let viewport = sdl_setup.viewport;
@@ -62,12 +56,12 @@ fn main() -> Result<(), failure::Error> {
             };
 
             // dispatch sdl events to widget
-            dispatch_events(&mut ui_state, &event);
+            dispatch_event(&mut ui_state, &event);
         }
 
         // Handle each widget output to update our state accordingly
-        while let Some(event) = ui_state.poll_widget_output() {
-            handle_widget_outputs(&mut ui_info, event, &mut ui_state.queues);
+        while let Some(event) = ui_state.poll_widget_outputs() {
+            handle_widget_outputs(&mut ui_info, event);
         }
 
         // Layout widget. could be skipped since we don't resize any widgets
@@ -92,7 +86,7 @@ fn main() -> Result<(), failure::Error> {
 }
 
 
-fn handle_widget_outptus(ui_info: &mut UiInfo, event: WidgetOutput, widget_queues: &mut [EventQueue]) {
+fn handle_widget_outputs(ui_info: &mut UiInfo, event: WidgetOutput) {
     if event.widget_id == ui_info.slider_id {
         if let Some(&v) = event.event.downcast_ref::<f64>() {
             ui_info.slider_ref = v;

@@ -1,8 +1,6 @@
 use crate::widget_gui::*;
 use crate::widget_gui::render;
 use crate::text_rendering::text_renderer::TextRenderer;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 
 #[derive(Debug, Clone)]
@@ -85,7 +83,7 @@ impl Widget for SliderWidget {
                         let new_value = f64::max(self.min, f64::min(self.max, self.value + width_rel));
                         self.value = new_value;
                         // push updated value
-                        queue.push_back(WidgetOutput { widget_id: self_id, event: Box::new((new_value))});
+                        queue.push_back(WidgetOutput { widget_id: self_id, event: Box::new(new_value)});
 
                     }
                 }
