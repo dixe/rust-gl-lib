@@ -113,17 +113,18 @@ impl CharQuad {
         self.buffer[start_index + 3 ] = t_top;
 
 
-        // RIGHT BOTTOM
-        self.buffer[start_index + 4] = x_r;
-        self.buffer[start_index + 5 ] = y_b;
-        self.buffer[start_index + 6 ] = t_right;
-        self.buffer[start_index + 7 ] = t_bottom;
-
         // LEFT TOP
-        self.buffer[start_index + 8] = x_l;
-        self.buffer[start_index + 9 ] = y_t;
-        self.buffer[start_index + 10 ] = t_left;
-        self.buffer[start_index + 11 ] = t_top;
+        self.buffer[start_index + 4] = x_l;
+        self.buffer[start_index + 5 ] = y_t;
+        self.buffer[start_index + 6 ] = t_left;
+        self.buffer[start_index + 7 ] = t_top;
+
+
+        // RIGHT BOTTOM
+        self.buffer[start_index + 8] = x_r;
+        self.buffer[start_index + 9 ] = y_b;
+        self.buffer[start_index + 10 ] = t_right;
+        self.buffer[start_index + 11 ] = t_bottom;
 
 
 
@@ -134,19 +135,18 @@ impl CharQuad {
         self.buffer[start_index + 14 ] = t_right;
         self.buffer[start_index + 15 ] = t_bottom;
 
+        // LEFT TOP
+        self.buffer[start_index + 16 ] = x_l;
+        self.buffer[start_index + 17 ] = y_t;
+        self.buffer[start_index + 18 ] = t_left;
+        self.buffer[start_index + 19 ] = t_top;
+
 
         // LEFT BOTTOM
-        self.buffer[start_index + 16] = x_l;
-        self.buffer[start_index + 17] = y_b;
-        self.buffer[start_index + 18 ] = t_left;
-        self.buffer[start_index + 19 ] = t_bottom;
-
-        // LEFT TOP
-        self.buffer[start_index + 20] = x_l;
-        self.buffer[start_index + 21] = y_t;
+        self.buffer[start_index + 20 ] = x_l;
+        self.buffer[start_index + 21 ] = y_b;
         self.buffer[start_index + 22 ] = t_left;
-        self.buffer[start_index + 23 ] = t_top;
-
+        self.buffer[start_index + 23 ] = t_bottom;
     }
 
     pub fn update_char(&mut self, buffer_index: usize, x: f32, y: f32, scale_x: f32, scale_y: f32, &chr: &font::PageChar, image_info: ImageInfo) {
@@ -174,19 +174,17 @@ impl CharQuad {
         self.buffer[start_index + 2 ] = t_right;
         self.buffer[start_index + 3 ] = t_top;
 
+        // LEFT TOP
+        self.buffer[start_index + 4] = x_l;
+        self.buffer[start_index + 5 ] = y_t;
+        self.buffer[start_index + 6 ] = t_left;
+        self.buffer[start_index + 7 ] = t_top;
 
         // RIGHT BOTTOM
-        self.buffer[start_index + 4] = x_r;
-        self.buffer[start_index + 5 ] = y_b;
-        self.buffer[start_index + 6 ] = t_right;
-        self.buffer[start_index + 7 ] = t_bottom;
-
-        // LEFT TOP
-        self.buffer[start_index + 8] = x_l;
-        self.buffer[start_index + 9 ] = y_t;
-        self.buffer[start_index + 10 ] = t_left;
-        self.buffer[start_index + 11 ] = t_top;
-
+        self.buffer[start_index + 8] = x_r;
+        self.buffer[start_index + 9 ] = y_b;
+        self.buffer[start_index + 10 ] = t_right;
+        self.buffer[start_index + 11 ] = t_bottom;
 
 
         // TRIANGLE 1
@@ -196,18 +194,18 @@ impl CharQuad {
         self.buffer[start_index + 14 ] = t_right;
         self.buffer[start_index + 15 ] = t_bottom;
 
+        // LEFT TOP
+        self.buffer[start_index + 16 ] = x_l;
+        self.buffer[start_index + 17 ] = y_t;
+        self.buffer[start_index + 18 ] = t_left;
+        self.buffer[start_index + 19 ] = t_top;
+
 
         // LEFT BOTTOM
-        self.buffer[start_index + 16] = x_l;
-        self.buffer[start_index + 17] = y_b;
-        self.buffer[start_index + 18 ] = t_left;
-        self.buffer[start_index + 19 ] = t_bottom;
-
-        // LEFT TOP
-        self.buffer[start_index + 20] = x_l;
-        self.buffer[start_index + 21] = y_t;
+        self.buffer[start_index + 20 ] = x_l;
+        self.buffer[start_index + 21 ] = y_b;
         self.buffer[start_index + 22 ] = t_left;
-        self.buffer[start_index + 23 ] = t_top;
+        self.buffer[start_index + 23 ] = t_bottom;
 
     }
 
