@@ -197,7 +197,6 @@ impl TextRenderer {
 
         };
 
-
         self.render_text_quads(gl, &draw_info);
     }
 
@@ -216,7 +215,9 @@ impl TextRenderer {
             let y = -1.0 * (smoothstep(0.0, draw_info.screen_h, info.y) * 2.0 - 1.0);
 
             self.char_quad.update_char(i, x, y, draw_info.scale.x, draw_info.scale.y, &info.chr, (&self.font.image).into());
+
             //self.char_quad.render_full_texture(i);
+
             i += 1;
 
             if i >= buffer_size {

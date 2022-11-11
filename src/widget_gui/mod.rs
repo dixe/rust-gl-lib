@@ -105,6 +105,15 @@ impl UiState {
 
         match_id
     }
+
+    /// Skips the normal input queue and directly sends a message to a widget
+    /// useful when the message might contain values that have lifetimes, and puting those into
+    /// a queue will make it hard/imposible to do.
+    pub fn push_input_to_widget(&mut self, wi: WidgetInput) {
+        self.widgets[wi.widget_id].handle_widget_input(wi.input);
+
+    }
+
 }
 
 pub type WidgetOutputQueue = VecDeque::<WidgetOutput>;

@@ -43,6 +43,12 @@ pub fn dispatch_event(state: &mut UiState, event: &event::Event) {
     }
 }
 
+impl UiState {
+    pub fn dispatch_widget_inputs(&mut self) {
+        dispatch_widget_inputs(self);
+    }
+}
+
 
 pub fn dispatch_widget_inputs(state: &mut UiState) {
 

@@ -44,6 +44,7 @@ pub fn render_text(text: &str, scale: f32, geom: &Geometry, ctx: &mut RenderCont
 
     let sb = transform_to_screen_space(geom, &ctx.viewport);
 
+    ctx.tr.setup_blend(ctx.gl);
     //println!("{:?}", sb);
     //println!("{:?}", geom);
     ctx.tr.render_text(ctx.gl, &text,  Default::default(), sb, scale);
