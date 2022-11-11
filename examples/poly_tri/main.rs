@@ -2,11 +2,11 @@ use failure;
 use gl_lib::color::Color;
 use gl_lib::na::vector;
 use gl_lib::sdl_gui as gls;
-use gl_lib::shader::{ColorShader, TransformationShader};
+use gl_lib::shader::{ColorShader, TransformationShader, Shader};
 use gl_lib::{gl, na};
 use rand::Rng;
 use ttf_parser;
-use image::{Rgba, RgbaImage};
+
 
 mod triangulate;
 use triangulate::*;

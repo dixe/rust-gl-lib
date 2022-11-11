@@ -135,7 +135,7 @@ pub struct WidgetInput {
 }
 
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct LayoutAttributes {
     height: SizeConstraint,
     width: SizeConstraint,

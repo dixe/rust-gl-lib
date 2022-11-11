@@ -1,10 +1,10 @@
-use gl_lib::{gl, na, shader::Shader};
+use gl_lib::{gl, na, shader::{BaseShader, Shader}};
 use gl_lib::objects::*;
 
 
 pub struct State {
     square: square::Square,
-    square_shader: Shader,
+    square_shader: BaseShader,
     gl: gl::Gl,
 
 }
@@ -28,11 +28,11 @@ impl State {
 }
 
 /// Creates a shader for rendering a square (two triangle)
-fn square_shader(gl: &gl::Gl) -> Result<Shader, failure::Error> {
+fn square_shader(gl: &gl::Gl) -> Result<BaseShader, failure::Error> {
 
     // default program for square
     let vert_source = std::include_str!("square_shader.vert");
     let frag_source = std::include_str!("square_shader.frag");
 
-    Shader::new(gl, vert_source, frag_source)
+    BaseShader::new(gl, vert_source, frag_source)
 }

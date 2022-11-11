@@ -1,4 +1,5 @@
 use gl_lib::{gl, objects::square, shader};
+use gl_lib::shader::Shader;
 use failure;
 
 use nalgebra as na;
@@ -53,7 +54,7 @@ fn main() -> Result<(), failure::Error> {
 }
 
 
-fn create_shader(gl: &gl::Gl) -> shader::Shader {
+fn create_shader(gl: &gl::Gl) -> shader::BaseShader {
     let vert_source = r"#version 330 core
                                    layout (location = 0) in vec3 aPos;
 
@@ -72,11 +73,11 @@ fn create_shader(gl: &gl::Gl) -> shader::Shader {
                     }";
 
 
-    shader::Shader::new(gl, vert_source, frag_source).unwrap()
+    shader::BaseShader::new(gl, vert_source, frag_source).unwrap()
 }
 
 
-fn render_grid(gl: &gl::Gl, shader: &shader::Shader, square: &square::Square, rows: usize, cols: usize) {
+fn render_grid(gl: &gl::Gl, shader: &shader::BaseShader, square: &square::Square, rows: usize, cols: usize) {
 
     // colors of the grid, black and white
     let colors = [na::Vector3::new(0.0, 0.0, 0.0),na::Vector3::new(1.0, 1.0, 1.0)];

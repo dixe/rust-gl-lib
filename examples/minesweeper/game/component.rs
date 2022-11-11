@@ -1,13 +1,14 @@
 use gl_lib::sdl_gui::components::base;
 use gl_lib::{
-        gl,
-        na,
-        na::Translation3,
-        objects::square,
-        ScreenBox,
-        shader::Shader,
-        text_rendering::{ text_renderer::{TextRenderer, TextAlignment, TextAlignmentX, TextAlignmentY} },
-    };
+    gl,
+    na,
+    na::Translation3,
+    objects::square,
+    ScreenBox,
+    shader::BaseShader,
+    shader::Shader,
+    text_rendering::{ text_renderer::{TextRenderer, TextAlignment, TextAlignmentX, TextAlignmentY} },
+};
 
 use std::fmt;
 use crate::game::*;
@@ -15,8 +16,8 @@ use crate::game::*;
 
 #[derive(Debug)]
 pub struct GameComponent<Message> {
-    pub grid_shader: Shader,
-    pub hidden_shader: Shader,
+    pub grid_shader: BaseShader,
+    pub hidden_shader: BaseShader,
     pub base: base::ComponentBase,
     columns: usize,
     rows: usize,
@@ -261,22 +262,22 @@ impl<Message> base::ComponentTrait<Message> for GameComponent<Message> where Mes
 
 
 /// Creates a shader for rendering a grid on a square (two triangle)
-pub fn grid_shader(gl: &gl::Gl) -> Result<Shader, failure::Error> {
+pub fn grid_shader(gl: &gl::Gl) -> Result<BaseShader, failure::Error> {
 
     // default program for square
     let vert_source = std::include_str!("grid_shader.vert");
     let frag_source = std::include_str!("grid_shader.frag");
 
-    Shader::new(gl, vert_source, frag_source)
+    BaseShader::new(gl, vert_source, frag_source)
 }
 
 
 /// Creates a shader for rendering a hidden tile on a square (two triangle)
-pub fn hidden_tile_shader(gl: &gl::Gl) -> Result<Shader, failure::Error> {
+pub fn hidden_tile_shader(gl: &gl::Gl) -> Result<BaseShader, failure::Error> {
 
     // default program for square
     let vert_source = std::include_str!("hidden_tile_shader.vert");
     let frag_source = std::include_str!("hidden_tile_shader.frag");
 
-    Shader::new(gl, vert_source, frag_source)
+    BaseShader::new(gl, vert_source, frag_source)
 }

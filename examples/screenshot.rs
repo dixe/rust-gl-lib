@@ -73,7 +73,7 @@ fn main() -> Result<(), failure::Error> {
 }
 
 
-fn create_shader(gl: &gl::Gl) -> shader::Shader {
+fn create_shader(gl: &gl::Gl) -> shader::BaseShader {
     let vert_source = r"#version 330 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aColor;
@@ -107,5 +107,5 @@ void main()
 }";
 
 
-    shader::Shader::new(gl, vert_source, frag_source).unwrap()
+    shader::BaseShader::new(gl, vert_source, frag_source).unwrap()
 }

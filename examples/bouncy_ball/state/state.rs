@@ -1,10 +1,10 @@
-use gl_lib::{gl, na, objects::*, shader::Shader};
+use gl_lib::{gl, na, objects::*, shader::{Shader, BaseShader}};
 
 pub type Color = na::Vector3::<f32>;
 
 pub struct State {
     square: square::Square,
-    shader: Shader,
+    shader: BaseShader,
     color: Color,
     gl: gl::Gl,
 }
@@ -46,7 +46,7 @@ impl State {
     }
 }
 
-pub fn shader(gl: &gl::Gl) -> Result<Shader, failure::Error> {
+pub fn shader(gl: &gl::Gl) -> Result<BaseShader, failure::Error> {
     // default program for square
     let vert_source = r"#version 330 core
 layout (location = 0) in vec3 aPos;
@@ -64,5 +64,5 @@ void main()
                         FragColor = vec4(uColor, 1.0f);
                     }";
 
-    Shader::new(gl, vert_source, frag_source)
+    BaseShader::new(gl, vert_source, frag_source)
 }

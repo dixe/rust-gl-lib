@@ -2,20 +2,13 @@ use gl_lib::gl;
 use gl_lib::helpers;
 use failure;
 use gl_lib::widget_gui::*;
-use gl_lib::text_rendering::text_renderer::TextRenderer;
 use gl_lib::widget_gui::widgets::*;
-use gl_lib::widget_gui::event_handling::dispatch_events;
-use gl_lib::shader::rounded_rect_shader::RoundedRectShader;
-use gl_lib::objects::square::Square;
-use sdl2::event;
-use std::any::Any;
-use std::cell::RefCell;
-use std::rc::Rc;
+use gl_lib::widget_gui::event_handling::{dispatch_event, dispatch_widget_inputs};
+
+
 
 fn main() -> Result<(), failure::Error> {
-
-
-    let mut sdl_setup = helpers::setup_sdl()?;
+    let sdl_setup = helpers::setup_sdl()?;
     let window = sdl_setup.window;
     let sdl = sdl_setup.sdl;
     let viewport = sdl_setup.viewport;
@@ -40,11 +33,9 @@ fn main() -> Result<(), failure::Error> {
     };
 
 
+
     // Setup widget ui
-
-
-    let mut ui_state = create_ui();
-
+    let (mut ui_info, mut ui_state) = create_ui();
 
     let root_box = BoxContraint::new(viewport.w, viewport.h);
     layout_widgets(&root_box, &mut ui_state);
@@ -52,14 +43,24 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
     loop {
-        layout_widgets(&root_box, &mut ui_state);
+
         // dispatch events
 
         for event in event_pump.poll_iter() {
-            dispatch_events(&mut ui_state, &event);
+            dispatch_event(&mut ui_state, &event);
         }
 
+        dispatch_widget_inputs(&mut ui_state);
 
+        // handle events for each widget
+        while let Some(event) = ui_state.poll_widget_outputs() {
+            handle_widget_outputs(&mut ui_info, event, &mut ui_state.widget_input_queue);
+        }
+
+        //write_count(&ui_info);
+
+
+        layout_widgets(&root_box, &mut ui_state);
 
         // rendering
         unsafe {
@@ -74,30 +75,59 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-fn create_ui() -> UiState {
+
+fn write_count(info: &UiInfo) {
+    println!("Count is {:?}", info.count);
+}
+
+
+fn handle_widget_outputs(ui_info: &mut UiInfo, event: WidgetOutput, widget_input_queue: &mut WidgetInputQueue) {
+    if event.widget_id == ui_info.add_button_id {
+        // we don't case about the message, just that add was pressed
+        ui_info.count += 1;
+        // push into counter event queue a message with the count
+        widget_input_queue.push_value(ui_info.counter_id, ui_info.count);
+
+    }
+
+    if event.widget_id == ui_info.sub_button_id {
+        // we don't case about the message, just that sub was pressed
+        ui_info.count -= 1;
+        widget_input_queue.push_value(ui_info.counter_id, ui_info.count);
+    }
+}
+
+struct UiInfo {
+    count: i32,
+    counter_id: Id,
+    add_button_id: Id,
+    sub_button_id: Id,
+}
+
+
+fn create_ui() -> (UiInfo, UiState) {
+
 
     let mut ui_state = UiState::new();
-    let counter_widget_1 = CounterWidget { count: Rc::new(RefCell::new(0)) };
-    let counter_id = ui_state.add_widget(Box::new(counter_widget_1), None);
+    let row = RowWidget {};
 
-    // Add dispatcher for counter
-    //ui_state.set_widget_dispatcher(counter_id, Box::new(counter_dispatcher));
+    let row_id = ui_state.add_widget(Box::new(row), None);
 
-    // Add listener for counter
-    //ui_state.set_widget_listener(counter_id, Box::new(counter_listener));
+    let count = 0;
 
-    ui_state
+    let counter_widget_1 = CounterWidget{ count };
+    let counter_id = ui_state.add_widget(Box::new(counter_widget_1), Some(row_id));
+
+    let add_button_widget = ButtonWidget { text: " + ".to_string(), text_scale: 1.0  };
+
+    let add_button_id = ui_state.add_widget(Box::new(add_button_widget), Some(row_id));
+
+
+    let sub_button_widget = ButtonWidget { text: " - ".to_string(), text_scale: 1.0  };
+
+    let sub_button_id = ui_state.add_widget(Box::new(sub_button_widget), Some(row_id));
+
+
+    (UiInfo {counter_id, add_button_id, sub_button_id, count }, ui_state)
 
 }
-
-/*
-
-*/
-/*
-fn counter_listener(event: Box::<dyn Any>, ctx: &mut ListenerCtx) {
-
-    let widget = &mut ctx.widgets[ctx.id];
-
-    widget.handle_event(event);
-}
-*/
