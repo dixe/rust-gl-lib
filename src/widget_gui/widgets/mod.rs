@@ -137,10 +137,6 @@ fn fill_row(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> Layo
     let mut size = Size { pixel_w: 0, pixel_h: 0 };
     let mut offset = 0;
 
-
-
-
-
     // So we want to lay out the children (change pos). If all is centered, they should all form around the center
     // the first one should not be centered, and then the rest to the right
     // maybe start out by splitting into left, right and center.
@@ -219,12 +215,9 @@ fn fill_row(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> Layo
 }
 
 
-
-
 fn fill_column(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
 
     let flex_dir = FlexDir::Y;
-
     match preprocess_children(bc, children, ctx, flex_dir) {
         Some(lr) => {
             return lr;
@@ -233,35 +226,90 @@ fn fill_column(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> L
     };
 
 
-    // We now have all children sizes
+    // We now have all children sizes, clone their geometries
     let mut child_geoms = vec![];
     for &id in children.iter() {
         if let Some(geom) = &ctx.layout_geom[id] {
-            child_geoms.push((id, geom.clone()));
+            child_geoms.push((id, geom.clone(), &ctx.attributes[id]));
         }
     }
 
 
+    // layout the children in a row. With the flexes and with the children alignemnt
+
     let mut size = Size { pixel_w: 0, pixel_h: 0 };
     let mut offset = 0;
 
-    for (id, child) in child_geoms {
-        if let Some(ref mut g) = &mut ctx.layout_geom[id] {
-            g.pos.add_by_flex(offset, flex_dir);
+    // So we want to lay out the children (change pos). If all is centered, they should all form around the center
+    // the first one should not be centered, and then the rest to the bottom
+    // maybe start out by splitting into left, bottom and center.
 
+
+    let mut top_height = 0;
+    let mut center_height = 0;
+    let mut bottom_height = 0;
+
+
+    let mut cur_align_y = AlignmentY::Top;
+
+    let mut total_h = bc.max_h - bc.min_h;
+
+    for (id, geom, attrib) in &child_geoms {
+
+        // Update current align based on the input
+        match cur_align_y {
+            AlignmentY::Top => {
+                cur_align_y = attrib.alignment.y;
+            },
+            AlignmentY::Center => {
+                if attrib.alignment.y == AlignmentY::Bottom {
+                    cur_align_y = AlignmentY::Bottom;
+                }
+            },
+            _ => {}
+        };
+
+
+        match cur_align_y {
+            AlignmentY::Top => {
+                top_height += geom.size.pixel_h;
+            },
+            AlignmentY::Center => {
+                center_height += geom.size.pixel_h;
+
+            },
+            AlignmentY::Bottom => {
+                bottom_height += geom.size.pixel_h;
+            }
+        };
+    }
+
+    let mut center_start_top =  total_h / 2 - center_height / 2;
+    let bottom_start_top = total_h - bottom_height;
+
+    // if center bleed into bottom aligned children, center_optimal_start should move to the top.
+    // if top bleed into center aligned children, center_optimal_start should move to the bottom.
+    // All sizes should fit inside our container, after we have preprocessed them
+
+    cur_align_y = AlignmentY::Top;
+
+    for (id, child, attrib) in &child_geoms {
+
+        if cur_align_y == AlignmentY::Top && attrib.alignment.y == AlignmentY::Center {
+            cur_align_y = AlignmentY::Center;
+            offset = center_start_top;
         }
 
-        size.pixel_w = match flex_dir {
-            FlexDir::X => size.pixel_w + child.size.pixel_w,
-            FlexDir::Y => Pixel::max(size.pixel_w, child.size.pixel_w)
-        };
+        if cur_align_y != AlignmentY::Bottom && attrib.alignment.y == AlignmentY::Bottom {
+            offset = bottom_start_top;
+        }
 
+        if let Some(ref mut g) = &mut ctx.layout_geom[*id] {
+            g.pos.add_by_flex(offset, flex_dir);
+        }
 
-        size.pixel_h = match flex_dir {
-            FlexDir::X => Pixel::max(size.pixel_h, child.size.pixel_h),
-            FlexDir::Y => size.pixel_h + child.size.pixel_h
-        };
-
+        size.pixel_w = Pixel::max(size.pixel_w, child.size.pixel_w);
+        size.pixel_h = size.pixel_h + child.size.pixel_h;
 
         offset += child.size.from_flex(flex_dir);
     }
