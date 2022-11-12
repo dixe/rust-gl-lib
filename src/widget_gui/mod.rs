@@ -84,6 +84,18 @@ impl UiState {
         self.attributes[id] = attribs;
     }
 
+    pub fn set_alignment(&mut self, id: Id, alignment: Alignment) {
+        self.attributes[id].alignment = alignment;
+    }
+
+    pub fn set_alignment_x(&mut self, id: Id, a: AlignmentX) {
+        self.attributes[id].alignment.x = a;
+    }
+
+    pub fn set_alignment_y(&mut self, id: Id, a: AlignmentY) {
+        self.attributes[id].alignment.y = a;
+    }
+
     fn get_widget(&self, pos: Position) -> Option<Id> {
 
         // For now use invariant that children has higher id than parents, so reverse the search order to highest id to lowest
@@ -148,7 +160,7 @@ pub struct WidgetInput {
 pub struct LayoutAttributes {
     height: SizeConstraint,
     width: SizeConstraint,
-
+    alignment: Alignment
 }
 
 
@@ -158,7 +170,7 @@ impl LayoutAttributes {
         Self {
             width: widget.default_width(),
             height: widget.default_height(),
-
+            alignment: Default::default()
         }
     }
 
@@ -338,22 +350,6 @@ impl<'a> LayoutContext<'a>{
 
 
 
-#[derive(Default, Debug, Clone, Copy, PartialEq)]
-pub struct Size {
-    pub pixel_w: Pixel,
-    pub pixel_h: Pixel,
-}
-
-impl Size {
-
-    pub fn from_flex(&self, flex_dir: FlexDir) -> Pixel {
-        match flex_dir {
-            FlexDir::X => self.pixel_w,
-            FlexDir::Y => self.pixel_h
-        }
-    }
-}
-
 pub trait Widget {
     fn layout(&mut self, bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> LayoutResult;
 
@@ -453,16 +449,12 @@ pub fn layout_widgets(root_bc: &BoxContraint, state: &mut UiState) {
                 geom.size = size;
             },
 
-
-
-
             LayoutResult::RequestChild(child_id, child_constraint) => {
                 process_queue.push_front(process_data);
                 process_queue.push_front(ProcessData::new(child_id, child_constraint));
             }
-
-
         };
+
 
 
         for (id, geom) in ctx.layout_geom.iter().enumerate() {

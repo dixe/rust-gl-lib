@@ -14,7 +14,9 @@ pub struct TextRenderer {
     shader: BaseShader,
     texture_id: TextureId,
     color: na::Vector3::<f32>,
-    char_quad: Box<objects::char_quad::CharQuad>
+    char_quad: Box<objects::char_quad::CharQuad>,
+    smoothness: f32
+
 }
 
 
@@ -35,7 +37,8 @@ impl TextRenderer {
             shader,
             texture_id,
             char_quad,
-            color: Default::default()
+            color: Default::default(),
+            smoothness: 2.0
         }
     }
 
@@ -43,7 +46,7 @@ impl TextRenderer {
     pub fn setup_blend(&self, gl: &gl::Gl) {
         unsafe {
             gl.Enable(gl::BLEND);
-            gl.BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+            gl.BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
         }
     }
 
@@ -51,6 +54,10 @@ impl TextRenderer {
     /// The input should be is rgb and each component should be in the range \[0;1\]
     pub fn set_text_color(&mut self, color: na::Vector3::<f32>) {
         self.color = color;
+    }
+
+    pub fn set_smoothness(&mut self, at: f32) {
+        self.smoothness = at;
     }
 
     fn setup_shader(&mut self, gl: &gl::Gl, scale: f32) {
@@ -62,6 +69,10 @@ impl TextRenderer {
         self.shader.set_f32(gl, "scale", scale);
 
         self.shader.set_i32(gl, "text_map", (self.texture_id - 1) as i32);
+
+        self.shader.set_f32(gl, "smoothness", self.smoothness);
+
+        self.setup_blend(gl);
 
         unsafe {
             gl.ActiveTexture(gl::TEXTURE0);
@@ -328,7 +339,7 @@ fn create_shader(gl: &gl::Gl) -> BaseShader {
         uniform float scale;
 
         uniform sampler2D text_map;
-
+        uniform float smoothness;
 
         in VS_OUTPUT {
         vec2 TexCoords;
@@ -348,7 +359,7 @@ fn create_shader(gl: &gl::Gl) -> BaseShader {
         float u_buffer = 0.5;
 
         // allow some smoothing for AA at edges
-        float smoothing = 0.125/scale;
+        float smoothing = 0.125/ (smoothness * scale);
 
         float alpha = smoothstep(u_buffer - smoothing, u_buffer + smoothing, dist);
 
@@ -358,13 +369,13 @@ fn create_shader(gl: &gl::Gl) -> BaseShader {
             discard;
         }
 
+
+
         vec3 rgb = texture(text_map, IN.TexCoords).rgb;
         //FragColor = vec4(IN.TexCoords.y, 0.0, 0.0, 1.0);
-
-        FragColor = texture(text_map, IN.TexCoords).rgba;
-
+        //FragColor = texture(text_map, IN.TexCoords).rgba;
         //FragColor = vec4(IN.TexCoords.y, 0.0, 0.0, 1.0);
-        FragColor = vec4(color, alpha);
+        FragColor = vec4(color * alpha,  alpha);
     }";
 
 

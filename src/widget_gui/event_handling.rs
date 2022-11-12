@@ -33,6 +33,7 @@ pub fn dispatch_event(state: &mut UiState, event: &event::Event) {
                 let pos = Position {x: *x, y: *y};
 
                 if let Some(id) = dispatched_widget_id(state, pos){
+
                     widget_handle_event(id, state, &event);
                 }
 

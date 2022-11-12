@@ -111,7 +111,119 @@ fn calc_flex_info(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, f
 }
 
 
-fn fill_container(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, flex_dir: FlexDir) -> LayoutResult {
+
+fn fill_row(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
+
+    let flex_dir = FlexDir::X;
+    match preprocess_children(bc, children, ctx, flex_dir) {
+        Some(lr) => {
+            return lr;
+        },
+        None => {}
+    };
+
+
+    // We now have all children sizes, clone their geometries
+    let mut child_geoms = vec![];
+    for &id in children.iter() {
+        if let Some(geom) = &ctx.layout_geom[id] {
+            child_geoms.push((id, geom.clone(), &ctx.attributes[id]));
+        }
+    }
+
+
+    // layout the children in a row. With the flexes and with the children alignemnt
+
+    let mut size = Size { pixel_w: 0, pixel_h: 0 };
+    let mut offset = 0;
+
+
+
+
+
+    // So we want to lay out the children (change pos). If all is centered, they should all form around the center
+    // the first one should not be centered, and then the rest to the right
+    // maybe start out by splitting into left, right and center.
+
+
+    let mut left_width = 0;
+    let mut center_width = 0;
+    let mut right_width = 0;
+
+
+    let mut cur_align_x = AlignmentX::Left;
+
+    let mut total_w = bc.max_w - bc.min_w;
+
+    for (id, geom, attrib) in &child_geoms {
+
+        // Update current align based on the input
+        match cur_align_x {
+            AlignmentX::Left => {
+                cur_align_x = attrib.alignment.x;
+            },
+            AlignmentX::Center => {
+                if attrib.alignment.x == AlignmentX::Right {
+                    cur_align_x = AlignmentX::Right;
+                }
+            },
+            _ => {}
+        };
+
+
+        match cur_align_x {
+            AlignmentX::Left => {
+                left_width += geom.size.pixel_w;
+            },
+            AlignmentX::Center => {
+                center_width += geom.size.pixel_w;
+
+            },
+            AlignmentX::Right => {
+                right_width += geom.size.pixel_w;
+            }
+        };
+    }
+
+    let mut center_start_left =  total_w / 2 - center_width / 2;
+    let right_start_left = total_w - right_width;
+
+    // if center bleed into right aligned children, center_optimal_start should move to the left.
+    // if left bleed into center aligned children, center_optimal_start should move to the right.
+    // All sizes should fit inside our container, after we have preprocessed them
+
+    cur_align_x = AlignmentX::Left;
+
+    for (id, child, attrib) in &child_geoms {
+
+        if cur_align_x == AlignmentX::Left && attrib.alignment.x == AlignmentX::Center {
+            cur_align_x = AlignmentX::Center;
+            offset = center_start_left;
+        }
+
+        if cur_align_x != AlignmentX::Right && attrib.alignment.x == AlignmentX::Right {
+            offset = right_start_left;
+        }
+
+        if let Some(ref mut g) = &mut ctx.layout_geom[*id] {
+            g.pos.x += offset;
+        }
+
+        size.pixel_w = size.pixel_w + child.size.pixel_w;
+        size.pixel_h = Pixel::max(size.pixel_h, child.size.pixel_h);
+
+        offset += child.size.from_flex(flex_dir);
+    }
+
+    LayoutResult::Size(size)
+}
+
+
+
+
+fn fill_column(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
+
+    let flex_dir = FlexDir::Y;
 
     match preprocess_children(bc, children, ctx, flex_dir) {
         Some(lr) => {
@@ -121,6 +233,7 @@ fn fill_container(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, f
     };
 
 
+    // We now have all children sizes
     let mut child_geoms = vec![];
     for &id in children.iter() {
         if let Some(geom) = &ctx.layout_geom[id] {

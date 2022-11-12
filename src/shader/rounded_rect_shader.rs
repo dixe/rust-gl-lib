@@ -124,7 +124,7 @@ void main()
 
 
     float alpha =  (1.0 - smoothstep(0.0, 1.0, dist));
-    FragColor = vec4(col, alpha);
+    FragColor = vec4(col * alpha , alpha);
 
 }";
 

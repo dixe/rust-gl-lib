@@ -9,7 +9,7 @@ pub struct RowWidget {
 
 impl Widget for RowWidget {
     fn layout(&mut self, bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
-        fill_container(bc, children, ctx, FlexDir::X)
+        fill_row(bc, children, ctx)
     }
 }
 
@@ -21,7 +21,7 @@ pub struct ColumnWidget {
 
 impl Widget for ColumnWidget {
     fn layout(&mut self, bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
-        fill_container(bc, children, ctx, FlexDir::Y)
+        fill_column(bc, children, ctx)
     }
 
 }
