@@ -1,8 +1,11 @@
 use crate::na;
 use crate::gl;
 use crate::objects::mesh::Mesh;
+use crate::animations::skeleton::Skins;
+use std::collections::HashMap;
 
-pub fn meshes_from_gltf(file_path: &str, index_map: &std::collections::HashMap<u16,usize>) -> Result<GltfMeshes, failure::Error> {
+
+pub fn meshes_from_gltf(file_path: &str, skins: &Skins) -> Result<GltfMeshes, failure::Error> {
 
     let (gltf, buffers, _) = gltf::import(file_path)?;
 
@@ -27,9 +30,19 @@ pub fn meshes_from_gltf(file_path: &str, index_map: &std::collections::HashMap<u
     for node in gltf.nodes() {
         match node.mesh() {
             Some(m) => {
-                //println!("EXTRAS FOR {} {:?}", node.name().unwrap(), node.extras());
+                let empty = HashMap::<u16,usize>::new();
+                let mesh_name = node.name().unwrap().to_string();
+                let index_map = if let Some(skin_id) = skins.mesh_to_skin.get(&mesh_name) {
+                    match skins.index_maps.get(&skin_id) {
+                        Some(im) => im,
+                        None => &empty,
+                    }
+                }
+                else {
+                    &empty
+                };
 
-                res.meshes.insert(node.name().unwrap().to_string(), load_gltf_mesh_data(&m, &buffers, &index_map, &inter_joint_index)?);
+                res.meshes.insert(mesh_name, load_gltf_mesh_data(&m, &buffers, &index_map, &inter_joint_index)?);
             },
             _ => {}
         };
@@ -124,13 +137,14 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
 
     let vertex_weights = reduce_to_2_joints(&joints_data, &weights_data);
 
+
     Ok(GltfMesh {
         name,
         pos_data,
         normal_data,
         indices_data,
         tex_data,
-        vertex_weights
+        vertex_weights,
     })
 }
 
@@ -190,13 +204,14 @@ fn reduce_to_2_joints(joints_data: &Vec<[usize; 4]>, weights_data: &Vec<[f32; 4]
 
 
 // alternative just load the data. and then we can instanciate it if needed
+#[derive(Clone)]
 pub struct GltfMesh {
     pub name: String,
     pub pos_data: Vec<na::Vector3::<f32>>,
     pub normal_data: Vec<[f32; 3]>,
     pub indices_data: Vec<u32>,
     pub tex_data: Vec<[f32; 2]>,
-    pub vertex_weights: Vec<VertexWeights>
+    pub vertex_weights: Vec<VertexWeights>,
 }
 
 impl GltfMesh {

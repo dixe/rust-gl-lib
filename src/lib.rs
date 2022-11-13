@@ -31,6 +31,7 @@ pub mod sdl_gui;
 
 pub mod controller;
 
+pub mod animations;
 
 /// Defines point in ScreenBox x,y in \[0.0; 1.0\]
 /// Top left corner is x=0, y=0
