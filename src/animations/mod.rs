@@ -10,11 +10,17 @@ pub mod types;
 pub type MeshName = String;
 pub type AnimationName = String;
 
-pub type Animation = Vec::<KeyFrame>;
 
 pub type Animations = HashMap::<AnimationName, Animation>;
 
 pub type MeshAnimations = HashMap::<MeshName, Animations>;
+
+
+#[derive(Debug, Clone)]
+pub struct Animation {
+    frames: Vec::<KeyFrame>,
+    seconds: f32,
+}
 
 pub fn load_animations(file_path: &str, skins: &Skins) -> MeshAnimations {
 
@@ -31,7 +37,6 @@ pub fn load_animations(file_path: &str, skins: &Skins) -> MeshAnimations {
             _ => continue
         };
 
-        println!("Animation: {:?}", name);
 
         let mut skeleton_option = None;
         let mut mesh_name = "".to_string();
@@ -88,29 +93,36 @@ pub fn load_animations(file_path: &str, skins: &Skins) -> MeshAnimations {
             }
 
             max_frame_count = usize::max(max_frame_count, frame_count);
+        }
 
-            // fill frames with joint data
+        // fill frames with joint data
 
-            for _ in 0..max_frame_count {
+        for _ in 0..max_frame_count {
 
-                frames.push(KeyFrame {
-                    joints: skeleton.joints.iter().map(|joint| {
-                        Transformation {
-                            translation: joint.translation,
-                            rotation: joint.rotation
-                        }
-                    }).collect()
-                });
-            }
-
-            fill_frames(&buffers, &ani, &mut frames, &joints_indexes);
+            frames.push(KeyFrame {
+                joints: skeleton.joints.iter().map(|joint| {
+                    Transformation {
+                        translation: joint.translation,
+                        rotation: joint.rotation
+                    }
+                }).collect()
+            });
         }
 
 
+        fill_frames(&buffers, &ani, &mut frames, &joints_indexes);
+
+        // TODO: Figure out this fps, playback, using samplers
+        // assume 25 fps is animation speed. take number of frames and divide 25
+
+        let dur = frames.len() as f32 / 25.0;
+
         let mut animations : &mut Animations = res.get_mut(&mesh_name).unwrap();
 
-        animations.insert(name, frames);
-
+        animations.insert(name, Animation {
+            frames,
+            seconds: dur
+        });
     }
 
     res
@@ -119,6 +131,7 @@ pub fn load_animations(file_path: &str, skins: &Skins) -> MeshAnimations {
 
 fn fill_frames(buffers: &Vec::<gltf::buffer::Data>, ani: &gltf::Animation, frames: &mut Vec::<KeyFrame>, joints_indexes: &HashMap::<String, usize>) {
 
+    // Each channel
     for channel in ani.channels() {
         let reader = channel.reader(|buffer| Some(&buffers[buffer.index()]));
         let target = channel.target();
@@ -131,24 +144,32 @@ fn fill_frames(buffers: &Vec::<gltf::buffer::Data>, ani: &gltf::Animation, frame
             }
         };
 
+
         for read_outputs in reader.read_outputs() {
             match read_outputs {
                 gltf::animation::util::ReadOutputs::Translations(ts) => {
                     let mut i = 0;
+                    assert_eq!(frames.len(), ts.len());
+
                     for t in ts {
                         frames[i].joints[joints_index].translation = na::Vector3::new(t[0], t[1], t[2]);
                         i += 1;
                     }
+
                 },
                 gltf::animation::util::ReadOutputs::Rotations(rs) => {
                     let mut i = 0;
-                    for r in rs.into_f32() {
+                    let rs_f32 = rs.into_f32();
+                    assert_eq!(frames.len(), rs_f32.len());
+
+                    for r in rs_f32 {
 
                         let q = na::Quaternion::from(na::Vector4::new(r[0], r[1], r[2], r[3]));
 
                         frames[i].joints[joints_index].rotation = na::UnitQuaternion::from_quaternion(q);
                         i += 1 ;
                     }
+
                 },
                 gltf::animation::util::ReadOutputs::Scales(ss) => {
                     for s in ss {
@@ -161,7 +182,6 @@ fn fill_frames(buffers: &Vec::<gltf::buffer::Data>, ani: &gltf::Animation, frame
                 gltf::animation::util::ReadOutputs::MorphTargetWeights(mtws) => {
                     println!("{:#?}", mtws);
                 }
-
             }
         }
     }
