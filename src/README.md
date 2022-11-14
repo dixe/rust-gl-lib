@@ -1,5 +1,3 @@
-Test doc for text renderer
-
 # Widgets
 
 ## Input to widgets slution 1
@@ -45,3 +43,11 @@ This will require 2 methods for handling events. One for Sdl and one for widgetI
  widget input queue.
  
  To start with, having the application do the work seems like the best option. Since we want to read the output most likely. If we read the slider output, then forwarding it to the correct textfield should be easy. And if we don't, then the slider value is always only used inside widgets, which for non trivial example programs. Are not readly useful. We assume that we always want to use the outputs of widgets. Since this output should influence application logic. And if we need to handle this output, then forwarding the output to another widget can happen there.
+
+
+# Text renderer
+
+Instead of just multiplying the color with alpha, make the final color `col * alpha + bgCol * (1-alpha)`. By introducing background color, we can better blend. If col is black (`[0,0,0]`) multiplying by 0 does nothing, by if we also had background color white, and used that to blend, we would get a grayscale, AA effect and a more smooth result.
+
+## Shader code location
+Make shader read from file. Maybe with string_read! macro. So it will be easier to change and reload, without restarting the program
