@@ -24,11 +24,11 @@ void main()
   float u_buffer = 0.5;
 
   // allow some smoothing for AA at edges
-  float smoothing = 0.125/ (smoothness * -scale);
+  float smoothing = 0.125 / (smoothness *  scale);
 
-  float alpha = 1.0 - smoothstep(u_buffer - smoothing, u_buffer + smoothing, dist);
+  float alpha = smoothstep(u_buffer - smoothing, u_buffer + smoothing , dist);
 
-  if( alpha == 0.0)
+  if( alpha < 0.01)
     {
       //alpha = 0.3;
       discard;
@@ -38,7 +38,7 @@ void main()
 
   vec3 rgb = texture(text_map, IN.TexCoords).rgb;
 
-  vec3 bgcol = vec3(1.0, 0.0, 0.5);
+  vec3 bgcol = color - vec3(1.0);
   //vec3 bgcol = vec3(1.0) - colo;r
 
   vec3 aa_col =  vec3(color * alpha + bgcol * (1.0 - alpha));

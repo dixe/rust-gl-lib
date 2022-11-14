@@ -16,10 +16,11 @@ pub type Animations = HashMap::<AnimationName, Animation>;
 pub type MeshAnimations = HashMap::<MeshName, Animations>;
 
 
+
 #[derive(Debug, Clone)]
 pub struct Animation {
-    frames: Vec::<KeyFrame>,
-    seconds: f32,
+    pub frames: Vec::<KeyFrame>,
+    pub seconds: f32,
 }
 
 pub fn load_animations(file_path: &str, skins: &Skins) -> MeshAnimations {
@@ -117,7 +118,7 @@ pub fn load_animations(file_path: &str, skins: &Skins) -> MeshAnimations {
 
         let dur = frames.len() as f32 / 25.0;
 
-        let mut animations : &mut Animations = res.get_mut(&mesh_name).unwrap();
+        let animations : &mut Animations = res.get_mut(&mesh_name).unwrap();
 
         animations.insert(name, Animation {
             frames,

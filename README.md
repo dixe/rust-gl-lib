@@ -36,3 +36,4 @@ their positions in the given box contraint.
 # Bugs
 
 * [x] Text renderer ignores scale when calling render box.
+* [ ] Text rendering use regular bitmap font when text is small, only use sdf when text i large.

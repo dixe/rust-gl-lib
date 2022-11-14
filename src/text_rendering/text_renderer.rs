@@ -321,8 +321,8 @@ pub struct TextRenderBox {
 
 fn create_shader(gl: &gl::Gl) -> BaseShader {
 
-    let vert_source = include_str!("../../assets/shaders/text_render.vert");
-    let frag_source = include_str!("../../assets/shaders/text_render.frag");
+    let vert_source = include_str!("../../assets/shaders/sdf_text_render.vert");
+    let frag_source = include_str!("../../assets/shaders/sdf_text_render.frag");
 
     BaseShader::new(gl, vert_source, frag_source).unwrap()
 }

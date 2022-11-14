@@ -142,16 +142,15 @@ fn fill_row(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> Layo
     // maybe start out by splitting into left, right and center.
 
 
-    let mut left_width = 0;
     let mut center_width = 0;
     let mut right_width = 0;
 
 
     let mut cur_align_x = AlignmentX::Left;
 
-    let mut total_w = bc.max_w - bc.min_w;
+    let total_w = bc.max_w - bc.min_w;
 
-    for (id, geom, attrib) in &child_geoms {
+    for (_id, geom, attrib) in &child_geoms {
 
         // Update current align based on the input
         match cur_align_x {
@@ -169,7 +168,6 @@ fn fill_row(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> Layo
 
         match cur_align_x {
             AlignmentX::Left => {
-                left_width += geom.size.pixel_w;
             },
             AlignmentX::Center => {
                 center_width += geom.size.pixel_w;
@@ -181,7 +179,7 @@ fn fill_row(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> Layo
         };
     }
 
-    let mut center_start_left =  total_w / 2 - center_width / 2;
+    let center_start_left =  total_w / 2 - center_width / 2;
     let right_start_left = total_w - right_width;
 
     // if center bleed into right aligned children, center_optimal_start should move to the left.
@@ -244,17 +242,15 @@ fn fill_column(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> L
     // the first one should not be centered, and then the rest to the bottom
     // maybe start out by splitting into left, bottom and center.
 
-
-    let mut top_height = 0;
     let mut center_height = 0;
     let mut bottom_height = 0;
 
 
     let mut cur_align_y = AlignmentY::Top;
 
-    let mut total_h = bc.max_h - bc.min_h;
+    let total_h = bc.max_h - bc.min_h;
 
-    for (id, geom, attrib) in &child_geoms {
+    for (_id, geom, attrib) in &child_geoms {
 
         // Update current align based on the input
         match cur_align_y {
@@ -272,7 +268,7 @@ fn fill_column(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> L
 
         match cur_align_y {
             AlignmentY::Top => {
-                top_height += geom.size.pixel_h;
+
             },
             AlignmentY::Center => {
                 center_height += geom.size.pixel_h;
@@ -284,7 +280,7 @@ fn fill_column(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext) -> L
         };
     }
 
-    let mut center_start_top =  total_h / 2 - center_height / 2;
+    let center_start_top =  total_h / 2 - center_height / 2;
     let bottom_start_top = total_h - bottom_height;
 
     // if center bleed into bottom aligned children, center_optimal_start should move to the top.

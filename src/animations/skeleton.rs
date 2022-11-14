@@ -1,5 +1,4 @@
 use crate::na;
-use failure::err_msg;
 use crate::animations::types::*;
 use std::collections::HashMap;
 
@@ -113,8 +112,6 @@ pub fn load_skins(file_path: &str) -> Result<Skins, failure::Error> {
     let (gltf, _, _) = gltf::import(file_path)?;
 
     let mut skins : Skins = Default::default();
-    let mut skin_name_to_node_index : HashMap::<String, Vec::<usize>> = Default::default();
-
     // Map mesh names to skin names and nodes to skin id
     for node in gltf.nodes() {
 
