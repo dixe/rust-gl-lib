@@ -1,5 +1,3 @@
-Test doc for text renderer
-
 # Widgets
 
 ## Input to widgets slution 1
