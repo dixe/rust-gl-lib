@@ -3,10 +3,12 @@ use crate::animations::types::*;
 use std::collections::HashMap;
 
 
+pub type Joints = Vec<Joint>;
+
 #[derive(Debug, Clone)]
 pub struct Skeleton {
     pub name: String,
-    pub joints: Vec<Joint>,
+    pub joints: Joints,
 }
 
 pub type SkinId = usize;

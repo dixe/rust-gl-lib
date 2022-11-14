@@ -1,7 +1,7 @@
 use std::fmt;
 use failure;
 use crate::gl;
-
+use std::collections::HashMap;
 use crate::na as na;
 use crate::shader::*;
 
@@ -10,6 +10,7 @@ use crate::shader::*;
 #[derive(Clone)]
 pub struct BaseShader {
     program: Program,
+    locations: HashMap::<String, i32>
 }
 
 impl fmt::Debug for BaseShader {
@@ -27,7 +28,8 @@ impl BaseShader {
         let program = Program::from_text(gl, vert_shader, frag_shader)?;
 
         Ok(BaseShader {
-            program
+            program,
+            locations: Default::default()
         })
     }
 
@@ -39,6 +41,32 @@ impl BaseShader {
     pub fn program_id(&self) -> gl::types::GLuint {
         self.program.id()
     }
+
+    pub fn get_location(&self, name: &str) -> i32{
+
+        if let Some(&loc) = self.locations.get(name) {
+            return loc;
+        };
+
+        return -1;
+
+
+    }
+
+    pub fn set_locations(&mut self, gl: &gl::Gl, name: &str) {
+
+        let name_str =  std::ffi::CString::new(name).unwrap();
+        let loc : i32;
+        unsafe {
+            loc = gl.GetUniformLocation(
+                self.program_id(),
+                name_str.as_ptr() as *mut gl::types::GLchar,
+            );
+
+            self.locations.insert(name.to_string(), loc);
+        }
+    }
+
 
 
     /// a default shader for rendering a bezier curve
@@ -81,7 +109,6 @@ void main()
     FragColor = vec4(1.0f , 0.5f, 0.2f, 1.0);
 }";
         BaseShader::new(gl, vert_source, frag_source)
-
     }
 }
 
