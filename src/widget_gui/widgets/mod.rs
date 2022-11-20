@@ -20,6 +20,10 @@ mod slider_widget;
 pub use self::slider_widget::*;
 
 
+mod checkbox_widget;
+pub use self::checkbox_widget::*;
+
+
 // TODO: belongs in layout not widgets
 fn preprocess_children(bc: &BoxContraint, children: &[Id], ctx: &mut LayoutContext, flex_dir: FlexDir) -> Option<LayoutResult> {
 

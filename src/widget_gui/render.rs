@@ -59,7 +59,7 @@ pub fn render_circle(geom: &Geometry, radius: Pixel, ctx: &mut RenderContext) {
 
     ctx.circle_shader.set_transform(transform);
 
-    let color_scale = 2.0;
+    let color_scale = 0.0;
     ctx.circle_shader.set_uniforms(cs::Uniforms { color_scale,
                                               pixel_height: geom.size.pixel_h as f32,
                                               pixel_width: geom.size.pixel_w as f32,

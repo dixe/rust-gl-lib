@@ -43,9 +43,12 @@ impl Widget for SliderWidget {
         let circle_pos = (self.value - self.min) / (self.max - self.min) * geom.size.pixel_w as f64 ;
         let mut circle_geom = geom.clone();
         circle_geom.size.pixel_w = self.circle_r * 2;
-        circle_geom.pos.x += circle_pos as Pixel - self.circle_r;
+        circle_geom.size.pixel_h = self.circle_r * 2;
 
-        render::render_circle(&circle_geom, 20, ctx);
+        circle_geom.pos.x += circle_pos as Pixel - self.circle_r;
+        circle_geom.pos.y = geom.size.pixel_h / 2  - self.circle_r;
+
+        render::render_circle(&circle_geom, self.circle_r, ctx);
     }
 
 

@@ -117,7 +117,7 @@ void main()
 
 
     // higher is more blur, and also thicker corners
-    float dist = circle(uv , radius) ;
+    float dist = circle(uv , radius * 2.0) ;
 
 
     float alpha =  (1.0 - smoothstep(0.0, 1.0, dist));
