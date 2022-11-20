@@ -4,7 +4,9 @@ use crate::animations::types::*;
 use std::collections::HashMap;
 
 pub mod skeleton;
-pub mod types;
+mod types;
+
+pub use self::types::*;
 
 
 pub type MeshName = String;

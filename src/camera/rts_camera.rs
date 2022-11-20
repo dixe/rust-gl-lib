@@ -64,14 +64,6 @@ impl Controller {
 
             Event::MouseWheel{y, .. } => {
                 self.zoom = y as f32;
-                /*
-                let y_signum = (y as f32).signum();
-                if self.zoom.signum() != y_signum {
-                    self.zoom = y as f32;
-                } else {
-                    self.zoom = y_signum * self.zoom_speed;
-                }
-*/
             },
             _ => {}
         };
@@ -99,7 +91,7 @@ impl Controller {
 
         new_pos += na::Vector3::new(-camera.right.y, camera.right.x, camera.right.z) * dir.y * dt_speed;
 
-        new_pos += camera.front * dt * self.zoom * self.zoom_speed;
+        new_pos += camera.front * self.zoom * self.zoom_speed;
 
 
         camera.move_to(new_pos);
@@ -127,7 +119,7 @@ impl Default for Controller {
             keyboard_movement: Default::default(),
             mouse_movement: Default::default(),
             zoom: 0.0,
-            zoom_speed: 20.0
+            zoom_speed: 1.0
         }
     }
 }

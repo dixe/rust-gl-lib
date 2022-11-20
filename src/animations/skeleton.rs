@@ -2,12 +2,12 @@ use crate::na;
 use crate::animations::types::*;
 use std::collections::HashMap;
 
+pub type Bones = Vec::<na::Matrix4::<f32>>;
 
 pub type Joints = Vec<Joint>;
 
 #[derive(Debug, Clone)]
 pub struct Skeleton {
-    pub name: String,
     pub joints: Joints,
 }
 
@@ -26,7 +26,7 @@ pub struct Skins {
 
 impl Skeleton {
 
-    fn calc_t_pose(&mut self) {
+    pub fn calc_t_pose(&mut self) {
         for i in 0..self.joints.len() {
             self.set_t_pose_joint(i);
         }
@@ -50,10 +50,7 @@ impl Skeleton {
 
         self.joints[index].world_matrix = world_matrix;
         self.joints[index].inverse_bind_pose = world_matrix.try_inverse().unwrap();
-
     }
-
-
 
 
     pub fn set_bones_from_skeleton(&self, bones: &mut [na::Matrix4::<f32>]) {
@@ -62,16 +59,36 @@ impl Skeleton {
         }
     }
 
-    pub fn update_joint_matrices(joints: &mut Vec::<Joint>, joint: usize, rotation: na::UnitQuaternion::<f32>, translation: na::Vector3::<f32>) {
-        joints[joint].rotation = rotation;
-        joints[joint].translation = translation;
-
-        joints[joint].world_matrix = joints[joint].get_local_matrix();
-
-        let parent_index = joints[joint].parent_index;
-        if parent_index != 255 {
-            joints[joint].world_matrix = joints[parent_index].world_matrix * joints[joint].world_matrix;
+    /// Generate a new vec with the bones
+    pub fn create_bones(&self) -> Bones {
+        let mut bones = vec![];
+        for _ in 0..self.joints.len() {
+            bones.push(na::Matrix4::<f32>::identity());
         }
+
+        self.set_bones_from_skeleton(&mut bones);
+
+        bones
+
+    }
+
+    pub fn update_joint_matrices(&mut self, joint_index: usize, rotation: na::UnitQuaternion::<f32>, translation: na::Vector3::<f32>) {
+        update_joint_matrices(&mut self.joints, joint_index, rotation, translation);
+    }
+
+}
+
+
+
+pub fn update_joint_matrices(joints: &mut Vec::<Joint>, joint: usize, rotation: na::UnitQuaternion::<f32>, translation: na::Vector3::<f32>) {
+    joints[joint].rotation = rotation;
+    joints[joint].translation = translation;
+
+    joints[joint].world_matrix = joints[joint].get_local_matrix();
+
+    let parent_index = joints[joint].parent_index;
+    if parent_index != 255 {
+        joints[joint].world_matrix = joints[parent_index].world_matrix * joints[joint].world_matrix;
     }
 }
 
@@ -172,7 +189,7 @@ pub fn load_skins(file_path: &str) -> Result<Skins, failure::Error> {
         // start from hip index and create skeleton from there
 
         let mut skeleton = Skeleton {
-            name: skin.name().unwrap().to_string(),
+            //name: skin.name().unwrap().to_string(),
             joints: Vec::new(),
         };
 

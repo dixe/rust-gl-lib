@@ -246,6 +246,14 @@ impl GltfMesh {
 
         let mut mesh = Mesh::empty(gl);
 
+
+        let skin_data = if self.vertex_weights.len() > 0 {
+            Some(&self.vertex_weights)
+        }
+        else {
+            None
+        };
+
         bind_mesh_data(
             gl,
             &self.pos_data,
@@ -253,7 +261,7 @@ impl GltfMesh {
             &self.indices_data,
             &self.tex_data,
             &mut mesh,
-            None
+            skin_data
         );
 
         mesh
