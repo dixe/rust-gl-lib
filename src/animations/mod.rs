@@ -1,6 +1,5 @@
 use crate::na;
 use crate::animations::skeleton::*;
-use crate::animations::types::*;
 use std::collections::HashMap;
 
 pub mod skeleton;
@@ -11,13 +10,57 @@ pub use self::types::*;
 
 pub type MeshName = String;
 pub type AnimationName = String;
+pub type AnimationId = usize;
+
+#[derive(Debug, Default, Clone)]
+pub struct Animations {
+    next_id: AnimationId,
+    id_to_name: HashMap::<AnimationId, AnimationName>,
+    animations: HashMap::<AnimationId, Animation>,
+    mesh_to_animations: HashMap::<AnimationName, Vec::<AnimationId>>
+}
+
+impl Animations {
+
+    fn add_animation(&mut self, anim: Animation, name: String) -> AnimationId {
+        self.next_id += 1;
+        self.id_to_name.insert(self.next_id, name);
+        self.animations.insert(self.next_id, anim);
+
+        self.next_id
+    }
 
 
-pub type Animations = HashMap::<AnimationName, Animation>;
+    fn mesh_to_animation(&mut self, mesh_name: &str, animation_id: AnimationId) {
+        if !self.mesh_to_animations.contains_key(mesh_name) {
+            self.mesh_to_animations.insert(mesh_name.to_string(), vec![]);
+        }
 
-pub type MeshAnimations = HashMap::<MeshName, Animations>;
+        let anims: &mut Vec::<AnimationId> = self.mesh_to_animations.get_mut(mesh_name).unwrap();
+        anims.push(animation_id);
+    }
 
 
+    pub fn get_mesh_animations(&self, mesh_name: &str) -> Option<&Vec::<AnimationId>> {
+        self.mesh_to_animations.get(mesh_name)
+    }
+
+    pub fn get_mesh_name_animation(&self, mesh_name: &str, animation_name: &str) -> Option::<AnimationId> {
+
+        if let Some(ids) = self.mesh_to_animations.get(mesh_name) {
+            for id in ids {
+                if let Some(id_name) = self.id_to_name.get(id) {
+                    if id_name == animation_name {
+                        return Some(*id);
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+}
 
 #[derive(Debug, Clone)]
 pub struct Animation {
@@ -25,15 +68,11 @@ pub struct Animation {
     pub seconds: f32,
 }
 
-pub fn load_animations(file_path: &str, skins: &Skins) -> MeshAnimations {
+pub fn load_animations(file_path: &str, skins: &Skins, animations: &mut Animations) {
 
     let (gltf, buffers, _) = gltf::import(file_path).unwrap();
 
-
-    let mut res = MeshAnimations::new();
-
     for ani in gltf.animations() {
-
 
         let name = match ani.name() {
             Some(n) => n.to_string(),
@@ -42,18 +81,17 @@ pub fn load_animations(file_path: &str, skins: &Skins) -> MeshAnimations {
 
 
         let mut skeleton_option = None;
-        let mut mesh_name = "".to_string();
+        let mut mesh_names = vec![];
 
         // First use the channels to get a node, map that node to a skeleton
+        // TODO: Multiple meshes should be allowed here
         for channel in ani.channels() {
             let node_index = channel.target().node().index();
 
             if let Some(skin_id) = skins.node_index_to_skin.get(&node_index) {
                 skeleton_option = skins.skeletons.get(&skin_id);
-                mesh_name = skins.skin_to_mesh.get(&skin_id).unwrap().to_string();
+                mesh_names.push(skins.skin_to_mesh.get(&skin_id).unwrap().to_string());
             }
-
-            break;
         }
 
 
@@ -66,16 +104,10 @@ pub fn load_animations(file_path: &str, skins: &Skins) -> MeshAnimations {
             }
         };
 
-        if !res.contains_key(&mesh_name) {
-            res.insert(mesh_name.clone(), HashMap::default());
-        }
-
-
         let mut joints_indexes: HashMap::<String, usize> = HashMap::new();
         for i in 0..skeleton.joints.len() {
             joints_indexes.insert(skeleton.joints[i].name.clone(), i);
         }
-
 
         let mut frames = Vec::new();
         let mut max_frame_count = 0;
@@ -119,16 +151,18 @@ pub fn load_animations(file_path: &str, skins: &Skins) -> MeshAnimations {
         // assume 25 fps is animation speed. take number of frames and divide 25
 
         let dur = frames.len() as f32 / 25.0;
-
-        let animations : &mut Animations = res.get_mut(&mesh_name).unwrap();
-
-        animations.insert(name, Animation {
+        let animation =  Animation {
             frames,
             seconds: dur
-        });
-    }
+        };
 
-    res
+
+        let id = animations.add_animation(animation, name);
+
+        for mesh_name in &mesh_names {
+            animations.mesh_to_animation(mesh_name, id);
+        }
+    }
 }
 
 
