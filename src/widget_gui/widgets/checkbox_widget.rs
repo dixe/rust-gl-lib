@@ -1,6 +1,5 @@
 use crate::widget_gui::*;
 use crate::widget_gui::render;
-use crate::text_rendering::text_renderer::TextRenderer;
 
 
 #[derive(Debug, Clone)]
@@ -18,7 +17,7 @@ impl CheckboxWidget {
 
 impl Widget for CheckboxWidget {
 
-    fn layout(&mut self, bc: &BoxContraint, _children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
+    fn layout(&mut self, bc: &BoxContraint, _children: &[Id], _ctx: &mut LayoutContext) -> LayoutResult {
         // set to max 25x, otherwise to the smallest w or h to keep square
         let s = Pixel::min(30, Pixel::min(bc.max_w, bc.max_h));
         LayoutResult::Size(Size {
@@ -33,14 +32,14 @@ impl Widget for CheckboxWidget {
         render::render_rect(geom, ctx);
 
         if self.checked {
-            let mut circle_geom = geom.clone();
+            let circle_geom = geom.clone();
             render::render_circle(&circle_geom, geom.size.pixel_w / 2, ctx);
         }
     }
 
 
     // this is basically just a dispatcher, but where we have access to self, and thus can store internal state
-    fn handle_sdl_event(&mut self, event: &event::Event, geom: &Geometry, self_id: Id, queue: &mut WidgetOutputQueue) {
+    fn handle_sdl_event(&mut self, event: &event::Event, _geom: &Geometry, self_id: Id, queue: &mut WidgetOutputQueue) {
         use event::Event::*;
         match event {
             MouseButtonUp {..} => {
