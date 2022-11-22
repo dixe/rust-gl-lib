@@ -30,7 +30,12 @@ So a row widget might see that some children wants to float left, center and rig
 their positions in the given box contraint.
 
 
-## Markup Language
+## Fluent or markup language
+In the current state it is cumbersome to both create each widget and manually build the tree, by passing parents. We want something more fluent. The main goal are 
+fluent builder, with support for attributes. A challenge is that we also need to get the Ids of widgets, so we can listen and send messages to widgets. The output
+of a builder or markup language parser could be a Dictionary/hashmap, that maps from string name/id to a usize Id.
+
+### Markup Language
 
 Xml in the form
 ```<?xml version="1.0" encoding="UTF-8"?>
@@ -49,7 +54,7 @@ Required a hashmap of functions from XmlNode to a `Box::<dyn Widget>`, supply th
 
 
 
-## Builder
+### Builder
 ```
 let b = Builder();
   
