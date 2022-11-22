@@ -30,8 +30,36 @@ So a row widget might see that some children wants to float left, center and rig
 their positions in the given box contraint.
 
 
+## Markup Language
+
+Xml in the form
+```<?xml version="1.0" encoding="UTF-8"?>
+<row>
+  <checkbox id="cb"/>
+  <col>
+    <slider id="s" min="0" max="100" value="40"/>
+    <checkbox id="cb2"/>
+  </col>
+</row>
+```
+
+We want to take that xml and parse it to a `ui_state`.
+
+Required a hashmap of functions from XmlNode to a `Box::<dyn Widget>`, supply the default builtin functions. Custom functions for custom widgets.
 
 
+
+## Builder
+```
+let b = Builder();
+  
+b.add(Row()
+      .add(Checkbox("cb")
+           .flex(3))
+      .add(Slider("s", 0, 100, 50)
+           .flex(2))
+  );
+```
 
 # Bugs
 
