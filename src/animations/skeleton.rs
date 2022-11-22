@@ -53,7 +53,7 @@ impl Skeleton {
     }
 
 
-    pub fn set_bones_from_skeleton(&self, bones: &mut [na::Matrix4::<f32>]) {
+    pub fn set_all_bones_from_skeleton(&self, bones: &mut [na::Matrix4::<f32>]) {
         for i in 0..self.joints.len() {
             bones[i] = self.joints[i].world_matrix * self.joints[i].inverse_bind_pose;
         }
@@ -66,7 +66,7 @@ impl Skeleton {
             bones.push(na::Matrix4::<f32>::identity());
         }
 
-        self.set_bones_from_skeleton(&mut bones);
+        self.set_all_bones_from_skeleton(&mut bones);
 
         bones
 
