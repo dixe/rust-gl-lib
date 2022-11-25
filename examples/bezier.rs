@@ -34,7 +34,7 @@ fn main() -> Result<(), failure::Error> {
     viewport.set_used(&gl);
 
     // Create a default shader
-    let shader = shader::Shader::bezier_shader(&gl)?;
+    let shader = shader::BaseShader::bezier_shader(&gl)?;
 
     // and a bezier curve
     let bezier = bezier::Bezier::new(

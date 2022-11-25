@@ -10,6 +10,7 @@ use gl_lib::helpers;
 
 fn main() -> Result<(), failure::Error> {
 
+
     let sdl_setup = helpers::setup_sdl()?;
     let window = sdl_setup.window;
     let sdl = sdl_setup.sdl;

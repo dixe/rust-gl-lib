@@ -145,6 +145,7 @@ struct FrameProgress {
 
 pub fn load_animations(file_path: &str, skins: &Skins, animations: &mut Animations) {
 
+
     let (gltf, buffers, _) = gltf::import(file_path).unwrap();
 
     for ani in gltf.animations() {
@@ -238,6 +239,8 @@ pub fn load_animations(file_path: &str, skins: &Skins, animations: &mut Animatio
             animations.mesh_to_animation(mesh_name, id);
         }
     }
+
+    println!("Animations loaded n{:#?}", animations.id_to_name.values());
 }
 
 

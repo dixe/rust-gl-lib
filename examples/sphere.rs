@@ -87,7 +87,7 @@ fn main() -> Result<(), failure::Error> {
         let y = f32::cos(angle);
         let z = 0.0;
 
-        camera.update_pos(na::Vector3::new(x * dist, y * dist, z));
+        camera.move_to(na::Vector3::new(x * dist, y * dist, z));
 
         unsafe {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);

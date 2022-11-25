@@ -61,6 +61,7 @@ impl Font {
         let info: FontInfo = info_lines.join(" ").parse()?;
 
         // The rest is page. Maybe assuming single page is an error;
+
         let mut page: Page = lines.collect::<Vec<&str>>().join("\n").parse()?;
 
         image = imageops::flip_vertical(&image);
@@ -82,15 +83,14 @@ impl Font {
 
         let text = fs::read_to_string(fnt_path)?;
 
-        let lines = text.lines();
+        let mut lines = text.lines();
 
-        //let info_lines: Vec::<&str> = lines.take_while_ref(|l| !l.starts_with("page ")).collect();
+        let info_lines: Vec::<&str> = lines.take_while_ref(|l| !l.starts_with("page ")).collect();
 
-        //let info: FontInfo = info_lines.join(" ").parse()?;
+        let info: FontInfo = info_lines.join(" ").parse()?;
 
         // The rest is page. Maybe assuming single page is an error;
         let page: Page = lines.collect::<Vec<&str>>().join("\n").parse()?;
-
 
         let parent = fnt_path.parent().ok_or(ParseFontError::PathHasNotParent)?;
         let img_path = parent.join(&page.info.file_name);
@@ -99,20 +99,6 @@ impl Font {
 
         return Self::load_font(&text, image);
 
-        /*
-        image = imageops::flip_vertical(&image);
-
-        // image is flipped so also flip chars
-        for c in &mut page.chars {
-            c.y = image.height() as f32 - c.y;
-        }
-
-        Ok(Font {
-            info,
-            page,
-            image,
-        })
-*/
     }
 
     /// Return the page char if it exists in the font
@@ -278,6 +264,7 @@ impl FromStr for PageInfo  {
     type Err = ParseFontError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
 
+        println!("\n\n{:?}\n\n", s);
         let parts = s.split(" ");
 
         let mut info: PageInfo = Default::default();

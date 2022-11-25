@@ -1,72 +1,53 @@
-use gl_lib::gl;
 use failure;
 use gl_lib::widget_gui::*;
 use gl_lib::text_rendering::text_renderer::TextRenderer;
 use gl_lib::widget_gui::widgets::*;
-use gl_lib::widget_gui::event_handling::{dispatch_events, run_listeners};
-use gl_lib::shader::rounded_rect_shader::RoundedRectShader;
-use gl_lib::objects::square::Square;
+use gl_lib::{gl, ScreenBox};
+use gl_lib::widget_gui::event_handling::{dispatch_event};
 use sdl2::event;
-use std::any::Any;
-use std::cell::RefCell;
+use gl_lib::helpers;
 
 
 
 fn main() -> Result<(), failure::Error> {
 
-    // Init sdl to use opengl
-    let sdl = sdl2::init().unwrap();
-    let video_subsystem = sdl.video().unwrap();
-
-    let gl_attr = video_subsystem.gl_attr();
-
-    gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
-    gl_attr.set_context_version(4,5);
+    let sdl_setup = helpers::setup_sdl()?;
+    let window = sdl_setup.window;
+    let sdl = sdl_setup.sdl;
+    let viewport = sdl_setup.viewport;
+    let gl = &sdl_setup.gl;
 
 
-    // Create a window that opengl can draw to
-    let width = 800;
-    let height = 600;
+    // Set background color to white
+    unsafe {
+        gl.ClearColor(1.0, 1.0, 1.0, 1.0);
+    }
 
-    let viewport = gl::viewport::Viewport::for_window(width as i32, height as i32);
-
-    let window = video_subsystem
-        .window("3D tic tac toe", width, height)
-        .opengl()
-        .resizable()
-        .build()?;
+    let mut widget_setup = helpers::setup_widgets(gl)?;
 
 
-    // Load gl functions and set to sdl video subsystem
-    let _gl_context = window.gl_create_context().unwrap();
-    let gl = gl::Gl::load_with(|s|{
-        video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void
-    });
-
-    viewport.set_used(&gl);
-
-
+    let mut render_ctx = render::RenderContext {
+        gl: gl,
+        viewport: &viewport,
+        tr: &mut widget_setup.text_renderer,
+        rounded_rect_shader: &mut widget_setup.rounded_rect_shader,
+        render_square: &widget_setup.render_square,
+        circle_shader: &mut widget_setup.circle_shader
+    };
 
     // Setup widget ui
 
 
     let (mut ui_info, mut ui_state) = create_ui();
 
-    let font = Default::default();
-    let mut text_renderer = TextRenderer::new(&gl, font) ;
-    text_renderer.setup_blend(&gl);
-    let mut rrs = RoundedRectShader::new(&gl).unwrap();
-
-    let square = Square::new(&gl);
-
     let mut render_ctx = render::RenderContext {
-        gl: &gl,
+        gl: gl,
         viewport: &viewport,
-        tr: &mut text_renderer,
-        rounded_rect_shader: &mut rrs,
-        render_square: &square
+        tr: &mut widget_setup.text_renderer,
+        rounded_rect_shader: &mut widget_setup.rounded_rect_shader,
+        render_square: &widget_setup.render_square,
+        circle_shader: &mut widget_setup.circle_shader
     };
-
 
     // Set background color to white
     unsafe {
@@ -83,15 +64,13 @@ fn main() -> Result<(), failure::Error> {
         // dispatch events
 
         for event in event_pump.poll_iter() {
-            dispatch_events(&mut ui_state, &event);
+            dispatch_event(&mut ui_state, &event);
         }
 
         // handle events for each widget
-        while let Some(event) = ui_state.poll_widget_event() {
-            handle_widget_event(&mut ui_info, event, &mut ui_state.queues);
+        while let Some(event) = ui_state.poll_widget_outputs() {
+            handle_widget_outputs(&mut ui_info, event);
         }
-
-        run_listeners(&mut ui_state);
 
         //write_count(&ui_info);
 
@@ -117,7 +96,7 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-fn handle_widget_event(_ui_info: &mut UiInfo, event: DispatcherEvent, _widget_queues: &mut [EventQueue]) {
+fn handle_widget_outputs(_ui_info: &mut UiInfo, event: WidgetOutput) {
     println!("event: {:?}", event);
 
 }
