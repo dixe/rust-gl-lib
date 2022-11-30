@@ -35,6 +35,8 @@ In the current state it is cumbersome to both create each widget and manually bu
 fluent builder, with support for attributes. A challenge is that we also need to get the Ids of widgets, so we can listen and send messages to widgets. The output
 of a builder or markup language parser could be a Dictionary/hashmap, that maps from string name/id to a usize Id.
 
+We also want the markup language or builder to auto generate the UiInfo. That is the struct used to communicate with the widgets and the app. Fx a sliders_id and maybe also a sliders value. Another main pain or issue is how to link the gui to the program. At its core the widget i setup to have a `ui_state.poll_widget_outputs` that will give every event of all widgets, by their id. Most often we create a function that takes the `ui_state` and the program state as input, or a UiInfo as input. This uiInfo can then be used to get widget outputs, to be used in the general program. This required that when we create the UI we know all elements, this does make it less dynamic.
+
 ### Markup Language
 
 Xml in the form
@@ -51,7 +53,6 @@ Xml in the form
 We want to take that xml and parse it to a `ui_state`.
 
 Required a hashmap of functions from XmlNode to a `Box::<dyn Widget>`, supply the default builtin functions. Custom functions for custom widgets.
-
 
 
 ### Builder
