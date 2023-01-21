@@ -37,7 +37,6 @@ impl Widget for SliderWidget {
 
 
     fn render(&self, geom: &Geometry, ctx: &mut render::RenderContext) {
-
         render::render_round_rect(geom, ctx);
 
         let circle_pos = (self.value - self.min) / (self.max - self.min) * geom.size.pixel_w as f64 ;

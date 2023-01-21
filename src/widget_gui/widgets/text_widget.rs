@@ -25,5 +25,21 @@ impl Widget for TextWidget {
         render::render_text(&self.text, self.scale, geom, ctx);
     }
 
+    fn handle_widget_input(&mut self, input: Box::<dyn Any>) {
 
+        if let Some(scale) = input.downcast_ref::<f32>() {
+            println!("In Text widget scale = {:?}", scale);
+            self.scale = *scale;
+        }
+
+        if let Some(scale) = input.downcast_ref::<f64>() {
+            println!("In Text widget scale f64 = {:?}", scale);
+            self.scale = (*scale) as f32 ;
+        }
+
+        if let Ok(text) = input.downcast::<String>() {
+            println!("In Text widget text = {:?}", text);
+            self.text = *text;
+        }
+    }
 }

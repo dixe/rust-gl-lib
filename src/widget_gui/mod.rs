@@ -1,9 +1,10 @@
 use std::ops;
-use std::collections::{VecDeque};
+use std::collections::{VecDeque, HashMap};
 use std::any::Any;
 use crate::text_rendering::font::Font;
 use sdl2::event;
-
+use std::fmt;
+use crate::widget_gui::event_handling::dispatch_event;
 
 pub mod widgets;
 pub mod render;
@@ -15,8 +16,10 @@ pub type Id = usize;
 
 pub type Pixel = i32;
 
+
 pub struct UiState {
     next_id: Id,
+
     widgets: Vec<Box<dyn Widget>>,
     children: Vec<Vec<Id>>,
     parents: Vec<Id>,
@@ -26,6 +29,16 @@ pub struct UiState {
     pub widget_input_queue: WidgetInputQueue,
     widget_output_queue: WidgetOutputQueue,
     active_widget: Option<Id>
+}
+
+impl fmt::Debug for UiState {
+
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("UiState")
+            .field("geom", &self.geom)
+            .field("attributes", &self.attributes)
+            .finish()
+    }
 }
 
 
@@ -339,7 +352,6 @@ impl<'a> LayoutContext<'a>{
         };
 
         for _ in 0..widgets {
-            //res.widget_geometry.push(None);
             res.layout_geom.push(None);
         }
 
@@ -347,7 +359,6 @@ impl<'a> LayoutContext<'a>{
 
     }
 }
-
 
 
 pub trait Widget {
@@ -404,6 +415,11 @@ impl ProcessData {
 
 pub fn layout_widgets(root_bc: &BoxContraint, state: &mut UiState) {
 
+    layout_widgets_full(root_bc, state, Position { x:0, y: 0 });
+}
+
+pub fn layout_widgets_full(root_bc: &BoxContraint, state: &mut UiState, offset: Position ) {
+
 
     let mut process_queue = VecDeque::new();
 
@@ -457,17 +473,20 @@ pub fn layout_widgets(root_bc: &BoxContraint, state: &mut UiState) {
 
 
 
+
+
         for (id, geom) in ctx.layout_geom.iter().enumerate() {
             if let Some(g) = geom {
                 state.geom[id].pos = g.pos;
-
             }
         }
     }
 
 
-    // propagate geom positions
+    // set root position to offset
+    state.geom[0].pos += offset;
 
+    // propagate geom positions
     for id in 0..state.geom.len() {
         propagate_positions(id, &state.children[id], &mut state.geom);
     }
@@ -480,4 +499,102 @@ fn propagate_positions(id: Id, children: &[Id], geoms: &mut[Geometry]) {
     for &child_id in children {
         geoms[child_id].pos += pos;
     }
+}
+
+
+
+// NEW WINDOWS STUFF
+
+
+#[derive(Default)]
+pub struct Ui<T> {
+    pub windows: HashMap::<String, UiWindow<T>>,
+    pub named_widget_input_queue: NamedWidgetInputQueue
+}
+
+impl<T>  Ui<T> {
+    pub fn add_window(&mut self, name: String, window: UiWindow<T>) {
+        self.windows.insert(name, window);
+    }
+
+    pub fn layout_all(&mut self) {
+        for (_, window) in &mut self.windows {
+            layout_widgets_full(&window.draw_box, &mut window.ui_state, window.root_pos);
+        }
+    }
+
+    pub fn get_window(&self, name: &str) -> Option::<&UiWindow<T>> {
+        self.windows.get(name)
+    }
+
+    pub fn render(&self, render_ctx: &mut render::RenderContext) {
+        for (_, window) in &self.windows {
+            render::render_ui(&window.ui_state, render_ctx);
+        }
+    }
+
+    pub fn dispatch_event(&mut self, event: &event::Event) {
+        // dispatch sdl events to widgets
+        for (_, window) in &mut self.windows {
+            dispatch_event(&mut window.ui_state, &event);
+        }
+    }
+
+    pub fn handle_widget_events(&mut self, state: &mut T) {
+        for (_, window) in &mut self.windows {
+            let ui_state = &mut window.ui_state;
+            while let Some(event) = ui_state.poll_widget_outputs() {
+                match window.handler_functions.get(&event.widget_id) {
+                    Some(handler) => {
+                        handler(state, event, &mut self.named_widget_input_queue);
+                    },
+                    None => {}
+                }
+            }
+        }
+
+        while let Some(named_input) = self.named_widget_input_queue.pop_front() {
+            // get window, and then widget name
+            if let Some(window) = self.windows.get_mut(&named_input.to_window_name) {
+                if let Some(widget_id) = window.named_widgets.get_mut(&named_input.to_widget_name) {
+                    let mut widget = &mut window.ui_state.widgets[*widget_id];
+                    println!("{:?}", named_input.input);
+                    widget.handle_widget_input(named_input.input);
+                }
+            }
+        }
+    }
+}
+
+pub struct UiWindow<T> {
+    pub ui_state: UiState,
+    pub draw_box: BoxContraint,
+    pub root_pos: Position,
+    pub named_widgets: HashMap::<String,Id>,
+    pub handler_functions: HashMap::<Id,  fn(&mut T, WidgetOutput, &mut NamedWidgetInputQueue)>
+}
+
+#[derive(Default)]
+pub struct NamedWidgetInputQueue(VecDeque::<NamedWidgetInput>);
+
+impl NamedWidgetInputQueue {
+
+    pub fn pop_front(&mut self) -> Option<NamedWidgetInput> {
+        self.0.pop_front()
+    }
+
+    pub fn send_value_to<T: 'static>(&mut self, window_name: &str,widget_name: &str, input: T) {
+        self.0.push_back(NamedWidgetInput { to_window_name: window_name.to_string(), to_widget_name: widget_name.to_string(), input: Box::new(input)});
+    }
+
+    pub fn send_to(&mut self, window_name: &str, widget_name: &str, input: Box::<dyn Any>) {
+        self.0.push_back(NamedWidgetInput { to_window_name: window_name.to_string(), to_widget_name: widget_name.to_string(), input});
+    }
+}
+
+#[derive(Debug)]
+pub struct NamedWidgetInput {
+    pub to_window_name: String,
+    pub to_widget_name: String,
+    pub input: Box::<dyn Any>
 }

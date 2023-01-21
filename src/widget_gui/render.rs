@@ -17,15 +17,12 @@ pub struct RenderContext<'a> {
 
 pub fn render_ui(state: &UiState, ctx: &mut RenderContext) {
 
-
     // render as a list, not as a tree, might have to change that so parent are rendered before children
     // also in future layers with popup on top of other widgets
     // for now just assume all is in 1 layer and we can render in any order
     for id in 0..state.widgets.len() {
         state.widgets[id].render(&state.geom[id], ctx);
     }
-
-
 }
 
 
@@ -47,7 +44,8 @@ pub fn render_text(text: &str, scale: f32, geom: &Geometry, ctx: &mut RenderCont
     //ctx.tr.setup_blend(ctx.gl);
     //println!("{:?}", sb);
     //println!("{:?}", geom);
-    ctx.tr.render_text(ctx.gl, &text,  Default::default(), sb, scale);
+
+    ctx.tr.render_text(ctx.gl, &text, Default::default(), sb, scale);
 }
 
 
