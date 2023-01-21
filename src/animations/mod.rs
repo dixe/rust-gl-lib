@@ -1,6 +1,6 @@
 use crate::na;
 use crate::animations::skeleton::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub mod skeleton;
 mod types;
@@ -63,6 +63,15 @@ impl Animations {
 
         None
     }
+
+    pub fn get_animations(&self) -> &HashMap::<AnimationName, Vec::<AnimationId>> {
+        &self.mesh_to_animations
+    }
+
+    pub fn id_to_name(&self) -> &HashMap::<AnimationId, AnimationName> {
+        &self.id_to_name
+    }
+
 
 }
 
@@ -157,7 +166,7 @@ pub fn load_animations(file_path: &str, skins: &Skins, animations: &mut Animatio
 
 
         let mut skeleton_option = None;
-        let mut mesh_names = vec![];
+        let mut mesh_names = HashSet::<String>::new();
 
         // First use the channels to get a node, map that node to a skeleton
         // TODO: Multiple meshes should be allowed here
@@ -166,7 +175,7 @@ pub fn load_animations(file_path: &str, skins: &Skins, animations: &mut Animatio
 
             if let Some(skin_id) = skins.node_index_to_skin.get(&node_index) {
                 skeleton_option = skins.skeletons.get(&skin_id);
-                mesh_names.push(skins.skin_to_mesh.get(&skin_id).unwrap().to_string());
+                mesh_names.insert(skins.skin_to_mesh.get(&skin_id).unwrap().to_string());
             }
         }
 
@@ -240,7 +249,7 @@ pub fn load_animations(file_path: &str, skins: &Skins, animations: &mut Animatio
         }
     }
 
-    println!("Animations loaded n{:#?}", animations.id_to_name.values());
+    println!("Animations loaded: {:#?}", animations.id_to_name.values());
 }
 
 
