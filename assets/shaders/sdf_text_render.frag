@@ -10,6 +10,9 @@ in VS_OUTPUT {
   vec2 TexCoords;
 } IN;
 
+
+
+
 void main()
 {
 
@@ -21,19 +24,13 @@ void main()
 
 
   // Just scale everything below 0.5 (ouside) to 0 and everything inside to 1s
-  float u_buffer = 0.5;
+  float buffer_val = scale;
+  float u_buffer = 0.4 + 0.1 * smoothstep(0.4, 0.5, scale / 1.0);
 
   // allow some smoothing for AA at edges
   float smoothing = 0.125 / (smoothness *  scale);
 
   float alpha = smoothstep(u_buffer - smoothing, u_buffer + smoothing , dist);
-
-  if( alpha < 0.01)
-    {
-      //alpha = 0.3;
-      discard;
-    }
-
 
 
   vec3 rgb = texture(text_map, IN.TexCoords).rgb;
@@ -45,5 +42,5 @@ void main()
   //vec3 aa_col =  vec3(color * alpha);
   //vec3 aa_col =  vec3(bgcol * ( alpha));
 
-  FragColor = vec4(aa_col, 1.0);
+  FragColor = vec4(aa_col, alpha);
 }

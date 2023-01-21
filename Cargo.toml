@@ -38,7 +38,7 @@ features = ["extras", "names"]
 rand = "0.8.4"
 image = "0.23.14"
 ttf-parser = "0.14.0"
-
+lipsum = "0.8"
 
 [build-dependencies]
 gl_generator = "0.14.0"
