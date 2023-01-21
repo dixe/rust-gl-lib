@@ -88,7 +88,10 @@ impl TextRenderer {
     /// user this to get size info on how a text will be rendered. Can be used in layout phase, to get side of
     /// fx a text box
     pub fn render_box(font: &Font, text: &str, max_width: f32, input_scale: f32) -> TextRenderBox {
-        Self::calc_char_info(font, text, max_width, input_scale, &mut Vec::new())
+        let mut chars_info = Vec::new();
+        let res = Self::calc_char_info(font, text, max_width, input_scale, &mut chars_info);
+
+        res
     }
 
 
@@ -183,6 +186,30 @@ impl TextRenderer {
         let render_box = Self::calc_char_info(&self.font, text, screen_box.width, input_scale, &mut chars_info);
 
 
+        // higher than 1 means the text does NOT fit in the assigned box. And we have to account for scroll input
+        //let text_to_window_ratio = dbg!(render_box.total_height / screen_box.screen_h);
+
+
+        // maybe scroll bar should not be between 0 and 1
+        // if we know the actual ration like 5.0,
+        // scroll 0.0 means no offset, first word is shown in to left
+        // scroll 1.0 means last word is shows on last line
+
+
+        // for 0: offset with 0
+
+        // for 1: offset with length of text - screen_box heigh
+
+        let scroll = 0.5;
+            //let offset = dbg!(render_box.total_height * scroll - screen_box.screen_h);
+
+
+
+
+
+
+
+
         // map from pixel space into screen space so we are ready to draw
         for info in chars_info.iter_mut() {
 
@@ -194,7 +221,7 @@ impl TextRenderer {
 
             let y_offset = match alignment.y {
                 TextAlignmentY::Top => screen_box.y,
-                TextAlignmentY::Center => screen_box.y + (screen_box.height - render_box.total_height) / 2.0,
+                TextAlignmentY::Center => screen_box.y + (screen_box.height - f32::min(screen_box.height, render_box.total_height)) / 2.0,
                 TextAlignmentY::Bottom =>  screen_box.y + screen_box.height - render_box.total_height,
             };
 
@@ -209,7 +236,6 @@ impl TextRenderer {
             bottom: screen_box.bottom(),
             screen_w: screen_box.screen_w,
             screen_h: screen_box.screen_h,
-
         };
 
         self.render_text_quads(gl, &draw_info);
@@ -225,6 +251,7 @@ impl TextRenderer {
             if info.y > draw_info.bottom {
                 break;
             }
+
 
             let x = smoothstep(0.0, draw_info.screen_w, info.x) * 2.0 - 1.0;
             let y = -1.0 * (smoothstep(0.0, draw_info.screen_h, info.y) * 2.0 - 1.0);
@@ -262,7 +289,6 @@ struct DrawInfo<'a>{
     chars_info: &'a Vec::<CharPosInfo>,
     screen_w: f32,
     screen_h: f32,
-
 }
 
 #[derive(Debug)]
