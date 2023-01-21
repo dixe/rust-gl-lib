@@ -14,7 +14,7 @@ fn text_widget() {
     let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
 
-    let _ = ui_state.add_widget(Box::new(text_widget), None, None);
+    let _ = ui_state.add_widget(Box::new(text_widget), None);
 
     let screen_contraint = BoxContraint::new(width, height);
     layout_widgets(&screen_contraint, &mut ui_state);
@@ -38,11 +38,11 @@ fn row_widget_1() {
     let row_widget = RowWidget { };
 
 
-    let row_id = ui_state.add_widget(Box::new(row_widget), None, None);
+    let row_id = ui_state.add_widget(Box::new(row_widget), None);
 
     let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
-    let _ = ui_state.add_widget(Box::new(text_widget), Some(row_id), None);
+    let _ = ui_state.add_widget(Box::new(text_widget), Some(row_id));
 
 
 
@@ -69,12 +69,12 @@ fn row_widget_2() {
     let row_widget = RowWidget { };
 
 
-    let row_id = ui_state.add_widget(Box::new(row_widget), None, None);
+    let row_id = ui_state.add_widget(Box::new(row_widget), None);
 
     let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
-    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id), None);
-    let _ = ui_state.add_widget(Box::new(text_widget), Some(row_id), None);
+    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id));
+    let _ = ui_state.add_widget(Box::new(text_widget), Some(row_id));
 
 
 
@@ -105,13 +105,13 @@ fn row_widget_3() {
     let row_widget = RowWidget { };
 
 
-    let row_id = ui_state.add_widget(Box::new(row_widget), None, None);
+    let row_id = ui_state.add_widget(Box::new(row_widget), None);
 
     let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
-    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id), None);
-    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id), None);
-    let _ = ui_state.add_widget(Box::new(text_widget), Some(row_id), None);
+    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id));
+    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id));
+    let _ = ui_state.add_widget(Box::new(text_widget), Some(row_id));
 
 
 
@@ -140,7 +140,7 @@ fn row_of_columns_widget_1() {
 
     let row_widget = RowWidget { };
 
-    let row_id = ui_state.add_widget(Box::new(row_widget), None, None);
+    let row_id = ui_state.add_widget(Box::new(row_widget), None);
 
 
     let column = ColumnWidget { };
@@ -149,19 +149,19 @@ fn row_of_columns_widget_1() {
 
 
     // Setup column 1 with 2 texts
-    let c1_id = ui_state.add_widget(Box::new(column.clone()), Some(row_id), None);
+    let c1_id = ui_state.add_widget(Box::new(column.clone()), Some(row_id));
 
-    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(c1_id), None);
-    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(c1_id), None);
+    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(c1_id));
+    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(c1_id));
 
 
     // Setup column 2 with 3 texts
 
-    let c2_id = ui_state.add_widget(Box::new(column.clone()), Some(row_id), None);
+    let c2_id = ui_state.add_widget(Box::new(column.clone()), Some(row_id));
 
-    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(c2_id), None);
-    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(c2_id), None);
-    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(c2_id), None);
+    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(c2_id));
+    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(c2_id));
+    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(c2_id));
 
 
     let screen_contraint = BoxContraint::new(width, height);
@@ -188,13 +188,17 @@ fn widget_flex_1() {
     let row_widget = RowWidget { };
 
 
-    let row_id = ui_state.add_widget(Box::new(row_widget), None, None);
+    let row_id = ui_state.add_widget(Box::new(row_widget), None);
 
     let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
-    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id), Some(WidgetConstraint::flex_width(2)));
+    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id));
 
-    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id), Some(WidgetConstraint::flex_width(1)));
+    //Some(WidgetConstraint::flex_width(2)));
+
+    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(row_id));
+
+    //, Some(WidgetConstraint::flex_width(1)));
 
 
 
@@ -225,13 +229,15 @@ fn widget_flex_2() {
     let column_widget = ColumnWidget { };
 
 
-    let column_id = ui_state.add_widget(Box::new(column_widget), None, None);
+    let column_id = ui_state.add_widget(Box::new(column_widget),None);
 
     let text_widget = TextWidget { text: "Hello".to_string(), scale: 1.0 };
 
-    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(column_id), Some(WidgetConstraint::flex_height(2)));
+    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(column_id));
+    //, Some(WidgetConstraint::flex_height(2)));
 
-    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(column_id), Some(WidgetConstraint::flex_height(1)));
+    let _ = ui_state.add_widget(Box::new(text_widget.clone()), Some(column_id));
+    //, Some(WidgetConstraint::flex_height(1)));
 
 
 
