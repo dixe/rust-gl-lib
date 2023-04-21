@@ -15,8 +15,44 @@ use std::any::Any;
 
 static mut lipsum_text : Option<String> = None;
 
+fn setup() -> Result<(sdl_setup, window, sdl, viewport, gl), failure::Error> {
+
+    let sdl_setup = helpers::setup_sdl()?;
+    let window = sdl_setup.window;
+    let sdl = sdl_setup.sdl;
+    let viewport = sdl_setup.viewport;
+    let gl = sdl_setup.gl.clone();
+
+
+    // Set background color to white
+    unsafe {
+        gl.ClearColor(1.0, 1.0, 1.0, 1.0);
+    }
+
+    let mut widget_setup = helpers::setup_widgets(gl)?;
+
+
+    let mut render_ctx = render::RenderContext {
+        gl: gl,
+        viewport: &viewport,
+        tr: &mut widget_setup.text_renderer,
+        rounded_rect_shader: &mut widget_setup.rounded_rect_shader,
+        render_square: &widget_setup.render_square,
+        circle_shader: &mut widget_setup.circle_shader
+    };
+
+     // Set background color to white
+    unsafe {
+        gl.ClearColor(1.0, 1.0, 1.0, 1.0);
+    }
+
+
+
+}
+
 fn main() -> Result<(), failure::Error> {
 
+    let (sdl_setup, window, sdl, viewport, gl) = setup()?;
 
     let sdl_setup = helpers::setup_sdl()?;
     let window = sdl_setup.window;
@@ -24,11 +60,6 @@ fn main() -> Result<(), failure::Error> {
     let viewport = sdl_setup.viewport;
     let gl = &sdl_setup.gl;
 
-
-    // Set background color to white
-    unsafe {
-        gl.ClearColor(1.0, 1.0, 1.0, 1.0);
-    }
 
     let mut widget_setup = helpers::setup_widgets(gl)?;
 
@@ -115,6 +146,7 @@ fn main() -> Result<(), failure::Error> {
 
 
         ui.handle_widget_events(&mut ui_info);
+
 
         // rendering
         unsafe {

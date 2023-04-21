@@ -1,15 +1,18 @@
 use crate::na;
 use crate::gl;
 use crate::objects::mesh::Mesh;
-use crate::animations::skeleton::Skins;
+use crate::animations::skeleton::{load_skins, Skins};
 use std::collections::HashMap;
 
 
-pub fn meshes_from_gltf(file_path: &str, skins: &Skins) -> Result<GltfMeshes, failure::Error> {
+pub fn meshes_from_gltf(file_path: &str) -> Result<GltfMeshes, failure::Error> {
+
 
     let (gltf, buffers, _) = gltf::import(file_path)?;
 
-    //println!("{:#?}", gltf);
+    let skins = load_skins(&gltf)?;
+
+    println!("{:#?}", gltf);
     //panic!("");
 
 

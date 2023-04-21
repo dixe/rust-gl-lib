@@ -63,6 +63,10 @@ pub fn setup_sdl() -> Result<BasicSetup, SetupError> {
 
     gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
     gl_attr.set_context_version(4,5);
+    gl_attr.set_multisample_buffers(1);
+    gl_attr.set_multisample_samples(4);
+
+
 
 
     // Create a window that opengl can draw to

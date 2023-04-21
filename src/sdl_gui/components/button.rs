@@ -51,12 +51,12 @@ impl<Message> ComponentTrait<Message> for Button<Message> where Message: Clone +
 
         let transform = self.base.unit_square_transform_matrix(screen_w as f32, screen_h as f32);
 
-        let color_scale = self.base.color_scale();
+        let color = self.base.color();
 
         self.shader.set_transform(transform);
 
         //println!(" h_half= {:?} w_half = {}", self.base.height / screen_h, self.base.width / screen_w);
-        self.shader.set_uniforms(Uniforms { color_scale,
+        self.shader.set_uniforms(Uniforms { color,
                                             pixel_height: self.base.height,
                                             pixel_width: self.base.width,
                                             radius: 50.0

@@ -24,7 +24,7 @@ impl RoundedRectShader {
 
     pub fn set_uniforms(&self, uni: Uniforms) {
 
-        self.shader.set_f32(&self.gl, "color_scale", uni.color_scale);
+        self.shader.set_vec4(&self.gl, "u_color", uni.color.as_vec4());
 
         self.shader.set_f32(&self.gl, "pixel_height", uni.pixel_height);
 
@@ -36,7 +36,7 @@ impl RoundedRectShader {
 
 #[derive(Clone, Debug, Copy)]
 pub struct Uniforms {
-    pub color_scale: f32,
+    pub color: Color,
     pub pixel_height : f32,
     pub pixel_width: f32,
     pub radius: f32
@@ -78,6 +78,7 @@ void main()
     let frag_source = r"
 #version 330 core
 
+uniform vec4 u_color;
 
 in VS_OUTPUT {
     vec2 FragPos;
@@ -91,7 +92,6 @@ uniform float pixel_height;
 
 uniform float radius;
 
-uniform float color_scale;
 
 float roundedRectangle(vec2 p, vec2 size, float radius)
 {
@@ -114,7 +114,7 @@ void main()
     // uv but in screen space.
     vec2 uv =  vec2(u * pixel_width , v * pixel_height);
 
-    vec3 col = vec3(.8, 0.8, .8) * color_scale;
+    vec4 col = u_color;
 
     // size = aspect - radius, 1.0 - radius
     vec2 size = vec2(pixel_width , pixel_height);
@@ -124,8 +124,10 @@ void main()
 
 
     float alpha =  (1.0 - smoothstep(0.0, 1.0, dist));
-    FragColor = vec4(col * alpha , alpha);
 
+    col.w = alpha;
+
+    FragColor = col;
 }";
 
     BaseShader::new(gl, vert_source, frag_source)

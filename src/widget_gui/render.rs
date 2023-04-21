@@ -4,6 +4,7 @@ use crate::text_rendering::{text_renderer::TextRenderer};
 use crate::{gl::{self, viewport}, ScreenBox, ScreenCoords};
 use crate::shader::{ TransformationShader, rounded_rect_shader::{self as rrs, RoundedRectShader}, circle_shader::{self as cs, CircleShader}};
 use crate::objects::square;
+use crate::color::Color;
 
 
 pub struct RenderContext<'a> {
@@ -78,8 +79,8 @@ pub fn render_round_rect(geom: &Geometry, ctx: &mut RenderContext) {
 
     ctx.rounded_rect_shader.set_transform(transform);
 
-    let color_scale = 1.0;
-    ctx.rounded_rect_shader.set_uniforms(rrs::Uniforms { color_scale,
+    let color = Color::Rgb(255, 200, 200);
+    ctx.rounded_rect_shader.set_uniforms(rrs::Uniforms { color,
                                                          pixel_height: geom.size.pixel_h as f32,
                                                          pixel_width: geom.size.pixel_w as f32,
                                                          radius: 20.0
@@ -98,8 +99,8 @@ pub fn render_rect(geom: &Geometry, ctx: &mut RenderContext) {
 
     ctx.rounded_rect_shader.set_transform(transform);
 
-    let color_scale = 1.0;
-    ctx.rounded_rect_shader.set_uniforms(rrs::Uniforms { color_scale,
+    let color = Color::Rgb(255, 200, 200);
+    ctx.rounded_rect_shader.set_uniforms(rrs::Uniforms { color,
                                                          pixel_height: geom.size.pixel_h as f32,
                                                          pixel_width: geom.size.pixel_w as f32,
                                                          radius: 0.0

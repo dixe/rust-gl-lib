@@ -127,8 +127,8 @@ fn load_skin_nodes(gltf: &gltf::Document, name: &str) -> Vec::<usize> {
     res
 }
 
-pub fn load_skins(file_path: &str) -> Result<Skins, failure::Error> {
-    let (gltf, _, _) = gltf::import(file_path)?;
+pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
+
 
     let mut skins : Skins = Default::default();
     // Map mesh names to skin names and nodes to skin id

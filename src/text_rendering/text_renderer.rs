@@ -85,6 +85,7 @@ impl TextRenderer {
     }
 
 
+
     /// user this to get size info on how a text will be rendered. Can be used in layout phase, to get side of
     /// fx a text box
     pub fn render_box(font: &Font, text: &str, max_width: f32, input_scale: f32) -> TextRenderBox {
@@ -201,15 +202,7 @@ impl TextRenderer {
         // for 1: offset with length of text - screen_box heigh
 
         let scroll = 0.5;
-            //let offset = dbg!(render_box.total_height * scroll - screen_box.screen_h);
-
-
-
-
-
-
-
-
+        //let offset = dbg!(render_box.total_height * scroll - screen_box.screen_h);
         // map from pixel space into screen space so we are ready to draw
         for info in chars_info.iter_mut() {
 

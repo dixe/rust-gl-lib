@@ -11,6 +11,7 @@
 use std::default::Default;
 
 pub use nalgebra as na;
+pub use failure as failure;
 pub use sdl2;
 
 pub mod gl;
@@ -32,6 +33,8 @@ pub mod sdl_gui;
 pub mod controller;
 
 pub mod animations;
+
+pub mod imode_gui;
 
 /// Defines point in ScreenBox x,y in \[0.0; 1.0\]
 /// Top left corner is x=0, y=0

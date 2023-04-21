@@ -6,6 +6,8 @@ use crate::sdl_gui::components::button::Button;
 use crate::gl;
 use std::fmt::Debug;
 use crate::sdl_gui::layout;
+use crate::color::Color;
+
 
 #[derive(Debug,Clone,Copy)]
 pub enum ComponentEvent {
@@ -77,12 +79,18 @@ impl ComponentBase {
         self.height
     }
 
-    pub fn color_scale(&self) -> f32 {
-        let mut cs = if self.hover { 0.6 } else { 1.0 };
+    pub fn color(&self) -> Color {
+
         if self.disabled {
-            cs = 0.4;
+            return Color::RgbA(255,200,200, 100);
         }
-        cs
+
+        if self.hover {
+            return Color::RgbA(255,200,200, 200);
+        }
+
+        return Color::RgbA(255,200,200, 255);
+
     }
 
     pub fn unit_square_transform_matrix(&self, screen_w: f32, screen_h: f32) -> na::Matrix4::<f32> {

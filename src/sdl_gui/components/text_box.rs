@@ -69,12 +69,12 @@ where
             .unit_square_transform_matrix(screen_w as f32, screen_h as f32);
 
         //TODO: don't use hover for text box. make this function take some flags to determine witch info is used. So we can ignore hover and only use disabled
-        let color_scale = self.base.color_scale();
+        let color = self.base.color();
 
         self.shader.set_transform(transform);
 
         self.shader.set_uniforms(Uniforms {
-            color_scale,
+            color,
             pixel_height: self.base.height,
             pixel_width: self.base.width,
             radius: 30.0

@@ -4,7 +4,6 @@ use failure;
 
 fn main() -> Result<(), failure::Error> {
 
-
     let width = 800;
     let height = 600;
 
