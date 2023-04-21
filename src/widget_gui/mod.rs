@@ -1,7 +1,7 @@
 use std::ops;
 use std::collections::{VecDeque, HashMap};
 use std::any::Any;
-use crate::text_rendering::font::Font;
+use crate::text_rendering::font::{Font, SdfFont};
 use sdl2::event;
 use std::fmt;
 use crate::widget_gui::event_handling::dispatch_event;
@@ -45,6 +45,8 @@ impl fmt::Debug for UiState {
 impl UiState {
 
     pub fn new() -> Self {
+        let sdf_font = Default::default();
+        let font = Font::Sdf(sdf_font);
         UiState {
             next_id: 0,
             widgets: Vec::new(),
@@ -52,7 +54,7 @@ impl UiState {
             parents: Vec::new(),
             geom: Vec::new(),
             attributes: Vec::new(),
-            font: Default::default(),
+            font: font,
             widget_input_queue: WidgetInputQueue(VecDeque::new()),
             widget_output_queue: VecDeque::new(),
             active_widget: None,

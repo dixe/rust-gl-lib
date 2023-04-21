@@ -77,6 +77,26 @@ impl<'a> Drawer2D<'a> {
 
         self.tr.render_text(self.gl, text, alignment, sb, 1.0);
     }
+
+    pub fn render_text_scaled(&mut self, text: &str, x: i32, y: i32, scale:  f32) {
+
+        let rect = Rect {
+            x,
+            y,
+            w: 1000,
+            h: 1000
+        };
+
+        let sb = transform_to_screen_space(&rect, &self.viewport);
+
+
+        let alignment = TextAlignment {
+            x: TextAlignmentX::Left,
+            y: TextAlignmentY::Top
+        };
+
+        self.tr.render_text(self.gl, text, alignment, sb, scale);
+    }
 }
 
 

@@ -2,7 +2,7 @@ use crate::objects::square;
 use crate::ScreenBox;
 use crate::gl::{self, viewport};
 use crate::na;
-use crate::text_rendering::{text_renderer, font};
+use crate::text_rendering::{text_renderer, font::*};
 use failure;
 use deltatime;
 use sdl2;
@@ -83,8 +83,9 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
 
         viewport.set_used(&gl);
 
-
-        let text_renderer = text_renderer::TextRenderer::new(&gl, font::Font::default());
+        let sdf_font = Default::default();
+        let font = Font::Sdf(sdf_font);
+        let text_renderer = text_renderer::TextRenderer::new(&gl, font);
 
 
         let render_square = square::Square::new(&gl);

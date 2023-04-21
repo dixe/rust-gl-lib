@@ -1,5 +1,5 @@
 //! Signed distance field fonts
-
+use crate::shader::{BaseShader,Shader};
 use std::path::Path;
 use std::fs;
 use std::error::Error;
@@ -8,25 +8,26 @@ use std::fmt;
 use itertools::Itertools;
 use image::io::Reader as ImageReader;
 use image::imageops;
-
+use super::*;
+use crate::gl;
 use crate::na;
 
 #[derive(Debug)]
-pub struct Font {
+pub struct SdfFont {
     pub info: FontInfo,
     pub page: Page,
     pub image: image::RgbaImage
 }
 
 
-static FONT_TEXT: &str = include_str!("../../assets/fonts/Arial.fnt");
-static FONT_IMG: &[u8; 85355] = include_bytes!("../../assets/fonts/Arial.png");
+static FONT_TEXT: &str = include_str!("../../../assets/fonts/Arial.fnt");
+static FONT_IMG: &[u8; 85355] = include_bytes!("../../../assets/fonts/Arial.png");
 
 //static FONT_TEXT: &str = include_str!("E:/repos/rust-sdf-tool/Calibri.fnt");
 //static FONT_IMG: &[u8; 87666] = include_bytes!("E:/repos/rust-sdf-tool/Calibri_0.png");
 
 
-impl Default for Font {
+impl Default for SdfFont {
     fn default() -> Self {
 
         let loaded_img = match image::load_from_memory(FONT_IMG) {
@@ -36,7 +37,7 @@ impl Default for Font {
 
         let image = loaded_img.into_rgba8();
 
-        match Font::load_font(FONT_TEXT, image) {
+        match SdfFont::load_font(FONT_TEXT, image) {
             Ok(font) => font,
             Err(err) => panic!("Load default font failed with: {}", err)
         }
@@ -46,13 +47,13 @@ impl Default for Font {
 //TODO: use this to calculate the SDF from TTF https://www.youtube.com/watch?v=LaYPoMPRSlk
 
 
-impl Font {
+impl SdfFont {
 
     /// Assumes that the png file referred to in the font is located in the same directory as the .fnt file.
     /// Fonts generated from steps here: <https://github.com/libgdx/libgdx/wiki/Distance-field-fonts>]
 
 
-    pub fn load_font(text: &str, mut image: image::RgbaImage) -> Result<Font, Box<dyn Error>> {
+    pub fn load_font(text: &str, mut image: image::RgbaImage) -> Result<SdfFont, Box<dyn Error>> {
 
         let mut lines = text.lines();
 
@@ -71,7 +72,7 @@ impl Font {
             c.y = image.height() as f32 - c.y;
         }
 
-        Ok(Font {
+        Ok(SdfFont {
             info,
             page,
             image,
@@ -79,7 +80,7 @@ impl Font {
 
     }
 
-    pub fn load_fnt_font(fnt_path: &Path) -> Result<Font, Box<dyn Error>> {
+    pub fn load_fnt_font(fnt_path: &Path) -> Result<SdfFont, Box<dyn Error>> {
 
         let text = fs::read_to_string(fnt_path)?;
 
@@ -125,6 +126,16 @@ impl Font {
 
         0.0
     }
+
+
+    pub fn create_shader(&self, gl: &gl::Gl) -> BaseShader {
+
+        let vert_source = include_str!("../../../assets/shaders/sdf_text_render.vert");
+        let frag_source = include_str!("../../../assets/shaders/sdf_text_render.frag");
+
+        BaseShader::new(gl, vert_source, frag_source).unwrap()
+    }
+
 }
 
 
@@ -264,7 +275,6 @@ impl FromStr for PageInfo  {
     type Err = ParseFontError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
 
-        println!("\n\n{:?}\n\n", s);
         let parts = s.split(" ");
 
         let mut info: PageInfo = Default::default();
@@ -293,20 +303,7 @@ impl FromStr for PageInfo  {
 
 }
 
-#[derive(Debug, Default, Clone, Copy)]
-pub struct PageChar {
-    pub id: u32,
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
-    pub x_offset: f32,
-    pub y_offset: f32,
-    pub x_advance: f32,
-    pub y_advance: f32,
-    pub page_id: usize,
-    pub channel: i32,
-}
+
 
 impl FromStr for PageChar  {
     type Err = ParseFontError;
@@ -345,10 +342,10 @@ impl FromStr for PageChar  {
                     pc.y_advance = splitted[1].parse()?;
                 },
                 "page" => {
-                    pc.page_id = splitted[1].parse()?;
+                    //pc.page_id = splitted[1].parse()?;
                 },
                 "chnl" => {
-                    pc.channel = splitted[1].parse()?;
+                    //pc.channel = splitted[1].parse()?;
                 },
                 _ => {}
             }
@@ -437,7 +434,7 @@ mod tests {
 
         let path = Path::new("./assets/fonts/Arial.fnt");
 
-        let font = Font::load_fnt_font(&path).unwrap();
+        let font = SdfFont::load_fnt_font(&path).unwrap();
 
         assert_eq!(font.page.chars.len(), 191);
 

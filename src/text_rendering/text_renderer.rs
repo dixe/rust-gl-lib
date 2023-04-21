@@ -1,7 +1,7 @@
 //! An struct that can be used for easy text rendering
 
 use crate::na;
-use crate::text_rendering::{font::{Font, PageChar}};
+use crate::text_rendering::{font::*};
 use crate::shader::{BaseShader,Shader};
 use crate::texture::{self, TextureId};
 use crate::gl;
@@ -25,10 +25,9 @@ impl TextRenderer {
     /// Create a new text renderer given a path to a signed distance field font
     pub fn new(gl: &gl::Gl, font: Font) -> Self {
 
-        let shader = create_shader(gl);
+        let shader = font.create_shader(gl);
 
-
-        let texture_id = texture::gen_texture_rgba(&gl, &font.image);
+        let texture_id = texture::gen_texture_rgba(&gl, &font.image());
 
 
         let char_quad = Box::new(objects::char_quad::CharQuad::new(gl));
@@ -137,7 +136,7 @@ impl TextRenderer {
         let mut total_height = 0.0;
         let mut total_width = 0.0;
         // Process chars to wrap newlines, on whole word if possible
-        let line_height =  font.info.line_height * input_scale;
+        let line_height =  font.line_height() * input_scale;
         let mut current_max_h = line_height;
 
 
@@ -249,7 +248,7 @@ impl TextRenderer {
             let x = smoothstep(0.0, draw_info.screen_w, info.x) * 2.0 - 1.0;
             let y = -1.0 * (smoothstep(0.0, draw_info.screen_h, info.y) * 2.0 - 1.0);
 
-            self.char_quad.update_char(i, x, y, draw_info.scale.x, draw_info.scale.y, &info.chr, (&self.font.image).into());
+            self.char_quad.update_char(i, x, y, draw_info.scale.x, draw_info.scale.y, &info.chr, self.font.image().into());
 
             //self.char_quad.render_full_texture(i);
 
@@ -335,13 +334,4 @@ struct CharPosInfo {
 pub struct TextRenderBox {
     pub total_width: f32,
     pub total_height: f32,
-}
-
-
-fn create_shader(gl: &gl::Gl) -> BaseShader {
-
-    let vert_source = include_str!("../../assets/shaders/sdf_text_render.vert");
-    let frag_source = include_str!("../../assets/shaders/sdf_text_render.frag");
-
-    BaseShader::new(gl, vert_source, frag_source).unwrap()
 }

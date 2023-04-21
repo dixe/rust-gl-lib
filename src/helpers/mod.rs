@@ -5,6 +5,7 @@ use crate::shader::rounded_rect_shader::RoundedRectShader;
 use crate::shader::circle_shader::CircleShader;
 use crate::objects::square::Square;
 use crate::text_rendering::text_renderer::TextRenderer;
+use crate::text_rendering::font::*;
 
 
 #[derive(Debug, Fail)]
@@ -114,7 +115,8 @@ pub struct WidgetSetup {
 
 pub fn setup_widgets(gl: &gl::Gl) -> Result<WidgetSetup, SetupError> {
 
-    let font = Default::default();
+    let inner_font = Default::default();
+    let font = Font::Msdf(inner_font);
     let text_renderer = TextRenderer::new(gl, font);
     text_renderer.setup_blend(gl);
     let rrs = RoundedRectShader::new(gl)?;
