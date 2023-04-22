@@ -83,8 +83,8 @@ impl<'a> Drawer2D<'a> {
         let rect = Rect {
             x,
             y,
-            w: 1000,
-            h: 1000
+            w: 1200,
+            h: 1200
         };
 
         let sb = transform_to_screen_space(&rect, &self.viewport);

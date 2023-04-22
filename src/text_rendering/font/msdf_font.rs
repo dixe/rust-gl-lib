@@ -60,36 +60,37 @@ impl MsdfFont {
 
         for g in &info.glyphs {
 
+            let mut pc = PageChar {
+                id: g.unicode,
+                height: 0.0,
+                width: 0.0,
+                x: 0.0,
+                y: 0.0,
+                x_advance: info.atlas.size * g.advance,
+                x_offset: 0.0,
+                y_advance: 0.0,
+                y_offset: 0.0,
+            };
+
             if let Some(atlas) = &g.atlasBounds {
 
+                let plane_b = g.planeBounds.unwrap_or_default();
+
+                let h = atlas.top - atlas.bottom;
                 let w = atlas.right - atlas.left;
-                chars.push( PageChar  {
-                    id: g.unicode,
-                    height: atlas.top - atlas.bottom,
-                    width: w,
-                    x: atlas.left,
-                    y: atlas.top,
-                    x_advance: info.atlas.size * g.advance,
-                    x_offset: 0.0,
-                    y_advance: 0.0,
-                    y_offset: 0.0,
-                });
-            }
-            else {
-                chars.push( PageChar  {
-                    id: g.unicode,
-                    height: 0.0,
-                    width: 0.0,
-                    x: 0.0,
-                    y: 0.0,
-                    x_advance: 0.0,
-                    x_offset: 0.0,
-                    y_advance: 0.0,
-                    y_offset: 0.0,
-                })
-            }
 
 
+                pc.height = h;
+                pc.width = w;
+                pc.x = atlas.left;
+                pc.y = atlas.top;
+                pc.x_advance = info.atlas.size * g.advance;
+                pc.x_offset = 0.0;
+                pc.y_advance = 0.0;
+                pc.y_offset = info.atlas.size - h - (h * plane_b.bottom);
+            }
+
+            chars.push(pc);
         }
 
         image = imageops::flip_vertical(&image);
@@ -100,8 +101,6 @@ impl MsdfFont {
         };
 
         Ok(font)
-
-
     }
 
     /// Return the page char if it exists in the font
@@ -180,7 +179,7 @@ struct Kerning {
 }
 
 
-#[derive(Debug, Serialize,Deserialize)]
+#[derive(Default, Copy, Clone, Debug, Serialize,Deserialize)]
 struct PlaneBounds {
     left: f32,
     bottom: f32,
