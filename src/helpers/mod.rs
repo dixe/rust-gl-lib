@@ -72,7 +72,7 @@ pub fn setup_sdl() -> Result<BasicSetup, SetupError> {
 
     // Create a window that opengl can draw to
     let width = 1200;
-    let height = 700;
+    let height = 800;
 
     let viewport = gl::viewport::Viewport::for_window(width as i32, height as i32);
 

@@ -17,13 +17,21 @@ use crate::color::Color;
 pub struct Drawer2D<'a> {
     pub gl: &'a gl::Gl,
     pub tr: &'a mut TextRenderer,
-    pub viewport: &'a viewport::Viewport,
+    pub viewport: viewport::Viewport,
     pub render_square: &'a square::Square,
     pub rounded_rect_shader: &'a RoundedRectShader,
     pub circle_shader: &'a CircleShader,
 }
 
 impl<'a> Drawer2D<'a> {
+
+    pub fn update_viewport(&mut self, w: i32, h: i32) {
+        self.viewport.w = w;
+        self.viewport.h = h;
+
+        self.viewport.set_used(self.gl);
+
+    }
 
     pub fn rounded_rect(&self, x: i32, y: i32, w: i32, h: i32) {
         self.rounded_rect_color(x, y, w, h, Color::Rgb(100, 100, 100));
@@ -43,7 +51,8 @@ impl<'a> Drawer2D<'a> {
             }
         };
 
-        let transform = unit_square_transform_matrix(&geom, self.viewport);
+        let transform = unit_square_transform_matrix(&geom, &self.viewport);
+
 
         self.rounded_rect_shader.set_transform(transform);
 

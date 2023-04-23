@@ -1,5 +1,6 @@
 use crate::gl::*;
 
+#[derive(Copy, Clone, Debug)]
 pub struct Viewport {
     pub x: i32,
     pub y: i32,

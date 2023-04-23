@@ -162,7 +162,7 @@ impl CharQuad {
         // quad coords
         let x_l = x + chr.x_offset * scale_x;
         let x_r = x + chr.width  * scale_x + chr.x_offset * scale_x;
-        let y_t = y  - chr.y_offset * scale_y;
+        let y_t = y - chr.y_offset * scale_y;
         let y_b = y - chr.height  * scale_y  - chr.y_offset * scale_y;
 
         let start_index = buffer_index * ELEMENTS * STRIDE;

@@ -27,11 +27,7 @@ float w2(float sd) {
   float screenPxRange = 2.0;
   float screenPxDistance = screenPxRange * (sd - 0.5);
   return clamp(screenPxDistance + 0.5, 0.0, 1.0);
-
 }
-
-
-
 float w3(float sd) {
   float screenPxRange = 0.5;
   float screenPxDistance = screenPxRange * (sd - 0.5);
@@ -49,7 +45,10 @@ void main()
   float sd = median(s.r, s.g, s.b) - 0.5;
 
   // Weight between inside and outside (anti-aliasing)
-  float w = w1(sd);
+
+  float w = sd/fwidth(sd) + 0.5;
+  w = clamp(w, 0.0, 1.0);
+
   FragColor = vec4(color, w);
 
 }
