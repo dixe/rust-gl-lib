@@ -54,9 +54,21 @@ impl MsdfFont {
 
         let line_height = info.metrics.lineHeight * info.atlas.size;
 
-
-
         let mut chars = vec![];
+
+        // Add newline
+        chars.push(PageChar {
+            id: 10,
+            height: 0.0,
+            width: 0.0,
+            x: 0.0,
+            y: 0.0,
+            x_advance: 0.0,
+            x_offset: 0.0,
+            y_advance: 0.0,
+            y_offset: 0.0,
+
+        });
 
         for g in &info.glyphs {
 
@@ -93,6 +105,7 @@ impl MsdfFont {
             chars.push(pc);
         }
 
+
         image = imageops::flip_vertical(&image);
         let font = MsdfFont {
             image,
@@ -105,7 +118,6 @@ impl MsdfFont {
 
     /// Return the page char if it exists in the font
     pub fn page_char(&self, char_id: u32) -> Option<PageChar> {
-
         for c in &self.chars {
             if c.id == char_id {
                 return Some(*c);

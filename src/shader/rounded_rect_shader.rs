@@ -116,7 +116,6 @@ void main()
 
     vec4 col = u_color;
 
-    // size = aspect - radius, 1.0 - radius
     vec2 size = vec2(pixel_width , pixel_height);
 
     // higher is more blur, and also thicker corners
@@ -125,7 +124,7 @@ void main()
 
     float alpha =  (1.0 - smoothstep(0.0, 1.0, dist));
 
-    col.w = alpha;
+    col.w = 1.0;
 
     FragColor = col;
 }";

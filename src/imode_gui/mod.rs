@@ -25,7 +25,7 @@ pub type Id = u64;
 
 pub struct Ui<'a> {
     pub drawer2D: Drawer2D<'a>,
-    mouse_pos: Pos,
+    pub mouse_pos: Pos,
     next_id: u64,
     mouse_down: bool,
     mouse_up: bool,
@@ -35,7 +35,8 @@ pub struct Ui<'a> {
     hot: Option<Id>,
     /// Persisted between frames
     active: Option<Id>,
-    draw_offset: Pos
+    draw_offset: Pos,
+    max_y_offset: i32,
 
 }
 
@@ -57,7 +58,8 @@ impl<'a> Ui<'a> {
             next_id: 0,
             mouse_down: false,
             mouse_up: false,
-            draw_offset: Pos {x: 0, y: 0}
+            draw_offset: Pos {x: 0, y: 0},
+            max_y_offset: 0
         }
 
     }
@@ -100,13 +102,21 @@ impl<'a> Ui<'a> {
         // TODO: Figure out good way to handle spacing/margin
         // TODO: Handle vertical and horizontal and overflow
         rect.x += self.draw_offset.x;
+        rect.y += self.draw_offset.y;
+
 
 
         self.draw_offset.x = rect.x + rect.w + 5;
-        self.draw_offset.y = rect.y + rect.w + 5;
+        self.max_y_offset = i32::max(self.max_y_offset, rect.y + rect.h);
 
         // TODO:
         rect
+
+    }
+
+    pub fn newline(&mut self) {
+        self.draw_offset.x = 0;
+        self.draw_offset.y = self.max_y_offset;
 
     }
 
@@ -119,6 +129,7 @@ impl<'a> Ui<'a> {
         self.next_id = 0;
         self.hot = None;
         self.draw_offset = Pos{ x: 0, y: 0 };
+        self.max_y_offset = 0;
 
 
         use event::Event::*;

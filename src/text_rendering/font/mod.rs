@@ -31,6 +31,13 @@ impl Font {
         }
     }
 
+    pub fn default_page_char(&self) -> PageChar {
+        match self {
+            Font::Sdf(sdf) => panic!("No default set for sdf font"),
+            Font::Msdf(msdf) => msdf.chars[0]
+        }
+    }
+
     /// Return the kerning between a left and a right char. Defaults to 0.0
     pub fn kerning(&self, left: u32, right: u32) -> f32 {
          match self {

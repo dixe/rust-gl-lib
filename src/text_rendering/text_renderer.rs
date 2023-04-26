@@ -84,7 +84,6 @@ impl TextRenderer {
     }
 
 
-
     /// user this to get size info on how a text will be rendered. Can be used in layout phase, to get side of
     /// fx a text box
     pub fn render_box(font: &Font, text: &str, max_width: f32, input_scale: f32) -> TextRenderBox {
@@ -106,7 +105,9 @@ impl TextRenderer {
                 None => {
                     // TODO: maybe in release just use unicode replacement char instead of panic
                     // TODO: Also maybe replace \t with a space, so we can render tabs
-                    panic!("No char with code '{}' ({}) found in font", c, c as u32)
+                    // panic!("No char with code '{}' ({}) found in font", c, c as u32)
+                    font.default_page_char()
+
                 }
             };
 

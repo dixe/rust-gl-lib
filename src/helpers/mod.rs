@@ -68,8 +68,6 @@ pub fn setup_sdl() -> Result<BasicSetup, SetupError> {
     gl_attr.set_multisample_samples(4);
 
 
-
-
     // Create a window that opengl can draw to
     let width = 1200;
     let height = 800;

@@ -16,8 +16,7 @@ pub struct Square {
 
 impl Square {
 
-    pub fn new(gl: &gl::Gl) -> Square {
-
+    pub fn new(gl: &gl::Gl) -> Self {
 
         let vertices: [f32; 2 * 4] = [
             // positions
@@ -68,7 +67,7 @@ impl Square {
         vbo.unbind();
         vao.unbind();
 
-        Square {
+        Self {
             vao,
             vbo,
             _ebo: ebo,

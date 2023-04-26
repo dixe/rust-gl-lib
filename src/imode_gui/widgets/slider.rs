@@ -12,7 +12,7 @@ impl<'a> Ui<'a> {
         let mut res = false;
 
         let mut rect = Rect {
-            x: 00, y: 00, w:100, h: 20
+            x: 10, y: 10, w:100, h: 20
         };
 
         rect = self.layout_rect(rect);
