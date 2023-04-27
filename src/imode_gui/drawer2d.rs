@@ -41,11 +41,20 @@ impl<'a> Drawer2D<'a> {
         let v = Vector2::<f32>::new(x as f32, y as f32) - Vector2::<f32>::new(x1 as f32, y1 as f32);
 
 
-        let mut angle = std::f32::consts::PI;
+        let mut angle = -std::f32::consts::PI / 2.0;
 
         if v.x != 0.0 {
             angle = -f32::atan(v.y / v.x);
+            if v.y *v.x <= 0.0 {
+                angle -= std::f32::consts::PI;
+            }
+        } else {
+            if v.y < 0.0 {
+                //angle += -std::f32::consts::PI;
+            }
         }
+
+
 
         self.rounded_rect_shader.shader.set_used();
 
