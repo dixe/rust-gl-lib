@@ -1,10 +1,10 @@
 use failure;
 use gl_lib::widget_gui::*;
-use gl_lib::text_rendering::text_renderer::TextRenderer;
+
 use gl_lib::widget_gui::widgets::*;
-use gl_lib::{gl, ScreenBox};
+use gl_lib::{gl};
 use gl_lib::widget_gui::event_handling::{dispatch_event};
-use sdl2::event;
+
 use gl_lib::helpers;
 
 
@@ -26,7 +26,7 @@ fn main() -> Result<(), failure::Error> {
     let mut widget_setup = helpers::setup_widgets(gl)?;
 
 
-    let mut render_ctx = render::RenderContext {
+    let _render_ctx = render::RenderContext {
         gl: gl,
         viewport: &viewport,
         tr: &mut widget_setup.text_renderer,

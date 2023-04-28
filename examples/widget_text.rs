@@ -1,17 +1,17 @@
-use gl_lib::{gl, objects::square, shader};
+use gl_lib::{gl, shader};
 use failure;
 use gl_lib::widget_gui::*;
-use gl_lib::text_rendering::{text_renderer::TextRenderer, font::Font};
+
 use gl_lib::widget_gui::widgets::{RowWidget, TextWidget};
 use gl_lib::helpers;
-use std::path::Path;
+
 
 fn main() -> Result<(), failure::Error> {
 
 
-    let mut sdl_setup = helpers::setup_sdl()?;
+    let sdl_setup = helpers::setup_sdl()?;
     let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
+    let _sdl = sdl_setup.sdl;
     let viewport = sdl_setup.viewport;
     let gl = &sdl_setup.gl;
 

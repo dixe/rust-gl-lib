@@ -1,7 +1,7 @@
 use std::ops;
 use std::collections::{VecDeque, HashMap};
 use std::any::Any;
-use crate::text_rendering::font::{Font, SdfFont};
+use crate::text_rendering::font::{Font};
 use sdl2::event;
 use std::fmt;
 use crate::widget_gui::event_handling::dispatch_event;
@@ -559,7 +559,7 @@ impl<T>  Ui<T> {
             // get window, and then widget name
             if let Some(window) = self.windows.get_mut(&named_input.to_window_name) {
                 if let Some(widget_id) = window.named_widgets.get_mut(&named_input.to_widget_name) {
-                    let mut widget = &mut window.ui_state.widgets[*widget_id];
+                    let widget = &mut window.ui_state.widgets[*widget_id];
                     println!("{:?}", named_input.input);
                     widget.handle_widget_input(named_input.input);
                 }

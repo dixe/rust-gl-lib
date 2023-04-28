@@ -1,18 +1,18 @@
 use serde::{Serialize, Deserialize};
 use serde_json::Result;
-use std::path::Path;
-use std::fs;
-use std::error::Error;
-use std::str::{FromStr};
-use std::fmt;
-use itertools::Itertools;
-use image::io::Reader as ImageReader;
+
+
+
+
+
+
+
 use image::imageops;
-use crate::shader::{BaseShader,Shader};
+use crate::shader::{BaseShader};
 use crate::gl;
 
 use super::*;
-use crate::na;
+
 
 #[derive(Debug)]
 pub struct MsdfFont {
@@ -127,7 +127,7 @@ impl MsdfFont {
         None
     }
 
-    pub fn kerning(&self, left: u32, right: u32) -> f32 {
+    pub fn kerning(&self, _left: u32, _right: u32) -> f32 {
         0.0
     }
 

@@ -1,5 +1,5 @@
 //! Signed distance field fonts
-use crate::shader::{BaseShader,Shader};
+use crate::shader::{BaseShader};
 use std::path::Path;
 use std::fs;
 use std::error::Error;
@@ -88,7 +88,7 @@ impl SdfFont {
 
         let info_lines: Vec::<&str> = lines.take_while_ref(|l| !l.starts_with("page ")).collect();
 
-        let info: FontInfo = info_lines.join(" ").parse()?;
+        let _info: FontInfo = info_lines.join(" ").parse()?;
 
         // The rest is page. Maybe assuming single page is an error;
         let page: Page = lines.collect::<Vec<&str>>().join("\n").parse()?;

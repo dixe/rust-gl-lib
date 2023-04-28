@@ -1,6 +1,6 @@
 mod sdf_font;
 pub use self::sdf_font::*;
-use crate::shader::{BaseShader,Shader};
+use crate::shader::{BaseShader};
 use crate::gl;
 
 
@@ -33,7 +33,7 @@ impl Font {
 
     pub fn default_page_char(&self) -> PageChar {
         match self {
-            Font::Sdf(sdf) => panic!("No default set for sdf font"),
+            Font::Sdf(_sdf) => panic!("No default set for sdf font"),
             Font::Msdf(msdf) => msdf.chars[0]
         }
     }

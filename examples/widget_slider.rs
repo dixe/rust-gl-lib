@@ -1,16 +1,16 @@
-use gl_lib::{gl, ScreenBox};
+use gl_lib::{gl};
 use failure;
 use gl_lib::widget_gui::*;
-use gl_lib::text_rendering::text_renderer::{TextRenderer, TextAlignment};
+use gl_lib::text_rendering::text_renderer::{TextRenderer};
 use gl_lib::widget_gui::widgets::*;
-use gl_lib::widget_gui::event_handling::{dispatch_event};
+
 use sdl2::event;
 use gl_lib::helpers;
 use gl_lib::shader::BaseShader;
 use std::fs;
 use lipsum::lipsum;
-use std::collections::{VecDeque, HashMap};
-use std::any::Any;
+
+
 
 
 static mut lipsum_text : Option<String> = None;
@@ -47,7 +47,7 @@ fn main() -> Result<(), failure::Error> {
 
     add_slider_pannel(&mut ui, BoxContraint::new(viewport.w / 2, viewport.h), Position{ x:0, y: 0});
 
-    let root_box = BoxContraint::new(viewport.w, viewport.h);
+    let _root_box = BoxContraint::new(viewport.w, viewport.h);
 
     ui.layout_all();
 
@@ -117,7 +117,7 @@ fn main() -> Result<(), failure::Error> {
 
         ui.render(&mut render_ctx);
 
-        let slider_scale = ui_info.slider_ref as f32;
+        let _slider_scale = ui_info.slider_ref as f32;
 
         // Render text that outside ui, is affected by out ui_info.slider_ref, that our slider also controlls
         //render_ctx.tr.render_text(render_ctx.gl, &format!("Hello {:.2}", slider_scale) , TextAlignment::default(), ScreenBox::new(0.0, 0.0, 1200.0, 700.0, 1200.0, 700.0), slider_scale);

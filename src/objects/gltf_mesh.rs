@@ -1,7 +1,7 @@
 use crate::na;
 use crate::gl;
 use crate::objects::mesh::Mesh;
-use crate::animations::skeleton::{load_skins, Skins};
+use crate::animations::skeleton::{load_skins};
 use std::collections::HashMap;
 
 

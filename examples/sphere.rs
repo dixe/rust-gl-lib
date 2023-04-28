@@ -71,7 +71,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut angle = 0.0;
 
-    let mut line = false;
+    let line = false;
     let mut r = 1.0;
 
 

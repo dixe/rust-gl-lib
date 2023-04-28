@@ -201,7 +201,7 @@ impl TextRenderer {
 
         // for 1: offset with length of text - screen_box heigh
 
-        let scroll = 0.5;
+        let _scroll = 0.5;
         //let offset = dbg!(render_box.total_height * scroll - screen_box.screen_h);
         // map from pixel space into screen space so we are ready to draw
         for info in chars_info.iter_mut() {

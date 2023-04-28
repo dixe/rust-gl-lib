@@ -115,7 +115,7 @@ fn reload_text_shader(gl: &gl::Gl, widget_setup: &mut helpers::WidgetSetup) {
 }
 
 
-fn handle_widget_outputs(ui_info: &mut UiInfo, event: WidgetOutput, widget_input_queue: &mut WidgetInputQueue, r_ctx: &mut render::RenderContext) {
+fn handle_widget_outputs(ui_info: &mut UiInfo, event: WidgetOutput, _widget_input_queue: &mut WidgetInputQueue, _r_ctx: &mut render::RenderContext) {
     if event.widget_id == ui_info.checkbox_id {
         if let Some(checked) = event.event.downcast_ref::<bool>(){
             ui_info.checked = *checked;

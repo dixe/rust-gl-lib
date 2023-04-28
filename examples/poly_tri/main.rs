@@ -79,7 +79,7 @@ fn main() -> Result<(), failure::Error> {
     };
 
     let size = width as usize * height as usize * 4;
-    let screenshot_buffer: Vec<u8> = vec![0; size];
+    let _screenshot_buffer: Vec<u8> = vec![0; size];
     while !window.should_quit() {
 
         model.mode.render(&render_info);
