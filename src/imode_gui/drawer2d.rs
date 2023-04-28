@@ -43,14 +43,18 @@ impl<'a> Drawer2D<'a> {
 
         let mut angle = -std::f32::consts::PI / 2.0;
 
-        if v.x != 0.0 {
+        if v.x == 0.0 || v.y == 0.0 {
+            if v.x == 0.0 { // angle is 90 or -90 (270) degrees
+                angle = if y < y1 { -std::f32::consts::PI / 2.0 } else { -std::f32::consts::PI * 3.0/4.0};
+            }
+            else { // angle is 0 og 180
+                angle = if x < x1 { 0.0 } else { std::f32::consts::PI};
+            }
+        }
+        else  {
             angle = -f32::atan(v.y / v.x);
             if v.y *v.x <= 0.0 {
                 angle -= std::f32::consts::PI;
-            }
-        } else {
-            if v.y < 0.0 {
-                //angle += -std::f32::consts::PI;
             }
         }
 
