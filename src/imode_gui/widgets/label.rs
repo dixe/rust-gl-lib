@@ -1,12 +1,13 @@
 use super::*;
 
-impl<'a> Ui<'a> {
+impl Ui {
     pub fn label(&mut self, text: &str)
     {
-        let scale = 0.7;
+
+        let scale = self.style.text_styles.body.text_scale;
         let rb = self.drawer2D.text_render_box(text, scale);
 
-        let mut rect = Rect { x: 10, y: 10, w: rb.total_width as i32, h: rb.total_height as i32 };
+        let mut rect = Rect { x: 0, y: 0, w: rb.total_width as i32, h: rb.total_height as i32 };
 
         rect = self.layout_rect(rect);
 

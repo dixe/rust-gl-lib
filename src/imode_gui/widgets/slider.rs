@@ -2,7 +2,7 @@ use super::*;
 use crate::imode_gui::numeric::Numeric;
 use core::ops::Range;
 
-impl<'a> Ui<'a> {
+impl Ui {
 
     pub fn slider<T>(&mut self, item: &mut T, min: T, max: T) where T : Numeric {
 

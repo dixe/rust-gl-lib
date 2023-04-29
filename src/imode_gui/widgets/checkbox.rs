@@ -1,11 +1,11 @@
 use super::*;
 
-impl<'a> Ui<'a> {
+impl Ui {
     pub fn checkbox(&mut self, val: &mut bool) {
         let id = self.next_id();
 
         let mut rect = Rect {
-            x: 10, y: 10, w: 20, h: 20
+            x: 0 , y: 0 , w: 20, h: 20
         };
 
         rect = self.layout_rect(rect);

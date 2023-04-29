@@ -1,3 +1,4 @@
+#![allow(for_loops_over_fallibles)]
 use crate::na;
 use crate::animations::skeleton::*;
 use std::collections::{HashMap, HashSet};

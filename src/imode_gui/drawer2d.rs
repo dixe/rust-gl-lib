@@ -5,36 +5,63 @@ use crate::widget_gui::layout::Size;
 use crate::text_rendering::text_renderer::{TextRenderer, TextRenderBox};
 use crate::{gl::{self, viewport}, ScreenBox, ScreenCoords};
 use crate::text_rendering::text_renderer::{TextAlignment, TextAlignmentX,TextAlignmentY};
-use crate::shader::{ TransformationShader, rounded_rect_shader::{self as rrs, RoundedRectShader}, circle_shader::{self as cs, CircleShader}};
-use crate::objects::square;
+use crate::shader::{ Shader, TransformationShader, rounded_rect_shader::{self as rrs, RoundedRectShader}, circle_shader::{self as cs, CircleShader}};
+use crate::objects::{square, color_square};
 use crate::color::Color;
+use crate::helpers::SetupError;
+use crate::text_rendering::font::Font;
 
-
-
-
-pub struct Drawer2D<'a> {
-    pub gl: &'a gl::Gl,
-    pub tr: &'a mut TextRenderer,
+pub struct Drawer2D {
+    pub gl: gl::Gl,
+    pub tr: TextRenderer,
     pub viewport: viewport::Viewport,
-    pub render_square: &'a square::Square,
-    pub rounded_rect_shader: &'a RoundedRectShader,
-    pub circle_shader: &'a CircleShader,
+    pub square: square::Square,
+    pub color_square: color_square::ColorSquare,
+    pub rounded_rect_shader: RoundedRectShader,
+    pub color_square_shader: Box::<Shader>,
+    pub color_square_h_line_shader: Box::<Shader>,
+    pub circle_shader: CircleShader,
 }
 
-impl<'a> Drawer2D<'a> {
+impl Drawer2D {
+
+    pub fn new(gl: &gl::Gl, viewport: viewport::Viewport) -> Result<Self, SetupError> {
+
+        let inner_font = Default::default();
+        let font = Font::Msdf(inner_font);
+        let text_renderer = TextRenderer::new(gl, font);
+        text_renderer.setup_blend(gl);
+        let rrs = RoundedRectShader::new(gl)?;
+        let cs = CircleShader::new(gl)?;
+        let color_square_shader = Box::new(color_square::ColorSquare::default_shader(&gl)?);
+
+        let color_square_h_line_shader = Box::new(color_square::ColorSquare::h_line_shader(&gl)?);
+
+        let square = square::Square::new(gl);
+        let color_square = color_square::ColorSquare::new(gl);
+
+        Ok(Self {
+            gl: (*gl).clone(),
+            tr: text_renderer,
+            viewport,
+            rounded_rect_shader: rrs,
+            square,
+            circle_shader: cs,
+            color_square_shader,
+            color_square,
+            color_square_h_line_shader
+        })
+
+
+    }
 
     pub fn update_viewport(&mut self, w: i32, h: i32) {
         self.viewport.w = w;
         self.viewport.h = h;
 
-        self.viewport.set_used(self.gl);
+        self.viewport.set_used(&self.gl);
 
     }
-
-    pub fn rounded_rect(&self, x: i32, y: i32, w: i32, h: i32) {
-        self.rounded_rect_color(x, y, w, h, Color::Rgb(100, 100, 100));
-    }
-
 
     pub fn line(&self, x: i32, y: i32, x1: i32, y1: i32, thickness: i32) {
 
@@ -58,8 +85,6 @@ impl<'a> Drawer2D<'a> {
             }
         }
 
-
-
         self.rounded_rect_shader.shader.set_used();
 
         let l = v.magnitude();
@@ -77,9 +102,78 @@ impl<'a> Drawer2D<'a> {
                                                               radius: 0.0
         });
 
-        self.render_square.render(self.gl);
+        self.square.render(&self.gl);
     }
 
+    pub fn color_square(&self, x: i32, y: i32, w: i32, h: i32) {
+
+        self.color_square_shader.set_used();
+
+        let geom = Geometry {
+            pos: Position { x, y },
+            size: Size {
+                pixel_w: w,
+                pixel_h: h
+            }
+        };
+
+
+        let transform = unit_square_transform_matrix(&geom, &self.viewport);
+        self.color_square_shader.set_mat4(&self.gl, "transform", transform);
+
+        self.color_square.render(&self.gl);
+    }
+
+    pub fn circle(&self, center_x: i32, center_y: i32, r: i32) {
+        self.circle_shader.shader.set_used();
+
+        let geom = Geometry {
+            pos: Position { x: center_x, y: center_y },
+            size: Size {
+                pixel_w: r,
+                pixel_h: r
+            }
+        };
+
+        let transform = unit_square_transform_matrix(&geom, &self.viewport);
+
+        self.circle_shader.set_transform(transform);
+
+        let color_scale = 0.0;
+        self.circle_shader.set_uniforms(cs::Uniforms { color_scale,
+                                                      pixel_height: geom.size.pixel_h as f32,
+                                                      pixel_width: geom.size.pixel_w as f32,
+                                                      radius: r as f32
+        });
+
+
+        self.square.render(&self.gl);
+    }
+
+    pub fn rounded_rect(&self, x: i32, y: i32, w: i32, h: i32) {
+        self.rounded_rect_color(x, y, w, h, Color::Rgb(100, 100, 100));
+    }
+
+
+    pub fn hsv_h_line(&self, x: i32, y: i32, w: i32, h: i32) {
+        self.color_square_h_line_shader.set_used();
+
+        let geom = Geometry {
+            pos: Position { x, y },
+            size: Size {
+                pixel_w: w,
+                pixel_h: h
+
+            }
+        };
+
+        let transform = unit_square_transform_matrix(&geom, &self.viewport);
+
+        self.color_square_h_line_shader.set_mat4(&self.gl, "transform", transform);
+
+        self.square.render(&self.gl);
+
+    }
 
     pub fn rounded_rect_color(&self, x: i32, y: i32, w: i32, h: i32, color: Color) {
 
@@ -106,7 +200,7 @@ impl<'a> Drawer2D<'a> {
                                                              radius: 0.0
         });
 
-        self.render_square.render(self.gl);
+        self.square.render(&self.gl);
     }
 
 
@@ -131,7 +225,7 @@ impl<'a> Drawer2D<'a> {
             y: TextAlignmentY::Top
         };
 
-        self.tr.render_text(self.gl, text, alignment, sb, 1.0);
+        self.tr.render_text(&self.gl, text, alignment, sb, 1.0);
     }
 
     pub fn render_text_scaled(&mut self, text: &str, x: i32, y: i32, scale:  f32) {
@@ -151,7 +245,7 @@ impl<'a> Drawer2D<'a> {
             y: TextAlignmentY::Top
         };
 
-        self.tr.render_text(self.gl, text, alignment, sb, scale);
+        self.tr.render_text(&self.gl, text, alignment, sb, scale);
     }
 }
 

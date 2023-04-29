@@ -7,6 +7,8 @@
 
 pub mod square;
 
+pub mod color_square;
+
 pub mod cube;
 
 pub mod sphere;

@@ -1,16 +1,9 @@
+#![allow(non_snake_case)]
 use serde::{Serialize, Deserialize};
 use serde_json::Result;
-
-
-
-
-
-
-
 use image::imageops;
 use crate::shader::{BaseShader};
 use crate::gl;
-
 use super::*;
 
 
@@ -154,21 +147,27 @@ struct FontInfo {
 struct Atlas {
     #[serde(alias = "type")]
     type_: String,
+    #[allow(non_snake_case)]
     distanceRange: i32,
     size: f32,
     width: u32,
     height: u32,
+    #[allow(non_snake_case)]
     yOrigin: String
 }
 
 
 #[derive(Debug, Serialize,Deserialize)]
 struct Metrics {
+    #[allow(non_snake_case)]
     emSize: u32,
+    #[allow(non_snake_case)]
     lineHeight: f32,
     ascender: f32,
     descender: f32,
+    #[allow(non_snake_case)]
     underlineY: f32,
+    #[allow(non_snake_case)]
     underlineThickness: f32
 }
 

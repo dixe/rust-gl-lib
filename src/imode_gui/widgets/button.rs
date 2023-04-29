@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'a> Ui<'a> {
+impl Ui{
     pub fn button(&mut self, text: &str) -> bool {
 
         // figure out button layout
@@ -9,10 +9,21 @@ impl<'a> Ui<'a> {
         let id = self.next_id();
         let mut res = false;
 
-        let scale = 0.6;
+        let scale = self.style.text_styles.button.text_scale;
         let rb = self.drawer2D.text_render_box(text, scale);
+
+
+        let pad_r = self.style.padding.right;
+        let pad_l = self.style.padding.left;
+        let pad_b = self.style.padding.bottom;
+        let pad_t = self.style.padding.top;
+
+        // border box, with space for padding for text content
         let mut rect = Rect {
-            x: 10, y: 10, w: rb.total_width  as i32 + 3, h: rb.total_height as i32
+            x: 0,
+            y: 0,
+            w: rb.total_width as i32 + pad_l + pad_r,
+            h: rb.total_height as i32  + pad_t + pad_b
         };
 
 
@@ -43,14 +54,14 @@ impl<'a> Ui<'a> {
 
         // draw button
 
-        let mut color = Color::Rgb(109, 156, 116);
-        let mut text_color = Color::Rgb(0,0,0);
+        let mut color = self.style.button.color;
+        let mut text_color = self.style.button.text_color;
         if self.is_hot(id) {
-            color = Color::Rgb(111, 135, 114);
+            color = self.style.button.hover_color;
         }
 
         if self.is_active(id) {
-            color = Color::Rgb(114, 214, 126);
+            color = self.style.button.active_color;
         }
 
         let x_off = if self.is_active(id) {0} else {0};
@@ -60,10 +71,9 @@ impl<'a> Ui<'a> {
             self.drawer2D.rounded_rect_color(rect.x - 1, rect.y - 1 , rect.w + 2, rect.h + 2, Color::Rgb(0,0,0));
         }
 
-
         self.drawer2D.rounded_rect_color(rect.x + x_off , rect.y + y_off, rect.w, rect.h, color);
 
-        self.drawer2D.render_text_scaled(text, rect.x, rect.y, scale);
+        self.drawer2D.render_text_scaled(text, rect.x + pad_l, rect.y + pad_t, scale);
 
         // done
 

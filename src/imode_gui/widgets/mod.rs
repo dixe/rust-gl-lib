@@ -11,3 +11,6 @@ pub use checkbox::*;
 
 mod label;
 pub use label::*;
+
+mod color_picker;
+pub use color_picker::*;

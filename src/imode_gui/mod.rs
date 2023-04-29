@@ -20,7 +20,9 @@ pub mod widgets;
 
 pub mod numeric;
 
-#[derive(Debug, Copy, Clone)]
+pub mod style;
+
+#[derive(Debug, Copy, Clone, Default)]
 pub struct Pos {
     x: i32,
     y: i32
@@ -29,6 +31,7 @@ pub struct Pos {
 
 pub type Id = u64;
 
+#[derive(Debug, Copy, Clone)]
 pub struct Rect {
     x: i32,
     y: i32,
