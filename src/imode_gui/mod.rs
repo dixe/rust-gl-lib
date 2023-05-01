@@ -24,8 +24,8 @@ pub mod style;
 
 #[derive(Debug, Copy, Clone, Default)]
 pub struct Pos {
-    x: i32,
-    y: i32
+    pub x: i32,
+    pub y: i32
 }
 
 
@@ -33,8 +33,8 @@ pub type Id = u64;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Rect {
-    x: i32,
-    y: i32,
-    w: i32,
-    h: i32
+    pub x: i32,
+    pub y: i32,
+    pub w: i32,
+    pub h: i32
 }

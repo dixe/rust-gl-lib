@@ -24,6 +24,7 @@ impl_numeric!(u8);
 impl_numeric!(u16);
 impl_numeric!(u32);
 impl_numeric!(u64);
+impl_numeric!(usize);
 
 
 impl_numeric!(i8);

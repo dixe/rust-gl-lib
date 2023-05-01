@@ -54,8 +54,13 @@ impl Ui {
         self.ctx_fn(|ctx| ctx.set_active(id))
     }
 
-    pub fn set_not_active(&mut self) {
-        self.ctx_fn(|ctx| ctx.set_not_active())
+    pub fn set_not_active(&mut self, ) {
+
+        // set not active
+        if let Some(id) = self.ctx_fn(|ctx| ctx.set_not_active()) {
+            // remove any containers that the widget had open
+            self.remove_container_context(id);
+        }
     }
 
     pub fn next_id(&mut self) -> u64 {
@@ -91,11 +96,16 @@ impl Ui {
         self.container_contexts.remove(&id);
     }
 
-    pub fn set_active_context(&mut self, id: Id, container rect with width and offset x,y as most important ) {
+    pub fn set_active_context(&mut self, id: Id, rect: Rect) {
         let cur = self.active_context;
         self.active_context = Some(id);
         if !self.container_contexts.contains_key(&id) {
             let mut ctx : ContainerContext = Default::default();
+
+            ctx.anchor_pos.x = rect.x;
+            ctx.anchor_pos.y = rect.y;
+            ctx.width = rect.w;
+
             ctx.prev_active_context = cur;
             self.container_contexts.insert(id, ctx);
         }
@@ -151,7 +161,7 @@ fn clear_context(ctx: &mut ContainerContext) {
     ctx.next_id = 0;
     ctx.hot = None;
 
-    ctx.draw_offset = Pos{ x: 0, y: 0 };
+    ctx.draw_offset = Pos {x: 0, y: 0};
     ctx.max_y_offset = 0;
 
 }
@@ -169,6 +179,8 @@ pub struct ContainerContext {
     pub next_id: u64,
 
     pub prev_active_context: Option<Id>,
+
+    pub anchor_pos: Pos,
 
     pub draw_offset: Pos,
     pub max_y_offset: i32,
@@ -196,8 +208,10 @@ impl ContainerContext {
         self.active = Some(id)
     }
 
-    pub fn set_not_active(&mut self) {
-        self.active = None
+    pub fn set_not_active(&mut self) -> Option<Id> {
+        let cur = self.active;
+        self.active = None;
+        cur
     }
 
     pub fn next_id(&mut self) -> u64 {
@@ -221,6 +235,9 @@ impl ContainerContext {
 
         self.draw_offset.x = rect.x + rect.w;
         self.max_y_offset = i32::max(self.max_y_offset, rect.y + rect.h);
+
+        rect.x += self.anchor_pos.x;
+        rect.y += self.anchor_pos.y;
 
         rect
 

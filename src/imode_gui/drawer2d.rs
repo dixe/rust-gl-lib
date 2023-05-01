@@ -65,9 +65,10 @@ impl Drawer2D {
 
     pub fn line(&self, x: i32, y: i32, x1: i32, y1: i32, thickness: i32) {
 
-        let v = Vector2::<f32>::new(x as f32, y as f32) - Vector2::<f32>::new(x1 as f32, y1 as f32);
+        let mut v = Vector2::<f32>::new(x1 as f32, y1 as f32) - Vector2::<f32>::new(x as f32, y as f32);
 
-
+        //since we use sdl where y is flipped, multiply the v.y with -1..0s ince
+        v.y *= -1.0;
         let mut angle = -std::f32::consts::PI / 2.0;
 
         if v.x == 0.0 || v.y == 0.0 {
@@ -79,10 +80,8 @@ impl Drawer2D {
             }
         }
         else  {
-            angle = -f32::atan(v.y / v.x);
-            if v.y *v.x <= 0.0 {
-                angle -= std::f32::consts::PI;
-            }
+            angle = f32::atan2(v.y, v.x);
+
         }
 
         self.rounded_rect_shader.shader.set_used();
@@ -128,7 +127,7 @@ impl Drawer2D {
         self.circle_shader.shader.set_used();
 
         let geom = Geometry {
-            pos: Position { x: center_x, y: center_y },
+            pos: Position { x: center_x - r/2, y: center_y - r/2 },
             size: Size {
                 pixel_w: r,
                 pixel_h: r

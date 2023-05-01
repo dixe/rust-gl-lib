@@ -7,25 +7,21 @@ impl Ui{
 
         let id = self.next_id();
 
-
-
         if self.is_active(id) {
 
             let mut rect = Rect {
                 x: 0,
                 y: 0,
-                w: 200,
-                h: 230
+                w: 200 + self.style.padding.x(),
+                h: 230 + self.style.padding.y() * 2
             };
 
             rect = self.layout_rect(rect);
 
             // draw a background for our colorpicker
-            self.drawer2D.rounded_rect_color(rect.x, rect.y, rect.w, rect.h, Color::Rgb(30, 30, 30));
+            self.drawer2D.rounded_rect_color(rect.x, rect.y, rect.w, rect.h, Color::Rgb(162, 179, 171));
 
-            rect = self.layout_rect(rect);
-
-            self.set_active_context(id);
+            self.set_active_context(id, rect);
 
             self.color_square(color);
 
@@ -125,7 +121,7 @@ impl Ui{
             x: 0,
             y: 0,
             w: 200,
-            h: 200
+            h: 200,
         };
 
         rect = self.layout_rect(rect);

@@ -14,3 +14,6 @@ pub use label::*;
 
 mod color_picker;
 pub use color_picker::*;
+
+mod drag_point;
+pub use drag_point::*;

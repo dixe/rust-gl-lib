@@ -75,6 +75,14 @@ impl Padding {
         self.top = val;
         self.bottom = val;
     }
+
+    pub fn x(&self) -> i32 {
+        self.left + self.right
+    }
+
+    pub fn y(&self) -> i32 {
+        self.top + self.bottom
+    }
 }
 
 
