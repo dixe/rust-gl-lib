@@ -17,9 +17,9 @@ uniform float color_scale;
 
 
 
-float center_dist(vec2 p, float radius)
+float circle(vec2 p, float radius)
 {
-  return radius - length(p);
+  return length(p) - radius;
 }
 
 void main()
@@ -36,9 +36,7 @@ void main()
   vec3 col = vec3(.8, 0.8, .8) * color_scale;
   vec2 uv = vec2(screen_x, screen_y);
 
-
-  // higher is more blur, and also thicker corners
-  float dist = length(uv) - radius;
+  float dist = circle(uv, radius);
 
   float alpha = (1.0 - smoothstep(0.0, 1.0, dist));
 

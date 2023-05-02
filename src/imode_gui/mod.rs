@@ -38,3 +38,10 @@ pub struct Rect {
     pub w: i32,
     pub h: i32
 }
+
+#[derive(Debug, Copy, Clone)]
+pub enum WidgetStatus {
+    Inactive,
+    Hot,
+    Active
+}

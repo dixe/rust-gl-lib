@@ -50,6 +50,13 @@ fn main() -> Result<(), failure::Error> {
         ui.label("Draw all lines");
         ui.checkbox(&mut curve.draw_all);
 
+        if ui.button("New point") {
+            let mut new_p = curve.points[curve.points.len() -1];
+            new_p.x += 30.0;
+            new_p.y += 30.0;
+            curve.points.push(new_p);
+        }
+
         draw_curve(&mut curve, &mut ui);
 
         window.gl_swap_window();
@@ -58,11 +65,15 @@ fn main() -> Result<(), failure::Error> {
 
 fn draw_curve(curve: &mut Curve, ui: &mut Ui) {
 
+    let mut i =0;
     for p in &mut curve.points {
         let mut pos = Pos {x: p.x as i32, y: p.y as i32 };
-        ui.drag_point(&mut pos);
+
+        ui.drag_point_txt(&mut pos, &format!("{i}"));
+
         p.x = pos.x as f64;
         p.y = pos.y as f64;
+        i += 1;
     }
 
     if curve.points.len() < 2 {

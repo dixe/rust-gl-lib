@@ -127,7 +127,7 @@ impl Drawer2D {
         self.circle_shader.shader.set_used();
 
         let geom = Geometry {
-            pos: Position { x: center_x - r/2, y: center_y - r/2 },
+            pos: Position { x: center_x - r, y: center_y - r },
             size: Size {
                 pixel_w: r * 2,
                 pixel_h: r * 2,
@@ -148,6 +148,7 @@ impl Drawer2D {
 
         self.square.render(&self.gl);
     }
+
 
     pub fn rounded_rect(&self, x: i32, y: i32, w: i32, h: i32) {
         self.rounded_rect_color(x, y, w, h, Color::Rgb(100, 100, 100));
