@@ -7,7 +7,7 @@ impl Ui {
         self.drag_point_no_draw(pos, r);
 
         // Draw
-        self.drawer2D.circle(pos.x, pos.y, r as i32);
+        self.drawer2D.circle(pos.x, pos.y, r as i32,self.style.button.color);
     }
 
     pub fn drag_point_txt(&mut self, pos: &mut Pos, txt: &str) {
@@ -25,7 +25,7 @@ impl Ui {
             WidgetStatus::Active => Color::Rgb(200, 200, 10),
         };
 
-        self.drawer2D.circle(pos.x, pos.y, r as i32);
+        self.drawer2D.circle(pos.x, pos.y, r as i32, color);
 
         self.drawer2D.render_text_scaled(txt, pos.x - (r/2.0) as i32, pos.y - (r/2.0) as i32, scale);
 

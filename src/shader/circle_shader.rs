@@ -24,7 +24,7 @@ impl CircleShader {
 
     pub fn set_uniforms(&self, uni: Uniforms) {
 
-        self.shader.set_f32(&self.gl, "color_scale", uni.color_scale);
+        self.shader.set_vec4(&self.gl, "u_color", uni.color.as_vec4());
 
         self.shader.set_f32(&self.gl, "pixel_height", uni.pixel_height);
 
@@ -36,7 +36,7 @@ impl CircleShader {
 
 #[derive(Clone, Debug, Copy)]
 pub struct Uniforms {
-    pub color_scale: f32,
+    pub color: Color,
     pub pixel_height : f32,
     pub pixel_width: f32,
     pub radius: f32

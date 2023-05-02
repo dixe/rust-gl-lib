@@ -123,7 +123,7 @@ impl Drawer2D {
         self.color_square.render(&self.gl);
     }
 
-    pub fn circle(&self, center_x: i32, center_y: i32, r: i32) {
+    pub fn circle(&self, center_x: i32, center_y: i32, r: i32, color: Color) {
         self.circle_shader.shader.set_used();
 
         let geom = Geometry {
@@ -138,8 +138,8 @@ impl Drawer2D {
 
         self.circle_shader.set_transform(transform);
 
-        let color_scale = 1.0;
-        self.circle_shader.set_uniforms(cs::Uniforms { color_scale,
+
+        self.circle_shader.set_uniforms(cs::Uniforms { color,
                                                       pixel_height: geom.size.pixel_h as f32,
                                                       pixel_width: geom.size.pixel_w as f32,
                                                       radius: r as f32

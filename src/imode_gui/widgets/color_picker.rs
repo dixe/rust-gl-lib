@@ -171,7 +171,7 @@ impl Ui{
 
         let center_x = rect.x as f32 + hsv.y * (rect.w as f32);
         let center_y = rect.y as f32 + (1.0 - hsv.z) * (rect.h as f32);
-        self.drawer2D.circle(center_x as i32, center_y as i32, 6);
+        self.drawer2D.circle(center_x as i32, center_y as i32, 6, Color::Rgb(200, 200, 200));
     }
 }
 
