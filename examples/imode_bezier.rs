@@ -25,13 +25,15 @@ fn main() -> Result<(), failure::Error> {
         samples: 50,
         points: vec! [
             na::Vector2::<f64>::new(50.0, 400.0),
-            na::Vector2::<f64>::new(100.0,  300.0),
-            na::Vector2::<f64>::new(200.0,  200.0),
-
-            na::Vector2::<f64>::new(300.0,  300.0),
-
-        ]
+            na::Vector2::<f64>::new(100.0, 300.0),
+            na::Vector2::<f64>::new(200.0, 200.0),
+            na::Vector2::<f64>::new(300.0, 300.0),
+            na::Vector2::<f64>::new(400.0, 350.0),
+        ],
+        draw_helpers: false,
+        draw_all: false
     };
+
 
     loop {
 
@@ -41,7 +43,12 @@ fn main() -> Result<(), failure::Error> {
         }
         ui.consume_events(&mut event_pump);
 
-        ui.slider(&mut curve.samples, curve.points.len(), 50);
+        ui.slider(&mut curve.samples, 2, 50);
+
+        ui.label("Draw helper lines");
+        ui.checkbox(&mut curve.draw_helpers);
+        ui.label("Draw all lines");
+        ui.checkbox(&mut curve.draw_all);
 
         draw_curve(&mut curve, &mut ui);
 
@@ -68,7 +75,9 @@ fn draw_curve(curve: &mut Curve, ui: &mut Ui) {
 
         let t = (1 + i) as f64 / curve.samples as f64;
 
-        let new_p = calc_point_recursive(t, &curve.points, ui, draw_i == i);
+        let draw = curve.draw_all || (curve.draw_helpers && i == curve.samples/ 2);
+
+        let new_p = calc_point_recursive(t, &curve.points, ui, draw);
 
         ui.drawer2D.line(prev.x as i32, prev.y as i32, new_p.x as i32, new_p.y as i32, 3);
 
@@ -78,32 +87,39 @@ fn draw_curve(curve: &mut Curve, ui: &mut Ui) {
 
 fn calc_point_recursive(t: f64, points: &Vec::<na::Vector2::<f64>>, ui: &mut Ui, draw: bool) -> na::Vector2::<f64> {
 
-    let mut stack = VecDeque::new();
+    let mut ps = vec![];
 
     // setup
     for i in 0..points.len() {
-        stack.push_back(points[i]);        
+        ps.push(points[i]);
     }
 
-    let iter_len = stack.len();
+    let mut iter_len = ps.len();
+    let mut start = 0;
 
-    let mut cur = stack.pop_front().unwrap();
-    while let Some(p) = stack.pop_front() {
+    let mut run = true;
 
-        let new_p = lerp(t, cur, p);
+    while iter_len > 0 {
+        for i in start..(start + iter_len - 1) {
+            let p0 = ps[i];
+            let p1 = ps[i + 1];
+            let new_p = lerp(t, p0, p1);
 
-        if draw {
-            ui.drawer2D.line(cur.x as i32, cur.y as i32, p.x as i32, p.y as i32, 1);
-
-            ui.drawer2D.circle(new_p.x as i32, new_p.y as i32, 3);
+            ps.push(new_p);
         }
-
-        stack.push_back(new_p);
-        cur = stack.pop_front().unwrap()
+        start += iter_len;
+        iter_len -= 1;
     }
 
-    cur
+    if draw {
+        for i in 0..(ps.len() - 1) {
+            let p0 = ps[i];
+            let p1 = ps[i + 1];
+            ui.drawer2D.line(p0.x as i32, p0.y as i32, p1.x as i32, p1.y as i32, 2);
+        }
+    }
 
+    ps[ps.len() - 1]
 }
 
 fn lerp(t: f64, p0: na::Vector2::<f64>, p1: na::Vector2::<f64>) -> na::Vector2::<f64> {
@@ -114,4 +130,6 @@ fn lerp(t: f64, p0: na::Vector2::<f64>, p1: na::Vector2::<f64>) -> na::Vector2::
 struct Curve {
     samples: usize,
     points: Vec::<na::Vector2::<f64>>,
+    draw_helpers: bool,
+    draw_all: bool
 }

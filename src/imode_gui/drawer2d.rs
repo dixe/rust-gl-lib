@@ -129,8 +129,8 @@ impl Drawer2D {
         let geom = Geometry {
             pos: Position { x: center_x - r/2, y: center_y - r/2 },
             size: Size {
-                pixel_w: r,
-                pixel_h: r
+                pixel_w: r * 2,
+                pixel_h: r * 2,
             }
         };
 
@@ -138,7 +138,7 @@ impl Drawer2D {
 
         self.circle_shader.set_transform(transform);
 
-        let color_scale = 0.0;
+        let color_scale = 1.0;
         self.circle_shader.set_uniforms(cs::Uniforms { color_scale,
                                                       pixel_height: geom.size.pixel_h as f32,
                                                       pixel_width: geom.size.pixel_w as f32,

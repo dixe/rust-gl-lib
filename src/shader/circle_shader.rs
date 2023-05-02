@@ -48,82 +48,12 @@ impl TransformationShader for CircleShader {
     }
 }
 
-
-
-
-
 /// Creates a basic default shader that takes a mat4 transformation uniform transform
 fn create_shader(gl: &gl::Gl) -> Result<BaseShader, failure::Error> {
 
-    // default program for square
-    let vert_source = r"#version 330 core
-layout (location = 0) in vec3 aPos;
+    let vert_source = include_str!("../../assets/shaders/objects/circle_shader.vert");
 
-uniform mat4 transform;
-
-out VS_OUTPUT {
-    vec2 FragPos;
-    vec2 Pos;
-} OUT;
-
-void main()
-{
-    vec4 pos = transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);
-    OUT.FragPos = aPos.xy;
-    OUT.Pos = aPos.xy;
-    gl_Position = pos;
-
-}";
-
-    let frag_source = r"
-#version 330 core
-
-
-in VS_OUTPUT {
-    vec2 FragPos;
-    vec2 Pos;
-} IN;
-
-out vec4 FragColor;
-
-uniform float pixel_width;
-uniform float pixel_height;
-
-uniform float radius;
-
-uniform float color_scale;
-
-float circle(vec2 p, float radius)
-{
-   return length(p) - radius;
-}
-
-void main()
-{
-
-    // maybe look at https://www.shadertoy.com/view/WtdSDs
-    // or https://iquilezles.org/articles/distfunctions
-
-    // Square is defined with corners in 0.5 and -0.5 on both x and y axis.
-    // multiply by 2 to get -1.0...1.0 range
-    float u = IN.FragPos.x * 2.0 ;
-    float v = IN.FragPos.y * 2.0;
-
-
-    // uv but in screen space.
-    vec2 uv =  vec2(u * pixel_width , v * pixel_height);
-
-    vec3 col = vec3(.8, 0.8, .8) * color_scale;
-
-
-    // higher is more blur, and also thicker corners
-    float dist = circle(uv , radius * 2.0) ;
-
-
-    float alpha =  (1.0 - smoothstep(0.0, 1.0, dist));
-    FragColor = vec4(col, alpha);
-
-}";
+    let frag_source = include_str!("../../assets/shaders/objects/circle_shader.frag");
 
     BaseShader::new(gl, vert_source, frag_source)
 }
