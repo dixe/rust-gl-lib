@@ -10,6 +10,8 @@ use crate::objects::{square, color_square};
 use crate::color::Color;
 use crate::helpers::SetupError;
 use crate::text_rendering::font::Font;
+use crate::imode_gui::numeric::Numeric;
+
 
 pub struct Drawer2D {
     pub gl: gl::Gl,
@@ -63,24 +65,30 @@ impl Drawer2D {
 
     }
 
-    pub fn line(&self, x: i32, y: i32, x1: i32, y1: i32, thickness: i32) {
+    pub fn line<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric>(&self, x_t: T1, y_t: T2, x1_t: T3, y1_t: T4, thickness_t: T5) {
+        let x = x_t.to_f64();
+        let y = y_t.to_f64();
+        let x1 = x1_t.to_f64();
+        let y1 = y1_t.to_f64();
+        let thickness = thickness_t.to_f64();
 
-        let mut v = Vector2::<f32>::new(x1 as f32, y1 as f32) - Vector2::<f32>::new(x as f32, y as f32);
+
+        let mut v = Vector2::<f64>::new(x1.to_f64(), y1.to_f64()) - Vector2::<f64>::new(x.to_f64(), y.to_f64());
 
         //since we use sdl where y is flipped, multiply the v.y with -1..0s ince
         v.y *= -1.0;
-        let mut angle = -std::f32::consts::PI / 2.0;
+        let mut angle = -std::f64::consts::PI / 2.0;
 
         if v.x == 0.0 || v.y == 0.0 {
             if v.x == 0.0 { // angle is 90 or -90 (270) degrees
-                angle = if y < y1 { -std::f32::consts::PI / 2.0 } else { -std::f32::consts::PI * 3.0/4.0};
+                angle = if y < y1 { -std::f64::consts::PI / 2.0 } else { -std::f64::consts::PI * 3.0/4.0};
             }
             else { // angle is 0 og 180
-                angle = if x < x1 { 0.0 } else { std::f32::consts::PI};
+                angle = if x < x1 { 0.0 } else { std::f64::consts::PI};
             }
         }
         else  {
-            angle = f32::atan2(v.y, v.x);
+            angle = f64::atan2(v.y, v.x);
 
         }
 
@@ -88,7 +96,7 @@ impl Drawer2D {
 
         let l = v.magnitude();
 
-        let transform = unit_line_transform(x, y, l as f32,  thickness as f32, angle, &self.viewport);
+        let transform = unit_line_transform(x, y, l,  thickness, angle, &self.viewport);
 
         self.rounded_rect_shader.set_transform(transform);
 
@@ -262,7 +270,13 @@ pub fn transform_to_screen_space(rect: &Rect, viewport: &viewport::Viewport) -> 
 
 
 
-pub fn unit_line_transform(x0: i32, y0: i32, w: f32, h: f32, angle: f32, viewport: &viewport::Viewport) -> na::Matrix4::<f32> {
+pub fn unit_line_transform<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric>(x0_t: T1, y0_t: T2, w_t: T3, h_t: T4, angle_t: T5, viewport: &viewport::Viewport) -> na::Matrix4::<f32> {
+
+    let x0 = x0_t.to_f32();
+    let y0 = y0_t.to_f32();
+    let w = w_t.to_f32();
+    let h = h_t.to_f32();
+    let angle = angle_t.to_f32();
 
     // Out target render square is defines with upper left (-0.5, 0.5) lower right (0.5,-0.5)
 
@@ -273,7 +287,7 @@ pub fn unit_line_transform(x0: i32, y0: i32, w: f32, h: f32, angle: f32, viewpor
     scale[5] = h;
 
     // now we want to offset is so that the left edge is at 0 instead of w /2
-    // so we rotate the while line, around 0.0
+    // so we rotate the whole line, around 0.0
     let offset = Translation3::new(w / 2.0, 0.0, 0.0);
 
     // we want to rotate the specified angle
@@ -281,7 +295,7 @@ pub fn unit_line_transform(x0: i32, y0: i32, w: f32, h: f32, angle: f32, viewpor
 
     // translate so that our start pos is at x0, y0
     // Invert y since sdl is (0,0) in top left. Our Mapping has (0,0) in lower left
-    let t = Translation3::new(x0 as f32, (viewport.h - y0) as f32, 0.0);
+    let t = Translation3::new(x0 as f32, viewport.h as f32 - y0, 0.0);
 
     // Create projectionmmatrix to go into ndc
     let proj = Orthographic3::new(0.0, viewport.w as f32, 0.0, viewport.h as f32, -10.0, 100.0);

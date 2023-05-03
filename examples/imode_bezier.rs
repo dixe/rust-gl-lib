@@ -90,7 +90,7 @@ fn draw_curve(curve: &mut Curve, ui: &mut Ui) {
 
         let new_p = calc_point_recursive(t, &curve.points, ui, draw);
 
-        ui.drawer2D.line(prev.x as i32, prev.y as i32, new_p.x as i32, new_p.y as i32, 3);
+        ui.drawer2D.line(prev.x, prev.y, new_p.x, new_p.y, 3);
 
         prev = new_p;
     }

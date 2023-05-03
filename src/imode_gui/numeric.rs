@@ -1,6 +1,8 @@
 pub trait Numeric : Clone + Copy + PartialEq + PartialOrd + 'static {
 
-    fn to_f64(self) -> f64 ;
+    fn to_f64(self) -> f64;
+
+    fn to_f32(self) -> f32;
 
     fn from_f64(num: f64) -> Self;
 }
@@ -10,6 +12,10 @@ macro_rules! impl_numeric {
         impl Numeric for $t {
             fn to_f64(self) -> f64 {
                 self as f64
+            }
+
+            fn to_f32(self) -> f32 {
+                self as f32
             }
 
             fn from_f64(num: f64) -> Self {
