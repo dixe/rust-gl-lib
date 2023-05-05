@@ -236,7 +236,7 @@ impl Drawer2D {
         self.tr.render_text(&self.gl, text, alignment, sb, 1.0);
     }
 
-    pub fn render_text_scaled(&mut self, text: &str, x: i32, y: i32, scale:  f32) {
+    pub fn render_text_scaled(&mut self, text: &str, x: i32, y: i32, scale: f32) {
 
         let rect = Rect {
             x,

@@ -1,8 +1,9 @@
-use gl_lib::{gl, helpers, na};
+use gl_lib::{gl, helpers, na, color::Color};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::Pos;
 use std::collections::VecDeque;
+
 
 fn main() -> Result<(), failure::Error> {
     let sdl_setup = helpers::setup_sdl()?;
@@ -56,6 +57,8 @@ fn main() -> Result<(), failure::Error> {
             new_p.y += 30.0;
             curve.points.push(new_p);
         }
+
+        ui.list_horizontal(&mut curve.points);
 
         draw_curve(&mut curve, &mut ui);
 

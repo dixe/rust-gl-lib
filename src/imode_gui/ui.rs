@@ -16,6 +16,7 @@ pub struct Ui {
     base_container_context: ContainerContext,
     pub mouse_down: bool,
     pub mouse_up: bool,
+    pub mouse_down_pos: Pos,
     pub style: Style,
     container_contexts: std::collections::HashMap<Id, ContainerContext>,
     active_context: Option<Id>
@@ -31,6 +32,7 @@ impl Ui {
             mouse_pos: Pos{x:0, y: 0},
             base_container_context,
             mouse_down: false,
+            mouse_down_pos: Pos{x:0, y: 0},
             mouse_up: false,
             style: Default::default(),
             active_context: None,
@@ -86,6 +88,15 @@ impl Ui {
             && self.mouse_pos.y <= rect.y + rect.h
     }
 
+
+    pub fn mouse_down_in_rect(&self, rect: &Rect) -> bool {
+        self.mouse_down_pos.x >= rect.x
+            && self.mouse_down_pos.x <= rect.x + rect.w
+            && self.mouse_down_pos.y >= rect.y
+            && self.mouse_down_pos.y <= rect.y + rect.h
+    }
+
+
     pub fn exit_active_context(&mut self, id: Id) {
         if let Some(ctx) = self.container_contexts.get(&id) {
             self.active_context = ctx.prev_active_context;
@@ -139,6 +150,7 @@ impl Ui {
             match event {
                 MouseButtonDown {x, y, ..} => {
                     self.mouse_down = true;
+                    self.mouse_down_pos = Pos {x,y};
                 },
                 MouseButtonUp {x, y, ..} => {
                     self.mouse_up = true;

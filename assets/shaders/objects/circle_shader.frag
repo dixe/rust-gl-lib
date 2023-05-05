@@ -40,6 +40,7 @@ void main()
   float alpha = (1.0 - smoothstep(0.0, 1.0, dist));
 
   col = col * alpha;
+
   FragColor = col;
 
 }
