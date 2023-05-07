@@ -116,14 +116,7 @@ impl Drawer2D {
 
         self.color_square_shader.set_used();
 
-        let geom = Geometry {
-            pos: Position { x, y },
-            size: Size {
-                pixel_w: w,
-                pixel_h: h
-            }
-        };
-
+        let geom = Geom { x, y, w, h };
 
         let transform = unit_square_transform_matrix(&geom, &self.viewport);
         self.color_square_shader.set_mat4(&self.gl, "transform", transform);
@@ -131,15 +124,18 @@ impl Drawer2D {
         self.color_square.render(&self.gl);
     }
 
-    pub fn circle(&self, center_x: i32, center_y: i32, r: i32, color: Color) {
+    pub fn circle<T1: Numeric, T2: Numeric, T3: Numeric >(&self, center_x_t: T1, center_y_t: T2, r_t: T3, color: Color) {
+        let center_x = center_x_t.to_f64();
+        let center_y = center_y_t.to_f64();
+        let r = r_t.to_f64();
+
         self.circle_shader.shader.set_used();
 
-        let geom = Geometry {
-            pos: Position { x: center_x - r, y: center_y - r },
-            size: Size {
-                pixel_w: r * 2,
-                pixel_h: r * 2,
-            }
+        let geom = Geom {
+            x: center_x - r,
+            y: center_y - r,
+            w: r * 2.0,
+            h: r * 2.0,
         };
 
         let transform = unit_square_transform_matrix(&geom, &self.viewport);
@@ -148,8 +144,8 @@ impl Drawer2D {
 
 
         self.circle_shader.set_uniforms(cs::Uniforms { color,
-                                                      pixel_height: geom.size.pixel_h as f32,
-                                                      pixel_width: geom.size.pixel_w as f32,
+                                                      pixel_height: geom.h.to_f32(),
+                                                      pixel_width: geom.w.to_f32(),
                                                       radius: r as f32
         });
 
@@ -166,14 +162,7 @@ impl Drawer2D {
     pub fn hsv_h_line(&self, x: i32, y: i32, w: i32, h: i32) {
         self.color_square_h_line_shader.set_used();
 
-        let geom = Geometry {
-            pos: Position { x, y },
-            size: Size {
-                pixel_w: w,
-                pixel_h: h
-
-            }
-        };
+        let geom = Geom { x, y, w, h };
 
         let transform = unit_square_transform_matrix(&geom, &self.viewport);
 
@@ -187,14 +176,7 @@ impl Drawer2D {
 
         self.rounded_rect_shader.shader.set_used();
 
-        let geom = Geometry {
-            pos: Position { x, y },
-            size: Size {
-                pixel_w: w,
-                pixel_h: h
-
-            }
-        };
+        let geom = Geom { x, y, w, h };
 
         let transform = unit_square_transform_matrix(&geom, &self.viewport);
 
@@ -203,8 +185,8 @@ impl Drawer2D {
 
 
         self.rounded_rect_shader.set_uniforms(rrs::Uniforms { color,
-                                                             pixel_height: geom.size.pixel_h as f32,
-                                                             pixel_width: geom.size.pixel_w as f32,
+                                                             pixel_height: geom.w.to_f32(),
+                                                             pixel_width: geom.w.to_f32(),
                                                              radius: 0.0
         });
 
@@ -304,25 +286,28 @@ pub fn unit_line_transform<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T
 
 }
 
-pub fn unit_square_transform_matrix(geom: &Geometry, viewport: &viewport::Viewport) -> na::Matrix4::<f32> {
+fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(geom: &Geom<T1, T2, T3, T4>, viewport: &viewport::Viewport) -> na::Matrix4::<f32> {
 
-    let sc_top_left = window_to_screen_coords(geom.pos.x as f32, geom.pos.y as f32, viewport.w as f32, viewport.h as f32);
+    let x = geom.x.to_f64() * 2.0 / viewport.w as f64- 1.0;
+    let y = -geom.y.to_f64() * 2.0 / viewport.h as f64 + 1.0;
+    let h = geom.h.to_f64();
+    let w = geom.w.to_f64();
 
-    let x_scale = geom.size.pixel_w as f32 / viewport.w as f32 * 2.0;
-    let y_scale = geom.size.pixel_h as f32  / viewport.h as f32 * 2.0;
+    let x_scale = w  / viewport.w as f64 * 2.0;
+    let y_scale = h  / viewport.h as f64 * 2.0;
 
     let mut model = na::Matrix4::<f32>::identity();
 
     // Scale to size
-    model[0] = x_scale;
-    model[5] = y_scale;
+    model[0] = x_scale as f32;
+    model[5] = y_scale as f32;
 
     // move to position
 
-    let x_move = sc_top_left.x + x_scale * 0.5;
-    let y_move = sc_top_left.y - y_scale * 0.5;
+    let x_move = x + x_scale * 0.5;
+    let y_move = y - y_scale * 0.5;
 
-    let trans = Translation3::new(x_move, y_move, 0.0);
+    let trans = Translation3::new(x_move as f32, y_move as f32, 0.0);
 
     model = trans.to_homogeneous() * model;
 
@@ -330,6 +315,9 @@ pub fn unit_square_transform_matrix(geom: &Geometry, viewport: &viewport::Viewpo
 }
 
 
-pub fn window_to_screen_coords(x: f32, y: f32, w: f32, h: f32) -> ScreenCoords {
-    ScreenCoords {x : x *2.0/ w  - 1.0, y: -y *2.0 / h + 1.0 }
+struct Geom<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric> {
+    x: T1,
+    y: T2,
+    w: T3,
+    h: T4
 }

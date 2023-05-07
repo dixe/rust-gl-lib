@@ -160,6 +160,7 @@ impl Ui {
                 },
                 Window {win_event: event::WindowEvent::Resized(x,y), ..} => {
                     self.drawer2D.update_viewport(x, y);
+                    self.base_container_context.width = x;
                 },
                 other => {
                     // pass along to program

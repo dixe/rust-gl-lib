@@ -1,18 +1,18 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use super::*;
 
 
 impl Ui {
     /// Display a list of items, with drag and drop support for rearanging items in the list
     /// returns the index of the currently dragged item
-    pub fn list_horizontal<T: Display>(&mut self, items: &mut Vec::<T>) -> Option<usize> {
+    pub fn list_horizontal<T: Display + Debug>(&mut self, items: &mut Vec::<T>) -> Option<usize> {
 
         let id = self.next_id();
 
         let len = items.len() as i32;
 
         let scale = self.style.text_styles.button.text_scale;
-        let text = format!("{}", items[0]);
+        let text = format!("{:?}", items[0]);
         let rb = self.drawer2D.text_render_box(&text, scale);
 
         let pad_r = self.style.padding.right;
@@ -140,7 +140,7 @@ impl Ui {
             }
 
             self.drawer2D.rounded_rect_color(x, y, elm_w, rb.total_height as i32, color);
-            self.drawer2D.render_text_scaled(&format!("{}", items[i]), x, y, scale);
+            self.drawer2D.render_text_scaled(&format!("{:?}", items[i]), x, y, scale);
 
         }
 
