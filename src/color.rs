@@ -4,6 +4,7 @@ use nalgebra as na;
 pub enum Color {
     Rgb(u8, u8, u8),
     RgbA(u8, u8, u8, u8),
+    RgbAf32(f32, f32, f32, f32),
     Hsv(f32, f32, f32) // hsv with h in [0..360] and v,s in [0..1]
 }
 
@@ -13,6 +14,7 @@ impl Color {
         match *self {
             Color::Rgb(r,g,b) => na::Vector4::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0),
             Color::RgbA(r,g,b,a) => na::Vector4::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, a as f32 / 255.0),
+            Color::RgbAf32(r,g,b,a) =>na::Vector4::new(r,g,b,a),
             Color::Hsv(h,s,v) => hsv_to_rgba_vec(h, s, v)
         }
     }
@@ -21,6 +23,7 @@ impl Color {
         match *self {
             Color::Rgb(r,g,b) => rgb_to_hsv_vec(r, g, b),
             Color::RgbA(r,g,b,_) => rgb_to_hsv_vec(r, g, b),
+            Color::RgbAf32(r, g, b, _) => rgb_to_hsv_vec((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8),
             Color::Hsv(h, s,v) => na::Vector3::new(h, s, v)
         }
     }

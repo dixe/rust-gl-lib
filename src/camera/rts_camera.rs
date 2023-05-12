@@ -1,5 +1,3 @@
-
-
 use crate::camera::*;
 use crate::na;
 use sdl2::event::Event;

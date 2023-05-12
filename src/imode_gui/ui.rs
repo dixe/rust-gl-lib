@@ -162,6 +162,9 @@ impl Ui {
                     self.drawer2D.update_viewport(x, y);
                     self.base_container_context.width = x;
                 },
+                Quit { .. } => {
+                    std::process::exit(0);
+                },
                 other => {
                     // pass along to program
                 }
