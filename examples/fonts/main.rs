@@ -30,13 +30,13 @@ fn main() -> Result<(), failure::Error> {
 
     let mut amount = 1;
 
-    let mut fonts = generate_font_vec().unwrap();
+    let mut fonts = generate_font_vec(gl).unwrap();
 
     let shader_names = ["msdf_text_render", "softmask_text_render", "sdf_text_render", "alpha_mask_text_render"];
 
     let mut current_shader = "softmask_text_render".to_string();
 
-    let mut current_font = fonts[0].name();
+    let mut current_font = fonts[0].name().to_string();
     loop {
 
         // Basic clear gl stuff and get events to UI
@@ -58,7 +58,7 @@ fn main() -> Result<(), failure::Error> {
 
 
         if ui.button("Reload font list") {
-            fonts = generate_font_vec().unwrap();
+            fonts = generate_font_vec(gl).unwrap();
         }
         ui.newline();
         let mut pixel_size = ui.style.text_styles.small.pixel_size;
@@ -78,7 +78,7 @@ fn main() -> Result<(), failure::Error> {
         ui.newline();
 
         if let Some(name) = choose_font(&mut ui, &fonts) {
-            current_font = name;
+            current_font = name.to_string();
         }
 
         ui.newline();
@@ -109,24 +109,26 @@ fn main() -> Result<(), failure::Error> {
         ui.newline();
         ui.label(&current_shader);
         ui.newline();
-        if let Some(name) = choose_shader(&mut ui, gl, &shader_names) {
+        if let Some(name) = choose_shader(&mut ui, gl, &shader_names, &mut fonts) {
             current_shader = name;
         }
 
 
         ui.newline();
-        ui.small_text("This is a test text\nWith numbers 1,2,3 456 and float 3.22, and 0.32\n Capital small and LetTerS ofDiferRenSiz With  Spa   a   a  ce  e  e s and not.\n\nChaing size will show how the renderere works /**-+.");
+        let text = "This is a test text\nWith numbers 1,2,3 456 and float 3.22, and 0.32\n Capital small and LetTerS ofDiferRenSiz With  Spa   a   a  ce  e  e s and not.\n\nChaing size will show how the renderere works /**-+.";
+
+        ui.small_text(text);
 
         window.gl_swap_window();
     }
 }
 
 
-fn choose_shader(ui: &mut Ui, gl: &gl::Gl, shader_names: &[&str]) -> Option<String> {
+fn choose_shader(ui: &mut Ui, gl: &gl::Gl, shader_names: &[&str], fonts: &mut Vec::<Font>) -> Option<String> {
     let mut r = None;
     for name in shader_names {
         if ui.button(&format!("{name}")) {
-            update_shaders(ui, gl, name);
+            update_shaders(ui, gl, name, fonts);
             r = Some(name.to_string());
         }
     }
@@ -136,17 +138,16 @@ fn choose_shader(ui: &mut Ui, gl: &gl::Gl, shader_names: &[&str]) -> Option<Stri
 fn choose_font(ui: &mut Ui, fonts: &[Font]) -> Option<String> {
     let mut r = None;
     for font in fonts {
-        if ui.button(&format!("{}", font.name())) {
-            ui.drawer2D.tr.change_font(&ui.drawer2D.gl, font.clone());
-            r = Some(font.name());
+        if ui.button(&format!("{}-{}", font.name(), font.size())) {
+            ui.drawer2D.font_cache.default = font.clone();
+            r = Some(font.name().to_string());
         }
     }
-
     r
 }
 
 
-fn generate_font_vec() -> std::io::Result<Vec::<Font>> {
+fn generate_font_vec(gl: &gl::Gl) -> std::io::Result<Vec::<Font>> {
 
     let mut res = vec![];
 
@@ -157,12 +158,12 @@ fn generate_font_vec() -> std::io::Result<Vec::<Font>> {
 
         if file.ends_with(".fnt") {
             let inner_font = FntFont::load_fnt_font(file).unwrap();
-            res.push(Font::Fnt(inner_font));
+            res.push(Font::fnt(gl, inner_font));
         }
 
         if file.ends_with(".json") {
             let inner_font = MsdfFont::load_from_paths(&file,  &file.replace(".json", ".png")).unwrap();
-            res.push(Font::Msdf(inner_font));
+            res.push(Font::msdf(gl, inner_font));
 
         }
     }
@@ -182,12 +183,15 @@ fn update_font(ui: &mut Ui, name: &str) {
  */
 
 
-fn update_shaders(ui: &mut Ui, gl: &gl::Gl, name: &str) {
+fn update_shaders(ui: &mut Ui, gl: &gl::Gl, name: &str, fonts: &mut Vec::<Font>) {
 
 
     match BaseShader::new(gl, &std::fs::read_to_string(format!("assets/shaders/{name}.vert")).unwrap(), &std::fs::read_to_string(format!("assets/shaders/{name}.frag")).unwrap()) {
         Ok(shader) => {
-            ui.drawer2D.tr.change_shader(shader);
+            for font in fonts {
+                font.change_shader(shader.clone());
+            }
+            ui.drawer2D.tr.font_mut().change_shader(shader.clone());
         },
         Err(err) => {
             println!("{:?}", err);

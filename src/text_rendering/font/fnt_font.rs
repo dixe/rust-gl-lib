@@ -20,8 +20,8 @@ pub struct FntFont {
 }
 
 
-static FONT_TEXT: &str = include_str!("../../../assets/fonts/Consolas_16.fnt");
-static FONT_IMG: &[u8] = include_bytes!("../../../assets/fonts/Consolas_0_16.png");
+static FONT_TEXT: &str = include_str!("../../../assets/fonts/Consolas_12.fnt");
+static FONT_IMG: &[u8] = include_bytes!("../../../assets/fonts/Consolas_0_12.png");
 
 
 impl Default for FntFont {
@@ -119,16 +119,13 @@ impl FntFont {
                 return kerning.amount;
             }
         }
-
         0.0
     }
 
 
     pub fn create_shader(&self, gl: &gl::Gl) -> BaseShader {
-
         let vert_source = include_str!("../../../assets/shaders/alpha_mask_text_render.vert");
         let frag_source = include_str!("../../../assets/shaders/alpha_mask_text_render.frag");
-
         BaseShader::new(gl, vert_source, frag_source).unwrap()
     }
 
@@ -169,7 +166,7 @@ impl FromStr for FontInfo  {
 
             match splitted[0] {
                 "face" =>  {
-                    info.face = splitted[1].to_string();
+                    info.face = splitted[1].chars().skip(1).take(splitted[1].len() - 2).collect();
                 },
                 "size" => {
                     info.size = splitted[1].parse()?;

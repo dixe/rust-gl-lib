@@ -114,9 +114,8 @@ pub struct WidgetSetup {
 pub fn setup_widgets(gl: &gl::Gl) -> Result<WidgetSetup, SetupError> {
 
     let inner_font = Default::default();
-    let font = Font::Msdf(inner_font);
+    let font = Font::msdf(gl, inner_font);
     let text_renderer = TextRenderer::new(gl, font);
-    text_renderer.setup_blend(gl);
     let rrs = RoundedRectShader::new(gl)?;
     let cs = CircleShader::new(gl)?;
 

@@ -1,9 +1,7 @@
 //! An struct that can be used for easy text rendering
-
+use crate::shader::{BaseShader, Shader};
 use crate::na;
 use crate::text_rendering::{font::*};
-use crate::shader::{BaseShader,Shader};
-use crate::texture::{self, TextureId};
 use crate::gl;
 use crate::objects;
 use crate::*;
@@ -11,8 +9,6 @@ use crate::*;
 /// A collections of a font, shader and a texture that can render text using open.
 pub struct TextRenderer {
     font: Font,
-    shader: BaseShader,
-    texture_id: TextureId,
     color: na::Vector3::<f32>,
     char_quad: Box<objects::char_quad::CharQuad>,
     smoothness: f32
@@ -29,15 +25,9 @@ impl TextRenderer {
     /// Create a new text renderer given a path to a signed distance field font
     pub fn new(gl: &gl::Gl, font: Font) -> Self {
 
-        let shader = font.create_shader(gl);
-        let texture_id = texture::gen_texture_rgba(&gl, &font.image());
-
-
         let char_quad = Box::new(objects::char_quad::CharQuad::new(gl));
         Self {
             font,
-            shader,
-            texture_id,
             char_quad,
             color: Default::default(),
             smoothness: 2.0
@@ -45,15 +35,11 @@ impl TextRenderer {
     }
 
     /// Enalbes Gl_BLEND and calls BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    pub fn setup_blend(&self, gl: &gl::Gl) {
+    pub fn setup_blend(gl: &gl::Gl) {
         unsafe {
             gl.Enable(gl::BLEND);
             gl.BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
         }
-    }
-
-    pub fn change_shader(&mut self, shader: BaseShader) {
-        self.shader = shader;
     }
 
     /// Set the color that [render_text](Self::render_text) uses.
@@ -66,24 +52,6 @@ impl TextRenderer {
         self.smoothness = at;
     }
 
-    fn setup_shader(&mut self, gl: &gl::Gl, projection: na::geometry::Orthographic3::<f32>) {
-
-        self.shader.set_used();
-
-        self.shader.set_vec3(gl, "color", self.color);
-
-        self.shader.set_i32(gl, "text_map", 0);
-
-        self.shader.set_mat4(gl, "projection", projection.to_homogeneous());
-
-        self.setup_blend(gl);
-
-        unsafe {
-            gl.ActiveTexture(gl::TEXTURE0);
-            texture::set_texture(gl, self.texture_id);
-        }
-    }
-
 
     /// user this to get size info on how a text will be rendered. Can be used in layout phase, to get side of
     /// fx a text box
@@ -91,88 +59,9 @@ impl TextRenderer {
         let input_scale = size as f32 / font.size();
 
         let mut chars_info = Vec::new();
-        let res = Self::calc_char_info(font, text, max_width, input_scale, &mut chars_info);
+        let res = calc_char_info(font, text, max_width, input_scale, &mut chars_info);
 
         res
-    }
-
-
-    fn  calc_char_info(font: &Font, text: &str, max_width: f32, input_scale: f32, chars_info: &mut Vec::<CharPosInfo>) -> TextRenderBox {
-
-        let mut prev_char: Option<PageChar> = None;
-        let mut pixel_x = 0.0;
-
-        for c in text.chars() {
-            let chr = match font.page_char(c as u32) {
-                Some(chr) => chr,
-                None => {
-                    // TODO: maybe in release just use unicode replacement char instead of panic
-                    // TODO: Also maybe replace \t with a space, so we can render tabs
-                    // panic!("No char with code '{}' ({}) found in font", c, c as u32)
-                    font.default_page_char()
-
-                }
-            };
-
-            if let Some(prev) = prev_char {
-                // Lookup potential kerning and apply to x
-                let kern = font.kerning(prev.id, chr.id);
-                pixel_x += kern;
-            }
-
-            prev_char = Some(chr);
-
-            chars_info.push(CharPosInfo {
-                x: pixel_x,
-                y: 0.0,
-                chr,
-                is_newline: c == '\n',
-
-            });
-
-            pixel_x += chr.x_advance * input_scale;
-        }
-
-
-        let mut x_offset = 0.0;
-        let mut y_offset = 0.0;
-
-        let mut total_height = 0.0;
-        let mut total_width = 0.0;
-        // Process chars to wrap newlines, on whole word if possible
-        let line_height =  font.line_height() * input_scale;
-        let mut current_max_h = line_height;
-
-
-        let mut current_w = 0.0;
-        for info in chars_info.iter_mut() {
-            // Update x before checking to wrap correctly
-            info.x -= x_offset;
-            let x_advance = info.chr.x_advance * input_scale;
-
-            if ( info.x + x_advance) > max_width  || info.is_newline {
-                x_offset += info.x;
-                y_offset += line_height;
-                info.x = 0.0;
-
-                total_height += line_height;
-                total_width = f32::max(current_w, total_width);
-                current_max_h = 0.0;
-            }
-
-            info.y += y_offset;
-
-            current_max_h = f32::max(current_max_h, (info.chr.height + info.chr.y_offset) * input_scale);
-            current_w = info.x + x_advance;
-        }
-
-        total_height += current_max_h;
-        total_width = f32::max(total_width, current_w);
-
-        TextRenderBox {
-            total_width,
-            total_height,
-        }
     }
 
 
@@ -180,135 +69,21 @@ impl TextRenderer {
     /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
     pub fn render_text(&mut self, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, pixel_size: i32) {
 
-        let input_scale = pixel_size as f32 / self.font.size();
-
-        let scale_x = 2.0 / screen_box.screen_w * input_scale;
-
-        let scale_y = 2.0 / screen_box.screen_h * input_scale;
-        // TODO: fix this so we always render with correct scale
         let projection = na::geometry::Orthographic3::new(0.0, screen_box.screen_w, screen_box.screen_h, 0.0, 0.0, 10.0);
-
-        self.setup_shader(gl, projection);
-
-        let mut chars_info = Vec::new();
-
-        let render_box = Self::calc_char_info(&self.font, text, screen_box.width, input_scale, &mut chars_info);
-
-
-        // higher than 1 means the text does NOT fit in the assigned box. And we have to account for scroll input
-        //let text_to_window_ratio = dbg!(render_box.total_height / screen_box.screen_h);
-
-
-        // maybe scroll bar should not be between 0 and 1
-        // if we know the actual ration like 5.0,
-        // scroll 0.0 means no offset, first word is shown in to left
-        // scroll 1.0 means last word is shows on last line
-
-
-        // for 0: offset with 0
-
-        // for 1: offset with length of text - screen_box heigh
-
-        let _scroll = 0.5;
-        //let offset = dbg!(render_box.total_height * scroll - screen_box.screen_h);
-        // map from pixel space into screen space so we are ready to draw
-        for info in chars_info.iter_mut() {
-
-            let x_offset = match alignment.x {
-                TextAlignmentX::Left => screen_box.x,
-                TextAlignmentX::Center => screen_box.x + (screen_box.width - render_box.total_width) / 2.0,
-                TextAlignmentX::Right => screen_box.x + screen_box.width - render_box.total_width,
-            };
-
-            let y_offset = match alignment.y {
-                TextAlignmentY::Top => screen_box.y,
-                TextAlignmentY::Center => screen_box.y + (screen_box.height - f32::min(screen_box.height, render_box.total_height)) / 2.0,
-                TextAlignmentY::Bottom =>  screen_box.y + screen_box.height - render_box.total_height,
-            };
-
-            info.x = info.x + x_offset;
-            info.y = info.y + y_offset;
-        }
-
-        // Draw the chars
-        let draw_info = DrawInfo {
-            chars_info: &chars_info,
-            scale: Scale { x: scale_x, y: scale_y },
-            bottom: screen_box.bottom(),
-            screen_w: screen_box.screen_w,
-            screen_h: screen_box.screen_h,
-            input_scale: input_scale
-        };
-
-        self.render_text_quads_pixel(gl, &draw_info);
+        let texture_id = self.font.texture_id(gl);
+        setup_shader(self.font.shader(), gl, projection, texture_id, self.color);
+        render_text_with_font(&mut self.char_quad, &self.font, gl, text, alignment, screen_box, pixel_size);
     }
 
+    pub fn render_text_with_font(&mut self, font: &Font, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, pixel_size: i32) {
 
-    fn render_text_quads_pixel(&mut self , gl: &gl::Gl, draw_info: &DrawInfo) {
-
-        // Draw the chars
-        let buffer_size = self.char_quad.buffer_size();
-        let mut i = 0;
-        for info in draw_info.chars_info.iter() {
-            if info.y > draw_info.bottom {
-                break;
-            }
-
-            self.char_quad.update_char_pixels(i, info.x, info.y, draw_info.input_scale, &info.chr, self.font.image().into());
-
-
-            //self.char_quad.render_full_texture(i);
-
-            i += 1;
-
-            if i >= buffer_size {
-                self.char_quad.render(gl, i);
-                i = 0;
-            }
-        }
-
-        self.char_quad.render(gl, i);
+        let projection = na::geometry::Orthographic3::new(0.0, screen_box.screen_w, screen_box.screen_h, 0.0, 0.0, 10.0);
+        let texture_id = font.texture_id(gl);
+        setup_shader(font.shader(), gl, projection, texture_id, self.color);
+        render_text_with_font(&mut self.char_quad, font, gl, text, alignment, screen_box, pixel_size);
     }
-
-
-    fn render_text_quads(&mut self , gl: &gl::Gl, draw_info: &DrawInfo) {
-
-        // Draw the chars
-        let buffer_size = self.char_quad.buffer_size();
-        let mut i = 0;
-        for info in draw_info.chars_info.iter() {
-            if info.y > draw_info.bottom {
-                break;
-            }
-
-            let x = smoothstep(0.0, draw_info.screen_w, info.x) * 2.0 - 1.0;
-            let y = -1.0 * (smoothstep(0.0, draw_info.screen_h, info.y) * 2.0 - 1.0);
-
-            self.char_quad.update_char(i, x, y, draw_info.scale.x, draw_info.scale.y, &info.chr, self.font.image().into());
-
-            //self.char_quad.render_full_texture(i);
-
-            i += 1;
-
-            if i >= buffer_size {
-                self.char_quad.render(gl, i);
-                i = 0;
-            }
-        }
-
-        self.char_quad.render(gl, i);
-    }
-
 
     pub fn change_font(&mut self, gl: &gl::Gl, font: Font) {
-        self.shader = font.create_shader(gl);
-
-        self.texture_id = texture::gen_texture_rgba(&gl, &font.image());
-        self.font = font;
-    }
-
-    pub fn change_font_wihtout_shader(&mut self, gl: &gl::Gl, font: Font) {
-        self.texture_id = texture::gen_texture_rgba(&gl, &font.image());
         self.font = font;
     }
 
@@ -316,21 +91,206 @@ impl TextRenderer {
         &self.font
     }
 
-
-    fn input_scale(&self,size: TextSize) -> f32 {
-        match size {
-            TextSize::Small => 1.0,
-            TextSize::Scaled(pixel_size) => pixel_size as f32 / self.font.size()
-        }
+    pub fn font_mut(&mut self) -> &mut Font {
+        &mut self.font
     }
 }
 
 
 
+fn render_text_quads_pixel(char_quad: &mut objects::char_quad::CharQuad, gl: &gl::Gl, draw_info: &DrawInfo) {
+
+    // Draw the chars
+    let buffer_size = char_quad.buffer_size();
+    let mut i = 0;
+    for info in draw_info.chars_info.iter() {
+        if info.y > draw_info.bottom {
+            break;
+        }
+
+        char_quad.update_char_pixels(i, info.x, info.y, draw_info.input_scale, &info.chr, draw_info.font.image().into());
+
+
+        //self.char_quad.render_full_texture(i);
+
+        i += 1;
+
+        if i >= buffer_size {
+            char_quad.render(gl, i);
+            i = 0;
+        }
+    }
+    char_quad.render(gl, i);
+}
+
+
+fn calc_char_info(font: &Font, text: &str, max_width: f32, input_scale: f32, chars_info: &mut Vec::<CharPosInfo>) -> TextRenderBox {
+
+    let mut prev_char: Option<PageChar> = None;
+    let mut pixel_x = 0.0;
+
+    for c in text.chars() {
+        let chr = match font.page_char(c as u32) {
+            Some(chr) => chr,
+            None => {
+                // TODO: maybe in release just use unicode replacement char instead of panic
+                // TODO: Also maybe replace \t with a space, so we can render tabs
+                // panic!("No char with code '{}' ({}) found in font", c, c as u32)
+                font.default_page_char()
+
+            }
+        };
+
+        if let Some(prev) = prev_char {
+            // Lookup potential kerning and apply to x
+            let kern = font.kerning(prev.id, chr.id);
+            pixel_x += kern;
+        }
+
+        prev_char = Some(chr);
+
+        chars_info.push(CharPosInfo {
+            x: pixel_x,
+            y: 0.0,
+            chr,
+            is_newline: c == '\n',
+
+        });
+
+        pixel_x += chr.x_advance * input_scale;
+    }
+
+
+    let mut x_offset = 0.0;
+    let mut y_offset = 0.0;
+
+    let mut total_height = 0.0;
+    let mut total_width = 0.0;
+    // Process chars to wrap newlines, on whole word if possible
+    let line_height =  font.line_height() * input_scale;
+    let mut current_max_h = line_height;
+
+
+    let mut current_w = 0.0;
+    for info in chars_info.iter_mut() {
+        // Update x before checking to wrap correctly
+        info.x -= x_offset;
+        let x_advance = info.chr.x_advance * input_scale;
+
+        if ( info.x + x_advance) > max_width  || info.is_newline {
+            x_offset += info.x;
+            y_offset += line_height;
+            info.x = 0.0;
+
+            total_height += line_height;
+            total_width = f32::max(current_w, total_width);
+            current_max_h = 0.0;
+        }
+
+        info.y += y_offset;
+
+        current_max_h = f32::max(current_max_h, (info.chr.height + info.chr.y_offset) * input_scale);
+        current_w = info.x + x_advance;
+    }
+
+    total_height += current_max_h;
+    total_width = f32::max(total_width, current_w);
+
+    TextRenderBox {
+        total_width,
+        total_height,
+    }
+}
+
+
+pub fn render_text_with_font(char_quad: &mut objects::char_quad::CharQuad, font: &Font, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, pixel_size: i32) {
+
+
+    let input_scale = pixel_size as f32 / font.size();
+
+    let scale_x = 2.0 / screen_box.screen_w * input_scale;
+
+    let scale_y = 2.0 / screen_box.screen_h * input_scale;
+
+    let mut chars_info = Vec::new();
+
+    let render_box = calc_char_info(font, text, screen_box.width, input_scale, &mut chars_info);
+
+
+    // higher than 1 means the text does NOT fit in the assigned box. And we have to account for scroll input
+    //let text_to_window_ratio = dbg!(render_box.total_height / screen_box.screen_h);
+
+
+    // maybe scroll bar should not be between 0 and 1
+    // if we know the actual ration like 5.0,
+    // scroll 0.0 means no offset, first word is shown in to left
+    // scroll 1.0 means last word is shows on last line
+
+
+    // for 0: offset with 0
+
+    // for 1: offset with length of text - screen_box heigh
+
+    let _scroll = 0.5;
+    //let offset = dbg!(render_box.total_height * scroll - screen_box.screen_h);
+    // map from pixel space into screen space so we are ready to draw
+    for info in chars_info.iter_mut() {
+
+        let x_offset = match alignment.x {
+            TextAlignmentX::Left => screen_box.x,
+            TextAlignmentX::Center => screen_box.x + (screen_box.width - render_box.total_width) / 2.0,
+            TextAlignmentX::Right => screen_box.x + screen_box.width - render_box.total_width,
+        };
+
+        let y_offset = match alignment.y {
+            TextAlignmentY::Top => screen_box.y,
+            TextAlignmentY::Center => screen_box.y + (screen_box.height - f32::min(screen_box.height, render_box.total_height)) / 2.0,
+            TextAlignmentY::Bottom =>  screen_box.y + screen_box.height - render_box.total_height,
+        };
+
+        info.x = info.x + x_offset;
+        info.y = info.y + y_offset;
+    }
+
+    // Draw the chars
+    let draw_info = DrawInfo {
+        chars_info: &chars_info,
+        scale: Scale { x: scale_x, y: scale_y },
+        bottom: screen_box.bottom(),
+        screen_w: screen_box.screen_w,
+        screen_h: screen_box.screen_h,
+        input_scale: input_scale,
+        font
+    };
+
+    render_text_quads_pixel(char_quad, gl, &draw_info);
+}
+
 
 fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
     f32::clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
 }
+
+
+fn setup_shader(shader: &BaseShader, gl: &gl::Gl, projection: na::geometry::Orthographic3::<f32>, texture_id: u32, color: na::Vector3::<f32>) {
+
+    shader.set_used();
+
+    shader.set_vec3(gl, "color", color);
+
+    shader.set_i32(gl, "text_map", 0);
+
+    shader.set_mat4(gl, "projection", projection.to_homogeneous());
+
+    TextRenderer::setup_blend(gl);
+
+    unsafe {
+        gl.ActiveTexture(gl::TEXTURE0);
+        texture::set_texture(gl, texture_id);
+    }
+}
+
+
 
 #[derive(Debug)]
 struct DrawInfo<'a>{
@@ -339,7 +299,8 @@ struct DrawInfo<'a>{
     chars_info: &'a Vec::<CharPosInfo>,
     screen_w: f32,
     screen_h: f32,
-    input_scale: f32
+    input_scale: f32,
+    font: &'a Font
 }
 
 #[derive(Debug)]

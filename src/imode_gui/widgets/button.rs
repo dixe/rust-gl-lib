@@ -73,7 +73,8 @@ impl Ui{
 
         self.drawer2D.rounded_rect_color(rect.x + x_off , rect.y + y_off, rect.w, rect.h, color);
 
-        self.drawer2D.render_text(text, rect.x + pad_l, rect.y + pad_t, pxs);
+        let font_name = &self.style.text_styles.button.font_name;
+        self.drawer2D.render_text_from_font_name(text, rect.x + pad_l, rect.y + pad_t, pxs, font_name);
 
         // done
 

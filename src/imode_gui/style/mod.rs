@@ -1,6 +1,6 @@
 use crate::imode_gui::Color;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Style {
     pub padding: Padding,
     pub spacing: Spacing,
@@ -22,7 +22,7 @@ impl Default for Style {
 }
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct TextStyles {
     pub small: TextStyle,
     pub body: TextStyle,
@@ -31,18 +31,19 @@ pub struct TextStyles {
 }
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct TextStyle {
-    pub pixel_size: i32
+    pub pixel_size: i32,
+    pub font_name: String,
 }
 
 impl Default for TextStyles {
     fn default() -> Self {
         Self {
-            small: TextStyle { pixel_size: 10 },
-            body: TextStyle { pixel_size: 20 },
-            button: TextStyle { pixel_size: 20 },
-            heading: TextStyle { pixel_size: 40 },
+            small: TextStyle { pixel_size: 12, font_name: "Consolas".to_string()},
+            body: TextStyle { pixel_size: 20, font_name: "Consolas".to_string() },
+            button: TextStyle { pixel_size: 20, font_name: "Consolas".to_string() },
+            heading: TextStyle { pixel_size: 40, font_name: "Consolas".to_string()},
         }
     }
 }

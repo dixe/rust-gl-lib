@@ -3,3 +3,5 @@
 pub mod font;
 
 pub mod text_renderer;
+
+pub mod font_cache;

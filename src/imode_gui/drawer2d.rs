@@ -8,8 +8,9 @@ use crate::objects::{square, color_square};
 use crate::color::Color;
 use crate::helpers::SetupError;
 use crate::text_rendering::font::Font;
+use crate::text_rendering::font_cache::FontCache;
 use crate::imode_gui::numeric::Numeric;
-
+use crate::imode_gui::viewport::Viewport;
 
 pub struct Drawer2D {
     pub gl: gl::Gl,
@@ -21,6 +22,7 @@ pub struct Drawer2D {
     pub color_square_shader: Box::<Shader>,
     pub color_square_h_line_shader: Box::<Shader>,
     pub circle_shader: CircleShader,
+    pub font_cache: FontCache,
 }
 
 impl Drawer2D {
@@ -28,9 +30,11 @@ impl Drawer2D {
     pub fn new(gl: &gl::Gl, viewport: viewport::Viewport) -> Result<Self, SetupError> {
 
         let inner_font = Default::default();
-        let font = Font::Msdf(inner_font);
+        let font = Font::msdf(gl, inner_font);
+
+        let font_cache = FontCache::new(font.clone(), None);
+
         let text_renderer = TextRenderer::new(gl, font);
-        text_renderer.setup_blend(gl);
         let rrs = RoundedRectShader::new(gl)?;
         let cs = CircleShader::new(gl)?;
         let color_square_shader = Box::new(color_square::ColorSquare::default_shader(&gl)?);
@@ -41,6 +45,7 @@ impl Drawer2D {
         let color_square = color_square::ColorSquare::new(gl);
 
         Ok(Self {
+            font_cache,
             gl: (*gl).clone(),
             tr: text_renderer,
             viewport,
@@ -51,8 +56,6 @@ impl Drawer2D {
             color_square,
             color_square_h_line_shader
         })
-
-
     }
 
     pub fn update_viewport(&mut self, w: i32, h: i32) {
@@ -192,53 +195,59 @@ impl Drawer2D {
     }
 
 
+    /// Get render box with the default font in text renderer
     pub fn text_render_box(&self, text: &str, pixel_size: i32) -> TextRenderBox {
         TextRenderer::render_box(self.tr.font(), text, 1920.0, pixel_size)
     }
 
-    /*
-    pub fn render_text(&mut self, text: &str, x: i32, y: i32) {
-
-        let rect = Rect {
-            x,
-            y,
-            w: 1000,
-            h: 1000
-        };
-
-        let sb = transform_to_screen_space(&rect, &self.viewport);
-
-
-        let alignment = TextAlignment {
-            x: TextAlignmentX::Left,
-            y: TextAlignmentY::Top
-        };
-
-        self.tr.render_text(&self.gl, text, alignment, sb, 16);
+    /// Get render box with the supplied font
+    pub fn text_render_box_with_font(&self, text: &str, pixel_size: i32, font: &Font) -> TextRenderBox {
+        TextRenderer::render_box(font, text, 1920.0, pixel_size)
     }
-*/
+
+    /// Get render box with the supplied font name
+    pub fn text_render_box_with_font_name(&self, text: &str, pixel_size: i32, font_name: &str) -> TextRenderBox {
+        let font = self.font_cache.get_or_default(pixel_size, font_name);
+        TextRenderer::render_box(font, text, 1920.0, pixel_size)
+    }
+
+    /// Render at x,y with default font
     pub fn render_text(&mut self, text: &str, x: i32, y: i32, pixel_size: i32) {
+        let font = self.font_cache.default();
+        render_text(&self.gl, &mut self.tr, text, x, y, &self.viewport, pixel_size, font);
+    }
 
-        let rect = Rect {
-            x,
-            y,
-            w: 1200,
-            h: 1200
-        };
+    /// Render at x,y with given font name, or default font
+    pub fn render_text_from_font_name(&mut self, text: &str, x: i32, y: i32, pixel_size: i32, font_name: &str) {
+        let font = self.font_cache.get_or_default(pixel_size, font_name);
+        render_text(&self.gl, &mut self.tr, text, x, y, &self.viewport, pixel_size, font);
+    }
 
-        let sb = transform_to_screen_space(&rect, &self.viewport);
-
-
-        let alignment = TextAlignment {
-            x: TextAlignmentX::Left,
-            y: TextAlignmentY::Top
-        };
-
-        //TODO:
-        self.tr.render_text(&self.gl, text, alignment, sb, pixel_size);
+    /// Render at x,y with given font
+    pub fn render_text_with_font(&mut self, text: &str, x: i32, y: i32, pixel_size: i32, font: &Font) {
+        render_text(&self.gl, &mut self.tr, text, x, y, &self.viewport, pixel_size, font);
     }
 }
 
+
+fn render_text(gl: &gl::Gl, tr: &mut TextRenderer, text: &str, x: i32, y: i32, viewport: &Viewport, pixel_size: i32, font: &Font) {
+    let rect = Rect {
+        x,
+        y,
+        w: 1200,
+        h: 1200
+    };
+
+    let sb = transform_to_screen_space(&rect, viewport);
+
+
+    let alignment = TextAlignment {
+        x: TextAlignmentX::Left,
+        y: TextAlignmentY::Top
+    };
+
+    tr.render_text_with_font(font, gl, text, alignment, sb, pixel_size);
+}
 
 
 pub fn transform_to_screen_space(rect: &Rect, viewport: &viewport::Viewport) -> ScreenBox {

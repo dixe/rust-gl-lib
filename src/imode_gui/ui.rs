@@ -7,7 +7,7 @@ use sdl2::event;
 use crate::color::Color;
 use crate::imode_gui::numeric::Numeric;
 use crate::imode_gui::style::*;
-
+use crate::text_rendering::font::{Font, FntFont};
 use super::*;
 
 pub struct Ui {
@@ -24,9 +24,22 @@ pub struct Ui {
 
 impl Ui {
 
-    pub fn new(drawer2D: Drawer2D) -> Self {
+    pub fn new(mut drawer2D: Drawer2D) -> Self {
         let mut base_container_context : ContainerContext = Default::default();
+
         base_container_context.width = drawer2D.viewport.w;
+
+        let style = Default::default();
+
+        // load fonts for small text size, and add to drawer2D font cache
+
+        let small_font_inner = FntFont::default();
+
+        let small_font = Font::fnt(&drawer2D.gl, small_font_inner);
+
+        drawer2D.font_cache.add_font(small_font);
+
+
         Self {
             drawer2D,
             mouse_pos: Pos{x:0, y: 0},
@@ -34,7 +47,7 @@ impl Ui {
             mouse_down: false,
             mouse_down_pos: Pos{x:0, y: 0},
             mouse_up: false,
-            style: Default::default(),
+            style,
             active_context: None,
             container_contexts: Default::default()
         }
@@ -171,6 +184,9 @@ impl Ui {
             }
         }
     }
+    // TODO: Maybe have a render text here, but we still need to tell what kind of text, but maybe we can use an enum
+    // to figure out which textstyle to use, drawer2D should not have that enum, but be more general
+
 }
 
 fn clear_context(ctx: &mut ContainerContext) {
