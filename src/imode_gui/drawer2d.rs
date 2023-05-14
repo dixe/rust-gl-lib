@@ -32,7 +32,7 @@ impl Drawer2D {
         let inner_font = Default::default();
         let font = Font::msdf(gl, inner_font);
 
-        let font_cache = FontCache::new(font.clone(), None);
+        let font_cache = FontCache::new(gl.clone(), font.clone(), None);
 
         let text_renderer = TextRenderer::new(gl, font);
         let rrs = RoundedRectShader::new(gl)?;
@@ -205,8 +205,9 @@ impl Drawer2D {
         TextRenderer::render_box(font, text, 1920.0, pixel_size)
     }
 
-    /// Get render box with the supplied font name
-    pub fn text_render_box_with_font_name(&self, text: &str, pixel_size: i32, font_name: &str) -> TextRenderBox {
+    /// Get render box with the supplied font name, maybe load the supplied font with pixel size, if pressent in font
+    /// load path
+    pub fn text_render_box_with_font_name(&mut self, text: &str, pixel_size: i32, font_name: &str) -> TextRenderBox {
         let font = self.font_cache.get_or_default(pixel_size, font_name);
         TextRenderer::render_box(font, text, 1920.0, pixel_size)
     }

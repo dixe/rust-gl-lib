@@ -18,6 +18,8 @@ fn main() -> Result<(), failure::Error> {
     let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
     let mut ui = Ui::new(drawer_2d);
 
+    ui.drawer2D.font_cache.fonts_path = Some("assets/fonts/".to_string());
+
     // Set background color to white
     unsafe {
         gl.ClearColor(0.9, 0.9, 0.9, 1.0);
@@ -171,16 +173,6 @@ fn generate_font_vec(gl: &gl::Gl) -> std::io::Result<Vec::<Font>> {
     res.sort_by(|a, b| a.name().partial_cmp(&b.name()).unwrap());
     Ok(res)
 }
-
-/*
-fn update_font(ui: &mut Ui, name: &str) {
-
-
-    let inner_font = MsdfFont::load_from_paths(&format!("assets/fonts/{name}.json"), &format!("assets/fonts/{t}_consolas.png")).unwrap();
-    let font = Font::Msdf(inner_font);
-    ui.drawer2D.tr.change_font(&ui.drawer2D.gl, font);
-}
- */
 
 
 fn update_shaders(ui: &mut Ui, gl: &gl::Gl, name: &str, fonts: &mut Vec::<Font>) {
