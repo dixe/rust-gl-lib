@@ -12,7 +12,7 @@ use super::*;
 use crate::gl;
 use crate::na;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SdfFont {
     pub info: FontInfo,
     pub page: Page,
@@ -80,8 +80,9 @@ impl SdfFont {
 
     }
 
-    pub fn load_fnt_font(fnt_path: &Path) -> Result<SdfFont, Box<dyn Error>> {
+    pub fn load_fnt_font<P: AsRef<Path>>(path: P) -> Result<SdfFont, Box<dyn Error>> {
 
+        let fnt_path = path.as_ref();
         let text = fs::read_to_string(fnt_path)?;
 
         let mut lines = text.lines();
@@ -139,7 +140,7 @@ impl SdfFont {
 }
 
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct FontInfo {
     pub spacing: na::Vector2::<i32>,
     pub face: String,
@@ -224,7 +225,7 @@ impl FromStr for FontInfo  {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Page {
     pub info: PageInfo,
     pub chars: Vec::<PageChar>,
@@ -264,7 +265,7 @@ impl FromStr for Page  {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct PageInfo {
     pub id: usize,
     pub file_name: String,
@@ -355,7 +356,7 @@ impl FromStr for PageChar  {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Kerning {
     pub first_id: u32,
     pub second_id: u32,
@@ -388,14 +389,14 @@ impl FromStr for Kerning  {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Scale {
     pub w: f32,
     pub h: f32
 }
 
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Padding {
     pub top: i32,
     pub bottom: i32,

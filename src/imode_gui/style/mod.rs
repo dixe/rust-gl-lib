@@ -33,16 +33,16 @@ pub struct TextStyles {
 
 #[derive(Debug, Clone, Copy)]
 pub struct TextStyle {
-    pub text_scale: f32
+    pub pixel_size: i32
 }
 
 impl Default for TextStyles {
     fn default() -> Self {
         Self {
-            small: TextStyle { text_scale: 0.3 },
-            body: TextStyle { text_scale: 0.6 },
-            button: TextStyle { text_scale: 0.6 },
-            heading: TextStyle { text_scale: 1.0 },
+            small: TextStyle { pixel_size: 10 },
+            body: TextStyle { pixel_size: 20 },
+            button: TextStyle { pixel_size: 20 },
+            heading: TextStyle { pixel_size: 40 },
         }
     }
 }

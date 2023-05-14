@@ -11,9 +11,9 @@ impl Ui {
     }
 
     pub fn drag_point_txt(&mut self, pos: &mut Pos, txt: &str) {
-        // use ui style for text scale
-        let scale = 0.6;
-        let text_box = self.drawer2D.text_render_box(txt, scale);
+        // TODO: use ui style for text scale
+        let pxs = 16;
+        let text_box = self.drawer2D.text_render_box(txt, pxs);
 
         let r = text_box.total_width.min(text_box.total_height) as f64;
 
@@ -27,7 +27,7 @@ impl Ui {
 
         self.drawer2D.circle(pos.x, pos.y, r as i32, color);
 
-        self.drawer2D.render_text_scaled(txt, pos.x - (r/2.0) as i32, pos.y - r as i32, scale);
+        self.drawer2D.render_text(txt, pos.x - (r/2.0) as i32, pos.y - r as i32, pxs);
 
     }
 

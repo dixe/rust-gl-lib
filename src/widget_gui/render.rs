@@ -46,7 +46,7 @@ pub fn render_text(text: &str, scale: f32, geom: &Geometry, ctx: &mut RenderCont
     //println!("{:?}", sb);
     //println!("{:?}", geom);
 
-    ctx.tr.render_text(ctx.gl, &text, Default::default(), sb, scale);
+    ctx.tr.render_text(ctx.gl, &text, Default::default(), sb, 32);
 }
 
 

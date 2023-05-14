@@ -1,7 +1,5 @@
 use super::*;
 use crate::na::{self, Point3, Vector3, Translation3, geometry::Rotation, Vector2, Orthographic3};
-use crate::widget_gui::*;
-use crate::widget_gui::layout::Size;
 use crate::text_rendering::text_renderer::{TextRenderer, TextRenderBox};
 use crate::{gl::{self, viewport}, ScreenBox, ScreenCoords};
 use crate::text_rendering::text_renderer::{TextAlignment, TextAlignmentX,TextAlignmentY};
@@ -194,10 +192,11 @@ impl Drawer2D {
     }
 
 
-    pub fn text_render_box(&self, text: &str, scale: f32) -> TextRenderBox {
-        TextRenderer::render_box(self.tr.font(), text, 1920.0, scale)
+    pub fn text_render_box(&self, text: &str, pixel_size: i32) -> TextRenderBox {
+        TextRenderer::render_box(self.tr.font(), text, 1920.0, pixel_size)
     }
 
+    /*
     pub fn render_text(&mut self, text: &str, x: i32, y: i32) {
 
         let rect = Rect {
@@ -215,10 +214,10 @@ impl Drawer2D {
             y: TextAlignmentY::Top
         };
 
-        self.tr.render_text(&self.gl, text, alignment, sb, 1.0);
+        self.tr.render_text(&self.gl, text, alignment, sb, 16);
     }
-
-    pub fn render_text_scaled(&mut self, text: &str, x: i32, y: i32, scale: f32) {
+*/
+    pub fn render_text(&mut self, text: &str, x: i32, y: i32, pixel_size: i32) {
 
         let rect = Rect {
             x,
@@ -235,7 +234,8 @@ impl Drawer2D {
             y: TextAlignmentY::Top
         };
 
-        self.tr.render_text(&self.gl, text, alignment, sb, scale);
+        //TODO:
+        self.tr.render_text(&self.gl, text, alignment, sb, pixel_size);
     }
 }
 

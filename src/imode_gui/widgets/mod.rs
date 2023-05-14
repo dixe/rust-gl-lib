@@ -20,3 +20,6 @@ pub use drag_point::*;
 
 mod list;
 pub use list::*;
+
+mod text;
+pub use text::*;

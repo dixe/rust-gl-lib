@@ -16,7 +16,11 @@ pub struct TextRenderer {
     color: na::Vector3::<f32>,
     char_quad: Box<objects::char_quad::CharQuad>,
     smoothness: f32
+}
 
+pub enum TextSize {
+    Small,
+    Scaled(i32)
 }
 
 
@@ -26,7 +30,6 @@ impl TextRenderer {
     pub fn new(gl: &gl::Gl, font: Font) -> Self {
 
         let shader = font.create_shader(gl);
-
         let texture_id = texture::gen_texture_rgba(&gl, &font.image());
 
 
@@ -71,7 +74,11 @@ impl TextRenderer {
 
         self.shader.set_f32(gl, "scale", scale);
 
-        self.shader.set_i32(gl, "text_map", (self.texture_id - 1) as i32);
+        self.shader.set_i32(gl, "text_map", 0);
+
+        let projection = na::geometry::Orthographic3::new(0.0, 1200.0, 800.0, 0.0, 0.0, 10.0);
+
+        self.shader.set_mat4(gl, "projection", projection.to_homogeneous());
 
         self.shader.set_f32(gl, "smoothness", self.smoothness);
 
@@ -86,7 +93,9 @@ impl TextRenderer {
 
     /// user this to get size info on how a text will be rendered. Can be used in layout phase, to get side of
     /// fx a text box
-    pub fn render_box(font: &Font, text: &str, max_width: f32, input_scale: f32) -> TextRenderBox {
+    pub fn render_box(font: &Font, text: &str, max_width: f32, size: i32) -> TextRenderBox {
+        let input_scale = size as f32 / font.size();
+
         let mut chars_info = Vec::new();
         let res = Self::calc_char_info(font, text, max_width, input_scale, &mut chars_info);
 
@@ -172,9 +181,12 @@ impl TextRenderer {
         }
     }
 
+
     /// Render text with char wrapping give screen space start x and y. The scale is how big the font is rendered.
     /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
-    pub fn render_text(&mut self, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, input_scale: f32) {
+    pub fn render_text(&mut self, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, pixel_size: i32) {
+
+        let input_scale = pixel_size as f32 / self.font.size();
 
         let scale_x = 2.0 / screen_box.screen_w * input_scale;
 
@@ -229,9 +241,37 @@ impl TextRenderer {
             bottom: screen_box.bottom(),
             screen_w: screen_box.screen_w,
             screen_h: screen_box.screen_h,
+            input_scale: input_scale
         };
 
-        self.render_text_quads(gl, &draw_info);
+        self.render_text_quads_pixel(gl, &draw_info);
+    }
+
+
+    fn render_text_quads_pixel(&mut self , gl: &gl::Gl, draw_info: &DrawInfo) {
+
+        // Draw the chars
+        let buffer_size = self.char_quad.buffer_size();
+        let mut i = 0;
+        for info in draw_info.chars_info.iter() {
+            if info.y > draw_info.bottom {
+                break;
+            }
+
+            self.char_quad.update_char_pixels(i, info.x, info.y, draw_info.input_scale, &info.chr, self.font.image().into());
+
+
+            //self.char_quad.render_full_texture(i);
+
+            i += 1;
+
+            if i >= buffer_size {
+                self.char_quad.render(gl, i);
+                i = 0;
+            }
+        }
+
+        self.char_quad.render(gl, i);
     }
 
 
@@ -244,7 +284,6 @@ impl TextRenderer {
             if info.y > draw_info.bottom {
                 break;
             }
-
 
             let x = smoothstep(0.0, draw_info.screen_w, info.x) * 2.0 - 1.0;
             let y = -1.0 * (smoothstep(0.0, draw_info.screen_h, info.y) * 2.0 - 1.0);
@@ -262,14 +301,36 @@ impl TextRenderer {
         }
 
         self.char_quad.render(gl, i);
+    }
 
 
+    pub fn change_font(&mut self, gl: &gl::Gl, font: Font) {
+        self.shader = font.create_shader(gl);
+
+        self.texture_id = texture::gen_texture_rgba(&gl, &font.image());
+        self.font = font;
+    }
+
+    pub fn change_font_wihtout_shader(&mut self, gl: &gl::Gl, font: Font) {
+        self.texture_id = texture::gen_texture_rgba(&gl, &font.image());
+        self.font = font;
     }
 
     pub fn font(&self) -> &Font {
         &self.font
     }
+
+
+    fn input_scale(&self,size: TextSize) -> f32 {
+        match size {
+            TextSize::Small => 1.0,
+            TextSize::Scaled(pixel_size) => pixel_size as f32 / self.font.size()
+        }
+    }
 }
+
+
+
 
 fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
     f32::clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
@@ -282,6 +343,7 @@ struct DrawInfo<'a>{
     chars_info: &'a Vec::<CharPosInfo>,
     screen_w: f32,
     screen_h: f32,
+    input_scale: f32
 }
 
 #[derive(Debug)]

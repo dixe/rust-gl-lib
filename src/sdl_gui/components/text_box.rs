@@ -96,7 +96,7 @@ where
             x: TextAlignmentX::Left,
             y: TextAlignmentY::Center,
         };
-        tr.render_text(gl, &self.content, align, button_screen_box, 1.0);
+        tr.render_text(gl, &self.content, align, button_screen_box, 32);
     }
 
     fn on_event(&self, event: ComponentEvent) -> Option<Message> {

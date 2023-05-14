@@ -7,7 +7,7 @@ use crate::gl;
 mod msdf_font;
 pub use self::msdf_font::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Font {
     Sdf(SdfFont),
     Msdf(MsdfFont)
@@ -31,9 +31,16 @@ impl Font {
         }
     }
 
+    pub fn name(&self) -> String {
+        match self {
+            Font::Sdf(sdf) => format!("{}-{}", sdf.info.face, sdf.info.size),
+            Font::Msdf(msdf) => format!("{}-{}",msdf.info.name, msdf.info.atlas.size),
+        }
+    }
+
     pub fn default_page_char(&self) -> PageChar {
         match self {
-            Font::Sdf(_sdf) => panic!("No default set for sdf font"),
+            Font::Sdf(sdf) => sdf.page.chars[0],
             Font::Msdf(msdf) => msdf.chars[0]
         }
     }
@@ -50,6 +57,13 @@ impl Font {
         match self {
             Font::Sdf(sdf) => sdf.info.line_height,
             Font::Msdf(msdf) => msdf.line_height
+        }
+    }
+
+    pub fn size(&self) -> f32 {
+        match self {
+            Font::Sdf(sdf) => sdf.info.size as f32,
+            Font::Msdf(msdf) => msdf.pixel_size
         }
     }
 

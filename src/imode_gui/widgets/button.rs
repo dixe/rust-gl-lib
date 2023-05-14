@@ -9,8 +9,8 @@ impl Ui{
         let id = self.next_id();
         let mut res = false;
 
-        let scale = self.style.text_styles.button.text_scale;
-        let rb = self.drawer2D.text_render_box(text, scale);
+        let pxs = self.style.text_styles.button.pixel_size;
+        let rb = self.drawer2D.text_render_box(text, pxs);
 
 
         let pad_r = self.style.padding.right;
@@ -73,7 +73,7 @@ impl Ui{
 
         self.drawer2D.rounded_rect_color(rect.x + x_off , rect.y + y_off, rect.w, rect.h, color);
 
-        self.drawer2D.render_text_scaled(text, rect.x + pad_l, rect.y + pad_t, scale);
+        self.drawer2D.render_text(text, rect.x + pad_l, rect.y + pad_t, pxs);
 
         // done
 

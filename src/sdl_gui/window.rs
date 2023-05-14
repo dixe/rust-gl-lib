@@ -195,7 +195,7 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
 
     pub fn render_text(&mut self, text: &str) {
         let sb = ScreenBox::full_screen(self.viewport.w as f32, self.viewport.h as f32);
-        self.text_renderer.render_text(&self.gl, text, Default::default(), sb, 1.0);
+        self.text_renderer.render_text(&self.gl, text, Default::default(), sb, 32);
 
     }
 

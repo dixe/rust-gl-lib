@@ -66,7 +66,7 @@ impl<Message> ComponentTrait<Message> for Button<Message> where Message: Clone +
 
         let button_screen_box = ScreenBox::new(self.base.x, self.base.y, self.base.width, self.base.height, screen_w, screen_h);
 
-        tr.render_text(gl, &self.content, Default::default(), button_screen_box, 1.0);
+        tr.render_text(gl, &self.content, Default::default(), button_screen_box, 32);
 
     }
 

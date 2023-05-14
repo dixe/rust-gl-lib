@@ -11,9 +11,10 @@ impl Ui {
 
         let len = items.len() as i32;
 
-        let scale = self.style.text_styles.button.text_scale;
+
+        let pxs = self.style.text_styles.button.pixel_size;
         let text = format!("{:?}", items[0]);
-        let rb = self.drawer2D.text_render_box(&text, scale);
+        let rb = self.drawer2D.text_render_box(&text, pxs);
 
         let pad_r = self.style.padding.right;
         let pad_l = self.style.padding.left;
@@ -140,7 +141,7 @@ impl Ui {
             }
 
             self.drawer2D.rounded_rect_color(x, y, elm_w, rb.total_height as i32, color);
-            self.drawer2D.render_text_scaled(&format!("{:?}", items[i]), x, y, scale);
+            self.drawer2D.render_text(&format!("{:?}", items[i]), x, y, pxs);
 
         }
 

@@ -1,7 +1,5 @@
 #![allow(warnings)]
 use crate::na::{self, Translation3};
-use crate::widget_gui::*;
-use crate::widget_gui::layout::Size;
 use crate::text_rendering::{text_renderer::TextRenderer};
 use crate::{gl::{self, viewport}, ScreenBox, ScreenCoords};
 use crate::shader::{ TransformationShader, rounded_rect_shader::{self as rrs, RoundedRectShader}, circle_shader::{self as cs, CircleShader}};

@@ -7,22 +7,23 @@ use crate::gl;
 use super::*;
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MsdfFont {
     pub image: image::RgbaImage,
+    pub info: FontInfo,
     pub chars: Vec::<PageChar>,
     pub line_height: f32,
+    pub pixel_size: f32
 }
 
 
-static FONT_JSON: &str = include_str!("../../../assets/fonts/msdf_arial.json");
-static FONT_IMG: &[u8] = include_bytes!("../../../assets/fonts/msdf_arial.png");
-
+static FONT_JSON: &str = include_str!("../../../assets/fonts/msdf_consolas.json");
+static FONT_IMG: &[u8] = include_bytes!("../../../assets/fonts/msdf_consolas.png");
 
 
 impl Default for MsdfFont {
     fn default() -> Self {
-
+        println!("{:?}",std::mem::size_of::<MsdfFont>());
         let loaded_img = match image::load_from_memory(FONT_IMG) {
             Ok(img) => img,
             Err(err) => panic!("Load default font, creating image failed with: {}", err)
@@ -40,6 +41,23 @@ impl Default for MsdfFont {
 
 
 impl MsdfFont {
+
+    pub fn load_from_paths(json_p: &str, img_p: &str) -> Result<MsdfFont> {
+
+        let jp = std::fs::canonicalize(json_p).unwrap();
+        let ip = std::fs::canonicalize(img_p).unwrap();
+
+        let json = std::fs::read_to_string(jp).unwrap();
+        let img = std::fs::read(ip).unwrap();
+
+
+        let loaded_img = image::load_from_memory(&img).unwrap();
+
+        let image = loaded_img.into_rgba8();
+
+        Self::load_font(&json, image)
+
+    }
 
     pub fn load_font(text: &str, mut image: image::RgbaImage) -> Result<MsdfFont> {
 
@@ -100,10 +118,13 @@ impl MsdfFont {
 
 
         image = imageops::flip_vertical(&image);
+        let pixel_size = info.atlas.size;
         let font = MsdfFont {
             image,
-            chars ,
-            line_height
+            chars,
+            info,
+            line_height,
+            pixel_size
         };
 
         Ok(font)
@@ -134,22 +155,20 @@ impl MsdfFont {
 }
 
 
-#[derive(Debug, Serialize, Deserialize)]
-struct FontInfo {
-    atlas: Atlas,
-    name: String,
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FontInfo {
+    pub atlas: Atlas,
+    pub name: String,
     metrics: Metrics,
     glyphs: Vec::<Glyph>,
     kerning: Vec::<Kerning>
 }
 
-#[derive(Debug,Serialize, Deserialize)]
-struct Atlas {
+#[derive(Debug,Serialize, Deserialize, Clone)]
+pub struct Atlas {
     #[serde(alias = "type")]
     type_: String,
-    #[allow(non_snake_case)]
-    distanceRange: i32,
-    size: f32,
+    pub size: f32,
     width: u32,
     height: u32,
     #[allow(non_snake_case)]
@@ -157,8 +176,8 @@ struct Atlas {
 }
 
 
-#[derive(Debug, Serialize,Deserialize)]
-struct Metrics {
+#[derive(Debug, Serialize,Deserialize, Clone)]
+pub struct Metrics {
     #[allow(non_snake_case)]
     emSize: u32,
     #[allow(non_snake_case)]
@@ -172,8 +191,8 @@ struct Metrics {
 }
 
 
-#[derive(Debug,Serialize, Deserialize)]
-struct Glyph {
+#[derive(Debug,Serialize, Deserialize, Clone)]
+pub struct Glyph {
     unicode: u32,
     advance: f32,
     planeBounds: Option<PlaneBounds>,
@@ -182,8 +201,8 @@ struct Glyph {
 }
 
 
-#[derive(Debug, Serialize,Deserialize)]
-struct Kerning {
+#[derive(Debug, Serialize,Deserialize, Clone)]
+pub struct Kerning {
     unicode1: u32,
     unicode2: u32,
     advance: f32
@@ -191,15 +210,15 @@ struct Kerning {
 
 
 #[derive(Default, Copy, Clone, Debug, Serialize,Deserialize)]
-struct PlaneBounds {
+pub struct PlaneBounds {
     left: f32,
     bottom: f32,
     right: f32,
     top: f32,
 }
 
-#[derive(Debug, Serialize,Deserialize)]
-struct AtlasBounds {
+#[derive(Debug, Serialize,Deserialize, Clone)]
+pub struct AtlasBounds {
     left: f32,
     bottom: f32,
     right: f32,
