@@ -3,7 +3,7 @@ use gl_lib::particle_system::*;
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use deltatime;
-use gl_lib::text_rendering::font::{Font, MsdfFont, SdfFont};
+use gl_lib::text_rendering::font::{Font, MsdfFont, FntFont};
 use gl_lib::shader::BaseShader;
 
 
@@ -156,8 +156,8 @@ fn generate_font_vec() -> std::io::Result<Vec::<Font>> {
         let file = dp.to_str().unwrap();
 
         if file.ends_with(".fnt") {
-            let inner_font = SdfFont::load_fnt_font(file).unwrap();
-            res.push(Font::Sdf(inner_font));
+            let inner_font = FntFont::load_fnt_font(file).unwrap();
+            res.push(Font::Fnt(inner_font));
         }
 
         if file.ends_with(".json") {
@@ -179,8 +179,9 @@ fn update_font(ui: &mut Ui, name: &str) {
     let font = Font::Msdf(inner_font);
     ui.drawer2D.tr.change_font(&ui.drawer2D.gl, font);
 }
+ */
 
-*/
+
 fn update_shaders(ui: &mut Ui, gl: &gl::Gl, name: &str) {
 
 

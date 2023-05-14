@@ -13,21 +13,18 @@ use crate::gl;
 use crate::na;
 
 #[derive(Debug, Clone)]
-pub struct SdfFont {
+pub struct FntFont {
     pub info: FontInfo,
     pub page: Page,
     pub image: image::RgbaImage
 }
 
 
-static FONT_TEXT: &str = include_str!("../../../assets/fonts/Arial.fnt");
-static FONT_IMG: &[u8; 85355] = include_bytes!("../../../assets/fonts/Arial.png");
-
-//static FONT_TEXT: &str = include_str!("E:/repos/rust-sdf-tool/Calibri.fnt");
-//static FONT_IMG: &[u8; 87666] = include_bytes!("E:/repos/rust-sdf-tool/Calibri_0.png");
+static FONT_TEXT: &str = include_str!("../../../assets/fonts/Consolas_16.fnt");
+static FONT_IMG: &[u8] = include_bytes!("../../../assets/fonts/Consolas_0_16.png");
 
 
-impl Default for SdfFont {
+impl Default for FntFont {
     fn default() -> Self {
 
         let loaded_img = match image::load_from_memory(FONT_IMG) {
@@ -37,23 +34,21 @@ impl Default for SdfFont {
 
         let image = loaded_img.into_rgba8();
 
-        match SdfFont::load_font(FONT_TEXT, image) {
+        match FntFont::load_font(FONT_TEXT, image) {
             Ok(font) => font,
             Err(err) => panic!("Load default font failed with: {}", err)
         }
     }
 }
 
-//TODO: use this to calculate the SDF from TTF https://www.youtube.com/watch?v=LaYPoMPRSlk
 
-
-impl SdfFont {
+impl FntFont {
 
     /// Assumes that the png file referred to in the font is located in the same directory as the .fnt file.
     /// Fonts generated from steps here: <https://github.com/libgdx/libgdx/wiki/Distance-field-fonts>]
 
 
-    pub fn load_font(text: &str, mut image: image::RgbaImage) -> Result<SdfFont, Box<dyn Error>> {
+    pub fn load_font(text: &str, mut image: image::RgbaImage) -> Result<FntFont, Box<dyn Error>> {
 
         let mut lines = text.lines();
 
@@ -72,7 +67,7 @@ impl SdfFont {
             c.y = image.height() as f32 - c.y;
         }
 
-        Ok(SdfFont {
+        Ok(FntFont {
             info,
             page,
             image,
@@ -80,7 +75,7 @@ impl SdfFont {
 
     }
 
-    pub fn load_fnt_font<P: AsRef<Path>>(path: P) -> Result<SdfFont, Box<dyn Error>> {
+    pub fn load_fnt_font<P: AsRef<Path>>(path: P) -> Result<FntFont, Box<dyn Error>> {
 
         let fnt_path = path.as_ref();
         let text = fs::read_to_string(fnt_path)?;
@@ -131,8 +126,8 @@ impl SdfFont {
 
     pub fn create_shader(&self, gl: &gl::Gl) -> BaseShader {
 
-        let vert_source = include_str!("../../../assets/shaders/sdf_text_render.vert");
-        let frag_source = include_str!("../../../assets/shaders/sdf_text_render.frag");
+        let vert_source = include_str!("../../../assets/shaders/alpha_mask_text_render.vert");
+        let frag_source = include_str!("../../../assets/shaders/alpha_mask_text_render.frag");
 
         BaseShader::new(gl, vert_source, frag_source).unwrap()
     }
@@ -435,7 +430,7 @@ mod tests {
 
         let path = Path::new("./assets/fonts/Arial.fnt");
 
-        let font = SdfFont::load_fnt_font(&path).unwrap();
+        let font = FntFont::load_fnt_font(&path).unwrap();
 
         assert_eq!(font.page.chars.len(), 191);
 
