@@ -3,10 +3,8 @@
 #version 330 core
 out vec4 FragColor;
 uniform vec3 color;
-uniform float scale;
 
 uniform sampler2D text_map;
-uniform float smoothness;
 
 in VS_OUTPUT {
   vec2 TexCoords;
@@ -45,22 +43,8 @@ void main()
   float sd = median(s.r, s.g, s.b) - 0.5;
 
   // Weight between inside and outside (anti-aliasing)
-
   float w = sd/fwidth(sd) + 0.5;
   w = clamp(w, 0.0, 1.0);
 
-
-
-  FragColor = vec4(color, w);
-  //FragColor = vec4(color, s.b);
-  //FragColor = vec4(color, 1.0);
-  /*
-  sd = s.a - 0.4;
-  w = sd/fwidth(sd) + 0.5;
-  w = clamp(w, 0.0, 1.0);
-
-  FragColor = vec4(color, w);
-
-  //FragColor = vec4(0.0, 0.0, 0.0, s.a);
-  */
+  FragColor = vec4(color, 1.0) * w;
 }

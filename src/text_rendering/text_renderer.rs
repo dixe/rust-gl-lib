@@ -66,21 +66,15 @@ impl TextRenderer {
         self.smoothness = at;
     }
 
-    fn setup_shader(&mut self, gl: &gl::Gl, scale: f32) {
+    fn setup_shader(&mut self, gl: &gl::Gl, projection: na::geometry::Orthographic3::<f32>) {
 
         self.shader.set_used();
 
         self.shader.set_vec3(gl, "color", self.color);
 
-        self.shader.set_f32(gl, "scale", scale);
-
         self.shader.set_i32(gl, "text_map", 0);
 
-        let projection = na::geometry::Orthographic3::new(0.0, 1200.0, 800.0, 0.0, 0.0, 10.0);
-
         self.shader.set_mat4(gl, "projection", projection.to_homogeneous());
-
-        self.shader.set_f32(gl, "smoothness", self.smoothness);
 
         self.setup_blend(gl);
 
@@ -192,7 +186,9 @@ impl TextRenderer {
 
         let scale_y = 2.0 / screen_box.screen_h * input_scale;
         // TODO: fix this so we always render with correct scale
-        self.setup_shader(gl, input_scale);
+        let projection = na::geometry::Orthographic3::new(0.0, screen_box.screen_w, screen_box.screen_h, 0.0, 0.0, 10.0);
+
+        self.setup_shader(gl, projection);
 
         let mut chars_info = Vec::new();
 

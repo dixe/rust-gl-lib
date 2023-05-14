@@ -4,10 +4,8 @@
 #version 330 core
 out vec4 FragColor;
 uniform vec3 color;
-uniform float scale;
 
 uniform sampler2D text_map;
-uniform float smoothness;
 
 in VS_OUTPUT {
   vec2 TexCoords;

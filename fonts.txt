@@ -1,0 +1,4 @@
+For larger font, size 20 or larger, use a msdf font with base size of 32.
+
+For smaller font use a bitmask font generated from freetype. See rust-sdf-tool
+for code to generate bitmaps

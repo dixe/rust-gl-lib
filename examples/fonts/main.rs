@@ -133,12 +133,11 @@ fn choose_shader(ui: &mut Ui, gl: &gl::Gl, shader_names: &[&str]) -> Option<Stri
     r
 }
 
-
 fn choose_font(ui: &mut Ui, fonts: &[Font]) -> Option<String> {
     let mut r = None;
     for font in fonts {
         if ui.button(&format!("{}", font.name())) {
-            ui.drawer2D.tr.change_font_wihtout_shader(&ui.drawer2D.gl, font.clone());
+            ui.drawer2D.tr.change_font(&ui.drawer2D.gl, font.clone());
             r = Some(font.name());
         }
     }
@@ -184,6 +183,13 @@ fn update_font(ui: &mut Ui, name: &str) {
 */
 fn update_shaders(ui: &mut Ui, gl: &gl::Gl, name: &str) {
 
-    let shader = BaseShader::new(gl, &std::fs::read_to_string(format!("assets/shaders/{name}.vert")).unwrap(), &std::fs::read_to_string(format!("assets/shaders/{name}.frag")).unwrap()).unwrap();
-    ui.drawer2D.tr.change_shader(shader);
+
+    match BaseShader::new(gl, &std::fs::read_to_string(format!("assets/shaders/{name}.vert")).unwrap(), &std::fs::read_to_string(format!("assets/shaders/{name}.frag")).unwrap()) {
+        Ok(shader) => {
+            ui.drawer2D.tr.change_shader(shader);
+        },
+        Err(err) => {
+            println!("{:?}", err);
+        }
+    }
 }
