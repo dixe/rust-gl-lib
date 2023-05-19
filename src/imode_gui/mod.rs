@@ -20,11 +20,7 @@ pub mod numeric;
 
 pub mod style;
 
-#[derive(Debug, Copy, Clone, Default)]
-pub struct Pos {
-    pub x: i32,
-    pub y: i32
-}
+pub type Pos = na::Vector2::<i32>;
 
 
 pub type Id = u64;

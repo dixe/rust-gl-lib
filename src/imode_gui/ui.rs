@@ -13,6 +13,7 @@ use super::*;
 pub struct Ui {
     pub drawer2D: Drawer2D,
     pub mouse_pos: Pos,
+    pub mouse_diff: Pos,
     base_container_context: ContainerContext,
     pub mouse_down: bool,
     pub mouse_up: bool,
@@ -43,10 +44,11 @@ impl Ui {
 
         Self {
             drawer2D,
-            mouse_pos: Pos{x:0, y: 0},
+            mouse_pos: Pos::new(0,0),
+            mouse_diff: Pos::new(0,0),
             base_container_context,
             mouse_down: false,
-            mouse_down_pos: Pos{x:0, y: 0},
+            mouse_down_pos: Pos::new(0,0),
             mouse_up: false,
             style,
             active_context: None,
@@ -148,6 +150,15 @@ impl Ui {
     }
 
 
+    pub fn get_frame_inputs(&self) -> &[event::Event] {
+
+        if self.base_container_context.active == None {
+            return &self.frame_events
+        }
+        return &[];
+    }
+
+
     // TODO: Either return unused events only. Or return all events along with bool to indicate if the event is used/consumed by gui
     pub fn consume_events(&mut self, event_pump: &mut sdl2::EventPump) -> &[event::Event] {
 
@@ -163,17 +174,22 @@ impl Ui {
         use event::Event::*;
 
         for event in event_pump.poll_iter() {
-            self.frame_events.push(event.clone());
+            if self.base_container_context.active == None {
+                self.frame_events.push(event.clone());
+            }
+
             match event {
                 MouseButtonDown {x, y, ..} => {
                     self.mouse_down = true;
-                    self.mouse_down_pos = Pos {x,y};
+                    self.mouse_down_pos = Pos::new(x, y);
                 },
                 MouseButtonUp {x, y, ..} => {
                     self.mouse_up = true;
                 },
                 MouseMotion {x,y, .. } => {
-                    self.mouse_pos = Pos{x,y};
+                    self.mouse_diff = Pos::new(x, y) - self.mouse_pos;
+                    self.mouse_pos = Pos::new(x, y);
+
                 },
                 Window {win_event: event::WindowEvent::Resized(x,y), ..} => {
                     self.drawer2D.update_viewport(x, y);
@@ -183,7 +199,7 @@ impl Ui {
                     std::process::exit(0);
                 },
                 other => {
-                   // pass along to program
+                    // TODO maybe pass to host? But for now only pass events when no active widget
                 }
             }
         }
@@ -197,7 +213,7 @@ fn clear_context(ctx: &mut ContainerContext) {
     ctx.next_id = 0;
     ctx.hot = None;
 
-    ctx.draw_offset = Pos {x: 0, y: 0};
+    ctx.draw_offset = Pos::new(0, 0);
     ctx.max_y_offset = 0;
 
 }
