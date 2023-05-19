@@ -5,7 +5,7 @@ pub enum Color {
     Rgb(u8, u8, u8),
     RgbA(u8, u8, u8, u8),
     RgbAf32(f32, f32, f32, f32),
-    Hsv(f32, f32, f32) // hsv with h in [0..360] and v,s in [0..1]
+    Hsv(f32, f32, f32, f32) // hsv with h in [0..360] and v,s in [0..1]
 }
 
 impl Color {
@@ -29,22 +29,42 @@ impl Color {
             Color::Rgb(r,g,b) => na::Vector4::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0),
             Color::RgbA(r,g,b,a) => na::Vector4::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, a as f32 / 255.0),
             Color::RgbAf32(r,g,b,a) => na::Vector4::new(r,g,b,a),
-            Color::Hsv(h,s,v) => hsv_to_rgba_vec(h, s, v)
+            Color::Hsv(h,s,v,a) => hsv_to_rgba_vec(h, s, v, a)
         }
     }
 
-    pub fn to_hsv(&self) -> na::Vector3::<f32> {
+    pub fn to_hsv(&self) -> na::Vector4::<f32> {
         match *self {
-            Color::Rgb(r,g,b) => rgb_to_hsv_vec(r, g, b),
-            Color::RgbA(r,g,b,_) => rgb_to_hsv_vec(r, g, b),
-            Color::RgbAf32(r, g, b, _) => rgb_to_hsv_vec((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8),
-            Color::Hsv(h, s,v) => na::Vector3::new(h, s, v)
+            Color::Rgb(r,g,b) => rgb_to_hsv_vec(r, g, b, 255),
+            Color::RgbA(r,g,b,a) => rgb_to_hsv_vec(r, g, b, a),
+            Color::RgbAf32(r, g, b, a) => rgb_to_hsv_vec((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8, (a * 255.0) as u8),
+            Color::Hsv(h, s, v, a) => na::Vector4::new(h, s, v, a)
         }
+    }
+
+    pub fn alpha(&self) -> f32 {
+        match *self {
+            Color::Rgb(r,g,b) => 1.0,
+            Color::RgbA(r,g,b,a) => a as f32 / 255.0,
+            Color::RgbAf32(r,g,b,a) => a,
+            Color::Hsv(h,s,v, a) => a,
+        }
+    }
+
+    pub fn set_alpha(&mut self, alpha: f32) {
+        let r = match *self {
+            Color::Rgb(r,g,b) => Color::RgbA(r,g,b,(alpha * 255.0) as u8),
+            Color::RgbA(r,g,b,_) => Color::RgbA(r,g,b,(alpha * 255.0) as u8),
+            Color::RgbAf32(r, g, b, _) => Color::RgbAf32(r, g, b, alpha),
+            Color::Hsv(h, s,v, _) => Color::Hsv(h, s,v, alpha)
+        };
+
+        *self = r;
     }
 }
 
 
-fn hsv_to_rgba_vec(h: f32, s: f32, v: f32) -> na::Vector4::<f32> {
+fn hsv_to_rgba_vec(h: f32, s: f32, v: f32, a: f32) -> na::Vector4::<f32> {
 
     let hp = h/60.0;
     let c = v * s;
@@ -61,10 +81,10 @@ fn hsv_to_rgba_vec(h: f32, s: f32, v: f32) -> na::Vector4::<f32> {
         _ => (c, 0.0, x)
     };
 
-    na::Vector4::new(r + m, g + m, b + m, 1.0)
+    na::Vector4::new(r + m, g + m, b + m, a)
 }
 
-fn rgb_to_hsv_vec(r: u8, g: u8, b: u8) -> na::Vector3::<f32> {
+fn rgb_to_hsv_vec(r: u8, g: u8, b: u8, a: u8) -> na::Vector4::<f32> {
 
     let rm = r as f32 / 255.0;
     let gm = g as f32 / 255.0;
@@ -78,7 +98,7 @@ fn rgb_to_hsv_vec(r: u8, g: u8, b: u8) -> na::Vector3::<f32> {
     let h = if delta == 0.0 { 0.0 } else
     {
         match c_max {
-            x if x == rm => 60.0* (((gm - bm) / delta) % 6.0),
+            x if x == rm => 60.0* (((gm - bm) / delta).rem_euclid(6.0)),
             x if x == gm => 60.0* (((bm - rm) / delta) + 2.0),
             _  => 60.0* (((rm - gm) / delta) + 4.0)
         }
@@ -89,5 +109,5 @@ fn rgb_to_hsv_vec(r: u8, g: u8, b: u8) -> na::Vector3::<f32> {
 
     let v = c_max;
 
-    na::Vector3::new(h, s, v)
+    na::Vector4::new(h, s, v, a as f32 / 255.0)
 }
