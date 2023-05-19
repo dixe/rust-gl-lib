@@ -8,5 +8,7 @@ pub struct Particle {
     pub total_life: f32,
     pub life: f32,
     pub size: f32,
-    pub color: Color
+    pub color: Color,
+    pub color_from: Color,
+    pub color_to: Color
 }

@@ -10,11 +10,25 @@ pub enum Color {
 
 impl Color {
 
+    pub fn lerp(from: Color, to: Color, mut t: f32) -> Self {
+        // scale t to [0;1]
+        t = f32::min(1.0, f32::max(t, 0.0));
+
+        let c1 = from.as_vec4();
+        let c2 = to.as_vec4();
+
+        Self::from_vec4((1.0 - t) * c1 + t * c2)
+    }
+
+    pub fn from_vec4(c: na::Vector4::<f32>) -> Self {
+        Color::RgbAf32(c.x, c.y, c.z, c.w)
+    }
+
     pub fn as_vec4(&self) -> na::Vector4::<f32> {
         match *self {
             Color::Rgb(r,g,b) => na::Vector4::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0),
             Color::RgbA(r,g,b,a) => na::Vector4::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, a as f32 / 255.0),
-            Color::RgbAf32(r,g,b,a) =>na::Vector4::new(r,g,b,a),
+            Color::RgbAf32(r,g,b,a) => na::Vector4::new(r,g,b,a),
             Color::Hsv(h,s,v) => hsv_to_rgba_vec(h, s, v)
         }
     }

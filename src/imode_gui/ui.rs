@@ -19,7 +19,8 @@ pub struct Ui {
     pub mouse_down_pos: Pos,
     pub style: Style,
     container_contexts: std::collections::HashMap<Id, ContainerContext>,
-    active_context: Option<Id>
+    active_context: Option<Id>,
+    frame_events: Vec::<event::Event>
 }
 
 impl Ui {
@@ -49,7 +50,8 @@ impl Ui {
             mouse_up: false,
             style,
             active_context: None,
-            container_contexts: Default::default()
+            container_contexts: Default::default(),
+            frame_events: vec![]
         }
     }
 
@@ -147,7 +149,7 @@ impl Ui {
 
 
     // TODO: Either return unused events only. Or return all events along with bool to indicate if the event is used/consumed by gui
-    pub fn consume_events(&mut self, event_pump: &mut sdl2::EventPump) {
+    pub fn consume_events(&mut self, event_pump: &mut sdl2::EventPump) -> &[event::Event] {
 
         self.mouse_down = false;
         self.mouse_up = false;
@@ -157,9 +159,11 @@ impl Ui {
             clear_context(ctx);
         }
 
+        self.frame_events.clear();
         use event::Event::*;
 
         for event in event_pump.poll_iter() {
+            self.frame_events.push(event.clone());
             match event {
                 MouseButtonDown {x, y, ..} => {
                     self.mouse_down = true;
@@ -179,13 +183,13 @@ impl Ui {
                     std::process::exit(0);
                 },
                 other => {
-                    // pass along to program
+                   // pass along to program
                 }
             }
         }
+
+        return &self.frame_events;
     }
-    // TODO: Maybe have a render text here, but we still need to tell what kind of text, but maybe we can use an enum
-    // to figure out which textstyle to use, drawer2D should not have that enum, but be more general
 
 }
 

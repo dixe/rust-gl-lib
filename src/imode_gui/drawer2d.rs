@@ -35,6 +35,7 @@ impl Drawer2D {
         let font_cache = FontCache::new(gl.clone(), font.clone(), None);
 
         let text_renderer = TextRenderer::new(gl, font);
+        TextRenderer::setup_blend(gl);
         let rrs = RoundedRectShader::new(gl)?;
         let cs = CircleShader::new(gl)?;
         let color_square_shader = Box::new(color_square::ColorSquare::default_shader(&gl)?);
