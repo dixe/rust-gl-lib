@@ -47,13 +47,14 @@ impl Emitter {
     pub fn update(&mut self, dt: f32) {
 
         let mut i = 0;
+        let max_particles = self.particles.len() - 1;
         while i < self.next_alive {
 
             // update
             self.particles[i].life -= dt;
 
             if self.particles[i].life < 0.0 {
-                self.particles.swap(i, self.next_alive);
+                self.particles.swap(i, self.next_alive.min(max_particles));
                 self.next_alive -= 1;
             } else {
                 (self.update_fn)(&mut self.particles[i], dt);
@@ -64,17 +65,16 @@ impl Emitter {
 
     pub fn emit_from_fn<F : Fn(&mut Particle, f32, f32)> (&mut self, x: f32, y: f32, emit_fn: F) {
         if self.next_alive >= self.particles.len() {
-            println!("Active particles full");
             return; // silently just not emit particle
         }
 
         (emit_fn)(&mut self.particles[self.next_alive], x, y);
+        self.particles[self.next_alive].total_life = self.particles[self.next_alive].life;
         self.next_alive += 1;
     }
 
     pub fn emit(&mut self, x: f32, y: f32) {
         if self.next_alive >= self.particles.len() {
-            println!("Active particles full");
             return; // silently just not emit particle
         }
 
