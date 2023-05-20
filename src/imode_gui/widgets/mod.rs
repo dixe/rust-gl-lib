@@ -23,3 +23,6 @@ pub use list::*;
 
 mod text;
 pub use text::*;
+
+mod img;
+pub use img::*;

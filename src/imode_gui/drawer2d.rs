@@ -3,25 +3,35 @@ use crate::na::{self, Point3, Vector3, Translation3, geometry::Rotation, Vector2
 use crate::text_rendering::text_renderer::{TextRenderer, TextRenderBox};
 use crate::{gl::{self, viewport}, ScreenBox, ScreenCoords};
 use crate::text_rendering::text_renderer::{TextAlignment, TextAlignmentX,TextAlignmentY};
-use crate::shader::{ Shader, TransformationShader, rounded_rect_shader::{self as rrs, RoundedRectShader}, circle_shader::{self as cs, CircleShader}};
-use crate::objects::{square, color_square};
+use crate::shader::{ Shader, TransformationShader, rounded_rect_shader::{self as rrs, RoundedRectShader}, circle_shader::{self as cs, CircleShader}, texture_shader::{self as ts, TextureShader}};
+use crate::objects::{square, color_square, texture_quad};
 use crate::color::Color;
 use crate::helpers::SetupError;
 use crate::text_rendering::font::Font;
 use crate::text_rendering::font_cache::FontCache;
 use crate::imode_gui::numeric::Numeric;
+use crate::texture::TextureId;
 use crate::imode_gui::viewport::Viewport;
 
 pub struct Drawer2D {
+    // general
     pub gl: gl::Gl,
     pub tr: TextRenderer,
     pub viewport: viewport::Viewport,
+
+    // render objects
     pub square: square::Square,
+    pub texture_square: texture_quad::TextureQuad,
+
+    //shdaers
     pub color_square: color_square::ColorSquare,
     pub rounded_rect_shader: RoundedRectShader,
     pub color_square_shader: Box::<Shader>,
     pub color_square_h_line_shader: Box::<Shader>,
     pub circle_shader: CircleShader,
+    pub texture_shader: TextureShader,
+
+    // fonts
     pub font_cache: FontCache,
 }
 
@@ -36,9 +46,13 @@ impl Drawer2D {
 
         let text_renderer = TextRenderer::new(gl, font);
         TextRenderer::setup_blend(gl);
+
+        let texture_square = texture_quad::TextureQuad::new(gl);
         let rrs = RoundedRectShader::new(gl)?;
         let cs = CircleShader::new(gl)?;
         let color_square_shader = Box::new(color_square::ColorSquare::default_shader(&gl)?);
+
+        let texture_shader = TextureShader::new(gl)?;
 
         let color_square_h_line_shader = Box::new(color_square::ColorSquare::h_line_shader(&gl)?);
 
@@ -50,6 +64,8 @@ impl Drawer2D {
             gl: (*gl).clone(),
             tr: text_renderer,
             viewport,
+            texture_square,
+            texture_shader,
             rounded_rect_shader: rrs,
             square,
             circle_shader: cs,
@@ -228,6 +244,25 @@ impl Drawer2D {
     /// Render at x,y with given font
     pub fn render_text_with_font(&mut self, text: &str, x: i32, y: i32, pixel_size: i32, font: &Font) {
         render_text(&self.gl, &mut self.tr, text, x, y, &self.viewport, pixel_size, font);
+    }
+
+    /// render the texture in texture_id, at x,y with size
+    pub fn render_img(&mut self, texture_id: TextureId, x: i32, y: i32, size: na::Vector2::<i32>) {
+
+        self.texture_shader.shader.set_used();
+
+        let geom = Geom {
+            x,
+            y,
+            w: size.x,
+            h: size.y
+        };
+
+        let transform = unit_square_transform_matrix(&geom, &self.viewport);
+        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
+
+        self.texture_square.render(&self.gl);
+
     }
 }
 

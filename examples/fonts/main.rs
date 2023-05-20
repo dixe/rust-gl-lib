@@ -1,5 +1,4 @@
 use gl_lib::{gl, na, helpers};
-use gl_lib::particle_system::*;
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use deltatime;
@@ -27,7 +26,6 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let mut emitter = emitter::Emitter::new(1000, emitter::emit_1, emitter::update_1);
     let mut delta_time = deltatime::Deltatime::new();
 
     let mut amount = 1;
@@ -49,11 +47,6 @@ fn main() -> Result<(), failure::Error> {
 
         ui.consume_events(&mut event_pump);
 
-        if ui.button("Emit super") {
-            for _ in 0..amount {
-                emitter.emit();
-            }
-        }
 
         ui.label("Amount");
         ui.slider( &mut amount, 1, 100);
@@ -101,8 +94,6 @@ fn main() -> Result<(), failure::Error> {
 */
 
         let dt = delta_time.time();
-        emitter.update(dt);
-        emitter.draw_all(&ui.drawer2D);
 
         ui.newline();
         ui.newline();

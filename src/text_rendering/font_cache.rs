@@ -98,8 +98,6 @@ impl FontCache {
                             return None;
                         }
                     }
-
-                    return None;
                 }
                 return None;
 

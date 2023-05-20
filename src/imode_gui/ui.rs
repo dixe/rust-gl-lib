@@ -165,6 +165,10 @@ impl Ui {
         self.mouse_down = false;
         self.mouse_up = false;
 
+
+        let any_hot = self.base_container_context.hot != None;
+        let any_active = self.base_container_context.active != None;
+
         clear_context(&mut self.base_container_context);
         for (_, ctx) in &mut self.container_contexts {
             clear_context(ctx);
@@ -172,23 +176,33 @@ impl Ui {
 
         self.frame_events.clear();
         use event::Event::*;
+        use sdl2::keyboard::Keycode::*;
 
         for event in event_pump.poll_iter() {
-            if self.base_container_context.active == None {
-                self.frame_events.push(event.clone());
-            }
-
             match event {
                 MouseButtonDown {x, y, ..} => {
                     self.mouse_down = true;
                     self.mouse_down_pos = Pos::new(x, y);
+
+                    // Stop click when there are a hot or an active
+                    if !any_hot && !any_active {
+                        self.frame_events.push(event.clone());
+                    }
                 },
                 MouseButtonUp {x, y, ..} => {
                     self.mouse_up = true;
+
+                    if !any_active {
+                        self.frame_events.push(event.clone());
+                    }
                 },
                 MouseMotion {x,y, .. } => {
                     self.mouse_diff = Pos::new(x, y) - self.mouse_pos;
                     self.mouse_pos = Pos::new(x, y);
+
+                    if !any_active {
+                        self.frame_events.push(event.clone());
+                    }
 
                 },
                 Window {win_event: event::WindowEvent::Resized(x,y), ..} => {
@@ -198,14 +212,27 @@ impl Ui {
                 Quit { .. } => {
                     std::process::exit(0);
                 },
+                KeyDown { keycode: Some(Escape), ..} => {
+
+                    if any_active {
+                        self.set_not_active();
+                    }
+                    else {
+                        self.frame_events.push(event.clone());
+                    }
+                },
                 other => {
-                    // TODO maybe pass to host? But for now only pass events when no active widget
+                    // maybe passing non mouse events it fine, when something is hot, but not active
+                    if !any_hot && !any_active {
+                        self.frame_events.push(other.clone());
+                    }
                 }
             }
         }
 
         return &self.frame_events;
     }
+
 
 }
 

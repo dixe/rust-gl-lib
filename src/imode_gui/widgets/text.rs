@@ -2,6 +2,7 @@ use super::*;
 use crate::imode_gui::style::TextStyles;
 
 impl Ui {
+
     pub fn body_text(&mut self, text: &str)
     {
         let pixel_size = self.style.text_styles.body.pixel_size;

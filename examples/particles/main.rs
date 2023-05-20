@@ -53,6 +53,8 @@ fn main() -> Result<(), failure::Error> {
 
         // consume events and store them and their info
         ui.consume_events(&mut event_pump);
+        handle_inputs(&ui, &mut state);
+
         delta_time.update();
 
         // ui
@@ -70,12 +72,8 @@ fn main() -> Result<(), failure::Error> {
         ui.color_picker(&mut args.color_to);
 
 
-
-        // Handle frame input after ui, so we know i the ui used fx a click, and we will ignore it
-        handle_inputs(&ui, &mut state);
-
         if let Some((x,y)) = state.mouse_pos {
-            for _ in 0..30 {
+            for _ in 0..3 {
                 emitter.emit_from_fn(x, y, |p, x, y| emit_1(p, x, y, args));
             }
         }
