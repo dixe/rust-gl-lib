@@ -9,6 +9,13 @@ impl Ui {
         self.text(text, pixel_size, |styles| &styles.body.font_name);
     }
 
+
+    pub fn heading_text(&mut self, text: &str)
+    {
+        let pixel_size = self.style.text_styles.heading.pixel_size;
+        self.text(text, pixel_size, |styles| &styles.body.font_name);
+    }
+
     pub fn small_text(&mut self, text: &str)
     {
         let pixel_size = self.style.text_styles.small.pixel_size;

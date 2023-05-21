@@ -128,7 +128,6 @@ pub fn emit_1(p: &mut Particle, x: f32, y: f32, args: Args) {
 }
 
 
-
 #[derive(Default)]
 struct State {
     mouse_pos: Option<(f32, f32)>

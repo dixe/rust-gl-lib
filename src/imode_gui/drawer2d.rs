@@ -247,7 +247,7 @@ impl Drawer2D {
     }
 
     /// render the texture in texture_id, at x,y with size
-    pub fn render_img(&mut self, texture_id: TextureId, x: i32, y: i32, size: na::Vector2::<i32>) {
+    pub fn render_img(&mut self, texture_id: TextureId, x: i32, y: i32, size: na::Vector2::<f32>) {
 
         self.texture_shader.shader.set_used();
 

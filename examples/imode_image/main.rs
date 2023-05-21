@@ -24,11 +24,13 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let img = image::open("examples/imode_image/overbli1.jpg").unwrap().into_rgba8();;
+    let img = image::open("examples/imode_image/Consolas_0_32.png").unwrap().into_rgba8();;
+
+    let aspect = img.height() as f32 / img.width() as f32;
 
     let texture_id = ui.register_image(&img);
 
-    let mut size = na::Vector2::<i32>::new(100, 100);
+    let mut size = na::Vector2::<f32>::new(100.0, 100.0 * aspect);
 
     loop {
 
@@ -39,17 +41,17 @@ fn main() -> Result<(), failure::Error> {
 
         ui.consume_events(&mut event_pump);
 
-        ui.slider(&mut size.x, 10, 1000);
-        size.y = size.x;
+        ui.slider(&mut size.x, 10.0, 1000.0);
+        size.y = size.x * aspect;
 
         ui.newline();
 
         ui.image(texture_id, size);
 
-        ui.image(texture_id, size * 2);
+        ui.image(texture_id, size * 2.0);
 
-        ui.image(texture_id, size * 4);
-        ui.image_at(texture_id, size * 3, 0, 600);
+        ui.image(texture_id, size * 4.0);
+        ui.image_at(texture_id, size * 3.0, 0, 600);
 
         window.gl_swap_window();
     }
