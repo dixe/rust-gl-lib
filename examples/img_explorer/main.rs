@@ -27,6 +27,16 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
     let mut state = State::NoImage;
+
+    let shaders = Shaders {
+        r: r_shader(&gl),
+        g: g_shader(&gl),
+        b: b_shader(&gl),
+        a: a_shader(&gl),
+        rgba: ui.drawer2D.texture_shader.shader.clone()
+    };
+
+
     loop {
 
         // Basic clear gl stuff and get events to UI
@@ -44,22 +54,24 @@ fn main() -> Result<(), failure::Error> {
             state = State::NoImage;
         }
 
-        if ui.button("Reload Shader") {
-            let vert = "assets/shaders/objects/image.vert";
-            let frag = "assets/shaders/objects/image.frag";
+        if ui.button("R") {
+            ui.drawer2D.texture_shader.shader = shaders.r.clone();
+        }
 
-            let shader = BaseShader::new(&ui.drawer2D.gl, &std::fs::read_to_string(vert).unwrap(), &std::fs::read_to_string(frag).unwrap());
+        if ui.button("G") {
+            ui.drawer2D.texture_shader.shader = shaders.g.clone();
+        }
 
-            match shader {
-                Ok(s) => {
-                    ui.drawer2D.texture_shader.shader = s;
-                },
-                Err(err) => {
-                    println!("{:?}", err);
-                }
-            }
+        if ui.button("B") {
+            ui.drawer2D.texture_shader.shader = shaders.b.clone();
+        }
 
+        if ui.button("A") {
+            ui.drawer2D.texture_shader.shader = shaders.a.clone();
+        }
 
+        if ui.button("RGBA") {
+            ui.drawer2D.texture_shader.shader = shaders.rgba.clone();
         }
 
         match &mut state {
@@ -73,6 +85,15 @@ fn main() -> Result<(), failure::Error> {
 
         window.gl_swap_window();
     }
+}
+
+
+struct Shaders {
+    r: BaseShader,
+    g: BaseShader,
+    b: BaseShader,
+    a: BaseShader,
+    rgba: BaseShader,
 }
 
 
@@ -126,4 +147,106 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
             _ => {}
         }
     }
+}
+
+
+fn r_shader(gl: &gl::Gl) -> BaseShader {
+
+    // default program for square
+    let vert_source = include_str!("../../assets/shaders/objects/image.vert");
+
+    let frag_source = "#version 330 core
+out vec4 FragColor;
+
+uniform sampler2D text_map;
+
+in VS_OUTPUT {
+  vec2 TexCoords;
+} IN;
+
+void main()
+{
+  float col = texture2D(text_map, IN.TexCoords).r;
+  FragColor = vec4(col, col, col, 1.0);
+}
+";
+
+    BaseShader::new(gl, vert_source, frag_source).unwrap()
+
+}
+
+
+fn g_shader(gl: &gl::Gl) -> BaseShader {
+
+    // default program for square
+    let vert_source = include_str!("../../assets/shaders/objects/image.vert");
+
+    let frag_source = "#version 330 core
+out vec4 FragColor;
+
+uniform sampler2D text_map;
+
+in VS_OUTPUT {
+  vec2 TexCoords;
+} IN;
+
+void main()
+{
+  float col = texture2D(text_map, IN.TexCoords).g;
+  FragColor = vec4(col, col, col, 1.0);
+}
+";
+
+    BaseShader::new(gl, vert_source, frag_source).unwrap()
+
+}
+
+fn b_shader(gl: &gl::Gl) -> BaseShader {
+
+    // default program for square
+    let vert_source = include_str!("../../assets/shaders/objects/image.vert");
+
+    let frag_source = "#version 330 core
+out vec4 FragColor;
+
+uniform sampler2D text_map;
+
+in VS_OUTPUT {
+  vec2 TexCoords;
+} IN;
+
+void main()
+{
+  float col = texture2D(text_map, IN.TexCoords).b;
+  FragColor = vec4(col, col, col, 1.0);
+}
+";
+
+    BaseShader::new(gl, vert_source, frag_source).unwrap()
+
+}
+
+fn a_shader(gl: &gl::Gl) -> BaseShader {
+
+    // default program for square
+    let vert_source = include_str!("../../assets/shaders/objects/image.vert");
+
+    let frag_source = "#version 330 core
+out vec4 FragColor;
+
+uniform sampler2D text_map;
+
+in VS_OUTPUT {
+  vec2 TexCoords;
+} IN;
+
+void main()
+{
+  float col = texture2D(text_map, IN.TexCoords).a;
+  FragColor = vec4(col, col, col, 1.0);
+}
+";
+
+    BaseShader::new(gl, vert_source, frag_source).unwrap()
+
 }
