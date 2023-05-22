@@ -64,7 +64,7 @@ impl Color {
 }
 
 
-fn hsv_to_rgba_vec(h: f32, s: f32, v: f32, a: f32) -> na::Vector4::<f32> {
+fn hsv_to_rgba_vec(h: f32, s: f32, v: f32, alpha: f32) -> na::Vector4::<f32> {
 
     let hp = h/60.0;
     let c = v * s;
@@ -81,7 +81,7 @@ fn hsv_to_rgba_vec(h: f32, s: f32, v: f32, a: f32) -> na::Vector4::<f32> {
         _ => (c, 0.0, x)
     };
 
-    na::Vector4::new(r + m, g + m, b + m, a)
+    na::Vector4::new(r + m, g + m, b + m, alpha)
 }
 
 fn rgb_to_hsv_vec(r: u8, g: u8, b: u8, a: u8) -> na::Vector4::<f32> {
