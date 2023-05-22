@@ -12,12 +12,18 @@ use super::*;
 use std::collections::HashMap;
 
 
+#[derive(Eq, Hash, PartialEq, Clone, Copy, Debug, Default)]
+pub struct CtxId {
+    ctx_id: Id,
+    widget_id: Id
+}
+
 #[derive(Default)]
 pub struct Window {
     pub name: String,
     pub base_container_context: ContainerContext,
-    pub container_contexts: std::collections::HashMap<Id, ContainerContext>,
-    pub active_context: Option<Id>,
+    pub container_contexts: std::collections::HashMap<CtxId, ContainerContext>,
+    pub active_context: Option<CtxId>,
 }
 
 pub struct Ui {
@@ -137,18 +143,23 @@ impl Ui {
 
     pub fn exit_active_context(&mut self, id: Id) {
         let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap()).unwrap();
-        if let Some(ctx) = window.container_contexts.get(&id) {
+
+        let mut ctx_id = window.active_context.unwrap_or_default();
+
+        ctx_id.widget_id = id;
+        if let Some(ctx) = window.container_contexts.get(&ctx_id) {
             window.active_context = ctx.prev_active_context;
         }
     }
 
     pub fn remove_container_context(&mut self, id: Id) {
         let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap()).unwrap();
-        window.container_contexts.remove(&id);
 
+        let mut ctx_id = window.active_context.unwrap_or_default();
+        ctx_id.widget_id = id;
+        ctx_id.ctx_id += 1;
 
-        let window2 = self.windows.get_mut(self.current_window.last().unwrap()).unwrap();
-        let a = 2;
+        window.container_contexts.remove(&ctx_id);
     }
 
     pub fn set_active_context(&mut self, id: Id, rect: Rect) {
@@ -156,17 +167,23 @@ impl Ui {
         let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap()).unwrap();
 
         let cur = window.active_context;
-        window.active_context = Some(id);
+        let mut ctx_id = cur.unwrap_or_default();
+        ctx_id.widget_id = id;
+        ctx_id.ctx_id += 1;
 
-        if !window.container_contexts.contains_key(&id) {
+        window.active_context = Some(ctx_id);
+
+        if !window.container_contexts.contains_key(&ctx_id) {
             let mut ctx : ContainerContext = Default::default();
 
+            ctx.id = ctx_id;
             ctx.anchor_pos.x = rect.x;
             ctx.anchor_pos.y = rect.y;
             ctx.width = rect.w;
 
             ctx.prev_active_context = cur;
-            window.container_contexts.insert(id, ctx);
+
+            window.container_contexts.insert(ctx_id, ctx);
         }
     }
 
@@ -288,6 +305,7 @@ fn clear_context(ctx: &mut ContainerContext) {
 
 #[derive(Debug, Clone, Default, Copy)]
 pub struct ContainerContext {
+    pub id: CtxId,
     /// Reset after each frame. Widget should use hot instead of just checking in the mouse is inside them
     /// since hot only gets set when there is not active widget or we out self are the active elemnt
     /// use to check fx release of mouse happens inside button.
@@ -298,7 +316,7 @@ pub struct ContainerContext {
 
     pub next_id: u64,
 
-    pub prev_active_context: Option<Id>,
+    pub prev_active_context: Option<CtxId>,
 
     pub anchor_pos: Pos,
 
