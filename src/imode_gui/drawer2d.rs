@@ -240,6 +240,14 @@ impl Drawer2D {
         render_text(&self.gl, &mut self.tr, text, x, y, &self.viewport, pixel_size, font);
     }
 
+    /// Render at x,y with default font and given color
+    pub fn render_text_with_color(&mut self, text: &str, x: i32, y: i32, pixel_size: i32, color: Color) {
+        let font = self.font_cache.default();
+        render_text(&self.gl, &mut self.tr, text, x, y, &self.viewport, pixel_size, font);
+    }
+
+
+
     /// Render at x,y with given font name, or default font
     pub fn render_text_from_font_name(&mut self, text: &str, x: i32, y: i32, pixel_size: i32, font_name: &str) {
         let font = self.font_cache.get_or_default(pixel_size, font_name);
@@ -307,37 +315,8 @@ impl Drawer2D {
 
         self.texture_square.render(&self.gl);
 
-
-
-
-
-
-/*
-
-
-
-
-
-
-
-
-        // Create projectionmmatrix to go into ndc
-        let proj = Orthographic3::new(0.0, viewport.w as f32, 0.0, viewport.h as f32, -10.0, 100.0);
-
-        proj.to_homogeneous() * t.to_homogeneous() * rot.to_homogeneous() * offset.to_homogeneous() * scale
-
-        // translate so center is in middle, then rotate, then translate back
-        let trans1 = Translation3::new(-size.x / 2.0, -size.y / 2.0, 0.0);
-        let trans2 = Translation3::new(size.x / 2.0, size.y / 2.0, 0.0);
-        let rot = Rotation::from_euler_angles(0.0, 0.0, degrees);
-
-        let rot_m = trans2.to_homogeneous() * rot.to_homogeneous() * trans1.to_homogeneous() * na::Matrix4::identity();
-
-        let transform = unit_square_transform_matrix(&geom, rot_m , &self.viewport);
-        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
-
         self.texture_square.render(&self.gl);
-*/
+
     }
 }
 

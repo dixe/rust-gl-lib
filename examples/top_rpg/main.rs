@@ -7,7 +7,10 @@ use image::{imageops, RgbaImage};
 use sdl2::event;
 use gl_lib::texture::TextureId;
 use deltatime;
+
+
 mod shoot;
+mod damage_text;
 
 fn main() -> Result<(), failure::Error> {
 
@@ -31,7 +34,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut assets = load_assets(&mut ui);
     let mut delta_time = deltatime::Deltatime::new();
-    let mut state = State::AssetViewer;
+    let mut state = State::Shoot(shoot::State::new());
     loop {
 
         // Basic clear gl stuff and get events to UI
