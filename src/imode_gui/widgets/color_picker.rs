@@ -162,9 +162,8 @@ impl Ui{
         }
 
         if self.is_active(id) {
-            if self.is_hot(id) {
-                *color = pos_to_color(self.mouse_pos, rect, *color);
-            }
+            *color = pos_to_color(self.mouse_pos, rect, *color);
+
             if self.mouse_up {
                 if self.is_hot(id) {
                     *color = pos_to_color(self.mouse_pos, rect, *color);
@@ -209,11 +208,13 @@ impl Ui{
 
 fn pos_to_color(m_pos: Pos, rect: Rect, color: Color) -> Color {
 
+    let x_diff = f32::min(1.0, f32::max(0.0, (m_pos.x - rect.x) as f32) / rect.w as f32);
+    let y_diff = f32::min(1.0, f32::max(0.0, (m_pos.y - rect.y) as f32) / rect.h as f32);
     let hsv = color.to_hsv();
     let h = hsv.x;
     // sdl has y=0 at top, opengl at bottom, so inverse v
-    let v = 1.0 - (m_pos.y - rect.y) as f32 / rect.h as f32;
-    let s = (m_pos.x - rect.x) as f32 / rect.w as f32;
+    let v = 1.0 - y_diff;
+    let s = x_diff;
 
     Color::Hsv(h, s, v, hsv.w)
 }
