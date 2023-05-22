@@ -22,4 +22,11 @@ impl Ui {
 
         id
     }
+
+     pub fn register_image_nearest(&self, img: &RgbaImage) -> TextureId {
+        let id = texture::gen_texture_rgba_nearest(&self.drawer2D.gl, img);
+
+        id
+    }
+
 }

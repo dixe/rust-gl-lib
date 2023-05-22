@@ -136,7 +136,8 @@ impl Drawer2D {
 
         let geom = Geom { x, y, w, h };
 
-        let transform = unit_square_transform_matrix(&geom, &self.viewport);
+        let rot = na::Matrix4::<f32>::identity();
+        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport);
         self.color_square_shader.set_mat4(&self.gl, "transform", transform);
 
         self.color_square.render(&self.gl);
@@ -156,7 +157,9 @@ impl Drawer2D {
             h: r * 2.0,
         };
 
-        let transform = unit_square_transform_matrix(&geom, &self.viewport);
+        let rot = na::Matrix4::<f32>::identity();
+        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport);
+
 
         self.circle_shader.set_transform(transform);
 
@@ -182,7 +185,8 @@ impl Drawer2D {
 
         let geom = Geom { x, y, w, h };
 
-        let transform = unit_square_transform_matrix(&geom, &self.viewport);
+        let rot = na::Matrix4::<f32>::identity();
+        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport);
 
         self.color_square_h_line_shader.set_mat4(&self.gl, "transform", transform);
 
@@ -196,7 +200,8 @@ impl Drawer2D {
 
         let geom = Geom { x, y, w, h };
 
-        let transform = unit_square_transform_matrix(&geom, &self.viewport);
+        let rot = na::Matrix4::<f32>::identity();
+        let transform = unit_square_transform_matrix(&geom, rot,  &self.viewport);
 
 
         self.rounded_rect_shader.set_transform(transform);
@@ -258,11 +263,81 @@ impl Drawer2D {
             h: size.y
         };
 
-        let transform = unit_square_transform_matrix(&geom, &self.viewport);
+        let rot = na::Matrix4::<f32>::identity();
+        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport);
+        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
+
+        self.texture_square.render(&self.gl);
+    }
+
+    /// render the texture in texture_id, at x,y with size and rotation angle in radians
+    pub fn render_img_rot(&mut self, texture_id: TextureId, x: i32, y: i32, radians: f32, size: na::Vector2::<f32>) {
+
+        self.texture_shader.shader.set_used();
+
+        let geom = Geom {
+            x,
+            y,
+            w: size.x,
+            h: size.y
+        };
+
+
+        // Out target render square is defines with upper left (-0.5, 0.5) lower right (0.5,-0.5)
+
+        // First we want to scale it to the target size
+        // its a unit square, so just multiply with w and h
+        let mut scale = na::Matrix4::<f32>::identity();
+        scale[0] = size.x;
+        scale[5] = size.y;
+
+        // we want to rotate the specified angle
+        let rot = Rotation::from_euler_angles(0.0, 0.0, radians);
+
+        // translate so that our start pos is at x0, y0
+        // Invert y since sdl is (0,0) in top left. Our Mapping has (0,0) in lower left
+        let t = Translation3::new(x as f32 + size.x/2.0, self.viewport.h as f32 - y as f32 - size.y/2.0, 0.0);
+
+        // Create projectionmmatrix to go into ndc
+        let proj = Orthographic3::new(0.0, self.viewport.w as f32, 0.0, self.viewport.h as f32, -10.0, 100.0);
+
+        let transform = proj.to_homogeneous() * t.to_homogeneous() * rot.to_homogeneous()  * scale;
+
         self.texture_shader.setup(ts::Uniforms { texture_id, transform });
 
         self.texture_square.render(&self.gl);
 
+
+
+
+
+
+/*
+
+
+
+
+
+
+
+
+        // Create projectionmmatrix to go into ndc
+        let proj = Orthographic3::new(0.0, viewport.w as f32, 0.0, viewport.h as f32, -10.0, 100.0);
+
+        proj.to_homogeneous() * t.to_homogeneous() * rot.to_homogeneous() * offset.to_homogeneous() * scale
+
+        // translate so center is in middle, then rotate, then translate back
+        let trans1 = Translation3::new(-size.x / 2.0, -size.y / 2.0, 0.0);
+        let trans2 = Translation3::new(size.x / 2.0, size.y / 2.0, 0.0);
+        let rot = Rotation::from_euler_angles(0.0, 0.0, degrees);
+
+        let rot_m = trans2.to_homogeneous() * rot.to_homogeneous() * trans1.to_homogeneous() * na::Matrix4::identity();
+
+        let transform = unit_square_transform_matrix(&geom, rot_m , &self.viewport);
+        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
+
+        self.texture_square.render(&self.gl);
+*/
     }
 }
 
@@ -332,7 +407,7 @@ pub fn unit_line_transform<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T
 
 }
 
-fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(geom: &Geom<T1, T2, T3, T4>, viewport: &viewport::Viewport) -> na::Matrix4::<f32> {
+fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(geom: &Geom<T1, T2, T3, T4>, rotation: na::Matrix4::<f32>, viewport: &viewport::Viewport) -> na::Matrix4::<f32> {
 
     let x = geom.x.to_f64() * 2.0 / viewport.w as f64- 1.0;
     let y = -geom.y.to_f64() * 2.0 / viewport.h as f64 + 1.0;
@@ -355,7 +430,7 @@ fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numer
 
     let trans = Translation3::new(x_move as f32, y_move as f32, 0.0);
 
-    model = trans.to_homogeneous() * model;
+    model = trans.to_homogeneous() * rotation * model;
 
     model
 }

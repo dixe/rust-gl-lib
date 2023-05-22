@@ -53,6 +53,29 @@ pub fn gen_texture_rgba(gl: &gl::Gl, img: &image::RgbaImage) -> TextureId {
     id
 }
 
+/// Generate an RGBA texture using GL_CLAMP_TO_BORDER and GL_NEAREST
+/// Return the texture id (u32)
+pub fn gen_texture_rgba_nearest(gl: &gl::Gl, img: &image::RgbaImage) -> TextureId {
+
+    let mut id: gl::types::GLuint = 0;
+
+    unsafe {
+        gl.GenTextures(1, &mut id);
+
+        gl.BindTexture(gl::TEXTURE_2D, id);
+
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_BORDER as i32);
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_BORDER as i32);
+
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+
+        gl.TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as i32, img.width() as i32, img.height() as i32, 0, gl::RGBA, gl::UNSIGNED_BYTE, img.as_ptr() as *const gl::types::GLvoid);
+    }
+
+    id
+}
+
 
 
 pub fn gen_texture_depth(gl: &gl::Gl, width: i32, height: i32) -> TextureId {

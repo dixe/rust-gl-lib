@@ -8,7 +8,6 @@ mod types;
 
 pub use self::types::*;
 
-
 pub type MeshName = String;
 pub type AnimationName = String;
 pub type AnimationId = usize;
