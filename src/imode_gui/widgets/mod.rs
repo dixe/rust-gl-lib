@@ -24,5 +24,8 @@ pub use list::*;
 mod text;
 pub use text::*;
 
+mod window;
+pub use window::*;
+
 mod img;
 pub use img::*;

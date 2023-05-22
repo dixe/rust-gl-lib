@@ -12,12 +12,12 @@ use super::*;
 use std::collections::HashMap;
 
 
-
 #[derive(Default)]
 pub struct Window {
-    base_container_context: ContainerContext,
-    container_contexts: std::collections::HashMap<Id, ContainerContext>,
-    active_context: Option<Id>,
+    pub name: String,
+    pub base_container_context: ContainerContext,
+    pub container_contexts: std::collections::HashMap<Id, ContainerContext>,
+    pub active_context: Option<Id>,
 }
 
 pub struct Ui {
@@ -30,10 +30,11 @@ pub struct Ui {
     pub mouse_down_pos: Pos,
     pub style: Style,
 
-    windows: Vec::<Window>,
-    frame_events: Vec::<event::Event>,
-    current_window: Vec::<usize>, // index into windows, a stack
-    window_to_idx: HashMap::<String, usize>
+    pub windows: HashMap::<usize, Window>,
+    pub frame_events: Vec::<event::Event>,
+    pub current_window: Vec::<usize>, // index into windows, a stack
+    pub window_to_id: HashMap::<String, usize>,
+    pub next_window_id: usize
 }
 
 impl Ui {
@@ -41,6 +42,7 @@ impl Ui {
     pub fn new(mut drawer2D: Drawer2D) -> Self {
 
         let mut base_window : Window = Default::default();
+        base_window.name = "BASE".to_owned();
 
         base_window.base_container_context.width = drawer2D.viewport.w;
 
@@ -54,7 +56,8 @@ impl Ui {
 
         drawer2D.font_cache.add_font(small_font);
 
-
+        let mut windows: HashMap::<usize, Window>  = Default::default();
+        windows.insert(0, base_window);
         Self {
             drawer2D,
             mouse_pos: Pos::new(0,0),
@@ -63,10 +66,11 @@ impl Ui {
             mouse_down_pos: Pos::new(0,0),
             mouse_up: false,
             style,
-            windows: vec![base_window],
+            windows,
             frame_events: vec![],
             current_window: vec![0],
-            window_to_idx: Default::default()
+            window_to_id: Default::default(),
+            next_window_id: 1
         }
     }
 
@@ -101,7 +105,8 @@ impl Ui {
 
     fn ctx_fn<T, F>(&mut self, ctx_fn: F) -> T where F: Fn(&mut ContainerContext) -> T {
 
-        let window = &mut self.windows[*self.current_window.last().unwrap()];
+        let last = self.current_window.last().unwrap();
+        let window : &mut Window = self.windows.get_mut(last).unwrap();
 
         if let Some(active_ctx_id) = window.active_context {
             if let Some(ctx) = window.container_contexts.get_mut(&active_ctx_id) {
@@ -131,25 +136,29 @@ impl Ui {
 
 
     pub fn exit_active_context(&mut self, id: Id) {
-        let window = &mut self.windows[*self.current_window.last().unwrap()];
+        let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap()).unwrap();
         if let Some(ctx) = window.container_contexts.get(&id) {
             window.active_context = ctx.prev_active_context;
         }
     }
 
     pub fn remove_container_context(&mut self, id: Id) {
-        let cur_window = &mut self.windows[*self.current_window.last().unwrap()];
-        cur_window.container_contexts.remove(&id);
+        let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap()).unwrap();
+        window.container_contexts.remove(&id);
+
+
+        let window2 = self.windows.get_mut(self.current_window.last().unwrap()).unwrap();
+        let a = 2;
     }
 
     pub fn set_active_context(&mut self, id: Id, rect: Rect) {
 
-        let window = &mut self.windows[*self.current_window.last().unwrap()];
+        let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap()).unwrap();
 
         let cur = window.active_context;
         window.active_context = Some(id);
 
-        if window.container_contexts.contains_key(&id) {
+        if !window.container_contexts.contains_key(&id) {
             let mut ctx : ContainerContext = Default::default();
 
             ctx.anchor_pos.x = rect.x;
@@ -174,7 +183,7 @@ impl Ui {
 
     pub fn get_frame_inputs(&self) -> &[event::Event] {
         // only return if no window is active
-        for window in &self.windows {
+        for window in self.windows.values() {
             if window.base_container_context.active != None {
                 return &[]
             }
@@ -190,11 +199,9 @@ impl Ui {
         self.mouse_down = false;
         self.mouse_up = false;
 
-
-
         let mut any_hot = false;
         let mut any_active = false;
-        for window in &self.windows {
+        for window in self.windows.values() {
             any_hot |= window.base_container_context.hot != None;
             any_active |= window.base_container_context.active != None;
 
@@ -203,7 +210,7 @@ impl Ui {
             }
         }
 
-        for window in &mut self.windows {
+        for window in &mut self.windows.values_mut() {
             clear_context(&mut window.base_container_context);
             for (_, ctx) in &mut window.container_contexts {
                 clear_context(ctx);
@@ -243,7 +250,7 @@ impl Ui {
                 },
                 Window {win_event: event::WindowEvent::Resized(x,y), ..} => {
                     self.drawer2D.update_viewport(x, y);
-                    self.windows[0].base_container_context.width = x;
+                    self.windows.get_mut(&0).unwrap().base_container_context.width = x;
                 },
                 Quit { .. } => {
                     std::process::exit(0);
