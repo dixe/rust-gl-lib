@@ -48,15 +48,17 @@ fn main() -> Result<(), failure::Error> {
         ui.newline();
         ui.small_text("And some small text that belongs the the base");
 
-/*
+
         ui.window_begin("Window1");
 
         ui.color_picker(&mut color);
         ui.checkbox(&mut onoff);
 
         ui.window_end("Window1");
-        */
 
+        ui.color_picker(&mut color);
+        ui.color_picker(&mut color);
+        ui.color_picker(&mut color);
         ui.color_picker(&mut color);
 
         window.gl_swap_window();
