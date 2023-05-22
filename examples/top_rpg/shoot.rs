@@ -62,7 +62,7 @@ impl State {
             arrow: None,
             target: None,
             arrow_speed: 400.0,
-            scale: 4.0,
+            scale: 2.0,
             text_anim: TextAnimations::new()
         }
     }
@@ -129,7 +129,7 @@ fn handle_target(ui: &mut Ui, assets: &Assets, state: &mut State, dt: f32) {
         let mut rng = rand::thread_rng();
 
         let x = rng.gen::<f32>() * ui.drawer2D.viewport.w as f32;
-        let y = rng.gen::<f32>() * ui.drawer2D.viewport.h as f32
+        let y = rng.gen::<f32>() * ui.drawer2D.viewport.h as f32;
         let mut center = V2::new(x, y);
 
         if (center - state.weapon.center).magnitude() < 200.0 {

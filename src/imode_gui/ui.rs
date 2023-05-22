@@ -9,27 +9,40 @@ use crate::imode_gui::numeric::Numeric;
 use crate::imode_gui::style::*;
 use crate::text_rendering::font::{Font, FntFont};
 use super::*;
+use std::collections::HashMap;
+
+
+
+#[derive(Default)]
+pub struct Window {
+    base_container_context: ContainerContext,
+    container_contexts: std::collections::HashMap<Id, ContainerContext>,
+    active_context: Option<Id>,
+}
 
 pub struct Ui {
     pub drawer2D: Drawer2D,
     pub mouse_pos: Pos,
     pub mouse_diff: Pos,
-    base_container_context: ContainerContext,
+
     pub mouse_down: bool,
     pub mouse_up: bool,
     pub mouse_down_pos: Pos,
     pub style: Style,
-    container_contexts: std::collections::HashMap<Id, ContainerContext>,
-    active_context: Option<Id>,
-    frame_events: Vec::<event::Event>
+
+    windows: Vec::<Window>,
+    frame_events: Vec::<event::Event>,
+    current_window: Vec::<usize>, // index into windows, a stack
+    window_to_idx: HashMap::<String, usize>
 }
 
 impl Ui {
 
     pub fn new(mut drawer2D: Drawer2D) -> Self {
-        let mut base_container_context : ContainerContext = Default::default();
 
-        base_container_context.width = drawer2D.viewport.w;
+        let mut base_window : Window = Default::default();
+
+        base_window.base_container_context.width = drawer2D.viewport.w;
 
         let style = Default::default();
 
@@ -46,14 +59,14 @@ impl Ui {
             drawer2D,
             mouse_pos: Pos::new(0,0),
             mouse_diff: Pos::new(0,0),
-            base_container_context,
             mouse_down: false,
             mouse_down_pos: Pos::new(0,0),
             mouse_up: false,
             style,
-            active_context: None,
-            container_contexts: Default::default(),
-            frame_events: vec![]
+            windows: vec![base_window],
+            frame_events: vec![],
+            current_window: vec![0],
+            window_to_idx: Default::default()
         }
     }
 
@@ -87,14 +100,17 @@ impl Ui {
     }
 
     fn ctx_fn<T, F>(&mut self, ctx_fn: F) -> T where F: Fn(&mut ContainerContext) -> T {
-        if let Some(active_ctx_id) = self.active_context {
-            if let Some(ctx) = self.container_contexts.get_mut(&active_ctx_id) {
+
+        let window = &mut self.windows[*self.current_window.last().unwrap()];
+
+        if let Some(active_ctx_id) = window.active_context {
+            if let Some(ctx) = window.container_contexts.get_mut(&active_ctx_id) {
                 return ctx_fn(ctx);
             } else {
-                return ctx_fn(&mut self.base_container_context);
+                return ctx_fn(&mut window.base_container_context);
             }
         } else {
-            return ctx_fn(&mut self.base_container_context);
+            return ctx_fn(&mut window.base_container_context);
         }
     }
 
@@ -115,19 +131,25 @@ impl Ui {
 
 
     pub fn exit_active_context(&mut self, id: Id) {
-        if let Some(ctx) = self.container_contexts.get(&id) {
-            self.active_context = ctx.prev_active_context;
+        let window = &mut self.windows[*self.current_window.last().unwrap()];
+        if let Some(ctx) = window.container_contexts.get(&id) {
+            window.active_context = ctx.prev_active_context;
         }
     }
 
     pub fn remove_container_context(&mut self, id: Id) {
-        self.container_contexts.remove(&id);
+        let cur_window = &mut self.windows[*self.current_window.last().unwrap()];
+        cur_window.container_contexts.remove(&id);
     }
 
     pub fn set_active_context(&mut self, id: Id, rect: Rect) {
-        let cur = self.active_context;
-        self.active_context = Some(id);
-        if !self.container_contexts.contains_key(&id) {
+
+        let window = &mut self.windows[*self.current_window.last().unwrap()];
+
+        let cur = window.active_context;
+        window.active_context = Some(id);
+
+        if window.container_contexts.contains_key(&id) {
             let mut ctx : ContainerContext = Default::default();
 
             ctx.anchor_pos.x = rect.x;
@@ -135,7 +157,7 @@ impl Ui {
             ctx.width = rect.w;
 
             ctx.prev_active_context = cur;
-            self.container_contexts.insert(id, ctx);
+            window.container_contexts.insert(id, ctx);
         }
     }
 
@@ -151,11 +173,14 @@ impl Ui {
 
 
     pub fn get_frame_inputs(&self) -> &[event::Event] {
-
-        if self.base_container_context.active == None {
-            return &self.frame_events
+        // only return if no window is active
+        for window in &self.windows {
+            if window.base_container_context.active != None {
+                return &[]
+            }
         }
-        return &[];
+
+        return &self.frame_events
     }
 
 
@@ -166,13 +191,25 @@ impl Ui {
         self.mouse_up = false;
 
 
-        let any_hot = self.base_container_context.hot != None;
-        let any_active = self.base_container_context.active != None;
 
-        clear_context(&mut self.base_container_context);
-        for (_, ctx) in &mut self.container_contexts {
-            clear_context(ctx);
+        let mut any_hot = false;
+        let mut any_active = false;
+        for window in &self.windows {
+            any_hot |= window.base_container_context.hot != None;
+            any_active |= window.base_container_context.active != None;
+
+            if any_hot && any_active {
+                break;
+            }
         }
+
+        for window in &mut self.windows {
+            clear_context(&mut window.base_container_context);
+            for (_, ctx) in &mut window.container_contexts {
+                clear_context(ctx);
+            }
+        }
+
 
         self.frame_events.clear();
         use event::Event::*;
@@ -203,11 +240,10 @@ impl Ui {
                     if !any_active {
                         self.frame_events.push(event.clone());
                     }
-
                 },
                 Window {win_event: event::WindowEvent::Resized(x,y), ..} => {
                     self.drawer2D.update_viewport(x, y);
-                    self.base_container_context.width = x;
+                    self.windows[0].base_container_context.width = x;
                 },
                 Quit { .. } => {
                     std::process::exit(0);
@@ -232,8 +268,6 @@ impl Ui {
 
         return &self.frame_events;
     }
-
-
 }
 
 fn clear_context(ctx: &mut ContainerContext) {
