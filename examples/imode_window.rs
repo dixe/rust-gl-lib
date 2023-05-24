@@ -51,8 +51,19 @@ fn main() -> Result<(), failure::Error> {
 
         ui.window_begin("Window1");
 
-        ui.color_picker(&mut color);
+
+        ui.label("Show text:");
         ui.checkbox(&mut onoff);
+        if onoff {
+            ui.newline();
+            ui.body_text("Some text in the window");
+        }
+
+        ui.newline();
+
+
+        ui.color_picker(&mut color);
+
 
         ui.window_end("Window1");
 

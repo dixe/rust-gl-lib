@@ -24,6 +24,9 @@ pub struct Window {
     pub base_container_context: ContainerContext,
     pub container_contexts: std::collections::HashMap<CtxId, ContainerContext>,
     pub active_context: Option<CtxId>,
+    pub is_drawn: bool,
+    pub top_bar_size: Pos,
+    pub drag_point: Pos
 }
 
 pub struct Ui {
@@ -50,7 +53,7 @@ impl Ui {
         let mut base_window : Window = Default::default();
         base_window.name = "BASE".to_owned();
 
-        base_window.base_container_context.width = drawer2D.viewport.w;
+        base_window.base_container_context.width = ContainerSize::Fixed(drawer2D.viewport.w);
 
         let style = Default::default();
 
@@ -64,6 +67,12 @@ impl Ui {
 
         let mut windows: HashMap::<usize, Window>  = Default::default();
         windows.insert(0, base_window);
+
+        unsafe {
+            //drawer2D.gl.Enable(gl::DEPTH_TEST);
+        }
+
+
         Self {
             drawer2D,
             mouse_pos: Pos::new(0,0),
@@ -74,7 +83,7 @@ impl Ui {
             style,
             windows,
             frame_events: vec![],
-            current_window: vec![0],
+            current_window: vec![],
             window_to_id: Default::default(),
             next_window_id: 1
         }
@@ -111,7 +120,7 @@ impl Ui {
 
     fn ctx_fn<T, F>(&mut self, ctx_fn: F) -> T where F: Fn(&mut ContainerContext) -> T {
 
-        let last = self.current_window.last().unwrap();
+        let last = self.current_window.last().unwrap_or(&0);
         let window : &mut Window = self.windows.get_mut(last).unwrap();
 
         if let Some(active_ctx_id) = window.active_context {
@@ -142,7 +151,7 @@ impl Ui {
 
 
     pub fn exit_active_context(&mut self, id: Id) {
-        let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap()).unwrap();
+        let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap_or(&0)).unwrap();
 
         let mut ctx_id = window.active_context.unwrap_or_default();
 
@@ -153,7 +162,7 @@ impl Ui {
     }
 
     pub fn remove_container_context(&mut self, id: Id) {
-        let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap()).unwrap();
+        let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap_or(&0)).unwrap();
 
         let mut ctx_id = window.active_context.unwrap_or_default();
         ctx_id.widget_id = id;
@@ -164,7 +173,7 @@ impl Ui {
 
     pub fn set_active_context(&mut self, id: Id, rect: Rect) {
 
-        let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap()).unwrap();
+        let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap_or(&0)).unwrap();
 
         let cur = window.active_context;
         let mut ctx_id = cur.unwrap_or_default();
@@ -179,7 +188,7 @@ impl Ui {
             ctx.id = ctx_id;
             ctx.anchor_pos.x = rect.x;
             ctx.anchor_pos.y = rect.y;
-            ctx.width = rect.w;
+            ctx.width = ContainerSize::Fixed(rect.w);
 
             ctx.prev_active_context = cur;
 
@@ -228,6 +237,7 @@ impl Ui {
         }
 
         for window in &mut self.windows.values_mut() {
+            window.is_drawn = false;
             clear_context(&mut window.base_container_context);
             for (_, ctx) in &mut window.container_contexts {
                 clear_context(ctx);
@@ -267,7 +277,7 @@ impl Ui {
                 },
                 Window {win_event: event::WindowEvent::Resized(x,y), ..} => {
                     self.drawer2D.update_viewport(x, y);
-                    self.windows.get_mut(&0).unwrap().base_container_context.width = x;
+                    self.windows.get_mut(&0).unwrap().base_container_context.width = ContainerSize::Fixed(x);
                 },
                 Quit { .. } => {
                     std::process::exit(0);
@@ -292,6 +302,16 @@ impl Ui {
 
         return &self.frame_events;
     }
+
+    pub fn set_window_pos(&mut self, pos: Pos) {
+        let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap_or(&0)).unwrap();
+        window.base_container_context.anchor_pos = pos - window.drag_point;
+    }
+
+    pub fn set_window_drag_point(&mut self, pos: Pos) {
+        let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap_or(&0)).unwrap();
+        window.drag_point = pos;
+    }
 }
 
 fn clear_context(ctx: &mut ContainerContext) {
@@ -300,7 +320,6 @@ fn clear_context(ctx: &mut ContainerContext) {
 
     ctx.draw_offset = Pos::new(0, 0);
     ctx.max_y_offset = 0;
-
 }
 
 #[derive(Debug, Clone, Default, Copy)]
@@ -323,10 +342,40 @@ pub struct ContainerContext {
     pub draw_offset: Pos,
     pub max_y_offset: i32,
 
-    pub width: i32,
+
+    pub width: ContainerSize,
+    pub height: ContainerSize,
 
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum ContainerSize {
+    Fixed(i32),
+    MatchContent(i32)
+}
+
+impl ContainerSize {
+    pub fn size(&self) -> i32 {
+        match self {
+            ContainerSize::Fixed(w) => *w,
+            ContainerSize::MatchContent(w) => *w
+        }
+    }
+
+    pub fn set(&mut self, val: i32) {
+        *self = match self {
+            ContainerSize::Fixed(_) => ContainerSize::Fixed(val),
+            ContainerSize::MatchContent(_w) => ContainerSize::MatchContent(val)
+        }
+    }
+}
+
+
+impl Default for ContainerSize {
+    fn default() -> Self {
+        ContainerSize::MatchContent(0)
+    }
+}
 
 impl ContainerContext {
     pub fn set_hot(&mut self, id: Id) {
@@ -365,8 +414,15 @@ impl ContainerContext {
         rect.y += spacing.y;
 
         // check to see if wrap, if enabled
-        if auto_wrap && self.draw_offset.x + rect.w > self.width {
-            self.newline();
+        match self.width {
+            ContainerSize::Fixed(w) => {
+                if auto_wrap && self.draw_offset.x + rect.w > w {
+                    self.newline();
+                }
+            },
+            ContainerSize::MatchContent(w) => {
+                self.width = ContainerSize::MatchContent(i32::max(w, self.draw_offset.x + rect.w));
+            }
         }
 
         rect.x += self.draw_offset.x;
@@ -374,6 +430,7 @@ impl ContainerContext {
 
         self.draw_offset.x = rect.x + rect.w;
         self.max_y_offset = i32::max(self.max_y_offset, rect.y + rect.h);
+        self.height.set(self.max_y_offset);
 
         rect.x += self.anchor_pos.x;
         rect.y += self.anchor_pos.y;

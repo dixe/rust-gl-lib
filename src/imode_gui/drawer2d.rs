@@ -83,7 +83,9 @@ impl Drawer2D {
 
     }
 
-    pub fn line<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric>(&self, x_t: T1, y_t: T2, x1_t: T3, y1_t: T4, thickness_t: T5) {
+    pub fn line<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric>(
+        &self, x_t: T1, y_t: T2, x1_t: T3, y1_t: T4, thickness_t: T5) {
+
         let x = x_t.to_f64();
         let y = y_t.to_f64();
         let x1 = x1_t.to_f64();
@@ -93,22 +95,8 @@ impl Drawer2D {
 
         let mut v = Vector2::<f64>::new(x1.to_f64(), y1.to_f64()) - Vector2::<f64>::new(x.to_f64(), y.to_f64());
 
-        //since we use sdl where y is flipped, multiply the v.y with -1..0s ince
-        v.y *= -1.0;
-        let mut angle = -std::f64::consts::PI / 2.0;
 
-        if v.x == 0.0 || v.y == 0.0 {
-            if v.x == 0.0 { // angle is 90 or -90 (270) degrees
-                angle = if y < y1 { -std::f64::consts::PI / 2.0 } else { -std::f64::consts::PI * 3.0/4.0};
-            }
-            else { // angle is 0 og 180
-                angle = if x < x1 { 0.0 } else { std::f64::consts::PI};
-            }
-        }
-        else  {
-            angle = f64::atan2(v.y, v.x);
-
-        }
+        let angle = f64::atan2(-v.y, v.x);
 
         self.rounded_rect_shader.shader.set_used();
 
