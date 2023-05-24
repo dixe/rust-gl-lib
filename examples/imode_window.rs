@@ -24,6 +24,8 @@ fn main() -> Result<(), failure::Error> {
         gl.ClearColor(0.9, 0.9, 0.9, 1.0);
     }
 
+
+    let mut show = true;
     loop {
 
         let c_vec = color.as_vec4();
@@ -49,23 +51,30 @@ fn main() -> Result<(), failure::Error> {
         ui.small_text("And some small text that belongs the the base");
 
 
-        ui.window_begin("Window1");
+        if show {
+            let res = ui.window_begin("Window1");
+            ui.label("Show text:");
+            ui.checkbox(&mut onoff);
 
+            if onoff {
+                ui.newline();
+                ui.body_text("Some text in the window");
+            }
 
-        ui.label("Show text:");
-        ui.checkbox(&mut onoff);
-        if onoff {
             ui.newline();
-            ui.body_text("Some text in the window");
+
+
+            ui.color_picker(&mut color);
+            ui.window_end("Window1");
+
+            show = !res.closed;
         }
 
-        ui.newline();
+        if !show {
+            show = ui.button("Show window");
+        }
 
 
-        ui.color_picker(&mut color);
-
-
-        ui.window_end("Window1");
 
         ui.color_picker(&mut color);
         ui.color_picker(&mut color);

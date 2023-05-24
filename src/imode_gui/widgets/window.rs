@@ -1,10 +1,25 @@
 use super::*;
 
+
+pub struct WindowRes {
+    pub closed: bool,
+    //expanded: bool,
+}
+
 impl Ui{
-    pub fn window_begin(&mut self, text: &str) {
+
+    /// Return struct with info about click on close button and collaped/expanded
+    /// The widget it self does NOT contain logic to discard elements draw to it, when closed/collapsed
+    /// Should be handled by applications
+    pub fn window_begin(&mut self, text: &str) -> WindowRes {
 
         // windows can use 0, since they are the "base", this makes it so we always get the same id
         let id = 0;
+
+        let mut res = WindowRes {
+            closed: false,
+            //expanded: false
+        };
 
         let win_idx = match self.window_to_id.get(text) {
             Some(id) => *id,
@@ -22,13 +37,22 @@ impl Ui{
             }
         };
 
-
-        let window = self.windows.get_mut(&win_idx).unwrap();
-
         self.current_window.push(win_idx);
 
-        let anchor = window.base_container_context.anchor_pos;
 
+        // update window pos when active, i.e. we are dragging
+        if self.is_active(id) {
+            self.set_window_pos(self.mouse_pos);
+            if self.mouse_up {
+                self.set_not_active();
+            }
+        }
+
+
+        let window = self.windows.get_mut(&win_idx).unwrap();
+        let mut state = window.state;
+        let c_rect = close_rect(&window);
+        let anchor = window.base_container_context.anchor_pos;
         let rect = Rect {
             x: anchor.x,
             y: anchor.y - window.top_bar_size.y,
@@ -36,26 +60,51 @@ impl Ui{
             h: window.top_bar_size.y,
         };
 
+
+
+        // draw and then place close buttons
+        self.draw(win_idx);
+
+        res.closed = self.button_at_empty(c_rect);
+
+
         if self.mouse_in_rect(&rect) {
             self.set_hot(id)
         }
 
+
         if self.is_active(id) {
             self.set_window_pos(self.mouse_pos);
             if self.mouse_up {
+                state = WindowState::NotActive;
                 self.set_not_active();
             }
         }
         else if self.is_hot(id) {
             if self.mouse_down {
+                // check if we hit the close button
+
+
+                if self.mouse_in_rect(&c_rect) {
+                    self.set_active(id);
+                    state = WindowState::Closing;
+                }
+
+                // otherwise we drag the window
                 self.set_window_drag_point(self.mouse_pos - anchor);
                 self.set_active(id);
             }
         }
 
-        self.draw(win_idx);
+        let window = self.windows.get_mut(&win_idx).unwrap();
+        window.state = state;
+
+
+
+        res
 
     }
+
 
     pub fn draw(&mut self, win_idx: usize) {
 
@@ -63,6 +112,8 @@ impl Ui{
         if !window.is_drawn {
             window.is_drawn = true;
 
+
+            let c_rect = close_rect(&window);
 
             let anchor = window.base_container_context.anchor_pos;
 
@@ -83,12 +134,7 @@ impl Ui{
                                              window.top_bar_size.y,
                                              color);
 
-
             // window border
-            self.drawer2D.rounded_rect_color(anchor.x,
-                                             anchor.y - window.top_bar_size.y, window.top_bar_size.x, window.top_bar_size.y, color);
-
-
             let thickness = 3;
             let tl = anchor + Pos::new(0, -window.top_bar_size.y);
             let tr = anchor
@@ -113,13 +159,6 @@ impl Ui{
             self.drawer2D.rounded_rect_color(bl.x, bl.y, br.x - bl.x + thickness, thickness, color);
 
 
-            //self.drawer2D.line(bl.x, bl.y, br.x, br.y, thickness);
-
-
-
-            //self.drawer2D.line(bl.x, bl.y, br.x, br.y, thickness);
-
-
             // Reset matchContent width and height
             window.base_container_context.width = match window.base_container_context.width {
                 ContainerSize::Fixed(w) => ContainerSize::Fixed(w),
@@ -131,6 +170,7 @@ impl Ui{
                 ContainerSize::MatchContent(_) => ContainerSize::MatchContent(0)
             };
         }
+
     }
 
 
@@ -155,4 +195,17 @@ impl Ui{
 
 
     }
+}
+
+pub fn close_rect(window: &Window) -> Rect {
+    let anchor = window.base_container_context.anchor_pos;
+    let marg = 3;
+    let side = 14;
+    Rect {
+        x: anchor.x + window.top_bar_size.x - (side + marg),
+        y: anchor.y - window.top_bar_size.y + marg,
+        w: side,
+        h: side,
+    }
+
 }
