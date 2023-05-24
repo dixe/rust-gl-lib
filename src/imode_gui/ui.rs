@@ -27,20 +27,6 @@ pub struct Window {
     pub is_drawn: bool,
     pub top_bar_size: Pos,
     pub drag_point: Pos,
-    pub state: WindowState,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum WindowState {
-    NotActive,
-    Dragging,
-    Closing
-}
-
-impl Default for WindowState {
-    fn default() -> Self {
-        WindowState::NotActive
-    }
 }
 
 pub struct Ui {

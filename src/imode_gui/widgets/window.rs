@@ -50,7 +50,6 @@ impl Ui{
 
 
         let window = self.windows.get_mut(&win_idx).unwrap();
-        let mut state = window.state;
         let c_rect = close_rect(&window);
         let anchor = window.base_container_context.anchor_pos;
         let rect = Rect {
@@ -76,7 +75,6 @@ impl Ui{
         if self.is_active(id) {
             self.set_window_pos(self.mouse_pos);
             if self.mouse_up {
-                state = WindowState::NotActive;
                 self.set_not_active();
             }
         }
@@ -87,7 +85,6 @@ impl Ui{
 
                 if self.mouse_in_rect(&c_rect) {
                     self.set_active(id);
-                    state = WindowState::Closing;
                 }
 
                 // otherwise we drag the window
@@ -95,11 +92,6 @@ impl Ui{
                 self.set_active(id);
             }
         }
-
-        let window = self.windows.get_mut(&win_idx).unwrap();
-        window.state = state;
-
-
 
         res
 
