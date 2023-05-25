@@ -224,13 +224,13 @@ impl Drawer2D {
 
     /// Render at x,y with default font
     pub fn render_text(&mut self, text: &str, x: i32, y: i32, pixel_size: i32) {
-        let font = self.font_cache.default();
+        let font = self.font_cache.default(pixel_size);
         render_text(&self.gl, &mut self.tr, text, x, y, &self.viewport, pixel_size, font);
     }
 
     /// Render at x,y with default font and given color
     pub fn render_text_with_color(&mut self, text: &str, x: i32, y: i32, pixel_size: i32, color: Color) {
-        let font = self.font_cache.default();
+        let font = self.font_cache.default(pixel_size);
         render_text(&self.gl, &mut self.tr, text, x, y, &self.viewport, pixel_size, font);
     }
 

@@ -22,8 +22,11 @@ pub mod style;
 
 pub type Pos = na::Vector2::<i32>;
 
-
-pub type Id = u64;
+#[derive(Debug, Clone, Default, Copy, PartialEq, Hash, Eq)]
+pub struct Id {
+    widget_id: u64,
+    window_id: usize,
+}
 
 #[derive(Debug, Copy, Clone)]
 pub struct Rect {

@@ -13,7 +13,7 @@ pub struct CounterWidget<T: Num + std::fmt::Display + std::marker::Copy + std::f
 impl<T: Num + std::fmt::Display + std::fmt::Debug + std::marker::Copy> Widget for CounterWidget<T> {
     fn layout(&mut self, bc: &BoxContraint, _children: &[Id], ctx: &mut LayoutContext) -> LayoutResult {
 
-        let text_size = TextRenderer::render_box(ctx.font, &format!("{:.2}", self.count), bc.max_w as f32, 1.0);
+        let text_size = TextRenderer::render_box(ctx.font, &format!("{:.2}", self.count), bc.max_w as f32, 20);
 
         LayoutResult::Size(Size {
             pixel_w: Pixel::min(bc.max_w, Pixel::max(text_size.total_width as i32, bc.min_w)),

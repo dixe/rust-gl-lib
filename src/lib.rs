@@ -25,10 +25,9 @@ pub mod color;
 
 pub mod helpers;
 
-#[cfg(feature = "widget_gui")]
+
 pub mod widget_gui;
 
-#[cfg(feature = "sdl_gui")]
 pub mod sdl_gui;
 
 pub mod controller;

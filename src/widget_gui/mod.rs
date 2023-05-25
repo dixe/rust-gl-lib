@@ -4,8 +4,8 @@ use std::any::Any;
 use crate::text_rendering::font::{Font};
 use sdl2::event;
 use std::fmt;
+use crate::gl;
 use crate::widget_gui::event_handling::dispatch_event;
-
 pub mod widgets;
 pub mod render;
 pub mod event_handling;
@@ -44,9 +44,9 @@ impl fmt::Debug for UiState {
 
 impl UiState {
 
-    pub fn new() -> Self {
+    pub fn new(gl: &gl::Gl) -> Self {
         let sdf_font = Default::default();
-        let font = Font::Sdf(sdf_font);
+        let font = Font::fnt(gl, sdf_font);
         UiState {
             next_id: 0,
             widgets: Vec::new(),

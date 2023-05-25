@@ -14,12 +14,13 @@ use std::collections::HashMap;
 
 #[derive(Eq, Hash, PartialEq, Clone, Copy, Debug, Default)]
 pub struct CtxId {
-    ctx_id: Id,
+    ctx_id: u64,
     widget_id: Id
 }
 
 #[derive(Default)]
 pub struct Window {
+    pub id: usize,
     pub name: String,
     pub base_container_context: ContainerContext,
     pub container_contexts: std::collections::HashMap<CtxId, ContainerContext>,
@@ -43,7 +44,8 @@ pub struct Ui {
     pub frame_events: Vec::<event::Event>,
     pub current_window: Vec::<usize>, // index into windows, a stack
     pub window_to_id: HashMap::<String, usize>,
-    pub next_window_id: usize
+    pub next_window_id: usize,
+    pub active_window: Option<usize>
 }
 
 impl Ui {
@@ -85,7 +87,8 @@ impl Ui {
             frame_events: vec![],
             current_window: vec![],
             window_to_id: Default::default(),
-            next_window_id: 1
+            next_window_id: 1,
+            active_window: None,
         }
     }
 
@@ -102,10 +105,19 @@ impl Ui {
     }
 
     pub fn set_active(&mut self, id: Id) {
-        self.ctx_fn(|ctx| ctx.set_active(id))
+        if let Some(win_id) = self.active_window {
+            if win_id == id.window_id {
+                self.active_window = Some(id.window_id);
+                self.ctx_fn(|ctx| ctx.set_active(id))
+            }
+        } else {
+            self.active_window = Some(id.window_id);
+            self.ctx_fn(|ctx| ctx.set_active(id))
+        }
     }
 
     pub fn set_not_active(&mut self, ) {
+        self.active_window = None;
 
         // set not active
         if let Some(id) = self.ctx_fn(|ctx| ctx.set_not_active()) {
@@ -114,7 +126,7 @@ impl Ui {
         }
     }
 
-    pub fn next_id(&mut self) -> u64 {
+    pub fn next_id(&mut self) -> Id {
         self.ctx_fn(|ctx| ctx.next_id())
     }
 
@@ -189,7 +201,7 @@ impl Ui {
             ctx.anchor_pos.x = rect.x;
             ctx.anchor_pos.y = rect.y;
             ctx.width = ContainerSize::Fixed(rect.w);
-
+            ctx.next_id.window_id = window.id;
             ctx.prev_active_context = cur;
 
             window.container_contexts.insert(ctx_id, ctx);
@@ -315,7 +327,7 @@ impl Ui {
 }
 
 fn clear_context(ctx: &mut ContainerContext) {
-    ctx.next_id = 0;
+    ctx.next_id.widget_id = 0;
     ctx.hot = None;
 
     ctx.draw_offset = Pos::new(0, 0);
@@ -333,7 +345,7 @@ pub struct ContainerContext {
     /// Persisted between frames
     pub active: Option<Id>,
 
-    pub next_id: u64,
+    pub next_id: Id,
 
     pub prev_active_context: Option<CtxId>,
 
@@ -402,8 +414,8 @@ impl ContainerContext {
         cur
     }
 
-    pub fn next_id(&mut self) -> u64 {
-        self.next_id += 1;
+    pub fn next_id(&mut self) -> Id {
+        self.next_id.widget_id += 1;
         self.next_id
     }
 

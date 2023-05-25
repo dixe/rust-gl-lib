@@ -13,31 +13,34 @@ impl Ui{
     /// Should be handled by applications
     pub fn window_begin(&mut self, text: &str) -> WindowRes {
 
-        // windows can use 0, since they are the "base", this makes it so we always get the same id
-        let id = 0;
-
         let mut res = WindowRes {
             closed: false,
             //expanded: false
         };
 
-        let win_idx = match self.window_to_id.get(text) {
+        let win_id = match self.window_to_id.get(text) {
             Some(id) => *id,
             None => {
-                let id = self.next_window_id ;
+                let window_id = self.next_window_id ;
                 self.next_window_id += 1;
 
-                self.window_to_id.insert(text.to_string(), id);
+                self.window_to_id.insert(text.to_string(), window_id);
                 let mut window : Window =  Default::default();
 
+                window.id = window_id;
                 window.top_bar_size = Pos::new(0, 20);
                 window.base_container_context.anchor_pos = Pos::new(100, 100 + 20);
-                self.windows.insert(id, window);
-                id
+                window.base_container_context.next_id.window_id = window_id;
+                self.windows.insert(window_id, window);
+                window_id
             }
         };
 
-        self.current_window.push(win_idx);
+        // windows can use 0, since they are the "base", this makes it so we always get the same id
+        let id = Id {widget_id: 0, window_id: win_id };
+
+
+        self.current_window.push(win_id);
 
 
         // update window pos when active, i.e. we are dragging
@@ -49,7 +52,7 @@ impl Ui{
         }
 
 
-        let window = self.windows.get_mut(&win_idx).unwrap();
+        let window = self.windows.get_mut(&win_id).unwrap();
         let c_rect = close_rect(&window);
         let anchor = window.base_container_context.anchor_pos;
         let rect = Rect {
@@ -62,7 +65,7 @@ impl Ui{
 
 
         // draw and then place close buttons
-        self.draw(win_idx);
+        self.draw(text, win_id);
 
         res.closed = self.button_at_empty(c_rect);
 
@@ -98,9 +101,9 @@ impl Ui{
     }
 
 
-    pub fn draw(&mut self, win_idx: usize) {
+    pub fn draw(&mut self, title: &str, win_id: usize) {
 
-        let window = self.windows.get_mut(&win_idx).unwrap();
+        let window = self.windows.get_mut(&win_id).unwrap();
         if !window.is_drawn {
             window.is_drawn = true;
 
@@ -110,7 +113,7 @@ impl Ui{
             let anchor = window.base_container_context.anchor_pos;
 
             let bg_color = Color::Rgb(200, 200, 255);
-            let color = Color::Rgb(0,10,30);
+            let color = Color::Rgb(255,255,255);
 
             // Background
             self.drawer2D.rounded_rect_color(anchor.x,
@@ -125,6 +128,8 @@ impl Ui{
                                              window.top_bar_size.x,
                                              window.top_bar_size.y,
                                              color);
+
+            self.drawer2D.render_text(title, anchor.x + self.style.spacing.x, anchor.y - window.top_bar_size.y + self.style.spacing.y, 13);
 
             // window border
             let thickness = 3;

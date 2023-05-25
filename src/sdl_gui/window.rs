@@ -84,7 +84,7 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
         viewport.set_used(&gl);
 
         let sdf_font = Default::default();
-        let font = Font::Sdf(sdf_font);
+        let font = Font::fnt(&gl, sdf_font);
         let text_renderer = text_renderer::TextRenderer::new(&gl, font);
 
 
@@ -205,7 +205,7 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
     }
 
     pub fn setup_blend(&mut self) {
-        self.text_renderer.setup_blend(&self.gl);
+        text_renderer::TextRenderer::setup_blend(&self.gl);
     }
 
 
@@ -213,7 +213,6 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
         for comp in self.container.components.values() {
             comp.render(&self.gl, &mut self.text_renderer, &self.render_square, self.viewport.w as f32, self.viewport.h as f32);
         }
-
     }
 
     fn handle_events(&mut self, ui: &mut dyn Ui<Message>) {

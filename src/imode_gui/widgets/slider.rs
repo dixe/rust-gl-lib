@@ -4,10 +4,11 @@ use core::ops::Range;
 
 impl Ui {
 
-    pub fn slider<T>(&mut self, item: &mut T, min: T, max: T) where T : Numeric {
+    pub fn slider<T>(&mut self, item: &mut T, min: T, max: T) -> bool where T : Numeric {
 
         // figure out button layout
 
+        let start = item.to_f64();
         let id = self.next_id();
 
         let mut rect = Rect {
@@ -70,10 +71,12 @@ impl Ui {
             color = Color::RgbA(49, 130, 100, 128);
         }
         self.drawer2D.rounded_rect_color(rect.x + x, rect.y, knob_width, rect.h , color);
+
+        item.to_f64() == start
     }
 
 
-    fn manage_state(&mut self, rect: &Rect, id: u64) -> f64 {
+    fn manage_state(&mut self, rect: &Rect, id: Id) -> f64 {
 
         let mut res = 0.0;
         // state mangement

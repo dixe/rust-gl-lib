@@ -41,12 +41,12 @@ impl<Message> Element<Message> for Button<Message> where Message: 'static + Clon
 
     fn content_height(&self, available_space: &RealizedSize, text_renderer: &TextRenderer) -> f32 {
         let max_width = self.contrainted_width(available_space);
-        TextRenderer::render_box(text_renderer.font(), &self.content, max_width, 1.0).total_height
+        TextRenderer::render_box(text_renderer.font(), &self.content, max_width, 20).total_height
     }
 
     fn content_width(&self, available_space: &RealizedSize, text_renderer: &TextRenderer) -> f32 {
         let max_width = self.contrainted_width(available_space);
-        TextRenderer::render_box(text_renderer.font(), &self.content, max_width, 1.0).total_width
+        TextRenderer::render_box(text_renderer.font(), &self.content, max_width, 20).total_width
     }
 
     fn create_component(&self, gl: &gl::Gl, comp_base: ComponentBase) -> Option<Component<Message>> {
