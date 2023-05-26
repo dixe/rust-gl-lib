@@ -98,7 +98,6 @@ pub fn triangulate_ear_clipping(input_poly: &Polygon) -> Triangulation {
         if is_wide_angle(&v0, &v1, &v2) {
               num_wide += 1;
         }
-
     }
 
 

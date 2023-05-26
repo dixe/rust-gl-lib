@@ -304,8 +304,8 @@ impl Ui {
                     }
                 },
                 other => {
-                    // maybe passing non mouse events it fine, when something is hot, but not active
-                    if !any_hot && !any_active {
+                    // disable when active for now, even though maybe only mouse is used
+                    if !any_active {
                         self.frame_events.push(other.clone());
                     }
                 }

@@ -163,7 +163,7 @@ impl Drawer2D {
     }
 
 
-    pub fn rounded_rect(&self, x: i32, y: i32, w: i32, h: i32) {
+    pub fn rounded_rect<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&self, x: T1, y: T2, w: T3, h: T4) {
         self.rounded_rect_color(x, y, w, h, Color::Rgb(100, 100, 100));
     }
 
@@ -182,7 +182,7 @@ impl Drawer2D {
 
     }
 
-    pub fn rounded_rect_color(&self, x: i32, y: i32, w: i32, h: i32, color: Color) {
+    pub fn rounded_rect_color<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&self, x: T1, y: T2, w: T3, h: T4, color: Color) {
 
         self.rounded_rect_shader.shader.set_used();
 
