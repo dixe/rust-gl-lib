@@ -1,4 +1,4 @@
-use gl_lib::{gl, na, helpers};
+use gl_lib::{gl, na, helpers, color::Color};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use sdl2::event;
@@ -6,6 +6,8 @@ use std::collections::HashSet;
 
 type V2 = na::Vector2::<f32>;
 type V3 = na::Vector3::<f32>;
+
+mod line_segment_intersection;
 
 fn main() -> Result<(), failure::Error> {
 
@@ -28,7 +30,6 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
 
-
     let mut state = State {
         polygon: Polygon {
             vertices: vec![],
@@ -36,7 +37,7 @@ fn main() -> Result<(), failure::Error> {
         },
         selected: Default::default(),
         mode: Mode::NewPoint,
-
+        show_help: false
     };
 
     loop {
@@ -49,7 +50,18 @@ fn main() -> Result<(), failure::Error> {
         ui.consume_events(&mut event_pump);
         handle_inputs(&mut ui, &mut state);
 
-        render_poly(&mut ui, &mut state.polygon, &state.selected);
+        ui.small_text("Tab to toggle vertices info");
+        ui.newline();
+        ui.small_text("s to calc triangulation");
+        ui.newline();
+        ui.small_text("ctrl-z to undo");
+        ui.newline();
+        ui.small_text("c to clear vertices");
+        ui.newline();
+        ui.small_text("a select all, esc deslects");
+
+
+        render_poly(&mut ui, &mut state.polygon, &state.selected, state.show_help);
 
         render_mode(&mut ui, &state.mode);
 
@@ -88,6 +100,21 @@ fn render_selected(ui: &mut Ui, state: &mut State) {
 
 }
 
+fn render_intersect(ui: &mut Ui, polygon: &Polygon) {
+    // go over all side by side pairs and compare with every other side by side pair
+
+    if polygon.vertices.len() <= 3 {
+        return;
+    }
+
+
+    for p in polygon.intersections() {
+        ui.drawer2D.circle(p.x, p.y, 7.0, Color::Rgb(250, 5, 5));
+    }
+
+}
+
+
 fn render_mode(ui: &mut Ui, mode: &Mode) {
 
     match mode {
@@ -102,7 +129,7 @@ fn render_mode(ui: &mut Ui, mode: &Mode) {
 }
 
 
-fn render_poly(ui: &mut Ui, poly: &mut Polygon, selected: &HashSet::<usize>) {
+fn render_poly(ui: &mut Ui, poly: &mut Polygon, selected: &HashSet::<usize>, show_help: bool) {
 
     let len = poly.vertices.len();
 
@@ -115,8 +142,9 @@ fn render_poly(ui: &mut Ui, poly: &mut Polygon, selected: &HashSet::<usize>) {
             r = 10.0;
         }
 
-
-        ui.drawer2D.render_text(&format!("({:?}) - {i}", p1), p1.x as i32, p1.y as i32, 20);
+        if show_help {
+            ui.drawer2D.render_text(&format!("({:?}) - {i}", p1), p1.x as i32, p1.y as i32, 20);
+        }
 
         let mut drag = na::Vector2::<i32>::new(p1.x as i32, p1.y as i32);
         ui.drag_point(&mut drag, r);
@@ -142,27 +170,30 @@ fn render_poly(ui: &mut Ui, poly: &mut Polygon, selected: &HashSet::<usize>) {
         }
     };
 
+    render_intersect(ui, poly);
+
 }
 
 struct State {
     polygon: Polygon,
     selected: HashSet::<usize>,
-    mode: Mode
+    mode: Mode,
+    show_help: bool
 }
 
 
-enum Mode {
+pub enum Mode {
     NewPoint,
     Select(V2, V2),
 }
 
-struct Polygon {
+pub struct Polygon {
     vertices: Vec::<V2>,
     sub_polygons: Vec::<SubPolygon>
 }
 
 
-struct SubPolygon {
+pub struct SubPolygon {
     indices: Vec::<usize>
 }
 
@@ -225,6 +256,7 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
                     _ => {}
                 }
             },
+
             KeyDown { keycode: Some(Keycode::Escape), ..} => {
                 state.selected.clear();
             },
@@ -232,12 +264,37 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
             KeyDown { keycode: Some(Keycode::S), ..} => {
                 calulate_subdivision(&mut state.polygon);
             },
+
+            KeyDown { keycode: Some(Keycode::Tab), ..} => {
+                state.show_help = !state.show_help
+            },
+
             KeyDown { keycode: Some(Keycode::C), ..} => {
+                state.selected.clear();
                  state.polygon = Polygon {
                      vertices: vec![],
                      sub_polygons: vec![]
                  };
             },
+
+            KeyDown { keycode: Some(Keycode::A), ..} => {
+                for i in 0..state.polygon.vertices.len() {
+                    state.selected.insert(i);
+                }
+
+            },
+
+            KeyDown { keycode: Some(Keycode::Z), keymod, ..} => {
+                use sdl2::keyboard::Mod;
+                if keymod.intersects(Mod::LCTRLMOD) {
+
+                    state.polygon.vertices.pop();
+                    let len = state.polygon.vertices.len();
+
+                    state.selected.remove(&len);
+                }
+            },
+
             _ => {}
 
         }
@@ -245,12 +302,12 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
 }
 
 
+
+
 fn calulate_subdivision(polygon: &mut Polygon) {
     polygon.sub_polygons.clear();
 
     // first make it ofirst make
-
-
     polygon.sub_polygons.push(SubPolygon {
         indices: vec![]
     });
@@ -265,12 +322,36 @@ fn calulate_subdivision(polygon: &mut Polygon) {
         _ => {
         }
     }
+    /*
+    while let Some(wide_idx) = first_wide(polygon) {
+    // search from left to right for the first polygon that does not produce any intersections
+    // and does not make a line outside the polygon
 
-    // find vertices that make the figure concave
-    let wide_idx = wide_indices(polygon);
+    // check line intersections
+
+    for i in  0..(polygon.len() - 1) {
+
+}
+
+}
+     */
+}
 
 
+fn first_wide(polygon: &Polygon) -> Option<usize> {
+    let len = polygon.vertices.len();
 
+    for i in 0..polygon.vertices.len() {
+        let before = polygon.vertices[(len + i - 1) % len];
+        let pi = polygon.vertices[i];
+        let after = polygon.vertices[(i + 1) % len];
+
+        if is_wide_angle(vec3(before), vec3(pi), vec3(after)) {
+            return Some(i);
+        }
+    }
+
+    None
 }
 
 fn wide_indices(polygon: &Polygon) -> Vec::<usize> {
@@ -348,6 +429,7 @@ fn direction(polygon: &Polygon) -> Dir {
     let mut num_wide = 0;
 
     // assume right, and if not return left
+
     for i in 1..polygon.vertices.len() {
         let v1_i = (i + 1) % polygon.vertices.len();
         let v2_i = (i + 2) % polygon.vertices.len();

@@ -70,7 +70,7 @@ fn draw_curve(curve: &mut Curve, ui: &mut Ui) {
 
     let mut i =0;
     for p in &mut curve.points {
-        let mut pos = Pos {x: p.x as i32, y: p.y as i32 };
+        let mut pos = Pos::new( p.x as i32,p.y as i32);
 
         ui.drag_point_txt(&mut pos, &format!("{i}"));
 
