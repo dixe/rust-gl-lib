@@ -8,6 +8,7 @@ type V2 = na::Vector2::<f32>;
 type V3 = na::Vector3::<f32>;
 
 mod line_segment_intersection;
+use line_segment_intersection as lsi;
 
 fn main() -> Result<(), failure::Error> {
 
@@ -143,7 +144,8 @@ fn render_poly(ui: &mut Ui, poly: &mut Polygon, selected: &HashSet::<usize>, sho
         }
 
         if show_help {
-            ui.drawer2D.render_text(&format!("({:?}) - {i}", p1), p1.x as i32, p1.y as i32, 20);
+            //ui.drawer2D.render_text(&format!("({:?}) - {i}", p1), p1.x as i32, p1.y as i32, 14);
+            ui.drawer2D.render_text(&format!("{i}"), p1.x as i32, p1.y as i32, 20);
         }
 
         let mut drag = na::Vector2::<i32>::new(p1.x as i32, p1.y as i32);
@@ -171,7 +173,6 @@ fn render_poly(ui: &mut Ui, poly: &mut Polygon, selected: &HashSet::<usize>, sho
     };
 
     render_intersect(ui, poly);
-
 }
 
 struct State {
@@ -322,19 +323,100 @@ fn calulate_subdivision(polygon: &mut Polygon) {
         _ => {
         }
     }
-    /*
-    while let Some(wide_idx) = first_wide(polygon) {
-    // search from left to right for the first polygon that does not produce any intersections
-    // and does not make a line outside the polygon
 
-    // check line intersections
+    if let Some(wide_idx) = first_wide(polygon) {
+        // search from left to right for the first polygon that does not produce any intersections
+        // and does not make a line outside the polygon
 
-    for i in  0..(polygon.len() - 1) {
+        // loop over posible connections
 
+        println!("Found: {:?}", find_valid_connection(polygon, wide_idx));
+    }
 }
 
+fn find_valid_connection(polygon: &Polygon, idx: usize) -> usize {
+    let cur_p = polygon.vertices[idx];
+
+    let len = polygon.vertices.len();
+
+    let mut res = 0;
+    for conn_idx in 0..len {
+        let mut valid = true;
+
+        if conn_idx == (len + idx - 1) % len || conn_idx == idx || conn_idx == (idx + 1 % len) {
+            // skip0 neighbours and same index
+            continue;
+        }
+        let connection_point = polygon.vertices[conn_idx];
+
+        // now check all lines in polygon
+
+        'inner: for i in 0..len {
+            let idx1 = i;
+            let idx2 = (i + 1) % len;
+            if idx1 == idx || idx1 == conn_idx
+                || idx2 == idx || idx2 == conn_idx {
+                    continue;
+                }
+            let c = polygon.vertices[idx1];
+            let d = polygon.vertices[idx2];
+
+            if let Some(_) = lsi::line_segment_intersect(cur_p, connection_point, c,d) {
+                // line conn
+                valid = false;
+                break 'inner;
+            }
+        }
+
+
+        if valid {
+            let inside = is_inside(idx, conn_idx, polygon);
+            res = conn_idx;
+            println!("Found {:?}", (idx, conn_idx, inside));
+        }
+    }
+
+    res
 }
-     */
+
+fn is_inside(idx1: usize, idx2: usize, polygon: &Polygon) -> bool {
+
+    // just check that the new edge is between the two edges.
+    // find incoming edge as normalization
+    // new edge is higher angle than basline,
+    // new edge is lower angle than outgoing edge
+
+    let len = polygon.vertices.len();
+    let from = polygon.vertices[(len + idx1 - 1) % len];
+    let p = polygon.vertices[idx1];
+    let to = polygon.vertices[(idx1 + 1) % len];
+
+    let mut from_dir = from - p;
+    from_dir.y *= -1.0; // sdl inverse coords, neeed to be fixed when using atan2
+    let mut to_dir = to - p;
+    to_dir.y *= -1.0;
+
+    // between -pi and pi has to be in 0 to tau
+    let v1 = from_dir.y.atan2(from_dir.x);
+    let mut v2 = to_dir.y.atan2(to_dir.x);
+    if v2 < 0.0 {
+        v2 += std::f32::consts::TAU;
+    }
+    v2 -= v1;
+
+    let mut new_dir = polygon.vertices[idx2] - polygon.vertices[idx1];
+    new_dir.y *= -1.0;
+
+    let mut new_v = (new_dir.y).atan2(new_dir.x);
+    if new_v < 0.0 {
+        new_v += std::f32::consts::TAU;
+    }
+
+    new_v -= v1;
+
+
+
+    return new_v < v2 && new_v > 0.0;
 }
 
 
@@ -439,7 +521,7 @@ fn direction(polygon: &Polygon) -> Dir {
         let v2 = vec3(polygon.vertices[v2_i]);
 
         if is_wide_angle(v0, v1, v2) {
-              num_wide += 1;
+            num_wide += 1;
         }
     }
 

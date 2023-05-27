@@ -51,12 +51,8 @@ impl<'a> Iterator for IntersectIter<'a> {
     }
 }
 
-fn intersect_any(polygon: &Polygon) {
 
-}
-
-
-fn line_segment_intersect(a: V2, b: V2, c: V2, d: V2) -> Option<V2> {
+pub fn line_segment_intersect(a: V2, b: V2, c: V2, d: V2) -> Option<V2> {
     // https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
 
     // line 1 is a to b, or a + g e
@@ -80,5 +76,39 @@ fn line_segment_intersect(a: V2, b: V2, c: V2, d: V2) -> Option<V2> {
     }
 
     None
+}
 
+
+#[derive(Debug, Clone, Copy)]
+pub struct Line {
+    pub a: V2,
+    pub dir: V2
+}
+
+
+/// Return the points where the line intersect the line segment, if any, can be anywhere on line
+/// but has to be between c and d on line segment
+pub fn line_line_segment_intersect(line: Line, c: V2, d: V2) -> Option<V2> {
+    // https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
+
+    // line 1 is a to b, or a + g e
+    // line 2 is c to d or c + h f
+
+    let e = line.dir;
+    let f = d - c;
+    let p_h = V2::new(-e.y, e.x);
+
+
+    // check if lines are parallel
+    if f.dot(&p_h) == 0.0 {
+        return None;
+    }
+
+    let h = (line.a-c).dot(&p_h) / f.dot(&p_h);
+
+    if h > 0.0 && h < 1.0 {
+        return Some(c + f * h);
+    }
+
+    None
 }
