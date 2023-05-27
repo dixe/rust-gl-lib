@@ -25,7 +25,11 @@ impl<'a> SubPolygon<'a> {
 
 }
 
-pub fn calulate_subdivision(polygon: &mut Polygon) -> Vec::<SubPolygon> {
+pub fn calculate_subdivision(polygon: &mut Polygon) -> Vec::<SubPolygon> {
+    for p in polygon.intersections() {
+        return vec![];
+    }
+
     let dir = direction(&polygon);
     match dir {
         Dir::Left => {
@@ -81,18 +85,18 @@ fn split_polygon(sub_p: SubPolygon, from: usize, to: usize) -> (SubPolygon, SubP
 
 
     // for s1 take all indices in sub_p.indices from 0..=from then take all in to..sub_p.indices.len
-
     // for s0sub_p.indices from 0..=from then take all in to..sub_p.indices.len
 
+    let min = from.min(to);
+    let max = from.max(to);
 
-    for i in 0..=from {
+    for i in 0..=min {
         s1.indices.push(sub_p.indices[i]);
     }
 
-    if to > from {
-        for i in to..sub_p.indices.len() {
-            s1.indices.push(sub_p.indices[i]);
-        }
+
+    for i in max..sub_p.indices.len() {
+        s1.indices.push(sub_p.indices[i]);
     }
 
     let mut s2 = SubPolygon {
@@ -157,12 +161,8 @@ fn find_valid_connection(sub_p: &SubPolygon, idx: usize) -> usize {
     res
 }
 
-fn is_inside(idx1: usize, idx2: usize, sub_p: &SubPolygon) -> bool {
 
-    // just check that the new edge is between the two edges.
-    // find incoming edge as normalization
-    // new edge is higher angle than basline,
-    // new edge is lower angle than outgoing edge
+fn is_inside(idx1: usize, idx2: usize, sub_p: &SubPolygon) -> bool {
 
     let len = sub_p.len();
     let from = sub_p.vertex((len + idx1 - 1) % len);
@@ -174,33 +174,37 @@ fn is_inside(idx1: usize, idx2: usize, sub_p: &SubPolygon) -> bool {
     let mut to_dir = to - p;
     to_dir.y *= -1.0;
 
-    // between -pi and pi has to be in 0 to tau
-    let v1 = from_dir.y.atan2(from_dir.x);
-    let mut v2 = to_dir.y.atan2(to_dir.x);
-    if v2 < 0.0 {
-        v2 += std::f32::consts::TAU;
-    }
-    v2 -= v1;
 
-    if v2 < 0.0 {
+
+    // find angle 1 as a positive angle
+
+
+    // between -pi and pi has to be in 0 to tau
+    let mut v1 = from_dir.y.atan2(from_dir.x);
+
+    if v1 < 0.0 {
+        v1 += std::f32::consts::TAU;
+    }
+
+    // find angle 2, so that is is create than angle 1, since we are right polygon, and v1 <  v2
+
+    let mut v2 = to_dir.y.atan2(to_dir.x);
+    while v2 < v1 {
         v2 += std::f32::consts::TAU;
     }
+
+    // find new_angle, so that is is greater than angle 1
 
     let mut new_dir = sub_p.vertex(idx2) - sub_p.vertex(idx1);
     new_dir.y *= -1.0;
-
     let mut new_v = (new_dir.y).atan2(new_dir.x);
-    if new_v < 0.0 {
+
+
+    while new_v < v1 {
         new_v += std::f32::consts::TAU;
     }
 
-    new_v -= v1;
-
-    if new_v < 0.0 {
-        new_v += std::f32::consts::TAU;
-    }
-
-    return new_v < v2 && new_v > 0.0;
+    new_v < v2
 }
 
 
@@ -280,4 +284,28 @@ fn is_wide_angle(v0: na::Vector3::<f32>, v1: na::Vector3::<f32>, v2: na::Vector3
 enum Dir {
     Left,
     Right
+}
+
+
+pub fn test1() -> bool {
+
+    let polygon = Polygon {
+
+            vertices: vec![V2::new(440.0, 217.0),
+                           V2::new(647.0, 527.0),
+                           V2::new(332.0, 563.0),
+                           V2::new(520.0, 382.0),
+
+            ]
+    };
+
+    let sub_p =  SubPolygon {
+        polygon: &polygon,
+        indices: vec![0,1,2,3]
+    };
+
+    let res = find_valid_connection(&sub_p, 3);
+
+
+    res == 1
 }

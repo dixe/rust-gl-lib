@@ -36,8 +36,30 @@ fn main() -> Result<(), failure::Error> {
 
     let mut state = State {
         polygon: Polygon {
-            vertices: vec![],
+/*
+            vertices: vec![V2::new(440.0, 217.0),
+                           V2::new(647.0, 527.0),
+                           V2::new(332.0, 563.0),
+                           V2::new(520.0, 382.0),
+
+            ],
+*/
+
+            vertices: vec![V2::new(600.0, 230.0),
+                           V2::new(750.0, 380.0),
+                           V2::new(580.0, 380.0),
+                           V2::new(460.0, 322.0),
+                           V2::new(589.0, 666.0),
+                           V2::new(340.0, 666.0),
+                           V2::new(484.0, 416.0),
+                           V2::new(363.0, 281.0),
+                           V2::new(428.0, 454.0),
+                           V2::new(289.0, 567.0),
+                           V2::new(285.0, 179.0),
+
+            ],
         },
+        sub_divisions: vec![],
         selected: Default::default(),
         mode: Mode::NewPoint,
         show_idx: false,
@@ -110,7 +132,6 @@ fn render_intersect(ui: &mut Ui, polygon: &Polygon) {
     if polygon.vertices.len() <= 3 {
         return;
     }
-
 
     for p in polygon.intersections() {
         ui.drawer2D.circle(p.x, p.y, 7.0, Color::Rgb(250, 5, 5));
@@ -185,6 +206,7 @@ fn render_poly(ui: &mut Ui, poly: &mut Polygon, selected: &HashSet::<usize>, sho
 
 struct State {
     polygon: Polygon,
+    sub_divisions: Vec::<Vec::<usize>>,
     selected: HashSet::<usize>,
     mode: Mode,
     show_idx: bool,
@@ -262,7 +284,12 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
 
             KeyDown { keycode: Some(Keycode::S), ..} => {
                 println!("\n\n");
-                calulate_subdivision(&mut state.polygon);
+                let sub_divisions = calculate_subdivision(&mut state.polygon);
+                state.sub_divisions.clear();
+                for sub in sub_divisions {
+                    state.sub_divisions.push(sub.indices);
+                }
+
             },
 
             KeyDown { keycode: Some(Keycode::Tab), ..} => {
@@ -286,6 +313,13 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
                 }
 
             },
+
+            KeyDown { keycode: Some(Keycode::T), ..} => {
+                if !test1() {
+                    println!("Test 1 failed");
+                }
+            },
+
 
             KeyDown { keycode: Some(Keycode::Z), keymod, ..} => {
                 use sdl2::keyboard::Mod;
