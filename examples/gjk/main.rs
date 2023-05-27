@@ -89,6 +89,8 @@ fn main() -> Result<(), failure::Error> {
 
         render_poly(&mut ui, &mut state.polygon, &state.selected, state.show_pos, state.show_idx);
 
+        render_sub_poly(&mut ui, &state.polygon, &state.sub_divisions);
+
         render_mode(&mut ui, &state.mode);
 
         render_selected(&mut ui, &mut state);
@@ -153,6 +155,26 @@ fn render_mode(ui: &mut Ui, mode: &Mode) {
     }
 }
 
+
+
+fn render_sub_poly(ui: &mut Ui, polygon: &Polygon, sub_divisions: &Vec::<Vec::<usize>>) {
+
+
+    for sub in sub_divisions {
+        let len = sub.len();
+        for idx in 0..len {
+            let i1 = sub[idx];
+            let i2 = sub[(idx + 1) % len];
+
+            let p1 = polygon.vertices[i1];
+            let p2 = polygon.vertices[i2];
+
+            ui.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 7.0);
+
+
+        }
+    }
+}
 
 fn render_poly(ui: &mut Ui, poly: &mut Polygon, selected: &HashSet::<usize>, show_pos: bool, show_idx: bool) {
 
@@ -301,10 +323,11 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
             },
 
             KeyDown { keycode: Some(Keycode::C), ..} => {
+                state.sub_divisions.clear();
                 state.selected.clear();
-                 state.polygon = Polygon {
-                     vertices: vec![],
-                 };
+                state.polygon = Polygon {
+                    vertices: vec![],
+                };
             },
 
             KeyDown { keycode: Some(Keycode::A), ..} => {
@@ -313,18 +336,17 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
                 }
 
             },
-
             KeyDown { keycode: Some(Keycode::T), ..} => {
                 if !test1() {
                     println!("Test 1 failed");
                 }
             },
 
-
             KeyDown { keycode: Some(Keycode::Z), keymod, ..} => {
                 use sdl2::keyboard::Mod;
                 if keymod.intersects(Mod::LCTRLMOD) {
 
+                    state.sub_divisions.clear();
                     state.polygon.vertices.pop();
                     let len = state.polygon.vertices.len();
 

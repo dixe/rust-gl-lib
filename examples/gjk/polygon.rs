@@ -105,15 +105,8 @@ fn split_polygon(sub_p: SubPolygon, from: usize, to: usize) -> (SubPolygon, SubP
     };
 
 
-    if to > from {
-        for i in from..=to {
-            s2.indices.push(sub_p.indices[i]);
-        }
-    } else {
-        let len = sub_p.len();
-        for i in from..=(to + len) {
-            s2.indices.push(sub_p.indices[i % len]);
-        }
+    for i in min..=max {
+        s2.indices.push(sub_p.indices[i]);
     }
 
     (s1, s2)
@@ -124,7 +117,6 @@ fn find_valid_connection(sub_p: &SubPolygon, idx: usize) -> usize {
 
     let len = sub_p.len();
 
-    let mut res = 0;
     for conn_idx in 0..len {
         let mut valid = true;
         if conn_idx == (len + idx - 1) % len || conn_idx == idx || conn_idx == (idx + 1) % len {
@@ -154,11 +146,11 @@ fn find_valid_connection(sub_p: &SubPolygon, idx: usize) -> usize {
 
 
         if valid && is_inside(idx, conn_idx, &sub_p) {
-            res = conn_idx;
+            return conn_idx;
         }
     }
 
-    res
+    panic!("Should always find a valid one in loop search");
 }
 
 
