@@ -24,6 +24,11 @@ impl<'a> Iterator for IntersectIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut first = true;
+
+        if self.polygon.vertices.len() == 0 {
+            return None;
+        }
+
         let len = self.polygon.vertices.len();
         for i in self.i..(len - 1) {
             let a = self.polygon.vertices[i];

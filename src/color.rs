@@ -8,6 +8,13 @@ pub enum Color {
     Hsv(f32, f32, f32, f32) // hsv with h in [0..360] and v,s in [0..1]
 }
 
+impl Default for Color {
+
+    fn default() -> Self {
+        Self::Rgb(0,0,0)
+    }
+}
+
 impl Color {
 
     pub fn lerp(from: Color, to: Color, mut t: f32) -> Self {

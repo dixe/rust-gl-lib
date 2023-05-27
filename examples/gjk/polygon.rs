@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct Polygon {
     pub vertices: Vec::<V2>
 }
