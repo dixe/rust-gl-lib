@@ -58,7 +58,7 @@ impl<B> Buffer<B> where B: BufferType {
     pub fn dynamic_draw_size(&self, size: u32) {
         unsafe {
             self.gl.BufferData(
-                gl::ARRAY_BUFFER,
+                B::BUFFER_TYPE,
                 size as gl::types::GLsizeiptr,
                 0 as *const gl::types::GLvoid,
                 gl::DYNAMIC_DRAW,
@@ -70,7 +70,7 @@ impl<B> Buffer<B> where B: BufferType {
     pub fn dynamic_draw_data<T>(&self, data: &[T]) {
         unsafe {
             self.gl.BufferData(
-                gl::ARRAY_BUFFER,
+                B::BUFFER_TYPE,
                 (data.len() * std::mem::size_of::<T>()) as gl::types::GLsizeiptr,
                 data.as_ptr() as *const gl::types::GLvoid,
                 gl::DYNAMIC_DRAW,
@@ -82,7 +82,7 @@ impl<B> Buffer<B> where B: BufferType {
     pub fn static_draw_data<T>(&self, data: &[T]) {
         unsafe {
             self.gl.BufferData(
-                gl::ARRAY_BUFFER,
+                B::BUFFER_TYPE,
                 (data.len() * std::mem::size_of::<T>()) as gl::types::GLsizeiptr,
                 data.as_ptr() as *const gl::types::GLvoid,
                 gl::STATIC_DRAW,

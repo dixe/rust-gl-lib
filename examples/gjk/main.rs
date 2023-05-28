@@ -105,6 +105,25 @@ fn main() -> Result<(), failure::Error> {
 
         match state.polygon_mode {
             PolygonMode::Object(idx) => {
+
+
+                let vertices: [f32; 3 * 4] = [
+                    // positions
+                    0.0, -0.0, 0.0,
+                    0.5,  0.5, 0.0,
+                    -0.5,  0.5, 0.0,
+                    -0.5, -0.5, 0.0,
+                ];
+
+
+                let indices: Vec<u32> = vec![
+                    0,1,3,
+                    1,2,3];
+
+
+                ui.drawer2D.polygon(&vertices, &indices);
+
+
                 ui.small_text("Object mode");
 
                 if let Some(id) = idx {
@@ -133,6 +152,8 @@ fn main() -> Result<(), failure::Error> {
             },
 
             PolygonMode::Edit(idx) => {
+
+
                 draggable = Some(idx);
                 ui.small_text("Edit mode");
                 if ui.button("to obj mode") {
@@ -519,7 +540,6 @@ fn handle_object_mode(event: &event::Event, poly: &mut Vec::<Poly>, poly_mode: &
         KeyDown { keycode: Some(Keycode::C), ..} => {
             match poly_mode {
                 PolygonMode::Object(Some(idx_r)) => {
-
                     // make sure there are subdivision
                     calc_and_set_subdivision(poly);
 
@@ -560,7 +580,6 @@ fn poly_collision(p1: &Poly, p2: &Poly) -> bool {
             let sub_p_2 = gjk::ComplexPolygon {
                 polygon: &p2.polygon,
                 indices: &indices_2
-
             };
 
             let collision = gjk::gjk_intersection(&sub_p_1, &sub_p_2);

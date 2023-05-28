@@ -3,8 +3,8 @@ use crate::na::{self, Point3, Vector3, Translation3, geometry::Rotation, Vector2
 use crate::text_rendering::text_renderer::{TextRenderer, TextRenderBox};
 use crate::{gl::{self, viewport}, ScreenBox, ScreenCoords};
 use crate::text_rendering::text_renderer::{TextAlignment, TextAlignmentX,TextAlignmentY};
-use crate::shader::{ Shader, TransformationShader, rounded_rect_shader::{self as rrs, RoundedRectShader}, circle_shader::{self as cs, CircleShader}, texture_shader::{self as ts, TextureShader}};
-use crate::objects::{square, color_square, texture_quad};
+use crate::shader::{ Shader, TransformationShader, PosColorShader, rounded_rect_shader::{self as rrs, RoundedRectShader}, circle_shader::{self as cs, CircleShader}, texture_shader::{self as ts, TextureShader}};
+use crate::objects::{square, color_square, texture_quad, polygon};
 use crate::color::Color;
 use crate::helpers::SetupError;
 use crate::text_rendering::font::Font;
@@ -22,14 +22,16 @@ pub struct Drawer2D {
     // render objects
     pub square: square::Square,
     pub texture_square: texture_quad::TextureQuad,
+    pub polygon: polygon::Polygon,
 
-    //shdaers
+    //shaders
     pub color_square: color_square::ColorSquare,
     pub rounded_rect_shader: RoundedRectShader,
     pub color_square_shader: Box::<Shader>,
     pub color_square_h_line_shader: Box::<Shader>,
     pub circle_shader: CircleShader,
     pub texture_shader: TextureShader,
+    pub polygon_shader: PosColorShader,
 
     // fonts
     pub font_cache: FontCache,
@@ -56,8 +58,12 @@ impl Drawer2D {
 
         let color_square_h_line_shader = Box::new(color_square::ColorSquare::h_line_shader(&gl)?);
 
+        let polygon_shader = PosColorShader::new(gl)?;
         let square = square::Square::new(gl);
         let color_square = color_square::ColorSquare::new(gl);
+
+
+        let polygon = polygon::Polygon::new(gl, &vec![], &vec![], None);
 
         Ok(Self {
             font_cache,
@@ -68,6 +74,8 @@ impl Drawer2D {
             texture_shader,
             rounded_rect_shader: rrs,
             square,
+            polygon,
+            polygon_shader,
             circle_shader: cs,
             color_square_shader,
             color_square,
@@ -165,6 +173,20 @@ impl Drawer2D {
 
     pub fn rounded_rect<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&self, x: T1, y: T2, w: T3, h: T4) {
         self.rounded_rect_color(x, y, w, h, Color::Rgb(100, 100, 100));
+    }
+
+    /// Assume vertices is in world/screen space
+    pub fn polygon(&mut self, vertices: &[f32], indices: &[u32]) {
+        // setup polygon_data
+        self.polygon.sub_data(&self.gl, indices, vertices, None);
+
+        self.polygon_shader.shader.set_used();
+        let trans = na::Matrix4::identity();
+
+        self.polygon_shader.shader.set_mat4(&self.gl, "transform", trans);
+
+        self.polygon.render(&self.gl);
+
     }
 
 

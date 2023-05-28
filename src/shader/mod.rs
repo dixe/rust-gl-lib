@@ -104,7 +104,7 @@ in VS_OUTPUT {
                     void main()
                     {
                         vec4 c = IN.Color;
-                        FragColor = IN.Color;
+                        FragColor = vec4(0.3, 0.4,0.3, 1.0);
                     }";
 
         BaseShader::new(gl, vert_source, frag_source).map(|s| PosColorShader { gl: gl.clone(), shader:s})
