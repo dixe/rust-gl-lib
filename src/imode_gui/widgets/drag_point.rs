@@ -2,22 +2,24 @@ use super::*;
 
 impl Ui {
 
-    pub fn drag_point(&mut self, pos: &mut Pos, r: f64) {
+    /// returns true when mouse down on drag point, so when activated.
+    pub fn drag_point(&mut self, pos: &mut Pos, r: f64) -> bool {
 
-        self.drag_point_no_draw(pos, r);
+        let (_, res) = self.drag_point_no_draw(pos, r);
 
         // Draw
         self.drawer2D.circle(pos.x, pos.y, r as i32,self.style.button.color);
+        res
     }
 
-    pub fn drag_point_txt(&mut self, pos: &mut Pos, txt: &str) {
+    pub fn drag_point_txt(&mut self, pos: &mut Pos, txt: &str) -> bool {
         // TODO: use ui style for text scale
         let pxs = 16;
         let text_box = self.drawer2D.text_render_box(txt, pxs);
 
         let r = text_box.total_width.min(text_box.total_height) as f64;
 
-        let status = self.drag_point_no_draw(pos, r);
+        let (status, activated) = self.drag_point_no_draw(pos, r);
 
         let color = match status {
             WidgetStatus::Inactive => Color::Rgb(200,10, 200),
@@ -29,10 +31,12 @@ impl Ui {
 
         self.drawer2D.render_text(txt, pos.x - (r/2.0) as i32, pos.y - r as i32, pxs);
 
+        activated
+
     }
 
 
-    pub fn drag_point_no_draw(&mut self, pos: &mut Pos, r: f64) -> WidgetStatus {
+    pub fn drag_point_no_draw(&mut self, pos: &mut Pos, r: f64) -> (WidgetStatus, bool) {
 
         // figure out button layout
         let id = self.next_id();
@@ -49,8 +53,11 @@ impl Ui {
             status = WidgetStatus::Hot;
         }
 
+        let mut activated = false;
+
         if self.is_hot(id) {
             if self.mouse_down {
+                activated = true;
                 self.set_active(id);
             }
         }
@@ -63,6 +70,6 @@ impl Ui {
             }
         }
 
-        status
+        (status, activated)
     }
 }

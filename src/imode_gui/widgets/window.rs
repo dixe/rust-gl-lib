@@ -29,7 +29,7 @@ impl Ui{
 
                 window.id = window_id;
                 window.top_bar_size = Pos::new(0, 20);
-                window.base_container_context.anchor_pos = Pos::new(100, 100 + 20);
+                window.base_container_context.anchor_pos = Pos::new(700, 100 + 20);
                 window.base_container_context.next_id.window_id = window_id;
                 self.windows.insert(window_id, window);
                 window_id

@@ -14,16 +14,20 @@ mod line_segment_intersection;
 use line_segment_intersection as lsi;
 
 mod options;
+mod gjk;
+
 
 fn new_poly() -> Poly {
 
     let mut poly : Poly = Default::default();
 
-    poly.polygon.vertices = vec![V2::new(440.0, 217.0),
+    poly.polygon.vertices = vec![V2::new(580.0, 217.0),
                          V2::new(647.0, 527.0),
                          V2::new(332.0, 563.0),
-                         V2::new(520.0, 382.0),
+                         V2::new(340.0, 230.0),
     ];
+
+    poly.select_all();
     poly
 }
 
@@ -103,7 +107,6 @@ fn main() -> Result<(), failure::Error> {
             PolygonMode::Object(idx) => {
                 ui.small_text("Object mode");
 
-
                 if let Some(id) = idx {
                     if ui.button("to edit mode") {
                         state.polygon_mode = PolygonMode::Edit(id);
@@ -134,6 +137,9 @@ fn main() -> Result<(), failure::Error> {
                 ui.small_text("Edit mode");
                 if ui.button("to obj mode") {
                     state.polygon_mode = PolygonMode::Object(Some(idx));
+                    for poly in &mut state.polygons {
+                        poly.select_all();
+                    }
                 }
             }
         }
@@ -141,7 +147,16 @@ fn main() -> Result<(), failure::Error> {
         let mut i = 0;
         for poly in &mut state.polygons {
             render_poly(&mut ui, poly, &state.options, Some(i) == draggable);
-            render_selected(&mut ui, poly);
+            if render_selected(&mut ui, poly) {
+
+                match state.polygon_mode {
+                    PolygonMode::Object(_) => {
+                        state.polygon_mode = PolygonMode::Object(Some(i));
+                    },
+                    _ => {}
+                }
+            }
+
             render_sub_poly(&mut ui, poly);
             i += 1;
         }
@@ -156,9 +171,9 @@ fn main() -> Result<(), failure::Error> {
 }
 
 
-fn render_selected(ui: &mut Ui, poly: &mut Poly) {
+fn render_selected(ui: &mut Ui, poly: &mut Poly) -> bool {
     if poly.selected.len() == 0 {
-        return;
+        return false
     }
 
     let mut avg = na::Vector2::<f32>::new(0.0, 0.0);
@@ -172,7 +187,7 @@ fn render_selected(ui: &mut Ui, poly: &mut Poly) {
 
     let mut drag = na::Vector2::<i32>::new(avg.x as i32, avg.y as i32);
 
-    ui.drag_point(&mut drag, 15.0);
+    let res = ui.drag_point(&mut drag, 15.0);
 
     drag.x = drag.x - avg.x as i32;
     drag.y = drag.y - avg.y as i32;
@@ -182,6 +197,7 @@ fn render_selected(ui: &mut Ui, poly: &mut Poly) {
         poly.polygon.vertices[*idx].y += drag.y as f32;
     }
 
+    res
 }
 
 fn render_intersect(ui: &mut Ui, polygon: &Polygon) {
@@ -301,6 +317,14 @@ struct Poly {
     polygon: Polygon,
     sub_divisions: Vec::<Vec::<usize>>,
     selected: HashSet::<usize>,
+}
+impl Poly {
+
+    fn select_all(&mut self) {
+        for i in 0..self.polygon.vertices.len() {
+            self.selected.insert(i);
+        }
+    }
 }
 
 enum PolygonMode {
@@ -475,9 +499,8 @@ fn handle_edit_mode(event: &event::Event, poly: &mut Poly, mode: &mut Mode) {
 
 
 
+// maybe have
 //fn handle_object_mode(event: &event::Event, selected_obj: Option<usize>, state: &mut state)
-
-
 fn handle_object_mode(event: &event::Event, poly: &mut Vec::<Poly>, poly_mode: &mut PolygonMode, mode: &mut Mode) {
 
     use event::Event::*;
@@ -487,12 +510,28 @@ fn handle_object_mode(event: &event::Event, poly: &mut Vec::<Poly>, poly_mode: &
         MouseButtonUp {x, y, ..} => {
             *mode = Mode::NewPoint;
         },
-/*
-        KeyDown { keycode: Some(Keycode::A), keymod, ..} => {
-            poly.push(new_poly());
-            *poly_mode = PolygonMode::Object(Some(poly.len() - 1));
+
+        KeyDown { keycode: Some(Keycode::C), ..} => {
+            match poly_mode {
+                PolygonMode::Object(Some(idx_r)) => {
+
+                    let idx = *idx_r;
+                    for i in 0..poly.len() {
+                        if i == idx || poly[i].polygon.vertices.len() < 3 || poly[idx].polygon.vertices.len() < 3 {
+                            continue;
+                        }
+
+                        let collision = gjk::gjk_intersection(&poly[idx].polygon, &poly[i].polygon);
+                        println!("{:?}", (idx, i, collision));
+
+
+                    }
+
+                },
+                _ => {}
+            }
         },
-*/
+
         _ => {}
 
     }

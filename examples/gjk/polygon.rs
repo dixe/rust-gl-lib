@@ -263,7 +263,7 @@ fn direction(polygon: &Polygon) -> Dir {
     return Dir::Right;
 }
 
-fn vec3(v: V2) -> V3{
+fn vec3(v: V2) -> V3 {
     V3::new(v.x, v.y, 0.0)
 }
 
@@ -277,7 +277,6 @@ enum Dir {
     Left,
     Right
 }
-
 
 pub fn test1() -> bool {
 
