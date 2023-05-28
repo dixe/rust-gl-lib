@@ -376,14 +376,7 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
             },
 
             KeyDown { keycode: Some(Keycode::S), ..} => {
-                println!("\n\n");
-                for poly in &mut state.polygons {
-                    let sub_divisions = calculate_subdivision(&mut poly.polygon);
-                    poly.sub_divisions.clear();
-                    for sub in sub_divisions {
-                        poly.sub_divisions.push(sub.indices);
-                    }
-                }
+                calc_and_set_subdivision(&mut state.polygons);
             },
 
             KeyDown { keycode: Some(Keycode::E), ..} => {
@@ -417,6 +410,18 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
         }
     }
 }
+
+
+fn calc_and_set_subdivision(polygons: &mut Vec::<Poly>) {
+    for poly in polygons {
+        let sub_divisions = calculate_subdivision(&mut poly.polygon);
+        poly.sub_divisions.clear();
+        for sub in sub_divisions {
+            poly.sub_divisions.push(sub.indices);
+        }
+    }
+}
+
 
 
 
@@ -515,13 +520,17 @@ fn handle_object_mode(event: &event::Event, poly: &mut Vec::<Poly>, poly_mode: &
             match poly_mode {
                 PolygonMode::Object(Some(idx_r)) => {
 
+                    // make sure there are subdivision
+                    calc_and_set_subdivision(poly);
+
                     let idx = *idx_r;
                     for i in 0..poly.len() {
                         if i == idx || poly[i].polygon.vertices.len() < 3 || poly[idx].polygon.vertices.len() < 3 {
                             continue;
                         }
 
-                        let collision = gjk::gjk_intersection(&poly[idx].polygon, &poly[i].polygon);
+
+                        let collision = poly_collision(&poly[i], &poly[idx]);
                         println!("{:?}", (idx, i, collision));
 
 
@@ -535,4 +544,32 @@ fn handle_object_mode(event: &event::Event, poly: &mut Vec::<Poly>, poly_mode: &
         _ => {}
 
     }
+}
+
+// does not return early
+fn poly_collision(p1: &Poly, p2: &Poly) -> bool {
+
+    let mut res = false;;
+    for indices_1 in &p1.sub_divisions {
+        let sub_p_1 = gjk::ComplexPolygon {
+            polygon: &p1.polygon,
+            indices: &indices_1
+        };
+
+        for indices_2 in &p2.sub_divisions {
+            let sub_p_2 = gjk::ComplexPolygon {
+                polygon: &p2.polygon,
+                indices: &indices_2
+
+            };
+
+            let collision = gjk::gjk_intersection(&sub_p_1, &sub_p_2);
+            if collision {
+                res = true;
+                println!("Draw sub_p_1 and sub_p2");
+            }
+        }
+    }
+
+    res
 }

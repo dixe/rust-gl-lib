@@ -1,6 +1,14 @@
 use super::*;
 
 
+
+#[derive(Debug)]
+pub struct ComplexPolygon<'a> {
+    pub polygon: &'a Polygon,
+    pub indices: &'a Vec::<usize>,
+}
+
+
 pub fn gjk_intersection<T1 : Shape, T2: Shape>(p: &T1, q: &T2) -> bool {
 
     // TODO: handle same shape, so d = 0 return true
@@ -154,7 +162,7 @@ enum Remove {
     B,C
 }
 
-
+/*
 impl Shape for Polygon {
 
     fn support(&self, d: V2) -> V2 {
@@ -179,9 +187,41 @@ impl Shape for Polygon {
         let mut c = V2::new(0.0, 0.0);
 
         for v in &self.vertices {
-            c +=v;
+            c += v;
         }
 
         c / self.vertices.len() as f32
+    }
+}
+*/
+
+impl<'a> Shape for ComplexPolygon<'a> {
+
+    fn support(&self, d: V2) -> V2 {
+
+        let mut p = self.polygon.vertices[self.indices[0]];
+        let mut val = p.dot(&d);
+
+        for idx in self.indices {
+
+            let v = self.polygon.vertices[*idx];
+            let dot_val = v.dot(&d);
+            if dot_val > val {
+                val = dot_val;
+                p = v;
+            }
+        }
+        p
+    }
+
+    fn center(&self) -> V2 {
+        let mut c = V2::new(0.0, 0.0);
+
+        for idx in self.indices {
+            let v = self.polygon.vertices[*idx];
+            c += v;
+        }
+
+        c / self.indices.len() as f32
     }
 }

@@ -63,7 +63,6 @@ pub fn calculate_subdivision(polygon: &mut Polygon) -> Vec::<SubPolygon> {
             to_be_checked.push(s1);
             to_be_checked.push(s2);
         } else {
-            println!("{:?}", sub_p.indices);
             res.push(sub_p);
         }
     }
