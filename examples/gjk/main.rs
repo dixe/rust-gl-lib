@@ -17,7 +17,6 @@ use line_segment_intersection as lsi;
 mod options;
 
 
-
 fn new_poly() -> Poly {
 
     let mut poly : Poly = Default::default();
@@ -54,7 +53,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut options = options::Options::default();
 
-    options.selected_v_color = Color::Rgb(56, 121, 24);
+    options.selected_v_color = Color::Rgb(25, 41, 187);
     let mut state = State {
         polygons: vec![ new_poly() ],
         polygon_mode: PolygonMode::Object(Some(0)),
