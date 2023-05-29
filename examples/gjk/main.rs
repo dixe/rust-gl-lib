@@ -51,12 +51,14 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
+    let mut options = options::Options::default();
 
+    options.selected_v_color = Color::Rgb(56, 121, 24);
     let mut state = State {
         polygons: vec![ new_poly() ],
         polygon_mode: PolygonMode::Object(Some(0)),
         mode: Mode::NewPoint,
-        options: options::Options::default()
+        options,
     };
 
     loop {
@@ -84,40 +86,12 @@ fn main() -> Result<(), failure::Error> {
         options::options_ui(&mut ui, &mut state.options);
 
         let mut draggable = None;
+        let mut selected = None;
 
         match state.polygon_mode {
             PolygonMode::Object(idx) => {
 
-
-                let vertices: [f32; 3 * 3] = [
-                    100.0, 300.0, 0.0,
-                    200.0, 220.0, 0.0,
-                    300.0, 200.0, 0.0,
-                ];
-
-
-                let vertices1: [f32; 3 * 3] = [
-                    // positions
-                    0.0, 0.0, 0.0,
-                    0.5, 0.5, 0.0,
-                    0.0, 0.5, 0.0,
-
-                ];
-
-
-                let vertices2: [f32; 3 * 3] = [
-                    // positions
-                    -0.83, -0.25, 0.00,
-                    -0.67, -0.45, 0.00,
-                    -0.50, -0.50, 0.00,
-                ];
-
-
-                let indices: Vec<u32> = vec![0, 1, 2];
-
-                ui.drawer2D.polygon(&vertices, &indices);
-
-
+                selected = idx;
                 ui.small_text("Object mode");
 
                 if let Some(id) = idx {
@@ -140,14 +114,28 @@ fn main() -> Result<(), failure::Error> {
 
                 ui.newline();
                 if ui.button("Add new") {
-
                     state.polygons.push(new_poly());
+                }
+
+                if state.options.check_collision {
+                    check_collision(&mut ui.drawer2D, &mut state.polygons);
+                }
+
+
+                // render polygons
+                let mut i = 0;
+                for poly in &mut state.polygons {
+                    render_poly(&mut ui, poly, &state.options, Some(i) == draggable, Some(i) == selected);
+                    if render_selected(&mut ui, poly) {
+                        state.polygon_mode = PolygonMode::Object(Some(i));
+                    }
+
+                    render_sub_poly(&mut ui, poly);
+                    i += 1;
                 }
             },
 
             PolygonMode::Edit(idx) => {
-
-
                 draggable = Some(idx);
                 ui.small_text("Edit mode");
                 if ui.button("to obj mode") {
@@ -156,31 +144,14 @@ fn main() -> Result<(), failure::Error> {
                         poly.select_all();
                     }
                 }
+
+                // render polygon to edit, hide the others
+                render_poly(&mut ui, &mut state.polygons[idx], &state.options, true, false);
+                render_selected(&mut ui, &mut state.polygons[idx]);
+
             }
         }
-
-        let mut i = 0;
-        for poly in &mut state.polygons {
-            render_poly(&mut ui, poly, &state.options, Some(i) == draggable);
-            if render_selected(&mut ui, poly) {
-
-                match state.polygon_mode {
-                    PolygonMode::Object(_) => {
-                        state.polygon_mode = PolygonMode::Object(Some(i));
-                    },
-                    _ => {}
-                }
-            }
-
-            render_sub_poly(&mut ui, poly);
-            i += 1;
-        }
-
-
         render_mode(&mut ui, &state.mode);
-
-
-
         window.gl_swap_window();
     }
 }
@@ -264,7 +235,7 @@ fn render_sub_poly(ui: &mut Ui, poly: &mut Poly) {
     }
 }
 
-fn render_poly(ui: &mut Ui, poly: &mut Poly, options: &options::Options, draggable: bool) {
+fn render_poly(ui: &mut Ui, poly: &mut Poly, options: &options::Options, draggable: bool, selected: bool) {
 
     let polygon = &mut poly.polygon;
     let len = polygon.vertices.len();
@@ -278,12 +249,21 @@ fn render_poly(ui: &mut Ui, poly: &mut Poly, options: &options::Options, draggab
             r = 10.0;
         }
 
+        if selected {
+            r = 10.0;
+        }
+
 
         let mut drag = na::Vector2::<i32>::new(p1.x as i32, p1.y as i32);
         if draggable {
             ui.drag_point(&mut drag, r);
-        } else{
-            ui.drawer2D.circle(drag.x, drag.y, r, options.v_color);
+        } else {
+            let mut color = options.v_color;
+            if selected {
+                color = options.selected_v_color;
+            }
+
+            ui.drawer2D.circle(drag.x, drag.y, r, color);
         }
 
         p1.x = drag.x as f32;
@@ -294,7 +274,7 @@ fn render_poly(ui: &mut Ui, poly: &mut Poly, options: &options::Options, draggab
         }
 
         if options.show_idx {
-            ui.drawer2D.render_text(&format!("{i}"), p1.x as i32, p1.y as i32, 14);
+            ui.drawer2D.render_text(&format!("{i}"), p1.x as i32, p1.y as i32, 20);
         }
 
         if i < len - 1 {
@@ -363,7 +343,7 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
         match state.polygon_mode {
 
             PolygonMode::Object(_) => {
-                handle_object_mode(&mut ui.drawer2D, &e, &mut state.polygons, &mut state.polygon_mode, &mut state.mode);
+                handle_object_mode(&e, &mut state.mode, &mut state.options);
             },
             PolygonMode::Edit(idx) => {
                 handle_edit_mode(&e, state.polygons.get_mut(idx).unwrap(), &mut state.mode);
@@ -484,14 +464,6 @@ fn handle_edit_mode(event: &event::Event, poly: &mut Poly, mode: &mut Mode) {
             poly.selected.clear();
         },
 
-        KeyDown { keycode: Some(Keycode::C), ..} => {
-            poly.sub_divisions.clear();
-            poly.selected.clear();
-            poly.polygon = Polygon {
-                vertices: vec![],
-            };
-        },
-
         KeyDown { keycode: Some(Keycode::A), ..} => {
 
             for i in 0..poly.polygon.vertices.len() {
@@ -521,7 +493,7 @@ fn handle_edit_mode(event: &event::Event, poly: &mut Poly, mode: &mut Mode) {
 
 // maybe have
 //fn handle_object_mode(event: &event::Event, selected_obj: Option<usize>, state: &mut state)
-fn handle_object_mode(drawer2D: &mut Drawer2D, event: &event::Event, poly: &mut Vec::<Poly>, poly_mode: &mut PolygonMode, mode: &mut Mode) {
+fn handle_object_mode( event: &event::Event, mode: &mut Mode, options: &mut options::Options) {
 
     use event::Event::*;
     use sdl2::keyboard::Keycode;
@@ -530,36 +502,28 @@ fn handle_object_mode(drawer2D: &mut Drawer2D, event: &event::Event, poly: &mut 
         MouseButtonUp {x, y, ..} => {
             *mode = Mode::NewPoint;
         },
-
         KeyDown { keycode: Some(Keycode::C), ..} => {
-            match poly_mode {
-                PolygonMode::Object(Some(idx_r)) => {
-                    // make sure there are subdivision
-                    calc_and_set_subdivision(poly);
-
-                    let idx = *idx_r;
-                    for i in 0..poly.len() {
-                        if i == idx || poly[i].polygon.vertices.len() < 3 || poly[idx].polygon.vertices.len() < 3 {
-                            continue;
-                        }
-
-                        let collision = poly_collision(drawer2D, &poly[i], &poly[idx]);
-                    }
-
-                },
-                _ => {}
-            }
+            options.check_collision = !options.check_collision;
         },
-
         _ => {}
-
     }
 }
+
+fn check_collision(drawer2D: &mut Drawer2D, polygons: &mut Vec::<Poly>) {
+    calc_and_set_subdivision(polygons);
+
+    for i in 0..(polygons.len() - 1) {
+        for j in (i+1)..polygons.len() {
+            poly_collision(drawer2D, &polygons[i], &polygons[j]);
+        }
+    }
+}
+
 
 // does not return early
 fn poly_collision(drawer2D: &mut Drawer2D, p1: &Poly, p2: &Poly) -> bool {
 
-    let mut res = false;;
+    let mut res = false;
     for indices_1 in &p1.sub_divisions {
         let sub_p_1 = gjk::ComplexPolygon {
             polygon: &p1.polygon,
@@ -575,13 +539,35 @@ fn poly_collision(drawer2D: &mut Drawer2D, p1: &Poly, p2: &Poly) -> bool {
             let collision = gjk::gjk_intersection(&sub_p_1, &sub_p_2);
             if collision {
                 res = true;
-                 let indices: Vec<u32> = vec![0, 1, 2];
-                //ui.drawer2D.polygon(&vertices, &indices);
-
-                println!("Draw sub_p_1 and sub_p2");
+                draw_convex_polygon(drawer2D, &p1.polygon.vertices, indices_1);
+                draw_convex_polygon(drawer2D, &p2.polygon.vertices, indices_2);
             }
         }
     }
-
     res
+}
+
+
+fn draw_convex_polygon(drawer2D: &mut Drawer2D, base_vertices: &[V2], poly_indices: &[usize]) {
+
+    let triangles = poly_indices.len() - 2;
+
+    let mut vertices = vec![];
+
+    for &i in poly_indices {
+        vertices.push(base_vertices[i].x);
+        vertices.push(drawer2D.viewport.h as f32 - base_vertices[i].y);
+        vertices.push(0.0);
+    }
+
+    let mut indices = vec![];
+    for i in 0..triangles {
+        indices.push(0);
+        indices.push((i+1) as u32);
+        indices.push((i + 2)as u32);
+    }
+
+    drawer2D.polygon(&vertices, &indices);
+
+
 }
