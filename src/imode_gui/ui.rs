@@ -42,6 +42,7 @@ pub struct Ui {
 
     pub windows: HashMap::<usize, Window>,
     pub frame_events: Vec::<event::Event>,
+    pub widget_frame_events: Vec::<event::Event>,
     pub current_window: Vec::<usize>, // index into windows, a stack
     pub window_to_id: HashMap::<String, usize>,
     pub next_window_id: usize,
@@ -85,6 +86,7 @@ impl Ui {
             style,
             windows,
             frame_events: vec![],
+            widget_frame_events: vec![],
             current_window: vec![],
             window_to_id: Default::default(),
             next_window_id: 1,
@@ -251,7 +253,9 @@ impl Ui {
         }
 
 
+        self.widget_frame_events.clear();
         self.frame_events.clear();
+
         use event::Event::*;
         use sdl2::keyboard::Keycode::*;
 
@@ -301,6 +305,8 @@ impl Ui {
                     // disable when active for now, even though maybe only mouse is used
                     if !any_active {
                         self.frame_events.push(other.clone());
+                    } else {
+                        self.widget_frame_events.push(other.clone());
                     }
                 }
             }
