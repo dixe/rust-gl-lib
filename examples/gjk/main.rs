@@ -3,6 +3,7 @@ use gl_lib::imode_gui::drawer2d::{self, *};
 use gl_lib::imode_gui::ui::*;
 use sdl2::event;
 use std::collections::HashSet;
+use gl_lib::collision2d::gjk;
 
 type V2 = na::Vector2::<f32>;
 type V3 = na::Vector3::<f32>;
@@ -14,7 +15,7 @@ mod line_segment_intersection;
 use line_segment_intersection as lsi;
 
 mod options;
-mod gjk;
+
 
 
 fn new_poly() -> Poly {
@@ -519,13 +520,13 @@ fn poly_collision(drawer2D: &mut Drawer2D, p1: &Poly, p2: &Poly) -> bool {
 
     let mut res = false;
     for indices_1 in &p1.sub_divisions {
-        let sub_p_1 = gjk::ComplexPolygon {
+        let sub_p_1 = ComplexPolygon {
             polygon: &p1.polygon,
             indices: &indices_1
         };
 
         for indices_2 in &p2.sub_divisions {
-            let sub_p_2 = gjk::ComplexPolygon {
+            let sub_p_2 = ComplexPolygon {
                 polygon: &p2.polygon,
                 indices: &indices_2
             };
@@ -542,7 +543,7 @@ fn poly_collision(drawer2D: &mut Drawer2D, p1: &Poly, p2: &Poly) -> bool {
     res
 }
 
-impl<'a> drawer2d::ConvexPolygon for gjk::ComplexPolygon<'a> {
+impl<'a> drawer2d::ConvexPolygon for ComplexPolygon<'a> {
     fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32) {
         for &i in self.indices {
             let v = self.polygon.vertices[i];

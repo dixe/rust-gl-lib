@@ -36,6 +36,8 @@ pub mod animations;
 
 pub mod imode_gui;
 
+pub mod collision2d;
+
 pub mod particle_system;
 
 /// Defines point in ScreenBox x,y in \[0.0; 1.0\]

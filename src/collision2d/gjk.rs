@@ -1,11 +1,7 @@
-use super::*;
+use nalgebra as na;
 
-#[derive(Debug)]
-pub struct ComplexPolygon<'a> {
-    pub polygon: &'a Polygon,
-    pub indices: &'a Vec::<usize>,
-}
-
+type V2 = na::Vector2::<f32>;
+type V3 = na::Vector3::<f32>;
 
 pub fn gjk_intersection<T1 : Shape, T2: Shape>(p: &T1, q: &T2) -> bool {
 
@@ -18,7 +14,7 @@ pub fn gjk_intersection<T1 : Shape, T2: Shape>(p: &T1, q: &T2) -> bool {
     loop {
         let a = support(p, q, d);
 
-        if a.dot(& d) < 0.0 {
+        if a.dot(&d) < 0.0 {
             return false;
         }
 
@@ -158,68 +154,4 @@ impl ToV3 for V2 {
 
 enum Remove {
     B,C
-}
-
-/*
-impl Shape for Polygon {
-
-    fn support(&self, d: V2) -> V2 {
-
-        let mut p = self.vertices[0];
-        let mut val = p.dot(&d);
-
-        for v in &self.vertices {
-
-            let dot_val = v.dot(&d);
-            if dot_val > val {
-                val = dot_val;
-                p = *v;
-            }
-        }
-
-        p
-
-    }
-
-    fn center(&self) -> V2 {
-        let mut c = V2::new(0.0, 0.0);
-
-        for v in &self.vertices {
-            c += v;
-        }
-
-        c / self.vertices.len() as f32
-    }
-}
-*/
-
-impl<'a> Shape for ComplexPolygon<'a> {
-
-    fn support(&self, d: V2) -> V2 {
-
-        let mut p = self.polygon.vertices[self.indices[0]];
-        let mut val = p.dot(&d);
-
-        for idx in self.indices {
-
-            let v = self.polygon.vertices[*idx];
-            let dot_val = v.dot(&d);
-            if dot_val > val {
-                val = dot_val;
-                p = v;
-            }
-        }
-        p
-    }
-
-    fn center(&self) -> V2 {
-        let mut c = V2::new(0.0, 0.0);
-
-        for idx in self.indices {
-            let v = self.polygon.vertices[*idx];
-            c += v;
-        }
-
-        c / self.indices.len() as f32
-    }
 }

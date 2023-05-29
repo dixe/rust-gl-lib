@@ -299,3 +299,41 @@ pub fn test1() -> bool {
 
     res == 1
 }
+
+
+#[derive(Debug)]
+pub struct ComplexPolygon<'a> {
+    pub polygon: &'a Polygon,
+    pub indices: &'a Vec::<usize>,
+}
+
+impl<'a> gjk::Shape for ComplexPolygon<'a> {
+
+    fn support(&self, d: V2) -> V2 {
+
+        let mut p = self.polygon.vertices[self.indices[0]];
+        let mut val = p.dot(&d);
+
+        for idx in self.indices {
+
+            let v = self.polygon.vertices[*idx];
+            let dot_val = v.dot(&d);
+            if dot_val > val {
+                val = dot_val;
+                p = v;
+            }
+        }
+        p
+    }
+
+    fn center(&self) -> V2 {
+        let mut c = V2::new(0.0, 0.0);
+
+        for idx in self.indices {
+            let v = self.polygon.vertices[*idx];
+            c += v;
+        }
+
+        c / self.indices.len() as f32
+    }
+}

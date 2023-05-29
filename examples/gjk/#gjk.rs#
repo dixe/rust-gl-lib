@@ -18,7 +18,7 @@ pub fn gjk_intersection<T1 : Shape, T2: Shape>(p: &T1, q: &T2) -> bool {
     loop {
         let a = support(p, q, d);
 
-        if a.dot(& d) < 0.0 {
+        if a.dot(&d) < 0.0 {
             return false;
         }
 
