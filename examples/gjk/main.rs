@@ -1,5 +1,5 @@
 use gl_lib::{gl, na, helpers, color::Color};
-use gl_lib::imode_gui::drawer2d::*;
+use gl_lib::imode_gui::drawer2d::{self, *};
 use gl_lib::imode_gui::ui::*;
 use sdl2::event;
 use std::collections::HashSet;
@@ -290,13 +290,7 @@ fn render_poly(ui: &mut Ui, poly: &mut Poly, options: &options::Options, draggab
         let p2 = polygon.vertices[0];
         ui.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 3.0);
     }
-/*
-    for sub_p in &poly.sub_polygons {
-        for idx in &sub_p.indices {
-            ui.drawer2D.rounded_rect(poly.vertices[*idx].x, poly.vertices[*idx].y, 10, 10);
-        }
-    };
-*/
+
     render_intersect(ui, &poly.polygon);
 }
 
@@ -539,35 +533,22 @@ fn poly_collision(drawer2D: &mut Drawer2D, p1: &Poly, p2: &Poly) -> bool {
             let collision = gjk::gjk_intersection(&sub_p_1, &sub_p_2);
             if collision {
                 res = true;
-                draw_convex_polygon(drawer2D, &p1.polygon.vertices, indices_1);
-                draw_convex_polygon(drawer2D, &p2.polygon.vertices, indices_2);
+                drawer2D.convex_polygon(&sub_p_1);
+                drawer2D.convex_polygon(&sub_p_2);
+
             }
         }
     }
     res
 }
 
-
-fn draw_convex_polygon(drawer2D: &mut Drawer2D, base_vertices: &[V2], poly_indices: &[usize]) {
-
-    let triangles = poly_indices.len() - 2;
-
-    let mut vertices = vec![];
-
-    for &i in poly_indices {
-        vertices.push(base_vertices[i].x);
-        vertices.push(drawer2D.viewport.h as f32 - base_vertices[i].y);
-        vertices.push(0.0);
+impl<'a> drawer2d::ConvexPolygon for gjk::ComplexPolygon<'a> {
+    fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32) {
+        for &i in self.indices {
+            let v = self.polygon.vertices[i];
+            buffer.push(v.x);
+            buffer.push(viewport_height - v.y);
+            buffer.push(0.0);
+        }
     }
-
-    let mut indices = vec![];
-    for i in 0..triangles {
-        indices.push(0);
-        indices.push((i+1) as u32);
-        indices.push((i + 2)as u32);
-    }
-
-    drawer2D.polygon(&vertices, &indices);
-
-
 }

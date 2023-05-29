@@ -32,6 +32,8 @@ pub struct Drawer2D {
     pub circle_shader: CircleShader,
     pub texture_shader: TextureShader,
     pub polygon_shader: Box::<Shader>,
+    polygon_vertex_buffer: Vec::<f32>,
+    polygon_indices_buffer: Vec::<u32>,
 
     // fonts
     pub font_cache: FontCache,
@@ -78,6 +80,8 @@ impl Drawer2D {
             circle_shader: cs,
             color_square_shader,
             color_square,
+            polygon_indices_buffer: vec![],
+            polygon_vertex_buffer: vec![],
             color_square_h_line_shader
         })
     }
@@ -174,21 +178,31 @@ impl Drawer2D {
         self.rounded_rect_color(x, y, w, h, Color::Rgb(100, 100, 100));
     }
 
+
+    /// Assume vertices is in world/screen space
+    pub fn convex_polygon<T: ConvexPolygon>(&mut self, p: &T) {
+
+        self.polygon_vertex_buffer.clear();
+        self.polygon_indices_buffer.clear();
+
+        // setup vertex and indices buffer
+        p.set_vertices(&mut self.polygon_vertex_buffer, self.viewport.h as f32);
+
+        // convex polygon, avery triangle can be drawn with vertex 0 as "base"
+        let triangles = self.polygon_vertex_buffer.len()/3 - 2;
+        for i in 0..triangles {
+            self.polygon_indices_buffer.push(0);
+            self.polygon_indices_buffer.push((i + 1) as u32);
+            self.polygon_indices_buffer.push((i + 2) as u32);
+        }
+
+        polygon(&self.gl, &mut self.polygon, &self.polygon_shader, &self.polygon_vertex_buffer, &self.polygon_indices_buffer, &self.viewport);
+
+    }
+
     /// Assume vertices is in world/screen space
     pub fn polygon(&mut self, vertices: &[f32], indices: &[u32]) {
-        // setup polygon_data
-        self.polygon.sub_data(&self.gl, indices, vertices, None);
-
-        self.polygon_shader.set_used();
-
-        let proj = Orthographic3::new(0.0, self.viewport.w as f32, 0.0, self.viewport.h as f32, -10.0, 100.0);
-
-        let transform = proj.to_homogeneous();
-
-        self.polygon_shader.set_mat4(&self.gl, "transform", transform);
-
-        self.polygon.render(&self.gl);
-
+        polygon(&self.gl, &mut self.polygon, &self.polygon_shader, vertices, indices, &self.viewport);
     }
 
 
@@ -434,9 +448,51 @@ fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numer
 }
 
 
+fn polygon(gl: &gl::Gl, polygon: &mut polygon::Polygon, polygon_shader: &Box::<Shader>, vertices: &[f32], indices: &[u32], viewport: &Viewport) {
+    // setup polygon_data
+    polygon.sub_data(&gl, indices, vertices, None);
+
+    polygon_shader.set_used();
+
+    let proj = Orthographic3::new(0.0, viewport.w as f32, 0.0, viewport.h as f32, -10.0, 100.0);
+
+    let transform = proj.to_homogeneous();
+
+    polygon_shader.set_mat4(&gl, "transform", transform);
+
+    polygon.render(&gl);
+}
+
 struct Geom<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric> {
     x: T1,
     y: T2,
     w: T3,
     h: T4
+}
+
+
+
+pub trait ConvexPolygon {
+    fn set_vertices(&self, buffer :&mut Vec::<f32>, viewport_height: f32);
+}
+
+
+impl ConvexPolygon for &[na::Vector2::<f32> ]{
+    fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32) {
+        for v in *self {
+            buffer.push(v.x);
+            buffer.push(viewport_height - v.y);
+            buffer.push(0.0);
+        }
+    }
+}
+
+impl ConvexPolygon for &[na::Vector3::<f32> ]{
+    fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32) {
+        for v in *self {
+            buffer.push(v.x);
+            buffer.push(viewport_height - v.y);
+            buffer.push(v.z);
+        }
+    }
 }
