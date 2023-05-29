@@ -52,12 +52,7 @@ impl ColorSquare {
 
             // 3
             ebo.bind();
-            gl.BufferData(
-                gl::ELEMENT_ARRAY_BUFFER,
-                (indices.len() * std::mem::size_of::<u32>()) as gl::types::GLsizeiptr,
-                indices.as_ptr() as *const gl::types::GLvoid,
-                gl::STATIC_DRAW);
-
+            ebo.static_draw_data(&indices);
 
             // 4. positions
             gl.VertexAttribPointer(

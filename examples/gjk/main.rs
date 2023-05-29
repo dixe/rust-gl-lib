@@ -54,24 +54,6 @@ fn main() -> Result<(), failure::Error> {
 
     let mut state = State {
         polygons: vec![ new_poly() ],
-
-        /*
-
-        vertices: vec![V2::new(600.0, 230.0),
-        V2::new(750.0, 380.0),
-        V2::new(580.0, 380.0),
-        V2::new(460.0, 322.0),
-        V2::new(589.0, 666.0),
-        V2::new(340.0, 666.0),
-        V2::new(484.0, 416.0),
-        V2::new(363.0, 281.0),
-        V2::new(428.0, 454.0),
-        V2::new(289.0, 567.0),
-        V2::new(285.0, 179.0),
-
-    ],
-    },
-         */
         polygon_mode: PolygonMode::Object(Some(0)),
         mode: Mode::NewPoint,
         options: options::Options::default()
@@ -107,19 +89,31 @@ fn main() -> Result<(), failure::Error> {
             PolygonMode::Object(idx) => {
 
 
-                let vertices: [f32; 3 * 4] = [
-                    // positions
-                    0.0, -0.0, 0.0,
-                    0.5,  0.5, 0.0,
-                    -0.5,  0.5, 0.0,
-                    -0.5, -0.5, 0.0,
+                let vertices: [f32; 3 * 3] = [
+                    100.0, 300.0, 0.0,
+                    200.0, 220.0, 0.0,
+                    300.0, 200.0, 0.0,
                 ];
 
 
-                let indices: Vec<u32> = vec![
-                    0,1,3,
-                    1,2,3];
+                let vertices1: [f32; 3 * 3] = [
+                    // positions
+                    0.0, 0.0, 0.0,
+                    0.5, 0.5, 0.0,
+                    0.0, 0.5, 0.0,
 
+                ];
+
+
+                let vertices2: [f32; 3 * 3] = [
+                    // positions
+                    -0.83, -0.25, 0.00,
+                    -0.67, -0.45, 0.00,
+                    -0.50, -0.50, 0.00,
+                ];
+
+
+                let indices: Vec<u32> = vec![0, 1, 2];
 
                 ui.drawer2D.polygon(&vertices, &indices);
 
@@ -364,12 +358,12 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
 
     use sdl2::keyboard::Keycode;
 
-    for e in ui.get_frame_inputs() {
+    for e in &ui.frame_events {
 
         match state.polygon_mode {
 
             PolygonMode::Object(_) => {
-                handle_object_mode(&e, &mut state.polygons, &mut state.polygon_mode, &mut state.mode);
+                handle_object_mode(&mut ui.drawer2D, &e, &mut state.polygons, &mut state.polygon_mode, &mut state.mode);
             },
             PolygonMode::Edit(idx) => {
                 handle_edit_mode(&e, state.polygons.get_mut(idx).unwrap(), &mut state.mode);
@@ -527,7 +521,7 @@ fn handle_edit_mode(event: &event::Event, poly: &mut Poly, mode: &mut Mode) {
 
 // maybe have
 //fn handle_object_mode(event: &event::Event, selected_obj: Option<usize>, state: &mut state)
-fn handle_object_mode(event: &event::Event, poly: &mut Vec::<Poly>, poly_mode: &mut PolygonMode, mode: &mut Mode) {
+fn handle_object_mode(drawer2D: &mut Drawer2D, event: &event::Event, poly: &mut Vec::<Poly>, poly_mode: &mut PolygonMode, mode: &mut Mode) {
 
     use event::Event::*;
     use sdl2::keyboard::Keycode;
@@ -549,11 +543,7 @@ fn handle_object_mode(event: &event::Event, poly: &mut Vec::<Poly>, poly_mode: &
                             continue;
                         }
 
-
-                        let collision = poly_collision(&poly[i], &poly[idx]);
-                        println!("{:?}", (idx, i, collision));
-
-
+                        let collision = poly_collision(drawer2D, &poly[i], &poly[idx]);
                     }
 
                 },
@@ -567,7 +557,7 @@ fn handle_object_mode(event: &event::Event, poly: &mut Vec::<Poly>, poly_mode: &
 }
 
 // does not return early
-fn poly_collision(p1: &Poly, p2: &Poly) -> bool {
+fn poly_collision(drawer2D: &mut Drawer2D, p1: &Poly, p2: &Poly) -> bool {
 
     let mut res = false;;
     for indices_1 in &p1.sub_divisions {
@@ -585,6 +575,9 @@ fn poly_collision(p1: &Poly, p2: &Poly) -> bool {
             let collision = gjk::gjk_intersection(&sub_p_1, &sub_p_2);
             if collision {
                 res = true;
+                 let indices: Vec<u32> = vec![0, 1, 2];
+                //ui.drawer2D.polygon(&vertices, &indices);
+
                 println!("Draw sub_p_1 and sub_p2");
             }
         }

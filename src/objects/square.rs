@@ -45,12 +45,7 @@ impl Square {
 
             // 3
             ebo.bind();
-            gl.BufferData(
-                gl::ELEMENT_ARRAY_BUFFER,
-                (indices.len() * std::mem::size_of::<u32>()) as gl::types::GLsizeiptr,
-                indices.as_ptr() as *const gl::types::GLvoid,
-                gl::STATIC_DRAW);
-
+            ebo.static_draw_data(&indices);
 
             // 4.
             gl.VertexAttribPointer(
@@ -85,14 +80,7 @@ impl Square {
         ];
 
         self.vbo.bind();
-        unsafe {
-            gl.BufferSubData(
-                gl::ARRAY_BUFFER,
-                0,
-                2 * 4 * std::mem::size_of::<f32>() as gl::types::GLsizeiptr,
-                data.as_ptr() as *const gl::types::GLvoid
-            );
-        }
+        self.vbo.sub_data(&data, 0);
         self.vbo.unbind();
     }
 

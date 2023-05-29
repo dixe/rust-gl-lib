@@ -1,6 +1,7 @@
 use crate::buffer;
 use crate::color::Color;
 use crate::gl;
+use crate::shader::BaseShader;
 
 pub struct Polygon {
     vao: buffer::VertexArray,
@@ -21,12 +22,9 @@ impl Polygon {
         vertices: &[f32],
         colors: Option<&[Color]>
     ) -> Polygon {
-        let vao = buffer::VertexArray::new(gl);
-
-        vao.bind();
 
         let buffer_data = instanciate_data_buffers(gl, indices, vertices);
-        vao.unbind();
+        buffer_data.vao.unbind();
 
         let mut has_color = false;
         if let Some(ref c) = colors {
@@ -37,7 +35,7 @@ impl Polygon {
         }
 
         Polygon {
-            vao,
+            vao: buffer_data.vao,
             vbo: buffer_data.vbo,
             ebo: buffer_data.ebo,
             elements: buffer_data.elements,
@@ -46,121 +44,24 @@ impl Polygon {
             vbo_size: vertices.len(),
         }
 
-/*
-        let ebo = buffer::ElementArrayBuffer::new(gl);
-        let vao = buffer::VertexArray::new(gl);
-
-        // maybe use Sub data to avoid this copy of data. But on the other hand we can aford this one
-        // time memory usage
-
-        let mut data = vec![];
-
-        let mut stride = 3;
-        let mut has_color = false;
-
-        let mut data_ref = vertices;
-        if let Some(ref c) = colors {
-            has_color = true;
-            stride += 4;
-            assert_eq!(
-                vertices.len() / 3,
-                c.len(),
-                "Color and vertices does not match"
-            );
-
-            assert_eq!(0, vertices.len() % 3);
-
-            for i in 0..(vertices.len() / 3) {
-                let idx = i * 3;
-                // vertices
-                data.push(vertices[idx]);
-                data.push(vertices[idx + 1]);
-                data.push(vertices[idx + 2]);
-
-                // Colors
-
-                let col = c[i].as_vec4();
-                data.push(col[0]);
-                data.push(col[1]);
-                data.push(col[2]);
-                data.push(col[3]);
-            }
-        }
-
-        if data.len() > 0 {
-            data_ref = &data;
-        }
-
-        unsafe {
-            // 1
-            vao.bind();
-
-            // 2.
-            vbo.bind();
-            vbo.dynamic_draw_data(data_ref);
-
-
-            // 3
-            ebo.bind();
-            ebo.dynamic_draw_data(&indices);
-
-            // 4.
-            gl.VertexAttribPointer(
-                0,
-                3,
-                gl::FLOAT,
-                gl::FALSE,
-                (stride * std::mem::size_of::<f32>()) as gl::types::GLint,
-                0 as *const gl::types::GLvoid,
-            );
-            gl.EnableVertexAttribArray(0);
-
-            // Color if any
-            if has_color {
-                // Use asnwer for subData maybe
-                gl.VertexAttribPointer(
-                    1,
-                    4,
-                    gl::FLOAT,
-                    gl::FALSE,
-                    (stride * std::mem::size_of::<f32>()) as gl::types::GLint,
-                    (3 * std::mem::size_of::<f32>()) as *const gl::types::GLvoid,
-                );
-                gl.EnableVertexAttribArray(1);
-            }
-        }
-
-        vbo.unbind();
-        vao.unbind();
-
-        Polygon {
-            vao,
-            vbo: vbo,
-            ebo: ebo,
-            elements: indices.len() as i32,
-            has_color,
-            ebo_size: indices.len(),
-            vbo_size: data_ref.len(),
-        }
-
-*/
     }
 
 
 
     /// Only works for dynamic draw I think
     pub fn sub_data(&mut self, gl: &gl::Gl, indices: &[u32], vertices: &[f32], colors: Option<&[Color]>) {
-
         // check ebo and vbo size and recreate buffers if too small
         if indices.len() > self.ebo_size || vertices.len() > self.vbo_size {
 
-            self.vao.bind();
             let buffer_data = instanciate_data_buffers(gl, indices, vertices);
-            self.vao.unbind();
+
             // new vbo and ebo
+            self.vao = buffer_data.vao;
             self.vbo = buffer_data.vbo;
             self.ebo = buffer_data.ebo;
             self.elements = buffer_data.elements;
+            self.ebo_size = indices.len();
+            self.vbo_size = vertices.len();
 
         } else {
             setup_data(gl, self, indices, vertices, colors);
@@ -169,8 +70,9 @@ impl Polygon {
     }
 
     pub fn render(&self, gl: &gl::Gl) {
-
         self.vao.bind();
+
+        self.ebo.bind();
 
         unsafe {
             // draw
@@ -181,7 +83,15 @@ impl Polygon {
                 0 as *const gl::types::GLvoid,
             );
         }
+        self.ebo.unbind();
         self.vao.unbind();
+    }
+
+    pub fn create_shader(gl: &gl::Gl) ->  Result<BaseShader, failure::Error> {
+        let vert_source = include_str!("../../assets/shaders/objects/polygon.vert");
+        let frag_source = include_str!("../../assets/shaders/objects/polygon.frag");
+        BaseShader::new(gl, vert_source, frag_source)
+
     }
 }
 
@@ -199,10 +109,11 @@ fn setup_data(gl: &gl::Gl, polygon: &mut Polygon, indices: &[u32], vertices: &[f
     }
 
     let stride = if has_color {3 + 4} else {3};
+
     let mut data_ref = vertices;
 
     if let Some(ref c) = colors {
-
+        todo!();
         assert_eq!(
             vertices.len() / 3,
             c.len(),
@@ -230,26 +141,11 @@ fn setup_data(gl: &gl::Gl, polygon: &mut Polygon, indices: &[u32], vertices: &[f
     }
 
     polygon.vbo.bind();
-    unsafe {
-        gl.BufferSubData(
-            gl::ARRAY_BUFFER,
-            0,
-            stride * std::mem::size_of::<f32>() as gl::types::GLsizeiptr,
-            data_ref.as_ptr() as *const gl::types::GLvoid
-        );
-    }
-
+    polygon.vbo.sub_data(data_ref,0);
     polygon.vbo.unbind();
 
     polygon.ebo.bind();
-
-    unsafe {
-        gl.BufferSubData(
-            gl::ELEMENT_ARRAY_BUFFER,
-            0,
-            (indices.len() * std::mem::size_of::<u32>()) as gl::types::GLsizeiptr,
-            indices.as_ptr() as *const gl::types::GLvoid);
-    }
+    polygon.ebo.sub_data(indices, 0);
 
     polygon.ebo.unbind();
 
@@ -261,16 +157,16 @@ fn setup_data(gl: &gl::Gl, polygon: &mut Polygon, indices: &[u32], vertices: &[f
 fn instanciate_data_buffers(gl: &gl::Gl, indices: &[u32], vertices: &[f32]) -> BufferData {
 
     // new vbo and ebo
+    let vao = buffer::VertexArray::new(gl);
     let vbo = buffer::ArrayBuffer::new(gl);
     let ebo = buffer::ElementArrayBuffer::new(gl);
     unsafe {
+        vao.bind();
         vbo.bind();
         vbo.dynamic_draw_data(vertices);
 
         ebo.bind();
-        ebo.dynamic_draw_data(&indices);
-
-        let stride = 3;
+        ebo.dynamic_draw_data(indices);
 
         // 4. vertices
         gl.VertexAttribPointer(
@@ -278,7 +174,7 @@ fn instanciate_data_buffers(gl: &gl::Gl, indices: &[u32], vertices: &[f32]) -> B
             3,
             gl::FLOAT,
             gl::FALSE,
-            (stride * std::mem::size_of::<f32>()) as gl::types::GLint,
+            0,
             0 as *const gl::types::GLvoid,
         );
 
@@ -286,10 +182,13 @@ fn instanciate_data_buffers(gl: &gl::Gl, indices: &[u32], vertices: &[f32]) -> B
     }
 
     vbo.unbind();
+    vao.unbind();
+
 
     let elements = indices.len() as i32;
 
     BufferData {
+        vao,
         vbo,
         ebo,
         elements
@@ -298,6 +197,7 @@ fn instanciate_data_buffers(gl: &gl::Gl, indices: &[u32], vertices: &[f32]) -> B
 
 
 struct BufferData {
+    vao: buffer::VertexArray,
     vbo: buffer::ArrayBuffer,
     ebo: buffer::ElementArrayBuffer,
     elements: i32,

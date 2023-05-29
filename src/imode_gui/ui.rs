@@ -218,14 +218,8 @@ impl Ui {
         self.ctx_fn(|ctx| ctx.newline());
     }
 
-
+    // TODO: could be removed, and &ui.frame_events could be use directly
     pub fn get_frame_inputs(&self) -> &[event::Event] {
-        // only return if no window is active
-        for window in self.windows.values() {
-            if window.base_container_context.active != None {
-                return &[]
-            }
-        }
 
         return &self.frame_events
     }

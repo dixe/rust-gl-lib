@@ -31,7 +31,7 @@ pub struct Drawer2D {
     pub color_square_h_line_shader: Box::<Shader>,
     pub circle_shader: CircleShader,
     pub texture_shader: TextureShader,
-    pub polygon_shader: PosColorShader,
+    pub polygon_shader: Box::<Shader>,
 
     // fonts
     pub font_cache: FontCache,
@@ -58,10 +58,9 @@ impl Drawer2D {
 
         let color_square_h_line_shader = Box::new(color_square::ColorSquare::h_line_shader(&gl)?);
 
-        let polygon_shader = PosColorShader::new(gl)?;
+        let polygon_shader = Box::new(polygon::Polygon::create_shader(gl)?);
         let square = square::Square::new(gl);
         let color_square = color_square::ColorSquare::new(gl);
-
 
         let polygon = polygon::Polygon::new(gl, &vec![], &vec![], None);
 
@@ -180,10 +179,13 @@ impl Drawer2D {
         // setup polygon_data
         self.polygon.sub_data(&self.gl, indices, vertices, None);
 
-        self.polygon_shader.shader.set_used();
-        let trans = na::Matrix4::identity();
+        self.polygon_shader.set_used();
 
-        self.polygon_shader.shader.set_mat4(&self.gl, "transform", trans);
+        let proj = Orthographic3::new(0.0, self.viewport.w as f32, 0.0, self.viewport.h as f32, -10.0, 100.0);
+
+        let transform = proj.to_homogeneous();
+
+        self.polygon_shader.set_mat4(&self.gl, "transform", transform);
 
         self.polygon.render(&self.gl);
 
@@ -319,7 +321,14 @@ impl Drawer2D {
         // Create projectionmmatrix to go into ndc
         let proj = Orthographic3::new(0.0, self.viewport.w as f32, 0.0, self.viewport.h as f32, -10.0, 100.0);
 
+
         let transform = proj.to_homogeneous() * t.to_homogeneous() * rot.to_homogeneous()  * scale;
+
+        let t1 =  t.to_homogeneous() * rot.to_homogeneous()  * scale;
+        let v = t1 * na::Vector4::new(0.5, 0.5, 0.0, 1.0);
+        let v1 = t1 * na::Vector4::new(-0.5, -0.5, 0.0, 1.0);
+        let v2 = t1 * na::Vector4::new(0.5, 0.5, 0.0, 1.0);
+
 
         self.texture_shader.setup(ts::Uniforms { texture_id, transform });
 

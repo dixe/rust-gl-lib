@@ -90,6 +90,17 @@ impl<B> Buffer<B> where B: BufferType {
         }
     }
 
+    pub fn sub_data<T>(&self, data: &[T], byte_offset: usize) {
+        unsafe {
+            self.gl.BufferSubData(
+                B::BUFFER_TYPE,
+                byte_offset as gl::types::GLsizeiptr,
+                (data.len() * std::mem::size_of::<T>()) as gl::types::GLsizeiptr,
+                data.as_ptr() as *const gl::types::GLvoid
+            );
+        }
+    }
+
 }
 
 impl<B> Drop for Buffer<B> where B: BufferType {
@@ -139,18 +150,6 @@ impl VertexArray {
         }
     }
 
-
-    pub fn static_draw_data<T>(&self, data: &[T]) {
-        unsafe {
-            self.gl.BufferData(
-                gl::ARRAY_BUFFER,
-                (data.len() * std::mem::size_of::<T>()) as gl::types::GLsizeiptr,
-                data.as_ptr() as *const gl::types::GLvoid,
-                gl::STATIC_DRAW,
-            );
-        }
-    }
-
 }
 
 impl Drop for VertexArray {
@@ -158,6 +157,5 @@ impl Drop for VertexArray {
         unsafe {
             self.gl.DeleteBuffers(1, &mut self.vao);
         }
-
     }
 }
