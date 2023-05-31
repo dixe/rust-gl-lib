@@ -127,20 +127,10 @@ fn main() -> Result<(), failure::Error> {
                         color = state.options.selected_v_color;
                     }
 
-                    let mut center = poly.polygon.center();
-
-                    ui.view_polygon(&poly.polygon, &center, color);
-                    if ui.drag_polygon_center(&mut center) {
+                    if ui.view_raw_polygon(&mut poly.polygon, true, state.options.show_idx, state.options.show_pos, color) {
                         state.polygon_mode = PolygonMode::Object(Some(i));
                     }
 
-                    poly.polygon.set_center(center);
-/*
-                    render_poly(&mut ui, poly, &state.options, Some(i) == draggable, Some(i) == selected);
-                    if render_selected(&mut ui, poly) {
-                        state.polygon_mode = PolygonMode::Object(Some(i));
-                    }
-*/
                     render_sub_poly(&mut ui, poly);
                     i += 1;
 
@@ -157,67 +147,12 @@ fn main() -> Result<(), failure::Error> {
                     }
                 }
 
-                let mut center = state.polygons[idx].polygon.center();
-                ui.edit_polygon(&mut state.polygons[idx].polygon);
-                if ui.drag_polygon_center(&mut center) {
-                    state.polygons[idx].polygon.set_center(center);
-                }
-
-
-                //state.polygons[idx].polygon.set_center(center);
-
-                // render polygon to edit, hide the others
-                //render_poly(&mut ui, &mut state.polygons[idx], &state.options, true, false);
-                //render_selected(&mut ui, &mut state.polygons[idx]);
-
+                ui.edit_raw_polygon(&mut state.polygons[idx].polygon, state.options.show_idx, state.options.show_pos);
             }
         }
         render_mode(&mut ui, &state.mode);
         window.gl_swap_window();
     }
-}
-
-
-fn render_selected(ui: &mut Ui, poly: &mut Poly) -> bool {
-    if poly.selected.len() == 0 {
-        return false
-    }
-
-    let mut avg = na::Vector2::<f32>::new(0.0, 0.0);
-
-    for idx in &poly.selected {
-        avg.x += poly.polygon.vertices[*idx].x;
-        avg.y += poly.polygon.vertices[*idx].y;
-    }
-
-    avg /= poly.selected.len() as f32;
-
-    let mut drag = na::Vector2::<i32>::new(avg.x as i32, avg.y as i32);
-
-    let res = ui.drag_point(&mut drag, 15.0);
-
-    drag.x = drag.x - avg.x as i32;
-    drag.y = drag.y - avg.y as i32;
-
-    for idx in &poly.selected {
-        poly.polygon.vertices[*idx].x += drag.x as f32;
-        poly.polygon.vertices[*idx].y += drag.y as f32;
-    }
-
-    res
-}
-
-fn render_intersect(ui: &mut Ui, polygon: &Polygon) {
-    // go over all side by side pairs and compare with every other side by side pair
-
-    if polygon.vertices.len() <= 3 {
-        return;
-    }
-
-    for p in polygon.intersections() {
-        ui.drawer2D.circle(p.x, p.y, 7.0, Color::Rgb(250, 5, 5));
-    }
-
 }
 
 
@@ -254,65 +189,6 @@ fn render_sub_poly(ui: &mut Ui, poly: &mut Poly) {
 
         }
     }
-}
-
-fn render_poly(ui: &mut Ui, poly: &mut Poly, options: &options::Options, draggable: bool, selected: bool) {
-
-    let polygon = &mut poly.polygon;
-    let len = polygon.vertices.len();
-
-    for i in 0..len {
-        let p1 = &mut polygon.vertices[i];
-
-        let mut r = 8.0;
-
-        if poly.selected.contains(&i) {
-            r = 10.0;
-        }
-
-        if selected {
-            r = 10.0;
-        }
-
-
-        let mut drag = na::Vector2::<i32>::new(p1.x as i32, p1.y as i32);
-        if draggable {
-            ui.drag_point(&mut drag, r);
-        } else {
-            let mut color = options.v_color;
-            if selected {
-                color = options.selected_v_color;
-            }
-
-            ui.drawer2D.circle(drag.x, drag.y, r, color);
-        }
-
-        p1.x = drag.x as f32;
-        p1.y = drag.y as f32;
-
-        if options.show_pos {
-            ui.drawer2D.render_text(&format!("({:?})", p1), p1.x as i32, p1.y as i32 + 20, 14);
-        }
-
-        if options.show_idx {
-            ui.drawer2D.render_text(&format!("{i}"), p1.x as i32, p1.y as i32, 20);
-        }
-
-        if i < len - 1 {
-            let p1 = polygon.vertices[i];
-            let p2 = polygon.vertices[i + 1];
-            ui.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 3.0);
-        }
-
-    }
-
-    if len > 2 {
-        let p1 = polygon.vertices[len - 1];
-        let p2 = polygon.vertices[0];
-        ui.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 3.0);
-    }
-
-    render_intersect(ui, &poly.polygon);
 }
 
 struct State {
