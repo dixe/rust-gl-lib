@@ -1,4 +1,11 @@
-use super::*;
+use nalgebra as na;
+use crate::collision2d::lsi;
+use crate::collision2d::gjk;
+use crate::imode_gui::drawer2d;
+
+type V2 = na::Vector2::<f32>;
+type V3 = na::Vector3::<f32>;
+
 
 #[derive(Default, Debug)]
 pub struct Polygon {
@@ -24,6 +31,9 @@ impl<'a> SubPolygon<'a> {
     }
 
 }
+
+
+
 
 pub fn calculate_subdivision(polygon: &mut Polygon) -> Vec::<SubPolygon> {
     for p in polygon.intersections() {
@@ -277,30 +287,6 @@ enum Dir {
     Right
 }
 
-pub fn test1() -> bool {
-
-    let polygon = Polygon {
-
-            vertices: vec![V2::new(440.0, 217.0),
-                           V2::new(647.0, 527.0),
-                           V2::new(332.0, 563.0),
-                           V2::new(520.0, 382.0),
-
-            ]
-    };
-
-    let sub_p =  SubPolygon {
-        polygon: &polygon,
-        indices: vec![0,1,2,3]
-    };
-
-    let res = find_valid_connection(&sub_p, 3);
-
-
-    res == 1
-}
-
-
 #[derive(Debug)]
 pub struct ComplexPolygon<'a> {
     pub polygon: &'a Polygon,
@@ -335,5 +321,16 @@ impl<'a> gjk::Shape for ComplexPolygon<'a> {
         }
 
         c / self.indices.len() as f32
+    }
+}
+
+impl<'a> drawer2d::ConvexPolygon for ComplexPolygon<'a> {
+    fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32) {
+        for &i in self.indices {
+            let v = self.polygon.vertices[i];
+            buffer.push(v.x);
+            buffer.push(viewport_height - v.y);
+            buffer.push(0.0);
+        }
     }
 }

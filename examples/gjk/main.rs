@@ -4,15 +4,11 @@ use gl_lib::imode_gui::ui::*;
 use sdl2::event;
 use std::collections::HashSet;
 use gl_lib::collision2d::gjk;
+use gl_lib::collision2d::polygon::{self, Polygon, ComplexPolygon};
+use gl_lib::collision2d::lsi;
 
 type V2 = na::Vector2::<f32>;
 type V3 = na::Vector3::<f32>;
-
-mod polygon;
-use polygon::*;
-
-mod line_segment_intersection;
-use line_segment_intersection as lsi;
 
 mod options;
 
@@ -389,11 +385,6 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
                 state.options.show_pos = !state.options.show_pos
             },
 
-            KeyDown { keycode: Some(Keycode::T), ..} => {
-                if !test1() {
-                    println!("Test 1 failed");
-                }
-            },
             _ => {}
 
         }
@@ -403,7 +394,7 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
 
 fn calc_and_set_subdivision(polygons: &mut Vec::<Poly>) {
     for poly in polygons {
-        let sub_divisions = calculate_subdivision(&mut poly.polygon);
+        let sub_divisions = polygon::calculate_subdivision(&mut poly.polygon);
         poly.sub_divisions.clear();
         for sub in sub_divisions {
             poly.sub_divisions.push(sub.indices);
@@ -540,15 +531,4 @@ fn poly_collision(drawer2D: &mut Drawer2D, p1: &Poly, p2: &Poly) -> bool {
         }
     }
     res
-}
-
-impl<'a> drawer2d::ConvexPolygon for ComplexPolygon<'a> {
-    fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32) {
-        for &i in self.indices {
-            let v = self.polygon.vertices[i];
-            buffer.push(v.x);
-            buffer.push(viewport_height - v.y);
-            buffer.push(0.0);
-        }
-    }
 }

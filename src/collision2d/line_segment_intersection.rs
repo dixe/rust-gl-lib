@@ -1,4 +1,8 @@
-use super::{V2, Polygon};
+use nalgebra as na;
+use crate::collision2d::polygon::Polygon;
+
+
+type V2 = na::Vector2::<f32>;
 
 impl Polygon {
 
@@ -37,6 +41,7 @@ impl<'a> Iterator for IntersectIter<'a> {
             let mut j_start = i + 2;
             if first {
                 j_start = self.j;
+                first = false;
             }
 
             for j in j_start..len {
