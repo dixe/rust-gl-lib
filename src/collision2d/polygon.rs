@@ -12,6 +12,25 @@ pub struct Polygon {
     pub vertices: Vec::<V2>
 }
 
+impl Polygon {
+    pub fn set_center(&mut self, center: V2) {
+        let c = self.center();
+        for p in &mut self.vertices {
+            *p += -c + center;
+        }
+    }
+
+    pub fn center(&self) -> V2 {
+        let mut c = V2::new(0.0, 0.0);
+
+        for v in &self.vertices {
+            c += v;
+        }
+
+        c / self.vertices.len() as f32
+    }
+}
+
 #[derive(Debug)]
 pub struct SubPolygon<'a> {
     pub polygon: &'a Polygon,

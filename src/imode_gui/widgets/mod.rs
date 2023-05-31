@@ -29,3 +29,6 @@ pub use window::*;
 
 mod img;
 pub use img::*;
+
+mod polygon;
+pub use polygon::*;

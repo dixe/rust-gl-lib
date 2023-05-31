@@ -121,13 +121,28 @@ fn main() -> Result<(), failure::Error> {
                 // render polygons
                 let mut i = 0;
                 for poly in &mut state.polygons {
+
+                    let mut color = state.options.v_color;
+                    if Some(i) == selected {
+                        color = state.options.selected_v_color;
+                    }
+
+                    let mut center = poly.polygon.center();
+
+                    if ui.view_polygon(&poly.polygon, &mut center, color) {
+                        state.polygon_mode = PolygonMode::Object(Some(i));
+                    }
+
+                    poly.polygon.set_center(center);
+/*
                     render_poly(&mut ui, poly, &state.options, Some(i) == draggable, Some(i) == selected);
                     if render_selected(&mut ui, poly) {
                         state.polygon_mode = PolygonMode::Object(Some(i));
                     }
-
+*/
                     render_sub_poly(&mut ui, poly);
                     i += 1;
+
                 }
             },
 
@@ -474,11 +489,9 @@ fn handle_edit_mode(event: &event::Event, poly: &mut Poly, mode: &mut Mode) {
     }
 }
 
-
-
 // maybe have
 //fn handle_object_mode(event: &event::Event, selected_obj: Option<usize>, state: &mut state)
-fn handle_object_mode( event: &event::Event, mode: &mut Mode, options: &mut options::Options) {
+fn handle_object_mode(event: &event::Event, mode: &mut Mode, options: &mut options::Options) {
 
     use event::Event::*;
     use sdl2::keyboard::Keycode;
