@@ -129,7 +129,8 @@ fn main() -> Result<(), failure::Error> {
 
                     let mut center = poly.polygon.center();
 
-                    if ui.view_polygon(&poly.polygon, &mut center, color) {
+                    ui.view_polygon(&poly.polygon, &center, color);
+                    if ui.drag_polygon_center(&mut center) {
                         state.polygon_mode = PolygonMode::Object(Some(i));
                     }
 
@@ -156,9 +157,18 @@ fn main() -> Result<(), failure::Error> {
                     }
                 }
 
+                let mut center = state.polygons[idx].polygon.center();
+                ui.edit_polygon(&mut state.polygons[idx].polygon);
+                if ui.drag_polygon_center(&mut center) {
+                    state.polygons[idx].polygon.set_center(center);
+                }
+
+
+                //state.polygons[idx].polygon.set_center(center);
+
                 // render polygon to edit, hide the others
-                render_poly(&mut ui, &mut state.polygons[idx], &state.options, true, false);
-                render_selected(&mut ui, &mut state.polygons[idx]);
+                //render_poly(&mut ui, &mut state.polygons[idx], &state.options, true, false);
+                //render_selected(&mut ui, &mut state.polygons[idx]);
 
             }
         }
