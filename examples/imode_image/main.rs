@@ -27,7 +27,6 @@ fn main() -> Result<(), failure::Error> {
     let img = image::open("examples/imode_image/Consolas_0_32.png").unwrap().into_rgba8();;
 
     let aspect = img.height() as f32 / img.width() as f32;
-
     let texture_id = ui.register_image(&img);
 
     let mut size = na::Vector2::<f32>::new(100.0, 100.0 * aspect);

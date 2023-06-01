@@ -30,7 +30,6 @@ impl Ui {
                 self.drawer2D.render_text(&format!("{i}"), v.x as i32, v.y as i32, 20);
             }
 
-
             v.x += offset.x as f32;
             v.y += offset.y as f32;
 
@@ -43,8 +42,6 @@ impl Ui {
                 let p2 = polygon.vertices[i + 1];
                 self.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 3.0);
             }
-
-
         }
 
         if len > 2 {
@@ -61,7 +58,34 @@ impl Ui {
     pub fn edit_raw_polygon(&mut self, polygon: &mut Polygon, show_idx: bool, show_pos: bool) {
 
         let (res, offset) = self.drag(polygon);
-        let len = polygon.vertices.len();
+        let mut len = polygon.vertices.len();
+
+        if self.ctrl {
+            use event::Event::*;
+            use sdl2::keyboard::Keycode;
+
+            for e in &self.frame_events {
+                match e {
+                    KeyUp { keycode: Some(Keycode::Z), ..} => {
+                        if len > 0 {
+                            polygon.vertices.pop();
+                            len = polygon.vertices.len();
+                        }
+
+                        break;
+                    },
+                    _ => {},
+
+
+                }
+            }
+
+            // assume always "active" when edit raw, regarding new vertices
+            if self.mouse_up {
+                polygon.vertices.push(V2::new(self.mouse_pos.x as f32, self.mouse_pos.y as f32));
+            }
+        }
+
 
         for i in 0..len {
             let v = &mut polygon.vertices[i];
@@ -118,6 +142,92 @@ impl Ui {
 
         (res, drag)
 
+    }
+
+    pub fn view_polygon(&mut self, polygon: &Polygon, transform: &PolygonTransform) {
+
+        let len = polygon.vertices.len();
+        let color = Color::Rgb(0, 0, 0);
+        for i in 0..len {
+            let v = transform.map(polygon.vertices[i]);
+
+            let mut r = 1.0;
+            self.drawer2D.circle(v.x, v.y, r, color);
+
+            if i < len - 1 {
+                let p1 = transform.map(polygon.vertices[i]);
+                let p2 = transform.map(polygon.vertices[i + 1]);
+                self.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 2.0);
+            }
+        }
+
+        if len > 2 {
+            let p1 = transform.map(polygon.vertices[len - 1]);
+            let p2 = transform.map(polygon.vertices[0]);
+            self.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 2.0);
+        }
+    }
+
+    pub fn polygon_editor(&mut self, orig_polygon: &mut Polygon, options: &mut PolygonOptions) {
+        options.transform_to_screenspace(&orig_polygon);
+
+        let polygon = &mut options.tmp_polygon;
+
+        self.edit_raw_polygon(polygon, false, false);
+        render_intersect(self, polygon);
+
+        options.transform_from_screenspace(orig_polygon);
+
+    }
+}
+
+#[derive(Default, Clone, Copy, Debug)]
+pub struct PolygonTransform {
+    pub translation: V2,
+    pub rotation: f32,
+    pub scale: f32,
+}
+
+impl PolygonTransform {
+
+    fn map(&self, mut v: V2) -> V2 {
+        v *= self.scale;
+        v += self.translation;
+        v
+    }
+
+    fn inverse_map(&self, mut v: V2) -> V2 {
+        v -= self.translation;
+        v *= 1.0 / self.scale;
+        v
+    }
+}
+
+#[derive(Default)]
+pub struct PolygonOptions {
+    pub selected: Vec::<usize>,
+    pub transform: PolygonTransform,
+    tmp_polygon: Polygon
+}
+
+impl PolygonOptions {
+
+    /// apply transformations to polygon vertices and into screenspace, puts result in tmp polygon
+    fn transform_to_screenspace(&mut self, polygon: &Polygon) {
+        self.tmp_polygon.vertices.clear();
+        for i in 0..polygon.vertices.len() {
+            self.tmp_polygon.vertices.push(self.transform.map(polygon.vertices[i]))
+        }
+    }
+
+    /// apply inverse transformations to tmp_polygon vertices, puts result in polygon
+    fn transform_from_screenspace(&self, polygon: &mut Polygon) {
+        polygon.vertices.clear();
+
+        for i in 0..self.tmp_polygon.vertices.len() {
+            let v = self.transform.inverse_map(self.tmp_polygon.vertices[i]);
+            polygon.vertices.push(v);
+        }
     }
 }
 

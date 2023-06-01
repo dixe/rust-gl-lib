@@ -38,6 +38,7 @@ pub struct Ui {
     pub mouse_down: bool,
     pub mouse_up: bool,
     pub mouse_down_pos: Pos,
+    pub ctrl: bool,
     pub style: Style,
 
     pub windows: HashMap::<usize, Window>,
@@ -79,6 +80,7 @@ impl Ui {
         Self {
             drawer2D,
             mouse_pos: Pos::new(0,0),
+            ctrl: false,
             mouse_diff: Pos::new(0,0),
             mouse_down: false,
             mouse_down_pos: Pos::new(0,0),
@@ -291,6 +293,12 @@ impl Ui {
                 },
                 Quit { .. } => {
                     std::process::exit(0);
+                },
+                KeyDown { keycode: Some(LCtrl), ..} => {
+                    self.ctrl = true;
+                },
+                KeyUp { keycode: Some(LCtrl), ..} => {
+                    self.ctrl = false;
                 },
                 KeyDown { keycode: Some(Escape), ..} => {
 
