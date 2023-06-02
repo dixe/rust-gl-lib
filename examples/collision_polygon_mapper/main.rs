@@ -8,10 +8,13 @@ use gl_lib::collision2d::gjk;
 use gl_lib::collision2d::polygon::{self, Polygon, ComplexPolygon};
 use gl_lib::collision2d::lsi;
 use gl_lib::texture::TextureId;
+use serde::{Serialize, Deserialize};
+
 
 type V2 = na::Vector2::<f32>;
 type V2i = na::Vector2::<i32>;
 type V3 = na::Vector3::<f32>;
+
 
 fn main() -> Result<(), failure::Error> {
 
@@ -33,32 +36,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    // TODO: Load from path, maybe make this changeable
-    let img = image::open("examples/top_rpg/assets/Target.png").unwrap().into_rgba8();
-
-    //let aspect = img.height() as f32 / img.width() as f32;
-    let texture_id = ui.register_image(&img);
-
-    let mut scale = 10.0;
-    let base_size = V2::new(img.width() as f32, img.height() as f32);
-
-    let mut polygon = Polygon {
-        vertices: vec![V2::new(32.0, 0.0),
-                       V2::new(0.0, 32.0),
-                       V2::new(32.0, 32.0),
-        ]
-    };
-
-    let mut edit1 = ImageEdit {
-        polygon,
-        texture_id,
-        base_size,
-        anchor: na::Vector2::new(200, 100),
-        name: "Target".to_string(),
-        options: Default::default()
-    };
-
-    edit1.options.transform.scale = scale;
+    let mut edit1 = load(&mut ui);
 
     loop {
 
@@ -70,11 +48,65 @@ fn main() -> Result<(), failure::Error> {
         ui.consume_events(&mut event_pump);
         handle_inputs(&mut ui);
 
+        if ui.button("Save") {
+            match serde_json::to_string(&edit1.polygon) {
+                Ok(json) => {
+                    std::fs::write("examples/collision_polygon_mapper/Target.json", json);
+                },
+                Err(err) => {
+                    println!("Fail to save\n{:?}", err);
+                }
+            }
+        }
+
         img_edit(&mut ui, &mut edit1);
 
         window.gl_swap_window();
 
     }
+}
+
+
+fn load(ui: &mut Ui) -> ImageEdit {
+
+    // TODO: Load from path, maybe make this changeable
+    let img = image::open("examples/top_rpg/assets/Target.png").unwrap().into_rgba8();
+
+    let texture_id = ui.register_image_nearest(&img);
+
+
+    let base_size = V2::new(img.width() as f32, img.height() as f32);
+
+    let vertices_json = std::fs::read_to_string("examples/collision_polygon_mapper/Target.json");
+
+
+    let polygon = match vertices_json {
+        Ok(json) => {
+            serde_json::from_str(&json).unwrap()
+        },
+        Err(err) => {
+            println!("Error loading json file, creating default polygon \n{:?}", err);
+            Polygon {
+                vertices: vec![V2::new(32.0, 0.0),
+                               V2::new(0.0, 32.0),
+                               V2::new(32.0, 32.0),
+                ]
+            }
+        }
+    };
+
+    let mut edit = ImageEdit {
+        polygon,
+        texture_id,
+        base_size,
+        anchor: na::Vector2::new(200, 100),
+        name: "Target".to_string(),
+        options: Default::default()
+    };
+
+    edit.options.transform.scale = 10.0;
+
+    edit
 }
 
 

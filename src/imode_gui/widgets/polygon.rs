@@ -1,6 +1,8 @@
 use super::*;
 use crate::collision2d::polygon::{Polygon};
 use crate::collision2d::gjk::Shape;
+use std::collections::HashSet;
+
 
 type V2 = na::Vector2::<f32>;
 
@@ -55,10 +57,16 @@ impl Ui {
 
 
     /// edit polygon mapping vertices to screen cooridinates
-    pub fn edit_raw_polygon(&mut self, polygon: &mut Polygon, show_idx: bool, show_pos: bool) {
+    /// returns true when interacted with
+    pub fn edit_raw_polygon(&mut self, polygon: &mut Polygon, show_idx: bool, show_pos: bool, selected: &mut Option<usize>) -> Option<Interaction> {
 
         let (res, offset) = self.drag(polygon);
         let mut len = polygon.vertices.len();
+
+        let mut interaction = None;
+        if res {
+            interaction = Some(Interaction::Center);
+        }
 
         if self.ctrl {
             use event::Event::*;
@@ -70,21 +78,56 @@ impl Ui {
                         if len > 0 {
                             polygon.vertices.pop();
                             len = polygon.vertices.len();
+                            // clear selected if len < current selected
                         }
+                    },
 
-                        break;
+                    KeyUp { keycode: Some(Keycode::A), keymod, ..} => {
+                        // add before selected (left)
+                        if let Some(i) = selected {
+
+                            let before = polygon.vertices[(len + *i - 1) % len];
+                            let v = polygon.vertices[*i];
+                            let new_v = (before + v)/2.0;
+
+                            polygon.vertices.insert(*i, new_v);
+
+                            // selected is +1
+                            *selected = Some(*i + 1);
+
+                        }
+                    },
+
+                    KeyUp { keycode: Some(Keycode::D), keymod, ..} => {
+                        // add after selected (left)
+                        if let Some(i) = selected {
+
+                            let v = polygon.vertices[*i];
+                            let after = polygon.vertices[(*i + 1) % len];
+                            let new_v = (after + v)/2.0;
+
+                            polygon.vertices.insert(*i + 1, new_v);
+
+
+                        }
                     },
                     _ => {},
-
-
                 }
             }
 
             // assume always "active" when edit raw, regarding new vertices
             if self.mouse_up {
-                polygon.vertices.push(V2::new(self.mouse_pos.x as f32, self.mouse_pos.y as f32));
+                let new = V2::new(self.mouse_pos.x as f32, self.mouse_pos.y as f32);
+                if len == 0 {
+                    polygon.vertices.push(new);
+                } else if let Some(i) = selected  {
+                    polygon.vertices.insert(*i, new);
+                } else {
+                    polygon.vertices.push(new);
+                }
             }
         }
+
 
 
         for i in 0..len {
@@ -100,21 +143,27 @@ impl Ui {
 
             let mut r = 8.0;
 
+            if let Some(sel) = *selected {
+                if i == sel {
+                    r += 2.0;
+                }
+            }
+
             let mut drag  = na::Vector2::new(v.x as i32, v.y as i32);
-            self.drag_point(&mut drag, 8.0);
+            if self.drag_point(&mut drag, r) {
+                *selected = Some(i);
+                interaction = Some(Interaction::Vertex(i));
+            }
 
             // not adding as i32, will accumulat the float error/difference and make whole polygon flaot
             v.x = (drag.x + offset.x) as f32;
             v.y = (drag.y + offset.y) as f32;
-
 
             if i < len - 1 {
                 let p1 = polygon.vertices[i];
                 let p2 = polygon.vertices[i + 1];
                 self.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 3.0);
             }
-
-
         }
 
         if len > 2 {
@@ -122,8 +171,9 @@ impl Ui {
             let p2 = polygon.vertices[0];
             self.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 3.0);
         }
-
         render_intersect(self, polygon);
+
+        interaction
     }
 
 
@@ -169,11 +219,20 @@ impl Ui {
     }
 
     pub fn polygon_editor(&mut self, orig_polygon: &mut Polygon, options: &mut PolygonOptions) {
+        let id = self.next_id();
+
         options.transform_to_screenspace(&orig_polygon);
 
         let polygon = &mut options.tmp_polygon;
 
-        self.edit_raw_polygon(polygon, false, false);
+        let active = self.is_active(id);
+
+        let interacted = self.edit_raw_polygon(polygon, false, false, &mut options.selected) ;
+
+        if let Some(Interaction::Vertex(i)) = interacted {
+            options.selected.insert(i);
+        }
+
         render_intersect(self, polygon);
 
         options.transform_from_screenspace(orig_polygon);
@@ -203,12 +262,16 @@ impl PolygonTransform {
     }
 }
 
+
+
 #[derive(Default)]
 pub struct PolygonOptions {
-    pub selected: Vec::<usize>,
+    selected: Option<usize>,
     pub transform: PolygonTransform,
     tmp_polygon: Polygon
 }
+
+
 
 impl PolygonOptions {
 
@@ -242,4 +305,11 @@ fn render_intersect(ui: &mut Ui, polygon: &Polygon) {
         ui.drawer2D.circle(p.x, p.y, 7.0, Color::Rgb(250, 5, 5));
     }
 
+}
+
+
+#[derive(Debug, Clone, Copy)]
+pub enum Interaction {
+    Center,
+    Vertex(usize)
 }
