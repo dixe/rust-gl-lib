@@ -117,7 +117,7 @@ fn reload_text_shader(gl: &gl::Gl, widget_setup: &mut helpers::WidgetSetup) {
 
     match shader::BaseShader::new(gl, &vert_source, &frag_source) {
         Ok(s) => {
-            widget_setup.text_renderer.change_shader(s);
+            widget_setup.text_renderer.font_mut().change_shader(s);
         },
         Err(e) => {
             println!("{:?}",e);
@@ -157,14 +157,14 @@ fn handle_widget_outputs(ui_info: &mut UiInfo, event: WidgetOutput, widget_input
     if event.widget_id == ui_info.scale_slider_id {
         if let Some(slider_v) = event.event.downcast_ref::<f64>() {
             println!("scale: {:?}", *slider_v);
-            ui_info.scale = *slider_v as f32
+            ui_info.scale = *slider_v as i32
         }
     }
 }
 
 struct UiInfo {
     count: i32,
-    scale: f32,
+    scale: i32,
     counter_id: Id,
     add_button_id: Id,
     sub_button_id: Id,
@@ -206,6 +206,6 @@ fn create_ui(gl: &gl::Gl) -> (UiInfo, UiState) {
 
     ui_state.set_alignment_x(scale_slider_id, AlignmentX::Right);
 
-    (UiInfo {scale: scale as f32, counter_id, add_button_id, sub_button_id, count, smoothness_slider_id, scale_slider_id}, ui_state)
+    (UiInfo {scale: scale as i32, counter_id, add_button_id, sub_button_id, count, smoothness_slider_id, scale_slider_id}, ui_state)
 
 }

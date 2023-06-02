@@ -1,8 +1,8 @@
-use gl_lib::{gl, helpers, na, color::Color};
+use gl_lib::{gl, helpers, na};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::Pos;
-use std::collections::VecDeque;
+
 
 
 fn main() -> Result<(), failure::Error> {
@@ -84,7 +84,7 @@ fn draw_curve(curve: &mut Curve, ui: &mut Ui) {
     }
 
     let mut prev = curve.points[0];
-    let draw_i = curve.samples / 2;
+    let _draw_i = curve.samples / 2;
     for i in 0..curve.samples {
 
         let t = (1 + i) as f64 / curve.samples as f64;
@@ -111,7 +111,7 @@ fn calc_point_recursive(t: f64, points: &Vec::<na::Vector2::<f64>>, ui: &mut Ui,
     let mut iter_len = ps.len();
     let mut start = 0;
 
-    let mut run = true;
+    let _run = true;
 
     while iter_len > 0 {
         for i in start..(start + iter_len - 1) {

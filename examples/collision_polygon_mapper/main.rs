@@ -2,7 +2,7 @@ use gl_lib::{gl, na, helpers};
 use gl_lib::imode_gui::drawer2d::{*};
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::widgets::PolygonOptions;
-use sdl2::event;
+
 
 
 use gl_lib::collision2d::polygon::{Polygon};

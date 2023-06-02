@@ -1,7 +1,7 @@
 use gl_lib::{gl, helpers};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use gl_lib::imode_gui::numeric::Numeric;
+
 use gl_lib::color::Color;
 
 
@@ -28,7 +28,7 @@ fn main() -> Result<(), failure::Error> {
     let mut show = true;
     loop {
 
-        let c_vec = color.as_vec4();
+        let _c_vec = color.as_vec4();
         unsafe {
             // gl.ClearColor(c_vec.x, c_vec.y, c_vec.z, c_vec.w);
 

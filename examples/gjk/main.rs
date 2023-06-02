@@ -1,11 +1,11 @@
 use gl_lib::{gl, na, helpers, color::Color};
-use gl_lib::imode_gui::drawer2d::{self, *};
+use gl_lib::imode_gui::drawer2d::{*};
 use gl_lib::imode_gui::ui::*;
 use sdl2::event;
 use std::collections::HashSet;
 use gl_lib::collision2d::gjk;
 use gl_lib::collision2d::polygon::{self, Polygon, ComplexPolygon};
-use gl_lib::collision2d::lsi;
+
 
 type V2 = na::Vector2::<f32>;
 type V3 = na::Vector3::<f32>;
@@ -147,7 +147,7 @@ fn main() -> Result<(), failure::Error> {
                     }
                 }
 
-                ui.edit_raw_polygon(&mut state.polygons[idx].polygon, state.options.show_idx, state.options.show_pos);
+                ui.edit_raw_polygon(&mut state.polygons[idx].polygon, state.options.show_idx, state.options.show_pos, &mut None);
             }
         }
         render_mode(&mut ui, &state.mode);
@@ -248,7 +248,7 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
                 state.mode = Mode::Select(V2::new(xf, yf), V2::new(xf, yf));
             },
 
-            MouseMotion { x, y, mousestate, ..} => {
+            MouseMotion { x, y,  ..} => {
                 let xf = *x as f32;
                 let yf = *y as f32;
 
@@ -383,7 +383,7 @@ fn handle_object_mode(event: &event::Event, mode: &mut Mode, options: &mut optio
     use sdl2::keyboard::Keycode;
 
     match event {
-        MouseButtonUp {x, y, ..} => {
+        MouseButtonUp {  ..} => {
             *mode = Mode::NewPoint;
         },
         KeyDown { keycode: Some(Keycode::C), ..} => {
