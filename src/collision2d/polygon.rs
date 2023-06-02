@@ -2,12 +2,13 @@ use nalgebra as na;
 use crate::collision2d::lsi;
 use crate::collision2d::gjk;
 use crate::imode_gui::drawer2d;
+use serde::{Serialize, Deserialize};
 
 type V2 = na::Vector2::<f32>;
 type V3 = na::Vector3::<f32>;
 
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct Polygon {
     pub vertices: Vec::<V2>
 }
