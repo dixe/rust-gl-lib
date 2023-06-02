@@ -1,10 +1,10 @@
 use gl_lib::{gl, helpers};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use gl_lib::imode_gui::numeric::Numeric;
+
 use gl_lib::color::Color;
 use sdl2::audio::{AudioCallback, AudioDevice, AudioSpecDesired, AudioStatus};
-use std::time::Duration;
+
 
 struct SquareWave {
     phase_inc: f32,
@@ -41,8 +41,8 @@ fn main() -> Result<(), failure::Error> {
     let mut ui = Ui::new(drawer_2d);
 
     let mut event_pump = sdl.event_pump().unwrap();
-    let mut onoff = false;
-    let mut color = Color::Rgb(0,0,0);
+    let _onoff = false;
+    let _color = Color::Rgb(0,0,0);
 
      // Set background color to white
     unsafe {
@@ -59,7 +59,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut master_vol = 0.3;
 
-    let mut device = audio_subsystem.open_playback(None, &desired_spec, |spec| {
+    let device = audio_subsystem.open_playback(None, &desired_spec, |spec| {
         // initialize the audio callback
         SquareWave {
             phase_inc: 440.0 / spec.freq as f32,
@@ -87,7 +87,7 @@ fn main() -> Result<(), failure::Error> {
         }
 
         if ui.button("Add") {
-            let mut device = audio_subsystem.open_playback(None, &desired_spec, |spec| {
+            let device = audio_subsystem.open_playback(None, &desired_spec, |spec| {
                 // initialize the audio callback
                 SquareWave {
                     phase_inc: 440.0 / spec.freq as f32,

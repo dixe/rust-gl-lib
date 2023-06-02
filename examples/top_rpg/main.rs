@@ -1,9 +1,9 @@
 use gl_lib::{gl, na, helpers};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use gl_lib::text_rendering::font::{Font, MsdfFont, FntFont};
-use gl_lib::shader::BaseShader;
-use image::{imageops, RgbaImage};
+
+
+
 use sdl2::event;
 use gl_lib::texture::TextureId;
 use deltatime;

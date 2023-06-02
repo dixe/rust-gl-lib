@@ -2,6 +2,7 @@ use gl_lib::{gl, helpers};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::numeric::Numeric;
+use gl_lib::imode_gui::style::Style;
 
 
 fn main() -> Result<(), failure::Error> {
@@ -21,7 +22,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let mut style = Default::default();
+    let mut style : Style = Default::default();
     loop {
 
         // Basic clear gl stuff and get events to UI
@@ -29,7 +30,7 @@ fn main() -> Result<(), failure::Error> {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        ui.style = style;
+        ui.style = style.clone();
 
         ui.consume_events(&mut event_pump);
 

@@ -99,7 +99,7 @@ pub fn shoot(ui: &mut Ui, assets: &Assets, state: &mut State, dt: f32) {
 
 }
 
-fn handle_target(ui: &mut Ui, assets: &Assets, state: &mut State, dt: f32) {
+fn handle_target(ui: &mut Ui, assets: &Assets, state: &mut State, _dt: f32) {
     let base_size = V2::new(32.0, 32.0);
 
     if let Some(ref mut target) = &mut state.target {
@@ -189,10 +189,10 @@ fn handle_inputs(ui: &Ui, state: &mut State) {
 
     for e in ui.get_frame_inputs() {
         match e {
-            MouseButtonDown {x, y, ..} => {
+            MouseButtonDown {  ..} => {
                 state.mouse_down = true;
             },
-            MouseButtonUp {x, y, ..} => {
+            MouseButtonUp {  ..} => {
                 state.mouse_down = false;
             },
             MouseMotion { x, y, ..} => {
