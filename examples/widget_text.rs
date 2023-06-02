@@ -39,7 +39,7 @@ fn main() -> Result<(), failure::Error> {
 
 
     // Setup widget ui
-    let mut ui_state = create_ui();
+    let mut ui_state = create_ui(&gl);
 
     let root_box = BoxContraint::new(viewport.w, viewport.h);
     layout_widgets(&root_box, &mut ui_state);
@@ -59,9 +59,9 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-fn create_ui() -> UiState {
+fn create_ui(gl: &gl::Gl) -> UiState {
 
-    let mut ui_state = UiState::new();
+    let mut ui_state = UiState::new(gl);
     let row_widget = RowWidget {};
     let row_id = ui_state.add_widget(Box::new(row_widget), None);
 
