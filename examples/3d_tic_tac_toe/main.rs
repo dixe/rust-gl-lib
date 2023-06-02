@@ -38,7 +38,7 @@ fn main() -> Result<(), failure::Error> {
     // Setup widget ui
 
 
-    let (mut ui_info, mut ui_state) = create_ui();
+    let (mut ui_info, mut ui_state) = create_ui(&gl);
 
     let mut render_ctx = render::RenderContext {
         gl: gl,
@@ -106,10 +106,10 @@ struct UiInfo {
 }
 
 
-fn create_ui() -> (UiInfo, UiState) {
+fn create_ui(gl: &gl::Gl) -> (UiInfo, UiState) {
 
 
-    let mut ui_state = UiState::new();
+    let mut ui_state = UiState::new(gl);
 
     let grid_info = create_2d_grid(&mut ui_state);
 

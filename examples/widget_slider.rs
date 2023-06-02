@@ -35,17 +35,13 @@ fn main() -> Result<(), failure::Error> {
         circle_shader: &mut widget_setup.circle_shader
     };
 
-
-    // Setup widget ui
-
-
     let mut ui = Ui::default();
 
     let mut ui_info = UiInfo::default();
 
     ui_info.slider_ref = 1.0;
 
-    add_slider_pannel(&mut ui, BoxContraint::new(viewport.w / 2, viewport.h), Position{ x:0, y: 0});
+    add_slider_pannel(&gl, &mut ui, BoxContraint::new(viewport.w / 2, viewport.h), Position{ x:0, y: 0});
 
     let _root_box = BoxContraint::new(viewport.w, viewport.h);
 
@@ -73,7 +69,7 @@ fn main() -> Result<(), failure::Error> {
                         match BaseShader::new(&render_ctx.gl, &vert_source, &frag_source) {
                             Ok(new_shader) => {
                                 println!("Reloaded sdf shader");
-                                render_ctx.tr.change_shader(new_shader);
+                                render_ctx.tr.font_mut().change_shader(new_shader);
                             },
                             Err(msg) => {
                                 println!("Shader load failed\n{:?}", msg);
@@ -87,12 +83,12 @@ fn main() -> Result<(), failure::Error> {
 
                         let font = &render_ctx.tr.font();
                         unsafe {
-                            let lipsum_info = TextRenderer::render_box(font, &(lipsum_text.as_ref().unwrap()), screen_space.width, 1.0 );
+                            let lipsum_info = TextRenderer::render_box(font, &(lipsum_text.as_ref().unwrap()), screen_space.width, 20);
                             println!("Text info: {:?}", lipsum_info);
                         }
                     } else {
                         if ui.windows.len() < 2 {
-                            let window = add_keycode_pannel(BoxContraint::new(viewport.w/3, (viewport.h as f32 * 0.7) as i32),
+                            let window = add_keycode_pannel(&gl, BoxContraint::new(viewport.w/3, (viewport.h as f32 * 0.7) as i32),
                                                             Position {x: viewport.w / 3, y: 0});
                             ui.windows.insert(format!("lipsum"), window);
                         }
@@ -140,9 +136,9 @@ fn handle_slider_outputs(ui_info: &mut UiInfo, event: WidgetOutput, named_widget
 
 
 
-fn add_keycode_pannel(draw_box: BoxContraint, root_pos: Position) -> UiWindow<UiInfo> {
+fn add_keycode_pannel(gl: &gl::Gl, draw_box: BoxContraint, root_pos: Position) -> UiWindow<UiInfo> {
 
-    let mut ui_state = UiState::new();
+    let mut ui_state = UiState::new(gl);
     let r = RowWidget {} ;
 
     let row_id = ui_state.add_widget(Box::new(r), None);
@@ -176,9 +172,9 @@ struct UiInfo {
 }
 
 
-fn add_slider_pannel(ui: &mut Ui<UiInfo>, draw_box: BoxContraint, root_pos: Position) {
+fn add_slider_pannel(gl: &gl::Gl, ui: &mut Ui<UiInfo>, draw_box: BoxContraint, root_pos: Position) {
 
-    let mut ui_state = UiState::new();
+    let mut ui_state = UiState::new(gl);
     let row = RowWidget {};
 
     let row_id = ui_state.add_widget(Box::new(row), None);

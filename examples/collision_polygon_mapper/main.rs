@@ -1,14 +1,14 @@
-use gl_lib::{gl, na, helpers, color::Color};
-use gl_lib::imode_gui::drawer2d::{self, *};
+use gl_lib::{gl, na, helpers};
+use gl_lib::imode_gui::drawer2d::{*};
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::widgets::PolygonOptions;
 use sdl2::event;
-use std::collections::HashSet;
-use gl_lib::collision2d::gjk;
-use gl_lib::collision2d::polygon::{self, Polygon, ComplexPolygon};
-use gl_lib::collision2d::lsi;
+
+
+use gl_lib::collision2d::polygon::{Polygon};
+
 use gl_lib::texture::TextureId;
-use serde::{Serialize, Deserialize};
+
 
 
 type V2 = na::Vector2::<f32>;
@@ -172,9 +172,9 @@ fn screen_to_img_coords(mut v: V2, anchor: V2i, scale: f32) -> V2{
 
 fn handle_inputs(ui: &mut Ui) {
 
-    use event::Event::*;
+    
 
-    use sdl2::keyboard::Keycode;
+    
 
     for e in &ui.frame_events {
         match e {

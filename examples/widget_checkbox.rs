@@ -27,7 +27,7 @@ fn main() -> Result<(), failure::Error> {
 
 
     // Setup widget ui
-    let (mut ui_info, mut ui_state) = create_ui();
+    let (mut ui_info, mut ui_state) = create_ui(&gl);
 
     let root_box = BoxContraint::new(viewport.w, viewport.h);
     layout_widgets(&root_box, &mut ui_state);
@@ -84,7 +84,7 @@ fn main() -> Result<(), failure::Error> {
         render::render_ui(&ui_state, &mut render_ctx);
 
         // Render text that outside ui, is affected by out ui_info.slider_ref, that our slider also controlls
-        render_ctx.tr.render_text(render_ctx.gl, "Hello", TextAlignment::default(), ScreenBox::new(00.0, 00.0, 1200.0, 700.0, 1200.0, 700.0), ui_info.scale);
+        render_ctx.tr.render_text(render_ctx.gl, "Hello", TextAlignment::default(), ScreenBox::new(00.0, 00.0, 1200.0, 700.0, 1200.0, 700.0), ui_info.scale );
 
         window.gl_swap_window();
     }
@@ -106,7 +106,7 @@ fn reload_text_shader(gl: &gl::Gl, widget_setup: &mut helpers::WidgetSetup) {
 
     match shader::BaseShader::new(gl, &vert_source, &frag_source) {
         Ok(s) => {
-            widget_setup.text_renderer.change_shader(s);
+            widget_setup.text_renderer.font_mut().change_shader(s);
         },
         Err(e) => {
             println!("{:?}",e);
@@ -127,7 +127,7 @@ fn handle_widget_outputs(ui_info: &mut UiInfo, event: WidgetOutput, _widget_inpu
         if let Some(slider_v) = event.event.downcast_ref::<f64>() {
             println!("scale: {:?}", *slider_v);
             if ui_info.checked {
-                ui_info.scale = *slider_v as f32
+                ui_info.scale = *slider_v as i32
             }
         }
     }
@@ -135,16 +135,16 @@ fn handle_widget_outputs(ui_info: &mut UiInfo, event: WidgetOutput, _widget_inpu
 
 struct UiInfo {
     checked: bool,
-    scale: f32,
+    scale: i32,
     checkbox_id: Id,
     scale_slider_id: Id,
 }
 
 
-fn create_ui() -> (UiInfo, UiState) {
+fn create_ui(gl: &gl::Gl) -> (UiInfo, UiState) {
 
 
-    let mut ui_state = UiState::new();
+    let mut ui_state = UiState::new(gl);
     let row = RowWidget {};
 
     let row_id = ui_state.add_widget(Box::new(row), None);
@@ -162,6 +162,6 @@ fn create_ui() -> (UiInfo, UiState) {
 
     ui_state.set_alignment_x(scale_slider_id, AlignmentX::Right);
 
-    (UiInfo {scale: scale as f32, checkbox_id, checked: false, scale_slider_id}, ui_state)
+    (UiInfo {scale: scale as i32, checkbox_id, checked: false, scale_slider_id}, ui_state)
 
 }

@@ -120,7 +120,7 @@ impl<Message> GameComponent<Message> where Message: Clone  {
                     let tile_y = i / 9;
                     let x = grid_tile_w * tile_x as f32 + self.base.x;
                     let y = grid_tile_h * tile_y as f32 + self.base.y;
-                    tr.render_text(gl, &format!("{}", bombs), alignment, ScreenBox::new(x, y, grid_tile_w, grid_tile_h, screen_w, screen_h), 1.0);
+                    tr.render_text(gl, &format!("{}", bombs), alignment, ScreenBox::new(x, y, grid_tile_w, grid_tile_h, screen_w, screen_h), 20);
 
                 },
                 _ => {},
@@ -143,7 +143,7 @@ impl<Message> GameComponent<Message> where Message: Clone  {
                     let tile_y = i / 9;
                     let x = grid_tile_w * tile_x as f32 + self.base.x;
                     let y = grid_tile_h * tile_y as f32 + self.base.y;
-                    tr.render_text(gl, "F", alignment, ScreenBox::new(x, y, grid_tile_w, grid_tile_h, screen_w, screen_h), 1.0);
+                    tr.render_text(gl, "F", alignment, ScreenBox::new(x, y, grid_tile_w, grid_tile_h, screen_w, screen_h), 20);
 
                 },
                 _ => {},
@@ -161,7 +161,7 @@ impl<Message> GameComponent<Message> where Message: Clone  {
         for p in self.game_info.bombs.iter() {
             let x = grid_tile_w * p.x as f32 + self.base.x;
             let y = grid_tile_h * p.y as f32 + self.base.y;
-            tr.render_text(gl, &format!("B"), alignment, ScreenBox::new(x, y, grid_tile_w, grid_tile_h, screen_w, screen_h), 1.0);
+            tr.render_text(gl, &format!("B"), alignment, ScreenBox::new(x, y, grid_tile_w, grid_tile_h, screen_w, screen_h), 20);
         }
     }
 

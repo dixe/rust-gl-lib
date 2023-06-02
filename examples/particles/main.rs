@@ -4,8 +4,8 @@ use gl_lib::particle_system::*;
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use deltatime;
-use gl_lib::text_rendering::font::{Font, MsdfFont, FntFont};
-use gl_lib::shader::BaseShader;
+
+
 use sdl2::event;
 use rand::Rng;
 use gl_lib::particle_system::particle::Particle;
@@ -142,7 +142,7 @@ fn handle_inputs(ui: &Ui, state: &mut State) {
             MouseButtonDown {x, y, ..} => {
                 state.mouse_pos = Some((*x as f32, *y as f32));
             },
-            MouseButtonUp {x, y, ..} => {
+            MouseButtonUp {  ..} => {
                 state.mouse_pos = None;
             },
             MouseMotion { x, y, mousestate, ..} => {

@@ -1,4 +1,4 @@
-use gl_lib::{gl, na, helpers};
+use gl_lib::{gl, helpers};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use deltatime;
@@ -93,7 +93,7 @@ fn main() -> Result<(), failure::Error> {
         }
 */
 
-        let dt = delta_time.time();
+        let _dt = delta_time.time();
 
         ui.newline();
         ui.newline();
