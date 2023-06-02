@@ -26,9 +26,9 @@ impl Polygon {
         let buffer_data = instanciate_data_buffers(gl, indices, vertices);
         buffer_data.vao.unbind();
 
-        let mut has_color = false;
+        let has_color = false;
         if let Some(ref _c) = colors {
-            has_color = true;
+            //has_color = true;
             // TODO: Maybe use another vbo for colors, and not the same as vertices, so they can be replaced seperatly
             // or just make init code simpler, since they don't have to be interlaced
             todo!("Fixed color buffer");
@@ -64,7 +64,7 @@ impl Polygon {
             self.vbo_size = vertices.len();
 
         } else {
-            setup_data(gl, self, indices, vertices, colors);
+            setup_data(self, indices, vertices, colors);
         }
 
     }
@@ -96,7 +96,7 @@ impl Polygon {
 }
 
 
-fn setup_data(gl: &gl::Gl, polygon: &mut Polygon, indices: &[u32], vertices: &[f32], colors: Option<&[Color]>) {
+fn setup_data(polygon: &mut Polygon, indices: &[u32], vertices: &[f32], colors: Option<&[Color]>) {
     let mut data = vec![];
 
     let has_color = polygon.has_color || match colors {
@@ -107,8 +107,6 @@ fn setup_data(gl: &gl::Gl, polygon: &mut Polygon, indices: &[u32], vertices: &[f
     if has_color && colors.is_none() {
         panic!("Sub data with colors now without");
     }
-
-    let stride = if has_color {3 + 4} else {3};
 
     let mut data_ref = vertices;
 
