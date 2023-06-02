@@ -115,8 +115,6 @@ impl Simplex {
     fn remove(&mut self, r: Remove) {
         assert_eq!(self.len, 3);
 
-        let [a,b,c] = self.data;
-
         self.len = 2;
         match r {
             Remove::B => {

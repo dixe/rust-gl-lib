@@ -27,7 +27,7 @@ impl Polygon {
         buffer_data.vao.unbind();
 
         let mut has_color = false;
-        if let Some(ref c) = colors {
+        if let Some(ref _c) = colors {
             has_color = true;
             // TODO: Maybe use another vbo for colors, and not the same as vertices, so they can be replaced seperatly
             // or just make init code simpler, since they don't have to be interlaced
@@ -113,7 +113,6 @@ fn setup_data(gl: &gl::Gl, polygon: &mut Polygon, indices: &[u32], vertices: &[f
     let mut data_ref = vertices;
 
     if let Some(ref c) = colors {
-        todo!();
         assert_eq!(
             vertices.len() / 3,
             c.len(),

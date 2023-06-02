@@ -70,7 +70,7 @@ impl Square {
     }
 
     /// Only works for dynamic draw I think
-    pub fn sub_data(&self, gl: &gl::Gl, left: f32, right: f32, top: f32, bottom: f32) {
+    pub fn sub_data(&self, left: f32, right: f32, top: f32, bottom: f32) {
 
         let data = [
             right, bottom,

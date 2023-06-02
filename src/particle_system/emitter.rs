@@ -1,6 +1,6 @@
 use crate::particle_system::particle::Particle;
 use crate::imode_gui::drawer2d::Drawer2D;
-use crate::{gl, na};
+use crate::na;
 use rand::Rng;
 use crate::color::Color;
 
@@ -22,7 +22,7 @@ impl Emitter {
 
         let mut particles = vec![];
 
-        for i in 0..max {
+        for _ in 0..max {
             particles.push(Particle {
                 pos: Default::default(),
                 vel: Default::default(),

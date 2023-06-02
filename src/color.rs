@@ -51,10 +51,10 @@ impl Color {
 
     pub fn alpha(&self) -> f32 {
         match *self {
-            Color::Rgb(r,g,b) => 1.0,
-            Color::RgbA(r,g,b,a) => a as f32 / 255.0,
-            Color::RgbAf32(r,g,b,a) => a,
-            Color::Hsv(h,s,v, a) => a,
+            Color::Rgb(_, _, _ ) => 1.0,
+            Color::RgbA(_,_ , _, a) => a as f32 / 255.0,
+            Color::RgbAf32(_, _ , _, a) => a,
+            Color::Hsv(_, _, _, a) => a,
         }
     }
 

@@ -24,7 +24,6 @@ impl RoundedRectShader {
 
     pub fn set_uniforms(&self, uni: Uniforms) {
 
-    let c = uni.color.as_vec4();
         self.shader.set_vec4(&self.gl, "u_color", uni.color.as_vec4());
 
         self.shader.set_f32(&self.gl, "pixel_height", uni.pixel_height);

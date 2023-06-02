@@ -70,7 +70,7 @@ impl TextRenderer {
     pub fn render_text(&mut self, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, pixel_size: i32) {
 
         let projection = na::geometry::Orthographic3::new(0.0, screen_box.screen_w, screen_box.screen_h, 0.0, 0.0, 10.0);
-        let texture_id = self.font.texture_id(gl);
+        let texture_id = self.font.texture_id();
         setup_shader(self.font.shader(), gl, projection, texture_id, self.color);
         render_text_with_font(&mut self.char_quad, &self.font, gl, text, alignment, screen_box, pixel_size);
     }
@@ -78,12 +78,12 @@ impl TextRenderer {
     pub fn render_text_with_font(&mut self, font: &Font, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, pixel_size: i32) {
 
         let projection = na::geometry::Orthographic3::new(0.0, screen_box.screen_w, screen_box.screen_h, 0.0, 0.0, 10.0);
-        let texture_id = font.texture_id(gl);
+        let texture_id = font.texture_id();
         setup_shader(font.shader(), gl, projection, texture_id, self.color);
         render_text_with_font(&mut self.char_quad, font, gl, text, alignment, screen_box, pixel_size);
     }
 
-    pub fn change_font(&mut self, gl: &gl::Gl, font: Font) {
+    pub fn change_font(&mut self, font: Font) {
         self.font = font;
     }
 
@@ -208,10 +208,6 @@ pub fn render_text_with_font(char_quad: &mut objects::char_quad::CharQuad, font:
 
     let input_scale = pixel_size as f32 / font.size();
 
-    let scale_x = 2.0 / screen_box.screen_w * input_scale;
-
-    let scale_y = 2.0 / screen_box.screen_h * input_scale;
-
     let mut chars_info = Vec::new();
 
     let render_box = calc_char_info(font, text, screen_box.width, input_scale, &mut chars_info);
@@ -255,20 +251,12 @@ pub fn render_text_with_font(char_quad: &mut objects::char_quad::CharQuad, font:
     // Draw the chars
     let draw_info = DrawInfo {
         chars_info: &chars_info,
-        scale: Scale { x: scale_x, y: scale_y },
         bottom: screen_box.bottom(),
-        screen_w: screen_box.screen_w,
-        screen_h: screen_box.screen_h,
         input_scale: input_scale,
         font
     };
 
     render_text_quads_pixel(char_quad, gl, &draw_info);
-}
-
-
-fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
-    f32::clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
 }
 
 
@@ -295,18 +283,9 @@ fn setup_shader(shader: &BaseShader, gl: &gl::Gl, projection: na::geometry::Orth
 #[derive(Debug)]
 struct DrawInfo<'a>{
     bottom: f32,
-    scale: Scale,
     chars_info: &'a Vec::<CharPosInfo>,
-    screen_w: f32,
-    screen_h: f32,
     input_scale: f32,
     font: &'a Font
-}
-
-#[derive(Debug)]
-struct Scale {
-    pub x:f32,
-    pub y: f32,
 }
 
 #[derive(Default, Debug, Clone, Copy)]

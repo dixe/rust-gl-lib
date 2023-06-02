@@ -56,7 +56,7 @@ impl<'a> SubPolygon<'a> {
 
 
 pub fn calculate_subdivision(polygon: &mut Polygon) -> Vec::<SubPolygon> {
-    for p in polygon.intersections() {
+    for _ in polygon.intersections() {
         return vec![];
     }
 
@@ -244,26 +244,6 @@ fn first_wide(sub_p: &SubPolygon) -> Option<usize> {
 
     None
 }
-
-fn wide_indices(polygon: &Polygon) -> Vec::<usize> {
-    let mut res = vec![];
-
-    let len = polygon.vertices.len();
-
-    for i in 0..polygon.vertices.len() {
-        let before = polygon.vertices[(len + i - 1) % len];
-        let pi = polygon.vertices[i];
-        let after = polygon.vertices[(i + 1) % len];
-
-        if is_wide_angle(vec3(before), vec3(pi), vec3(after)) {
-            res.push(i);
-        }
-    }
-
-    res
-
-}
-
 
 fn direction(polygon: &Polygon) -> Dir {
 

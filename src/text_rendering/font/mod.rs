@@ -66,8 +66,8 @@ impl Font {
 
     pub fn font_type(&self) -> FontType {
          match &self.inner_font {
-            InnerFont::Fnt(fnt) => FontType::Fnt,
-            InnerFont::Msdf(msdf) => FontType::Msdf
+            InnerFont::Fnt(_fnt) => FontType::Fnt,
+            InnerFont::Msdf(_msdf) => FontType::Msdf
         }
     }
 
@@ -123,7 +123,7 @@ impl Font {
         &self.shader
     }
 
-    pub fn texture_id(&self, gl: &gl::Gl) -> TextureId {
+    pub fn texture_id(&self) -> TextureId {
         self.texture_id
     }
 }

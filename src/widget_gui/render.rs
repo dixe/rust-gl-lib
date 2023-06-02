@@ -38,7 +38,7 @@ pub fn transform_to_screen_space(geom: &Geometry, viewport: &viewport::Viewport)
 
 
 
-pub fn render_text(text: &str, scale: f32, geom: &Geometry, ctx: &mut RenderContext) {
+pub fn render_text(text: &str, _scale: f32, geom: &Geometry, ctx: &mut RenderContext) {
 
     let sb = transform_to_screen_space(geom, &ctx.viewport);
 
