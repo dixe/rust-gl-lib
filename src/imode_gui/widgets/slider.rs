@@ -136,4 +136,77 @@ impl Ui {
         self.drawer2D.render_text_from_font_name(&format!("{item:.2}"), x, y, pixel_size, font_name);
 
     }
+
+
+    pub fn slider2d<T>(&mut self, x_item: &mut T, y_item: &mut T,  x_min_t: T, x_max_t: T, y_min_t: T, y_max_t: T) -> bool where T : Numeric {
+        let id = self.next_id();
+
+        let start_x = *x_item;
+        let start_y = *y_item;
+
+         // border box, with space for padding for text content
+        let mut rect = Rect {
+            x: 0,
+            y: 0,
+            w: 200,
+            h: 200,
+        };
+
+        rect = self.layout_rect(rect);
+
+        if self.mouse_in_rect(&rect) {
+            self.set_hot(id);
+        }
+
+        if self.is_active(id) {
+            let (new_x, new_y) = pos_to_value(self.mouse_pos, &rect, x_min_t.to_f64(), x_max_t.to_f64(), y_min_t.to_f64(), y_max_t.to_f64());
+
+            *x_item = T::from_f64(new_x);
+            *y_item = T::from_f64(new_y);
+
+            if self.mouse_up {
+                self.set_not_active();
+
+            }
+        }
+        else if self.is_hot(id) {
+            if self.mouse_down {
+                self.set_active(id);
+            }
+        }
+
+        let x = x_item.to_f64();
+        let y = y_item.to_f64();
+
+        let x_min = x_min_t.to_f64();
+        let x_max = x_max_t.to_f64();
+
+        let y_min = y_min_t.to_f64();
+        let y_max = y_max_t.to_f64();
+
+        let bg_color = Color::Rgb(240, 240, 240);
+        self.drawer2D.rounded_rect_color(rect.x, rect.y, rect.w, rect.h, bg_color);
+        let center_x = rect.x as f64 + ((x - x_min) / (x_max - x_min)) * rect.w as f64;
+        let center_y = rect.y as f64 + ((y - y_min) / (y_max - y_min)) * rect.h as f64;
+
+        if self.is_active(id) {
+            println!("center {:?}\n",(center_x, center_y));
+        }
+        self.drawer2D.circle(center_x as i32, center_y as i32, 6, Color::Rgb(200, 200, 200));
+
+        *x_item == start_x && *y_item == start_y
+    }
+}
+
+fn pos_to_value(mouse_pos: Pos, rect: &Rect, x_min: f64, x_max: f64, y_min: f64, y_max: f64) -> (f64, f64) {
+
+    let mut x = (mouse_pos.x - rect.x) as f64 / rect.w as f64;
+    x = f64::max(0.0, f64::min(x, 1.0));
+    x = x * (x_max - x_min) + x_min;
+
+    let mut y = (mouse_pos.y - rect.y) as f64 / rect.h as f64;
+    y = f64::max(0.0, f64::min(y, 1.0));
+    y = y * (y_max - y_min) + y_min;
+    println!("{:?}",(x,y));
+    (x, y)
 }

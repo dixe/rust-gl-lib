@@ -115,11 +115,15 @@ impl Ui{
             let bg_color = Color::Rgb(200, 200, 255);
             let color = Color::Rgb(255,255,255);
 
+            let window_w = window.base_container_context.width.size() + self.style.spacing.x * 4;
+
+            let window_h = window.base_container_context.height.size() + self.style.spacing.y;
+
             // Background
             self.drawer2D.rounded_rect_color(anchor.x,
                                              anchor.y,
-                                             window.base_container_context.width.size() + self.style.spacing.x * 2,
-                                             window.base_container_context.height.size() + self.style.spacing.y,
+                                             window_w,
+                                             window_h,
                                              bg_color);
 
             // window Top Bar
@@ -134,16 +138,14 @@ impl Ui{
             // window border
             let thickness = 3;
             let tl = anchor + Pos::new(0, -window.top_bar_size.y);
-            let tr = anchor
-                + Pos::new(window.base_container_context.width.size(), -window.top_bar_size.y)
-                + Pos::new(self.style.spacing.x * 2, 0);
+            let tr = anchor+ Pos::new(window_w, -window.top_bar_size.y);
 
-            let bl = anchor + Pos::new(0, window.base_container_context.height.size())
-                + Pos::new(0, self.style.spacing.y);
+
+            let bl = anchor + Pos::new(0, window_h);
 
             let br = anchor
-                + Pos::new(window.base_container_context.width.size(), window.base_container_context.height.size())
-                + Pos::new(self.style.spacing.x * 2, self.style.spacing.y);;
+                + Pos::new(window_w, window_h);
+            //+ Pos::new(self.style.spacing.x * 4, self.style.spacing.y);;
 
 
             // left vertical
@@ -185,7 +187,7 @@ impl Ui{
         }
 
         // get window width, from max of container??
-        window.top_bar_size.x = window.base_container_context.width.size() + self.style.spacing.x * 2;
+        window.top_bar_size.x = window.base_container_context.width.size() + self.style.spacing.x * 4;
 
         self.current_window.pop();
 

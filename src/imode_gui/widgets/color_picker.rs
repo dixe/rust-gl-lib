@@ -165,9 +165,6 @@ impl Ui{
             *color = pos_to_color(self.mouse_pos, rect, *color);
 
             if self.mouse_up {
-                if self.is_hot(id) {
-                    *color = pos_to_color(self.mouse_pos, rect, *color);
-                }
                 self.set_not_active();
 
             }
