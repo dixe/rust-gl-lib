@@ -3,6 +3,7 @@ use crate::collision2d::lsi;
 use crate::collision2d::gjk;
 use crate::imode_gui::drawer2d;
 use serde::{Serialize, Deserialize};
+use crate::math;
 
 type V2 = na::Vector2::<f32>;
 type V3 = na::Vector3::<f32>;
@@ -30,7 +31,65 @@ impl Polygon {
 
         c / self.vertices.len() as f32
     }
+
+    pub fn interpolate(target_poly: &mut Polygon, polygon_1: &Polygon, t_1: &PolygonTransform, polygon_2: &Polygon, t_2: &PolygonTransform, t: f32) -> Option<PolygonTransform> {
+
+        let len = polygon_1.vertices.len();
+        if len != polygon_2.vertices.len() {
+            return None;
+        }
+
+
+        target_poly.vertices.clear();
+
+        for i in 0..len {
+            let p1 = polygon_1.vertices[i];
+
+            let p2 = polygon_2.vertices[i];
+            let p = p1.lerp(&p2, t);
+            target_poly.vertices.push(p)
+        }
+
+        Some(t_1.lerp(t_2, t))
+    }
+
 }
+
+
+
+#[derive(Default, Clone, Copy, Debug)]
+pub struct PolygonTransform {
+    pub translation: V2,
+    pub rotation: f32,
+    pub scale: f32,
+}
+
+impl PolygonTransform {
+
+    pub fn map(&self, mut v: V2) -> V2 {
+        v *= self.scale;
+        v += self.translation;
+        v
+    }
+
+    pub fn inverse_map(&self, mut v: V2) -> V2 {
+        v -= self.translation;
+        v *= 1.0 / self.scale;
+        v
+    }
+
+    pub fn lerp(&self, other: &Self, t: f32) -> Self {
+        Self {
+            translation: self.translation.lerp(&other.translation, t),
+            rotation: math::lerp(self.rotation, other.rotation, t),
+            scale: math::lerp(self.scale, other.scale, t)
+        }
+    }
+}
+
+
+
+
 
 #[derive(Debug)]
 pub struct SubPolygon<'a> {

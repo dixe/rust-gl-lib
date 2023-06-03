@@ -166,7 +166,6 @@ impl Ui {
 
             if self.mouse_up {
                 self.set_not_active();
-
             }
         }
         else if self.is_hot(id) {
@@ -191,7 +190,7 @@ impl Ui {
 
         self.drawer2D.circle(center_x as i32, center_y as i32, 6, Color::Rgb(200, 200, 200));
 
-        *x_item == start_x && *y_item == start_y
+        self.is_active(id)
     }
 }
 

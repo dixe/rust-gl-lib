@@ -25,6 +25,7 @@ pub mod color;
 
 pub mod helpers;
 
+pub mod math;
 
 pub mod widget_gui;
 

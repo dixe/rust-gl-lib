@@ -1,5 +1,5 @@
 use super::*;
-use crate::collision2d::polygon::{Polygon};
+use crate::collision2d::polygon::{Polygon, PolygonTransform};
 use crate::collision2d::gjk::Shape;
 use std::collections::HashSet;
 
@@ -239,29 +239,6 @@ impl Ui {
 
     }
 }
-
-#[derive(Default, Clone, Copy, Debug)]
-pub struct PolygonTransform {
-    pub translation: V2,
-    pub rotation: f32,
-    pub scale: f32,
-}
-
-impl PolygonTransform {
-
-    fn map(&self, mut v: V2) -> V2 {
-        v *= self.scale;
-        v += self.translation;
-        v
-    }
-
-    fn inverse_map(&self, mut v: V2) -> V2 {
-        v -= self.translation;
-        v *= 1.0 / self.scale;
-        v
-    }
-}
-
 
 
 #[derive(Default)]

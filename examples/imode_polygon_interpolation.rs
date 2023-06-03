@@ -6,6 +6,8 @@ use sdl2::event;
 use std::collections::HashSet;
 use gl_lib::collision2d::gjk;
 use gl_lib::collision2d::polygon::{self, Polygon, ComplexPolygon};
+use deltatime;
+use core::ops::Mul;
 
 
 type V2 = na::Vector2::<f32>;
@@ -40,17 +42,27 @@ fn main() -> Result<(), failure::Error> {
 
     let mut t_start = PolygonTransform::default();
     t_start.scale = 1.0;
+    t_start.translation.x = 10.0;
+    t_start.translation.y = 200.0;
 
     let mut t_end = PolygonTransform::default();
     t_end.scale = 2.0;
+    t_end.translation.x = 300.0;
+    t_end.translation.y = 300.0;
     let mut t = 0.5;
 
+    let mut delta_time = deltatime::Deltatime::new();
+    let mut play = false;
+
+    let mut animation_seconds = 1.0;
     loop {
 
         // Basic clear gl stuff and get events to UI
         unsafe {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
+        delta_time.update();
+        let dt = delta_time.time();
 
         ui.consume_events(&mut event_pump);
         handle_inputs(&mut ui);
@@ -58,6 +70,19 @@ fn main() -> Result<(), failure::Error> {
         // ui for t, and star and end transforms
         ui.label("t");
         ui.slider(&mut t, 0.0, 1.0);
+
+        ui.slider(&mut animation_seconds, 0.1, 3.0);
+        let txt = if play { "Pause"} else { "Play"};
+        if ui.button(txt) {
+            play = !play;
+        }
+
+        if play {
+            t += dt * 1.0 / animation_seconds;
+            if t > 1.0 {
+                t = 0.0;
+            }
+        }
 
         ui.window_begin("t_start");
         transform_ui(&mut ui, &mut t_start);
@@ -84,7 +109,7 @@ fn main() -> Result<(), failure::Error> {
 fn interpolated(ui: &mut Ui, polygon: &Polygon, t_start: &PolygonTransform, t_end: &PolygonTransform, t: f32) {
 
     let transform = PolygonTransform {
-        translation: lerp_v2(t_start.translation, t_end.translation, t),
+        translation: lerp(t_start.translation, t_end.translation, t),
         rotation: lerp(t_start.rotation, t_end.rotation, t),
         scale: lerp(t_start.scale, t_end.scale, t),
     };
@@ -94,15 +119,43 @@ fn interpolated(ui: &mut Ui, polygon: &Polygon, t_start: &PolygonTransform, t_en
 
 }
 
-fn lerp_v2(a: V2, b: V2, t: f32) -> V2 {
-    (1.0-t) * a + b*t
+
+
+fn lerp<T: std::ops::Mul<f32, Output = T> + std::ops::Add<Output = T>>(a: T, b: T, t: f32) -> T  where f32: Mul<T, Output = T> {// where T: core::ops::Mul<T{
+    let t1 = ease_out_back(t);
+
+    let x :T = (1.0 - t1) * a;
+    let y :T = b * t1;
+
+    x + y
 }
 
-
-
-fn lerp(a: f32, b: f32, t: f32) -> f32 {
-    (1.0-t) * a + b*t
+fn ease_out_circ(x: f32) -> f32 {
+    return f32::sqrt(1.0 - f32::powi(x - 1.0, 2));
 }
+
+fn ease_out_bounce(x: f32) -> f32 {
+    let n1 = 7.5625;
+    let d1 = 2.75;
+
+    if (x < 1.0 / d1) {
+        return n1 * x * x;
+    } else if (x < 2.0 / d1) {
+        return n1 * (x - 1.5 / d1) * x + 0.75;
+    } else if (x < 2.5 / d1) {
+        return n1 * (x - 2.25 / d1) * x + 0.9375;
+    } else {
+        return n1 * (x - 2.625 / d1) * x + 0.984375;
+    }
+}
+
+fn ease_out_back(x: f32) -> f32 {
+    let c1 = 1.70158;
+    let c3 = c1 + 1.0;
+
+    return 1.0 + c3 * f32::powi(x - 1.0, 3) + c1 * f32::powi(x - 1.0, 2);
+}
+
 
 fn transform_ui(ui: &mut Ui, transform: &mut PolygonTransform) {
 
