@@ -51,7 +51,7 @@ fn main() -> Result<(), failure::Error> {
         if ui.button("Save") {
             match serde_json::to_string(&edit1.polygon) {
                 Ok(json) => {
-                    std::fs::write("examples/collision_polygon_mapper/Target.json", json);
+                    std::fs::write("examples/collision_polygon_mapper/Sword.json", json);
                 },
                 Err(err) => {
                     println!("Fail to save\n{:?}", err);
@@ -67,17 +67,18 @@ fn main() -> Result<(), failure::Error> {
 }
 
 
+
 fn load(ui: &mut Ui) -> ImageEdit {
 
     // TODO: Load from path, maybe make this changeable
-    let img = image::open("examples/top_rpg/assets/Target.png").unwrap().into_rgba8();
+    let img = image::open("examples/top_rpg/assets/Sword.png").unwrap().into_rgba8();
 
     let texture_id = ui.register_image_nearest(&img);
 
 
     let base_size = V2::new(img.width() as f32, img.height() as f32);
 
-    let vertices_json = std::fs::read_to_string("examples/collision_polygon_mapper/Target.json");
+    let vertices_json = std::fs::read_to_string("examples/collision_polygon_mapper/Sword.json");
 
 
     let polygon = match vertices_json {
@@ -172,9 +173,9 @@ fn screen_to_img_coords(mut v: V2, anchor: V2i, scale: f32) -> V2{
 
 fn handle_inputs(ui: &mut Ui) {
 
-    
 
-    
+
+
 
     for e in &ui.frame_events {
         match e {

@@ -303,7 +303,23 @@ impl Drawer2D {
 
         self.texture_square.render(&self.gl);
     }
+/*
 
+    pub fn render_img_ahcored(&mut self, texture_id: TextureId, x: i32, y: i32, radians: f32, size: na::Vector2::<f32>, anchor: na::Vector2::<f32>) {
+        self.texture_shader.shader.set_used();
+         let geom = Geom {
+            x,
+            y,
+            w: size.x,
+            h: size.y
+         };
+
+        let mut scale = na::Matrix4::<f32>::identity();
+        scale[0] = size.x;
+        scale[5] = size.y;
+
+    }
+*/
     /// render the texture in texture_id, at x,y with size and rotation angle in radians
     pub fn render_img_rot(&mut self, texture_id: TextureId, x: i32, y: i32, radians: f32, size: na::Vector2::<f32>) {
 

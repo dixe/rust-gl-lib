@@ -43,9 +43,9 @@ impl Polygon {
         target_poly.vertices.clear();
 
         for i in 0..len {
-            let p1 = polygon_1.vertices[i];
+            let p1 = t_1.map(polygon_1.vertices[i]);
 
-            let p2 = polygon_2.vertices[i];
+            let p2 = t_2.map(polygon_2.vertices[i]);
             let p = p1.lerp(&p2, t);
             target_poly.vertices.push(p)
         }

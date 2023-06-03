@@ -1,5 +1,6 @@
 #![allow(for_loops_over_fallibles)]
 use crate::na;
+use crate::math::clamp01;
 use crate::animations::skeleton::*;
 use std::collections::{HashMap, HashSet};
 
@@ -314,9 +315,6 @@ fn fill_frames(buffers: &Vec::<gltf::buffer::Data>, ani: &gltf::Animation, frame
 
 
 
-pub fn clamp01(t: f32, min: f32, max: f32) -> f32 {
-    f32::max(f32::min(1.0, (t - min) / (max - min)), 0.0)
-}
 
 
 #[cfg(test)]

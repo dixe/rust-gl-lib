@@ -38,7 +38,12 @@ impl Ui {
 
         if self.is_active(id) {
 
-            let mut v = (self.mouse_pos.x - rect.x) as f64 / rect.w as f64 * max_f64;
+            // scale is 0..1 range
+            let scale = ((self.mouse_pos.x - rect.x) as f64) / rect.w as f64;
+
+            // map scale to a value in out range
+            let mut v = scale * (max_f64 - min_f64) + min_f64;
+
 
             v = f64::max(min_f64, f64::min(max_f64, v));
             *item = T::from_f64(v);
