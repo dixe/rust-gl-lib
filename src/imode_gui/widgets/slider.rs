@@ -189,9 +189,6 @@ impl Ui {
         let center_x = rect.x as f64 + ((x - x_min) / (x_max - x_min)) * rect.w as f64;
         let center_y = rect.y as f64 + ((y - y_min) / (y_max - y_min)) * rect.h as f64;
 
-        if self.is_active(id) {
-            println!("center {:?}\n",(center_x, center_y));
-        }
         self.drawer2D.circle(center_x as i32, center_y as i32, 6, Color::Rgb(200, 200, 200));
 
         *x_item == start_x && *y_item == start_y
@@ -207,6 +204,6 @@ fn pos_to_value(mouse_pos: Pos, rect: &Rect, x_min: f64, x_max: f64, y_min: f64,
     let mut y = (mouse_pos.y - rect.y) as f64 / rect.h as f64;
     y = f64::max(0.0, f64::min(y, 1.0));
     y = y * (y_max - y_min) + y_min;
-    println!("{:?}",(x,y));
+
     (x, y)
 }
