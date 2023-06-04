@@ -8,7 +8,7 @@ use crate::shader::{ Shader, TransformationShader, PosColorShader,
                      circle_shader::{self as cs, CircleShader},
                      circle_outline_shader::{self as cos, CircleOutlineShader},
                      texture_shader::{self as ts, TextureShader}};
-use crate::objects::{square, color_square, texture_quad, polygon};
+use crate::objects::{square, color_square, texture_quad, polygon, sprite_sheet};
 use crate::color::Color;
 use crate::helpers::SetupError;
 use crate::text_rendering::font::Font;
@@ -27,6 +27,7 @@ pub struct Drawer2D {
     // render objects
     pub square: square::Square,
     pub texture_square: texture_quad::TextureQuad,
+    pub sprite_sheet_square: sprite_sheet::SpriteSheetSquare,
     pub polygon: polygon::Polygon,
 
     //shaders
@@ -49,15 +50,16 @@ impl Drawer2D {
 
     pub fn new(gl: &gl::Gl, viewport: viewport::Viewport) -> Result<Self, SetupError> {
 
+
         let inner_font = Default::default();
         let font = Font::msdf(gl, inner_font);
-
         let font_cache = FontCache::new(gl.clone(), font.clone(), None);
 
         let text_renderer = TextRenderer::new(gl, font);
         TextRenderer::setup_blend(gl);
 
         let texture_square = texture_quad::TextureQuad::new(gl);
+        let sprite_sheet_square = sprite_sheet::SpriteSheetSquare::new(gl);
         let rrs = RoundedRectShader::new(gl)?;
         let cs = CircleShader::new(gl)?;
 
@@ -79,6 +81,7 @@ impl Drawer2D {
             gl: (*gl).clone(),
             tr: text_renderer,
             viewport,
+            sprite_sheet_square,
             texture_square,
             texture_shader,
             rounded_rect_shader: rrs,
@@ -354,23 +357,36 @@ impl Drawer2D {
 
         self.texture_square.render(&self.gl);
     }
-/*
 
-    pub fn render_img_ahcored(&mut self, texture_id: TextureId, x: i32, y: i32, radians: f32, size: na::Vector2::<f32>, anchor: na::Vector2::<f32>) {
+
+    pub fn render_sprite_sheet_frame<T>(&mut self, texture_id: TextureId, x: i32, y: i32, size: na::Vector2::<T>, sprite: &SheetSubSprite)
+        where T: Numeric + std::fmt::Debug {
+
         self.texture_shader.shader.set_used();
-         let geom = Geom {
+
+        let geom = Geom {
             x,
             y,
             w: size.x,
             h: size.y
-         };
+        };
 
-        let mut scale = na::Matrix4::<f32>::identity();
-        scale[0] = size.x;
-        scale[5] = size.y;
+        let rot = na::Matrix4::<f32>::identity();
+        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport);
+
+        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
+
+        let l = sprite.pixel_l as f32 / sprite.sheet_size.x;
+        let r = sprite.pixel_r as f32 / sprite.sheet_size.x;
+        let t = sprite.pixel_t as f32 / sprite.sheet_size.y;
+        let b = sprite.pixel_b as f32 / sprite.sheet_size.y;
+
+        self.sprite_sheet_square.sub_texture_coords(l, r, t, b);
+        self.sprite_sheet_square.render(&self.gl);
 
     }
-*/
+
+
     /// render the texture in texture_id, at x,y with size and rotation angle in radians
     pub fn render_img_rot(&mut self, texture_id: TextureId, x: i32, y: i32, radians: f32, size: na::Vector2::<f32>) {
 
@@ -418,6 +434,14 @@ impl Drawer2D {
         self.texture_square.render(&self.gl);
 
     }
+}
+
+pub struct SheetSubSprite {
+    pub sheet_size: na::Vector2::<f32>,
+    pub pixel_l: i32,
+    pub pixel_r: i32,
+    pub pixel_t: i32,
+    pub pixel_b: i32
 }
 
 

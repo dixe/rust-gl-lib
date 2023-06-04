@@ -28,3 +28,5 @@ pub mod shadow_map;
 pub mod texture_quad;
 
 pub mod gltf_mesh;
+
+pub mod sprite_sheet;

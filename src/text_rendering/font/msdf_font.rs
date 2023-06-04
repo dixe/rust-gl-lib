@@ -23,7 +23,6 @@ static FONT_IMG: &[u8] = include_bytes!("../../../assets/fonts/msdf_consolas.png
 
 impl Default for MsdfFont {
     fn default() -> Self {
-        println!("{:?}",std::mem::size_of::<MsdfFont>());
         let loaded_img = match image::load_from_memory(FONT_IMG) {
             Ok(img) => img,
             Err(err) => panic!("Load default font, creating image failed with: {}", err)

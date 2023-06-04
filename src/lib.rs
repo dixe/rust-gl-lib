@@ -22,7 +22,7 @@ pub mod camera;
 pub mod text_rendering;
 pub mod texture;
 pub mod color;
-
+pub mod deltatime;
 pub mod helpers;
 
 pub mod math;
@@ -40,6 +40,8 @@ pub mod imode_gui;
 pub mod collision2d;
 
 pub mod particle_system;
+
+pub mod general_animation;
 
 /// Defines point in ScreenBox x,y in \[0.0; 1.0\]
 /// Top left corner is x=0, y=0

@@ -4,7 +4,7 @@ use gl_lib::imode_gui::ui::*;
 use gl_lib::texture::TextureId;
 use deltatime;
 use serde::{Serialize, Deserialize};
-
+use gl_lib::general_animation::*;
 enum Mode {
     Edit(usize),
     Play(f32)
@@ -196,50 +196,7 @@ fn load(path: &str) -> Animation<VertexData> {
     }
 }
 
-// TODO serde serialize and deserialize
-#[derive(Default, Debug, Serialize, Deserialize)]
-struct Animation<T: Animatable> {
-    frames: Vec::<Frame<T>>,
-}
 
-impl<T: Animatable> Animation<T> {
-
-    pub fn at(&self, elapsed: f32) -> Option<T> {
-        let mut skipped = 0.0;
-        for i in 0..self.frames.len() {
-            skipped += self.frames[i].frame_seconds;
-            if elapsed < skipped {
-
-                let f1 = &self.frames[i];
-
-                let f2 = if i == self.frames.len() - 1 {
-                    &self.frames[0]
-                } else {
-                    &self.frames[i + 1]
-                };
-
-                // how far into the frame are we? Between 0 and 1
-                let start = skipped - f1.frame_seconds;
-                let end = skipped;
-
-                let t = math::clamp01(elapsed,start, end);
-
-                return Some(T::lerp(&f1.data, &f2.data, t));
-
-            }
-        }
-        return None;
-    }
-}
-
-
-
-
-#[derive(Default, Debug, Serialize, Deserialize)]
-struct Frame<T: Animatable + Copy> {
-    data:T,
-    frame_seconds: f32,
-}
 
 #[derive(Default, Debug, Serialize, Deserialize, Copy, Clone)]
 struct VertexData {
@@ -258,13 +215,6 @@ impl Animatable for VertexData {
         }
     }
 }
-
-trait Animatable : Copy {
-    fn lerp(a: &Self, b: &Self, t: f32) -> Self;
-}
-
-
-
 
 struct Player {
     pos: V2,

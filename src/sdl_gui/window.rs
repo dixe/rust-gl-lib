@@ -4,7 +4,7 @@ use crate::gl::{self, viewport};
 use crate::na;
 use crate::text_rendering::{text_renderer, font::*};
 use failure;
-use deltatime;
+use crate::deltatime;
 use sdl2;
 use crate::sdl_gui::components::container::{ComponentContainer, HandleRes};
 use crate::sdl_gui::ui::Ui;
