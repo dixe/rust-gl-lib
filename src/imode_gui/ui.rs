@@ -5,12 +5,11 @@ use crate::shader::{ TransformationShader, rounded_rect_shader::{self as rrs, Ro
 use crate::objects::square;
 use sdl2::event;
 use crate::color::Color;
-use crate::imode_gui::numeric::Numeric;
 use crate::imode_gui::style::*;
 use crate::text_rendering::font::{Font, FntFont};
 use super::*;
 use std::collections::HashMap;
-
+use crate::math::numeric::Numeric;
 
 #[derive(Eq, Hash, PartialEq, Clone, Copy, Debug, Default)]
 pub struct CtxId {

@@ -3,15 +3,20 @@ use crate::na::{self, Point3, Vector3, Translation3, geometry::Rotation, Vector2
 use crate::text_rendering::text_renderer::{TextRenderer, TextRenderBox};
 use crate::{gl::{self, viewport}, ScreenBox, ScreenCoords};
 use crate::text_rendering::text_renderer::{TextAlignment, TextAlignmentX,TextAlignmentY};
-use crate::shader::{ Shader, TransformationShader, PosColorShader, rounded_rect_shader::{self as rrs, RoundedRectShader}, circle_shader::{self as cs, CircleShader}, texture_shader::{self as ts, TextureShader}};
+use crate::shader::{ Shader, TransformationShader, PosColorShader,
+                     rounded_rect_shader::{self as rrs, RoundedRectShader},
+                     circle_shader::{self as cs, CircleShader},
+                     circle_outline_shader::{self as cos, CircleOutlineShader},
+                     texture_shader::{self as ts, TextureShader}};
 use crate::objects::{square, color_square, texture_quad, polygon};
 use crate::color::Color;
 use crate::helpers::SetupError;
 use crate::text_rendering::font::Font;
 use crate::text_rendering::font_cache::FontCache;
-use crate::imode_gui::numeric::Numeric;
 use crate::texture::TextureId;
 use crate::imode_gui::viewport::Viewport;
+use crate::math::numeric::Numeric;
+
 
 pub struct Drawer2D {
     // general
@@ -30,6 +35,7 @@ pub struct Drawer2D {
     pub color_square_shader: Box::<Shader>,
     pub color_square_h_line_shader: Box::<Shader>,
     pub circle_shader: CircleShader,
+    pub circle_outline_shader: CircleOutlineShader,
     pub texture_shader: TextureShader,
     pub polygon_shader: Box::<Shader>,
     polygon_vertex_buffer: Vec::<f32>,
@@ -54,6 +60,8 @@ impl Drawer2D {
         let texture_square = texture_quad::TextureQuad::new(gl);
         let rrs = RoundedRectShader::new(gl)?;
         let cs = CircleShader::new(gl)?;
+
+        let cos = CircleOutlineShader::new(gl)?;
         let color_square_shader = Box::new(color_square::ColorSquare::default_shader(&gl)?);
 
         let texture_shader = TextureShader::new(gl)?;
@@ -78,6 +86,7 @@ impl Drawer2D {
             polygon,
             polygon_shader,
             circle_shader: cs,
+            circle_outline_shader: cos,
             color_square_shader,
             color_square,
             polygon_indices_buffer: vec![],
@@ -172,6 +181,50 @@ impl Drawer2D {
 
         self.square.render(&self.gl);
     }
+
+
+    pub fn circle_outline<T1, T2, T3, T4>(&self, center_x_t: T1, center_y_t: T2, r_outer_t: T3, r_inner_t: T4, color: Color)
+    where T1: Numeric,
+          T2: Numeric,
+          T3: Numeric,
+          T4: Numeric,
+    {
+
+
+        let center_x = center_x_t.to_f64();
+        let center_y = center_y_t.to_f64();
+        let r_outer = r_outer_t.to_f64();
+
+        let r_inner = r_inner_t.to_f32();
+
+        self.circle_outline_shader.shader.set_used();
+
+        let geom = Geom {
+            x: center_x - r_outer,
+            y: center_y - r_outer,
+            w: r_outer * 2.0,
+            h: r_outer * 2.0,
+        };
+
+        let rot = na::Matrix4::<f32>::identity();
+        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport);
+
+
+        self.circle_outline_shader.set_transform(transform);
+
+
+        self.circle_outline_shader.set_uniforms(cos::Uniforms { color,
+                                                       pixel_height: geom.h.to_f32(),
+                                                       pixel_width: geom.w.to_f32(),
+                                                       radius_outer: r_outer as f32,
+                                                       radius_inner: r_inner
+
+        });
+
+
+        self.square.render(&self.gl);
+    }
+
 
 
     pub fn rounded_rect<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&self, x: T1, y: T2, w: T3, h: T4) {

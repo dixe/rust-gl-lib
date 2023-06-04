@@ -1,6 +1,6 @@
 use super::*;
-use crate::imode_gui::numeric::Numeric;
 use core::ops::Range;
+use crate::math::numeric::Numeric;
 
 impl Ui {
 

@@ -142,6 +142,10 @@ fn edit_vertex_data(ui: &mut Ui, data: &mut VertexData, offset: V2, sprite: &Spr
     ui.drag_point(&mut p, 5.0);
     data.translation = p.v2() - offset - center;
 
+
+    // angle drag point
+    ui.angle_drag_point(&absolute, &mut data.rotation, 5.0, 1.0);
+
     ui.label("Rotation");
     ui.newline();
     ui.slider(&mut data.rotation, -std::f32::consts::PI, std::f32::consts::PI);

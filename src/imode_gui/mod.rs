@@ -16,8 +16,6 @@ use drawer2d::*;
 
 pub mod widgets;
 
-pub mod numeric;
-
 pub mod style;
 
 pub type Pos = na::Vector2::<i32>;

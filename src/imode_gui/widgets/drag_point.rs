@@ -1,3 +1,5 @@
+use crate::math::*;
+use crate::math::numeric::Numeric;
 use super::*;
 
 impl Ui {
@@ -38,7 +40,6 @@ impl Ui {
 
     pub fn drag_point_no_draw(&mut self, pos: &mut Pos, r: f64) -> (WidgetStatus, bool) {
 
-        // figure out button layout
         let id = self.next_id();
 
         let center = na::Vector2::new(pos.x as f64, pos.y as f64);
@@ -71,5 +72,36 @@ impl Ui {
         }
 
         (status, activated)
+    }
+
+    pub fn angle_drag_point<T1, T2, T3, T4>(&mut self, center_t: &na::Vector2::<T1>, angle_t: &mut T2, r: T3, thickness: T4)
+    where T1: Numeric + std::fmt::Debug, // debug required for .x and .y to worko
+          T2: Numeric,
+          T3: Numeric,
+          T4: Numeric
+    {
+
+        let id = self.next_id();
+
+        let center = na::Vector2::new(center_t.x.to_f64(), center_t.y.to_f64());
+
+        let dist = 40.0;
+
+        let angle = std::f64::consts::PI/2.0 + angle_t.to_f64();
+        let dir = na::Vector2::new(angle.cos(), -angle.sin());
+
+
+        let pos = (center.v2f64() + dir * dist).v2i();
+
+        let r_inner = dist - thickness.to_f64();
+
+
+        // outline
+        let color = Color::Rgb(0, 0, 0);
+        self.drawer2D.circle_outline(center.x, center.y, dist, r_inner, color);
+
+        // drag point
+        self.drawer2D.circle(pos.x, pos.y, r, self.style.button.color);
+
     }
 }
