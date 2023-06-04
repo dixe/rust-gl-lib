@@ -183,7 +183,7 @@ impl Drawer2D {
     }
 
 
-    pub fn circle_outline<T1, T2, T3, T4>(&self, center_x_t: T1, center_y_t: T2, r_outer_t: T3, r_inner_t: T4, color: Color)
+    pub fn circle_outline<T1, T2, T3, T4>(&self, center_x_t: T1, center_y_t: T2, r_t: T3, thickness: T4, color: Color)
     where T1: Numeric,
           T2: Numeric,
           T3: Numeric,
@@ -193,17 +193,15 @@ impl Drawer2D {
 
         let center_x = center_x_t.to_f64();
         let center_y = center_y_t.to_f64();
-        let r_outer = r_outer_t.to_f64();
-
-        let r_inner = r_inner_t.to_f32();
+        let r = r_t.to_f64();
 
         self.circle_outline_shader.shader.set_used();
 
         let geom = Geom {
-            x: center_x - r_outer,
-            y: center_y - r_outer,
-            w: r_outer * 2.0,
-            h: r_outer * 2.0,
+            x: center_x - r,
+            y: center_y - r,
+            w: r * 2.0,
+            h: r * 2.0,
         };
 
         let rot = na::Matrix4::<f32>::identity();
@@ -214,10 +212,10 @@ impl Drawer2D {
 
 
         self.circle_outline_shader.set_uniforms(cos::Uniforms { color,
-                                                       pixel_height: geom.h.to_f32(),
-                                                       pixel_width: geom.w.to_f32(),
-                                                       radius_outer: r_outer as f32,
-                                                       radius_inner: r_inner
+                                                                pixel_height: geom.h.to_f32(),
+                                                                pixel_width: geom.w.to_f32(),
+                                                                radius: r as f32,
+                                                                thickness: thickness.to_f32()
 
         });
 

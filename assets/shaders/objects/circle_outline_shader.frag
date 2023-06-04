@@ -11,12 +11,12 @@ uniform vec4 u_color;
 
 uniform float pixel_width;
 uniform float pixel_height;
-uniform float radius_outer;
-uniform float radius_inner;
+uniform float radius;
+uniform float thickness;
 
-float circle_outline(vec2 p, float thickness)
+float circle_outline(vec2 p)
 {
-  return max((radius_outer - thickness) - length(p), length(p) - radius_outer);
+  return max((radius - thickness) - length(p), length(p) - radius);
 }
 
 void main()
@@ -33,7 +33,7 @@ void main()
 
   vec2 uv = vec2(screen_x, screen_y);
 
-  float dist = circle_outline(uv, 1.0);
+  float dist = circle_outline(uv);
 
   float alpha = (1.0 - smoothstep(0.0, 1.0, dist));
 

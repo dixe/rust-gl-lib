@@ -63,6 +63,7 @@ impl Ui {
             }
         }
 
+
         if self.is_active(id) {
             *pos = self.mouse_pos;
             status = WidgetStatus::Active;
@@ -76,32 +77,36 @@ impl Ui {
 
     pub fn angle_drag_point<T1, T2, T3, T4>(&mut self, center_t: &na::Vector2::<T1>, angle_t: &mut T2, r: T3, thickness: T4)
     where T1: Numeric + std::fmt::Debug, // debug required for .x and .y to worko
-          T2: Numeric,
+          T2: Numeric + std::ops::Neg<Output = T2>,
           T3: Numeric,
           T4: Numeric
     {
-
-        let id = self.next_id();
 
         let center = na::Vector2::new(center_t.x.to_f64(), center_t.y.to_f64());
 
         let dist = 40.0;
 
-        let angle = std::f64::consts::PI/2.0 + angle_t.to_f64();
-        let dir = na::Vector2::new(angle.cos(), -angle.sin());
+        let angle = -angle_t.to_f64();
+        let dir = na::Vector2::new(angle.cos(), angle.sin());
 
+        let mut pos = (center + dir * dist).v2i();
 
-        let pos = (center.v2f64() + dir * dist).v2i();
+        let (status, _) = self.drag_point_no_draw(&mut pos, r.to_f64());
 
-        let r_inner = dist - thickness.to_f64();
-
+        let diff = (pos.v2f64() - center).normalize();
+        if status == WidgetStatus::Active {
+            *angle_t = - T2::from_f64(diff.y.atan2(diff.x));
+        }
+        // map new pos to a point on the circle
+        pos = (center + diff * dist).v2i();
 
         // outline
         let color = Color::Rgb(0, 0, 0);
-        self.drawer2D.circle_outline(center.x, center.y, dist, r_inner, color);
+        self.drawer2D.circle_outline(center.x, center.y, dist, thickness, color);
 
+        let p = pos.v2i();
         // drag point
-        self.drawer2D.circle(pos.x, pos.y, r, self.style.button.color);
+        self.drawer2D.circle(p.x, p.y, r, self.style.button.color);
 
     }
 }

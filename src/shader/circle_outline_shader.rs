@@ -30,9 +30,9 @@ impl CircleOutlineShader {
 
         self.shader.set_f32(&self.gl, "pixel_width", uni.pixel_width);
 
-        self.shader.set_f32(&self.gl, "radius_outer", uni.radius_outer);
+        self.shader.set_f32(&self.gl, "radius", uni.radius);
 
-        self.shader.set_f32(&self.gl, "radius_inner", uni.radius_inner);
+        self.shader.set_f32(&self.gl, "thickness", uni.thickness);
     }
 }
 
@@ -41,8 +41,8 @@ pub struct Uniforms {
     pub color: Color,
     pub pixel_height : f32,
     pub pixel_width: f32,
-    pub radius_outer: f32,
-    pub radius_inner: f32
+    pub radius: f32,
+    pub thickness: f32
 }
 
 impl TransformationShader for CircleOutlineShader {
