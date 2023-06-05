@@ -70,9 +70,9 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
 
     for json in &json_files {
         if png_files.contains(json) {
-            res += &format!("pub {json}: gl_lib::animations::sheet_animation::SheetAnimation,\n");
+            res += &format!("pub {}: gl_lib::animations::sheet_animation::SheetAnimation,\n", json.to_lowercase());
             names.insert(json.clone());
-            println!("{:?}", json);
+
         }
     }
 
@@ -85,17 +85,13 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
     res += &format!("impl {name} {{\n");
     add_load_all(&mut res, &name, &names);
 
-    add_load_by_name(&mut res);
+    res += include_str!("E:/repos/rust-gl-lib/gl-lib_proc/src/load_by_name.rs");
 
-
-    println!("{}", res);
+    // pub fn {
+    res += "}\n";
 
     res.parse().unwrap()
 
-}
-
-fn add_load_by_name(res: &mut String) {
-    *res += include_str!("E:/repos/rust-gl-lib/gl-lib_proc/src/load_by_name.rs");
 }
 
 fn add_load_all(res: &mut String, name: &str, names: &std::collections::HashSet::<String>) {
@@ -103,11 +99,13 @@ fn add_load_all(res: &mut String, name: &str, names: &std::collections::HashSet:
 
 
     *res += &format!("pub fn load_all(ui: &mut gl_lib::imode_gui::ui::Ui, path: &str) -> {name} {{\n");
-
+    *res += &format!("let mut id = 1;\n");
     *res += &format!("{name} {{\n ");
 
+
+
     for field_name in names {
-        *res += &format!("{field_name}: {name}::load_by_name(ui, &std::path::Path::new(path).join(\"{field_name}.json\")),\n")
+        *res += &format!("{}: {name}::load_by_name(ui, &std::path::Path::new(path).join(\"{field_name}.json\"), &mut id),\n", field_name.to_lowercase())
 
     }
 

@@ -1,14 +1,16 @@
 use gl_lib::{gl, helpers, na};
+use gl_lib_proc::sheet_assets;
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::Pos;
 use gl_lib::general_animation::{Animation, Animatable, Frame};
 use gl_lib::animations::sheet_animation::{SheetAnimation, Sprite, SheetAnimationPlayer};
-
+use gl_lib::typedef::*;
 
 
 // generate assets struct
-sheet_assets!(Assests "examples/2d_animation_player/assets/")
+sheet_assets!{Assets "examples/2d_animation_player/assets/"}
+
 
 
 fn main() -> Result<(), failure::Error> {
@@ -26,15 +28,15 @@ fn main() -> Result<(), failure::Error> {
         gl.ClearColor(0.9, 0.9, 0.9, 1.0);
     }
 
-
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let assets = Assets::load_all();
+    let assets = Assets::load_all(&mut ui, "examples/2d_animation_player/assets/");
 
-    let mut player = SheetAnimationPlayer::new(&assets);
+    let mut player = SheetAnimationPlayer::new();
+
+    let anim_id = player.start(&assets.attack, 3.0, true);
 
 
-    let anim_id = player.start(assets.attack.id);
 
     let mut pos = V2i::new(300, 400);
 
@@ -45,9 +47,7 @@ fn main() -> Result<(), failure::Error> {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
         ui.consume_events(&mut event_pump);
-
-        delta_time.update();
-        let dt = delta_time.time();
+        let dt = ui.dt();
 
         // drag animation to be where we want
         ui.drag_point(&mut pos, 10.0);
@@ -57,9 +57,7 @@ fn main() -> Result<(), failure::Error> {
 
 
         // draw animation frame at location
-        player.draw(pos, id);
-
-
+        player.draw(&mut ui.drawer2D, pos, anim_id);
 
         window.gl_swap_window();
     }

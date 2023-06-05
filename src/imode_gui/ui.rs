@@ -10,6 +10,7 @@ use crate::text_rendering::font::{Font, FntFont};
 use super::*;
 use std::collections::HashMap;
 use crate::math::numeric::Numeric;
+use crate::deltatime;
 
 #[derive(Eq, Hash, PartialEq, Clone, Copy, Debug, Default)]
 pub struct CtxId {
@@ -30,6 +31,7 @@ pub struct Window {
 }
 
 pub struct Ui {
+    pub deltatime: deltatime::Deltatime,
     pub drawer2D: Drawer2D,
     pub mouse_pos: Pos,
     pub mouse_diff: Pos,
@@ -74,9 +76,10 @@ impl Ui {
         unsafe {
             //drawer2D.gl.Enable(gl::DEPTH_TEST);
         }
-
+        let mut deltatime = deltatime::Deltatime::new();
 
         Self {
+            deltatime,
             drawer2D,
             mouse_pos: Pos::new(0,0),
             ctrl: false,
@@ -93,6 +96,10 @@ impl Ui {
             next_window_id: 1,
             active_window: None,
         }
+    }
+
+    pub fn dt(&self) -> f32 {
+        self.deltatime.time()
     }
 
     pub fn set_hot(&mut self, id: Id) {
@@ -231,6 +238,7 @@ impl Ui {
     // TODO: Either return unused events only. Or return all events along with bool to indicate if the event is used/consumed by gui
     pub fn consume_events(&mut self, event_pump: &mut sdl2::EventPump) -> &[event::Event] {
 
+        self.deltatime.update();
         self.mouse_down = false;
         self.mouse_up = false;
 

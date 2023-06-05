@@ -1,6 +1,5 @@
-fn load_by_name(ui: &mut Ui, path: &std::path::PathBuf) -> gl_lib::animations::sheet_animation::SheetAnimation {
+fn load_by_name(ui: &mut Ui, path: &std::path::PathBuf, id: &mut usize) -> gl_lib::animations::sheet_animation::SheetAnimation {
 
-    println!("Load from {:?}", path);
     let anim_json = std::fs::read_to_string(path);
     let sheet_anim : gl_lib::animations::sheet_animation::SheetArrayAnimation = match anim_json {
         Ok(json) => {
@@ -18,7 +17,7 @@ fn load_by_name(ui: &mut Ui, path: &std::path::PathBuf) -> gl_lib::animations::s
     base_path.pop();
     base_path.push(&sheet_anim.meta.image);
 
-    let img = image::open(&base_path).unwrap().into_rgba8();;
+    let img = image::open(&base_path).unwrap().into_rgba8();
 
     let aspect = img.height() as f32 / img.width() as f32;
     let texture_id = ui.register_image(&img);
@@ -45,8 +44,9 @@ fn load_by_name(ui: &mut Ui, path: &std::path::PathBuf) -> gl_lib::animations::s
         texture_id,
         size: na::Vector2::new(sheet_anim.meta.size.w as f32, sheet_anim.meta.size.h as f32),
         animation: gl_lib::general_animation::Animation { frames },
+        id: *id
     };
 
+    *id += 1;
     anim
-}
 }

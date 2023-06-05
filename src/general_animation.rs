@@ -11,6 +11,10 @@ pub struct Animation<T: Animatable> {
 impl<T: Animatable> Animation<T> {
 
 
+    pub fn frame(&self, frame: usize) -> T {
+        self.frames[frame].data
+    }
+
     pub fn total_seconds(&self) -> f32 {
         let mut seconds = 0.0;
         for i in 0..self.frames.len() {

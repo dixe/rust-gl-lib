@@ -24,7 +24,7 @@ pub mod texture;
 pub mod color;
 pub mod deltatime;
 pub mod helpers;
-
+pub mod typedef;
 
 pub mod math;
 
