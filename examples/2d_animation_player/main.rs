@@ -6,6 +6,7 @@ use serde::{Serialize, Deserialize};
 mod sheet_array_animation;
 use sheet_array_animation as saa;
 use gl_lib::general_animation::{Animation, Animatable, Frame};
+use gl_lib::animations::sheet_animation::{SheetAnimation, Sprite};
 
 pub type V2 = na::Vector2::<f32>;
 pub type V2i = na::Vector2::<i32>;
@@ -38,7 +39,7 @@ fn main() -> Result<(), failure::Error> {
     let mut assets = load_assets(&mut ui);
 
 
-    let mut pixel_h = 100;
+    let mut scale = 3.0;
     let mut elapsed = 0.0;
 
     let mut cur_anim_option = Some(ActiveAnimation {
@@ -49,7 +50,7 @@ fn main() -> Result<(), failure::Error> {
     });
 
     let mut pos = V2i::new(300, 400);
-    let mut marker =V2i::new(400, 500);
+    let mut marker = V2i::new(400, 500);
     let mut animation_status = AnimationStatus::Paused;
     loop {
 
@@ -90,8 +91,8 @@ fn main() -> Result<(), failure::Error> {
             ui.slider(&mut elapsed, 0.0, cur_anim.sheet.animation.total_seconds());
 
             ui.newline();
-            ui.label("Pixel_h");
-            ui.slider(&mut pixel_h, 10, 150);
+            ui.label("Scale");
+            ui.slider(&mut scale, 0.3, 5.0);
 
 
             if animation_status != AnimationStatus::Running {
@@ -112,14 +113,14 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-            render_full_sheet(&mut ui, &cur_anim.sheet, pixel_h);
+            render_full_sheet(&mut ui, &cur_anim.sheet, scale);
 
-            render_sheet_frame(&mut ui, &cur_anim.sheet, 0, pixel_h);
+            render_sheet_frame(&mut ui, &cur_anim.sheet, 0, scale);
 
 
             ui.drag_point(&mut pos, 10.0);
 
-            cur_anim.draw(&mut ui, pixel_h, pos);
+            cur_anim.draw(&mut ui, scale, pos);
             ui.drag_point(&mut marker, 5.0);
         }
         window.gl_swap_window();
@@ -161,12 +162,10 @@ impl<'a> ActiveAnimation<'a> {
         AnimationStatus::Running
     }
 
-    pub fn draw(&self, ui: &mut Ui, pixel_h: i32, pos: V2i) {
+    pub fn draw(&self, ui: &mut Ui, scale: f32, pos: V2i) {
 
         if let Some(s) = self.cur_sprite {
 
-            let scale = 3.0;//pixel_h as f32 / self.sheet.size.y;
-            println!("{:?}", scale);
             let sprite = SheetSubSprite {
                 sheet_size: self.sheet.size,
                 pixel_l: s.x,
@@ -176,7 +175,6 @@ impl<'a> ActiveAnimation<'a> {
             };
 
             let size = V2i::new(s.w, s.h).v2() * scale;
-            println!("{:?}", size);
 
 
             ui.drawer2D.render_sprite_sheet_frame(self.sheet.texture_id, pos.x, pos.y, size, &sprite);
@@ -191,10 +189,9 @@ enum AnimationStatus {
     Finished
 }
 
-fn render_sheet_frame(ui: &mut Ui, sheet: &SheetAnimation, frame: usize, pixel_h: i32) {
+fn render_sheet_frame(ui: &mut Ui, sheet: &SheetAnimation, frame: usize, scale: f32) {
 
     let f = &sheet.animation.frames[frame].data;
-    let scale = pixel_h as f32 / sheet.size.y;
     let sprite = SheetSubSprite {
         sheet_size: sheet.size,
         pixel_l: f.x,
@@ -206,10 +203,9 @@ fn render_sheet_frame(ui: &mut Ui, sheet: &SheetAnimation, frame: usize, pixel_h
     ui.drawer2D.render_sprite_sheet_frame(sheet.texture_id, 300, 300, V2i::new(f.w, f.h).v2() * scale, &sprite);
 }
 
-fn render_sheet_elapsed(ui: &mut Ui, sheet: &SheetAnimation, elapsed: f32, pixel_h: i32) {
+fn render_sheet_elapsed(ui: &mut Ui, sheet: &SheetAnimation, elapsed: f32, scale: f32) {
 
     if let Some(f) = &sheet.animation.at(elapsed) {
-        let scale = pixel_h as f32 / sheet.size.y;
         let sprite = SheetSubSprite {
             sheet_size: sheet.size,
             pixel_l: f.x,
@@ -223,9 +219,7 @@ fn render_sheet_elapsed(ui: &mut Ui, sheet: &SheetAnimation, elapsed: f32, pixel
 }
 
 
-fn render_full_sheet(ui: &mut Ui, sheet: &SheetAnimation, pixel_h: i32) {
-
-    let scale = pixel_h as f32 / sheet.size.y;
+fn render_full_sheet(ui: &mut Ui, sheet: &SheetAnimation, scale: f32) {
 
     let sprite = SheetSubSprite {
         sheet_size: sheet.size,
@@ -296,31 +290,4 @@ fn load_by_name(ui: &mut Ui, name: &str) -> SheetAnimation {
     };
 
     anim
-}
-
-#[derive(Debug)]
-struct SheetAnimation {
-    texture_id: TextureId,
-    animation: Animation<Sprite>,
-    size: V2,
-}
-
-
-#[derive(Debug, Clone, Copy)]
-struct Sprite
-{
-    x: i32,
-    y: i32,
-    w: i32,
-    h: i32,
-}
-
-
-impl Animatable for Sprite {
-
-    // pixel art spritesheet animation don't interpolat between frames
-    fn lerp(a: &Self, _b: &Self, _t: f32) -> Self {
-        *a
-    }
-
 }

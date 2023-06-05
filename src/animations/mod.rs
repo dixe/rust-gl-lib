@@ -7,6 +7,7 @@ use std::collections::{HashMap, HashSet};
 pub mod skeleton;
 mod types;
 
+pub mod sheet_animation;
 pub use self::types::*;
 
 pub type MeshName = String;

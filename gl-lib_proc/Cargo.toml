@@ -1,0 +1,12 @@
+[package]
+name = "gl_lib_proc"
+version = "0.1.0"
+authors = ["Nikolaj Østergaard <niko.fris@gmail.com>"]
+edition = "2018"
+license = "MIT"
+
+[dependencies]
+litrs = "0.4.0"
+
+[lib]
+proc-macro = true

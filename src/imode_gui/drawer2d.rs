@@ -363,7 +363,6 @@ impl Drawer2D {
         where T: Numeric + std::fmt::Debug {
 
         self.texture_shader.shader.set_used();
-
         let geom = Geom {
             x,
             y,
@@ -371,8 +370,34 @@ impl Drawer2D {
             h: size.y
         };
 
-        let rot = na::Matrix4::<f32>::identity();
-        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport);
+
+        let h = size.y.to_f32();
+        let w = size.x.to_f32();
+        // Out target render square is defines with upper left (-0.5, 0.5) lower right (0.5,-0.5)
+
+        // First we want to scale it to the target size
+        // its a unit square, so just multiply with w and h
+        let mut scale = na::Matrix4::<f32>::identity();
+        scale[0] = w;
+        scale[5] = h;
+
+
+        // translate so that bottom middle of image is at x,y
+        // Invert y since sdl is (0,0) in top left. Our Mapping has (0,0) in lower left
+
+        let t = Translation3::new(x as f32, self.viewport.h as f32 - y as f32 + h /2.0, 0.0);
+
+        // Create projectionmmatrix to go into ndc
+        let proj = Orthographic3::new(0.0, self.viewport.w as f32, 0.0, self.viewport.h as f32, -10.0, 100.0);
+
+
+        let transform = proj.to_homogeneous() * t.to_homogeneous() * scale;
+
+        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
+
+
+
+
 
         self.texture_shader.setup(ts::Uniforms { texture_id, transform });
 
