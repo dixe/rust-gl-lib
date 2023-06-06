@@ -101,8 +101,13 @@ impl Ui{
         let x_off = if self.is_active(id) {0} else {0};
         let y_off = if self.is_active(id) {0} else {0};
 
+
+        // black border
         if !self.is_active(id) {
+            let z = self.drawer2D.z;
+            self.drawer2D.z = z - 0.1;
             self.drawer2D.rounded_rect_color(rect.x - 1, rect.y - 1 , rect.w + 2, rect.h + 2, Color::Rgb(0,0,0));
+            self.drawer2D.z = z;
         }
 
 

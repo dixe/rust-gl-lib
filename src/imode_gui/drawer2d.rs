@@ -44,6 +44,8 @@ pub struct Drawer2D {
 
     // fonts
     pub font_cache: FontCache,
+
+    pub z: f32
 }
 
 impl Drawer2D {
@@ -94,7 +96,9 @@ impl Drawer2D {
             color_square,
             polygon_indices_buffer: vec![],
             polygon_vertex_buffer: vec![],
-            color_square_h_line_shader
+            color_square_h_line_shader,
+            z: 0.0
+
         })
     }
 
@@ -147,8 +151,7 @@ impl Drawer2D {
 
         let geom = Geom { x, y, w, h };
 
-        let rot = na::Matrix4::<f32>::identity();
-        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport);
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
         self.color_square_shader.set_mat4(&self.gl, "transform", transform);
 
         self.color_square.render(&self.gl);
@@ -168,8 +171,7 @@ impl Drawer2D {
             h: r * 2.0,
         };
 
-        let rot = na::Matrix4::<f32>::identity();
-        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport);
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
 
 
         self.circle_shader.set_transform(transform);
@@ -207,8 +209,7 @@ impl Drawer2D {
             h: r * 2.0,
         };
 
-        let rot = na::Matrix4::<f32>::identity();
-        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport);
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
 
 
         self.circle_outline_shader.set_transform(transform);
@@ -265,8 +266,7 @@ impl Drawer2D {
 
         let geom = Geom { x, y, w, h };
 
-        let rot = na::Matrix4::<f32>::identity();
-        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport);
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
 
         self.color_square_h_line_shader.set_mat4(&self.gl, "transform", transform);
 
@@ -280,8 +280,7 @@ impl Drawer2D {
 
         let geom = Geom { x, y, w, h };
 
-        let rot = na::Matrix4::<f32>::identity();
-        let transform = unit_square_transform_matrix(&geom, rot,  &self.viewport);
+        let transform = unit_square_transform_matrix(&geom, 0.0,  &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
 
 
         self.rounded_rect_shader.set_transform(transform);
@@ -351,8 +350,7 @@ impl Drawer2D {
             h: size.y
         };
 
-        let rot = na::Matrix4::<f32>::identity();
-        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport);
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
         self.texture_shader.setup(ts::Uniforms { texture_id, transform });
 
         self.texture_square.render(&self.gl);
@@ -371,34 +369,7 @@ impl Drawer2D {
         };
 
 
-        let h = size.y.to_f32();
-        let w = size.x.to_f32();
-        // Out target render square is defines with upper left (-0.5, 0.5) lower right (0.5,-0.5)
-
-        // First we want to scale it to the target size
-        // its a unit square, so just multiply with w and h
-        let mut scale = na::Matrix4::<f32>::identity();
-        scale[0] = w;
-        scale[5] = h;
-
-
-        // translate so that bottom middle of image is at x,y
-        // Invert y since sdl is (0,0) in top left. Our Mapping has (0,0) in lower left
-
-        let t = Translation3::new(x as f32, self.viewport.h as f32 - y as f32 + h /2.0, 0.0);
-
-        // Create projectionmmatrix to go into ndc
-        let proj = Orthographic3::new(0.0, self.viewport.w as f32, 0.0, self.viewport.h as f32, -10.0, 100.0);
-
-
-        let transform = proj.to_homogeneous() * t.to_homogeneous() * scale;
-
-        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
-
-
-
-
-
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(size.x.to_f32() / 2.0, size.y.to_f32()), self.z);
         self.texture_shader.setup(ts::Uniforms { texture_id, transform });
 
         let l = sprite.pixel_l as f32 / sprite.sheet_size.x;
@@ -425,32 +396,7 @@ impl Drawer2D {
         };
 
 
-        // Out target render square is defines with upper left (-0.5, 0.5) lower right (0.5,-0.5)
-
-        // First we want to scale it to the target size
-        // its a unit square, so just multiply with w and h
-        let mut scale = na::Matrix4::<f32>::identity();
-        scale[0] = size.x;
-        scale[5] = size.y;
-
-        // we want to rotate the specified angle
-        let rot = Rotation::from_euler_angles(0.0, 0.0, radians);
-
-        // translate so that our start pos is at x0, y0
-        // Invert y since sdl is (0,0) in top left. Our Mapping has (0,0) in lower left
-        let t = Translation3::new(x as f32 + size.x/2.0, self.viewport.h as f32 - y as f32 - size.y/2.0, 0.0);
-
-        // Create projectionmmatrix to go into ndc
-        let proj = Orthographic3::new(0.0, self.viewport.w as f32, 0.0, self.viewport.h as f32, -10.0, 100.0);
-
-
-        let transform = proj.to_homogeneous() * t.to_homogeneous() * rot.to_homogeneous()  * scale;
-
-        let t1 =  t.to_homogeneous() * rot.to_homogeneous()  * scale;
-        let v = t1 * na::Vector4::new(0.5, 0.5, 0.0, 1.0);
-        let v1 = t1 * na::Vector4::new(-0.5, -0.5, 0.0, 1.0);
-        let v2 = t1 * na::Vector4::new(0.5, 0.5, 0.0, 1.0);
-
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
 
         self.texture_shader.setup(ts::Uniforms { texture_id, transform });
 
@@ -460,6 +406,9 @@ impl Drawer2D {
 
     }
 }
+
+
+
 
 pub struct SheetSubSprite {
     pub sheet_size: na::Vector2::<f32>,
@@ -535,32 +484,37 @@ pub fn unit_line_transform<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T
 
 }
 
-fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(geom: &Geom<T1, T2, T3, T4>, rotation: na::Matrix4::<f32>, viewport: &viewport::Viewport) -> na::Matrix4::<f32> {
+fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric + std::fmt::Debug>(
+    geom: &Geom<T1, T2, T3, T4>,
+    radians: f32,
+    viewport: &viewport::Viewport,
+    anchor: na::Vector2::<T5>, z: f32) -> na::Matrix4::<f32> {
 
-    let x = geom.x.to_f64() * 2.0 / viewport.w as f64- 1.0;
-    let y = -geom.y.to_f64() * 2.0 / viewport.h as f64 + 1.0;
-    let h = geom.h.to_f64();
-    let w = geom.w.to_f64();
+    let mut scale = na::Matrix4::<f32>::identity();
+    scale[0] = geom.w.to_f32();
+    scale[5] = geom.h.to_f32();
 
-    let x_scale = w  / viewport.w as f64 * 2.0;
-    let y_scale = h  / viewport.h as f64 * 2.0;
+    // we want to rotate the specified angle
+    let rot = Rotation::from_euler_angles(0.0, 0.0, radians);
 
-    let mut model = na::Matrix4::<f32>::identity();
 
-    // Scale to size
-    model[0] = x_scale as f32;
-    model[5] = y_scale as f32;
+    // Unit len square and center at 0.0. So for anchor 0,0 as top left corner
+    // move 0.5 * x_scale along x, and - 0.5 * y_scale along y
+    // Negative since sdl inverse coordinate system
 
-    // move to position
 
-    let x_move = x + x_scale * 0.5;
-    let y_move = y - y_scale * 0.5;
+    let x_offset = 0.5 * geom.w.to_f32() - anchor.x.to_f32();
+    let y_offset = -0.5 * geom.h.to_f32() + anchor.y.to_f32();;
 
-    let trans = Translation3::new(x_move as f32, y_move as f32, 0.0);
 
-    model = trans.to_homogeneous() * rotation * model;
+    // translate so that our start pos is at x0, y0
+    // Invert y since sdl is (0,0) in top left. Our Mapping has (0,0) in lower left
+    let t = Translation3::new(geom.x.to_f32() + x_offset, viewport.h as f32 - geom.y.to_f32() + y_offset, z);
 
-    model
+    let proj = Orthographic3::new(0.0, viewport.w as f32, 0.0, viewport.h as f32, -10.0, 100.0);
+
+    proj.to_homogeneous() * t.to_homogeneous() * rot.to_homogeneous() * scale
+
 }
 
 

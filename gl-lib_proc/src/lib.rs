@@ -85,9 +85,8 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
     res += &format!("impl {name} {{\n");
     add_load_all(&mut res, &name, &names);
 
-    res += include_str!("E:/repos/rust-gl-lib/gl-lib_proc/src/load_by_name.rs");
 
-    // pub fn {
+    // impl close
     res += "}\n";
 
     res.parse().unwrap()
@@ -98,14 +97,14 @@ fn add_load_all(res: &mut String, name: &str, names: &std::collections::HashSet:
 
 
 
-    *res += &format!("pub fn load_all(ui: &mut gl_lib::imode_gui::ui::Ui, path: &str) -> {name} {{\n");
+    *res += &format!("pub fn load_all(gl: &gl_lib::gl::Gl, path: &str) -> {name} {{\n");
     *res += &format!("let mut id = 1;\n");
     *res += &format!("{name} {{\n ");
 
 
 
     for field_name in names {
-        *res += &format!("{}: {name}::load_by_name(ui, &std::path::Path::new(path).join(\"{field_name}.json\"), &mut id),\n", field_name.to_lowercase())
+        *res += &format!("{}:  gl_lib::animations::sheet_animation::load_by_name(gl, &std::path::Path::new(path).join(\"{field_name}.json\"), &mut id),\n", field_name.to_lowercase())
 
     }
 

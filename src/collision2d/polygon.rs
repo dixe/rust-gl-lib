@@ -9,7 +9,7 @@ type V2 = na::Vector2::<f32>;
 type V3 = na::Vector3::<f32>;
 
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct Polygon {
     pub vertices: Vec::<V2>
 }
@@ -350,18 +350,27 @@ enum Dir {
 pub struct ComplexPolygon<'a> {
     pub polygon: &'a Polygon,
     pub indices: &'a Vec::<usize>,
+    pub transform: na::Matrix3::<f32>
+}
+
+impl<'a> ComplexPolygon<'a> {
+
+    fn transformed(&self, idx: usize) -> V2 {
+        let transformed : V3 = self.transform * self.polygon.vertices[self.indices[0]].homogeneous();
+        na::Vector2::from_homogeneous(transformed).unwrap()
+    }
 }
 
 impl<'a> gjk::Shape for ComplexPolygon<'a> {
 
     fn support(&self, d: V2) -> V2 {
 
-        let mut p = self.polygon.vertices[self.indices[0]];
-        let mut val = p.dot(&d);
+        let mut p = self.transformed(0);
 
+        let mut val = p.dot(&d);
         for idx in self.indices {
 
-            let v = self.polygon.vertices[*idx];
+            let v = self.transformed(*idx);
             let dot_val = v.dot(&d);
             if dot_val > val {
                 val = dot_val;
@@ -371,11 +380,12 @@ impl<'a> gjk::Shape for ComplexPolygon<'a> {
         p
     }
 
+
     fn center(&self) -> V2 {
         let mut c = V2::new(0.0, 0.0);
 
         for idx in self.indices {
-            let v = self.polygon.vertices[*idx];
+            let v = self.transformed(*idx);
             c += v;
         }
 
@@ -392,4 +402,18 @@ impl<'a> drawer2d::ConvexPolygon for ComplexPolygon<'a> {
             buffer.push(0.0);
         }
     }
+}
+
+
+trait Homogeneous {
+
+    fn homogeneous(&self) -> V3;
+}
+
+impl Homogeneous for V2 {
+
+    fn homogeneous(&self) -> V3 {
+        self.push(1.0)
+    }
+
 }
