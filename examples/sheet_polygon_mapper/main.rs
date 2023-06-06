@@ -2,7 +2,7 @@ use gl_lib::{gl, na, helpers};
 use gl_lib::imode_gui::drawer2d::{*};
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::widgets::PolygonOptions;
-use gl_lib::collision2d::polygon::{Polygon};
+use gl_lib::collision2d::polygon::{Polygon, Dir};
 use gl_lib::texture::TextureId;
 use gl_lib::typedef::*;
 use gl_lib_proc::sheet_assets;
@@ -41,7 +41,9 @@ fn main() -> Result<(), failure::Error> {
 
     let mut state = State::Selecting;
 
-    let mut copy = None;
+    let mut copy : Option<Polygon> = None;
+
+    let mut new_name = "".to_string();
     loop {
 
         // Basic clear gl stuff and get events to UI
@@ -56,13 +58,15 @@ fn main() -> Result<(), failure::Error> {
                 if ui.button("idle") {
                     state = State::Edit(Edit {
                         sheet: create_sheet_edit(path, "idle".to_string(), &assets.idle),
+                        name: "body".to_owned(),
                         frame: 0
                     });
                 }
 
                 if ui.button("attack") {
                     state = State::Edit(Edit {
-                        sheet: create_sheet_edit(path, "attack".to_string(), &assets.idle),
+                        sheet: create_sheet_edit(path, "attack".to_string(), &assets.attack),
+                        name: "body".to_owned(),
                         frame: 0
                     });
                 }
@@ -77,9 +81,12 @@ fn main() -> Result<(), failure::Error> {
                     }
                 }
 
+                ui.newline();
+
                 ui.label("Scale");
                 ui.slider(&mut edit.sheet.scale, 1.0, 30.0);
 
+                let ret = ui.button("Back");
 
                 for i in 0..edit.sheet.frames.len() {
                     edit.sheet.frames[i].options.transform.scale = edit.sheet.scale;
@@ -87,7 +94,7 @@ fn main() -> Result<(), failure::Error> {
 
                 ui.newline();
                 if ui.button("Save") {
-                    match serde_json::to_string(&edit.sheet.frames[edit.frame].polygon) {
+                    match serde_json::to_string(&edit.sheet.frames[edit.frame].polygons) {
                         Ok(json) => {
 
                             save(edit, edit.frame);
@@ -99,28 +106,84 @@ fn main() -> Result<(), failure::Error> {
                 }
 
                 if ui.button("Save All") {
+                    clean(&mut edit.sheet);
+                    right_align(&mut edit.sheet);
                     save_all("examples/2d_animation_player/assets/", &edit);
 
                 }
 
                 if ui.button("Copy") {
-                    copy = Some(edit.sheet.frames[edit.frame].polygon.clone());
+                    copy = Some(edit.sheet.frames[edit.frame].polygons.get(&edit.name).unwrap().clone());
                 }
 
                 if ui.button("Replace") {
 
                     if let Some(ref c) = copy {
-                        edit.sheet.frames[edit.frame].polygon = c.clone()
+                        let p = edit.sheet.frames[edit.frame].polygons.get_mut(&edit.name).unwrap();
+                        *p = c.clone()
                     }
                 }
 
-                img_edit(&mut ui, &mut edit.sheet.frames[edit.frame],  edit.sheet.size, edit.sheet.texture_id);
+                ui.newline();
 
+                for name in edit.sheet.frames[edit.frame].polygons.keys() {
+                    if name == &edit.name {
+                        ui.body_text(&name);
+                    } else {
+                        if ui.button(name) {
+                            edit.name = name.clone();
+                        }
+                    }
+                }
+
+                ui.textbox(&mut new_name);
+                if ui.button("Add") {
+                    for i in 0..edit.sheet.frames.len() {
+                        if !edit.sheet.frames[i].polygons.contains_key(&new_name) {
+                            edit.sheet.frames[i].polygons.insert(new_name.clone(), Default::default());
+
+                        }
+                    }
+                    new_name = "".to_string();
+                }
+
+                img_edit(&mut ui, &mut edit.sheet.frames[edit.frame], &edit.name, edit.sheet.size, edit.sheet.texture_id);
+
+                if ret {
+                    state = State::Selecting;
+                }
             }
         }
 
         window.gl_swap_window();
 
+    }
+}
+
+
+fn right_align(sheet: &mut SheetEdit) {
+    for i in 0..sheet.frames.len() {
+        for p in sheet.frames[i].polygons.values_mut() {
+            if p.direction() == Dir::Left {
+                p.vertices.reverse();
+            }
+        }
+    }
+}
+
+fn clean(sheet: &mut SheetEdit) {
+
+    let mut remove = vec![];
+    for i in 0..sheet.frames.len() {
+        for (key, val) in &sheet.frames[i].polygons {
+            if val.vertices.len() == 0 {
+                remove.push((i, key.clone()));
+            }
+        }
+    }
+
+    for (i, key) in &remove {
+        sheet.frames[*i].polygons.remove(&*key);
     }
 }
 
@@ -134,14 +197,11 @@ fn save_all(path_s: &str, edit: &Edit) {
     let mut data = SheetCollisionPolygons::default();
 
 
+
+
+
     for i in 0..edit.sheet.frames.len() {
-        let mut frame_data : HashMap::<String, Polygon> = Default::default();
-
-        if edit.sheet.frames[i].polygon.vertices.len() > 0 {
-            frame_data.insert("body".to_string(), edit.sheet.frames[i].polygon.clone());
-        }
-
-        data.insert(i, frame_data);
+        data.insert(i, edit.sheet.frames[i].polygons.clone());
     }
 
     match serde_json::to_string(&data) {
@@ -177,7 +237,7 @@ fn load_all<P: AsRef<Path> + std::fmt::Debug>(path: &P) -> SheetCollisionPolygon
 }
 
 fn save(edit: &Edit, frame: usize) {
-    match serde_json::to_string(&edit.sheet.frames[frame].polygon) {
+    match serde_json::to_string(&edit.sheet.frames[frame].polygons) {
         Ok(json) => {
             std::fs::write(&format!("examples/2d_animation_player/assets/{}_{}.json", &edit.sheet.name, frame), json);
         },
@@ -195,52 +255,20 @@ fn create_sheet_edit(path_s: &str, name: String, sheet: &SheetAnimation) -> Shee
     path.push(&format!("{}_polygons.json", &name));
 
     let mut frames : Vec::<FrameEdit> = vec![];
-
     let polygons = load_all(&path);
 
     let mut f = 0;
-    /*
-    for polygon_map in &polygons.frame_polygons {
-        let polygon = polygon_map.get("body").unwrap_or_default();
-
-        frames.push(FrameEdit {
-            polygon,
-            anchor: V2i::new(400, 600),
-            options: Default::default(),
-            sprite: frame.data
-        });
-    }*/
 
     for frame in &sheet.animation.frames {
-/*
-
-        let vertices_json = std::fs::read_to_string(&format!("examples/2d_animation_player/assets/{}_{}.json", name, f));
-        let polygon = match vertices_json {
-            Ok(json) => {
-                serde_json::from_str(&json).unwrap()
-            },
-            Err(err) => {
-                println!("Error loading json file, creating default polygon \n{:?}", err);
-                Polygon {
-                    vertices: vec![]
-                }
-            }
-        };
-*/
         // get body polygon for current frame, or default empty if not found
         let map = match polygons.get(&f) {
             Some(m) => m.clone(),
             None => Default::default()
         };
 
-        let polygon = match map.get("body") {
-            Some(p) => p.clone(),
-            None => Default::default()
-        };
-
         f +=1;
         frames.push(FrameEdit {
-            polygon: polygon.clone(),
+            polygons: map.clone(),
             anchor: V2i::new(400, 600),
             options: Default::default(),
             sprite: frame.data
@@ -264,6 +292,7 @@ enum State {
 
 struct Edit {
     sheet: SheetEdit,
+    name: String,
     frame: usize
 }
 
@@ -277,58 +306,14 @@ struct SheetEdit {
 
 
 struct FrameEdit {
-    polygon: Polygon,
+    polygons: HashMap::<String, Polygon>,
     anchor: V2i,
     options: PolygonOptions,
     sprite: Sprite
 }
 
-/*
 
-fn load(ui: &mut Ui) -> FrameEdit {
-
-    // TODO: Load from path, maybe make this changeable
-    let img = image::open("examples/top_rpg/assets/Sword.png").unwrap().into_rgba8();
-
-    let texture_id = ui.register_image_nearest(&img);
-
-
-    let base_size = V2::new(img.width() as f32, img.height() as f32);
-
-    let vertices_json = std::fs::read_to_string("examples/collision_polygon_mapper/Sword.json");
-
-
-    let polygon = match vertices_json {
-        Ok(json) => {
-            serde_json::from_str(&json).unwrap()
-        },
-        Err(err) => {
-            println!("Error loading json file, creating default polygon \n{:?}", err);
-            Polygon {
-                vertices: vec![V2::new(32.0, 0.0),
-                               V2::new(0.0, 32.0),
-                               V2::new(32.0, 32.0),
-                ]
-            }
-        }
-    };
-
-    let mut edit = FrameEdit {
-        polygon,
-        texture_id,
-        base_size,
-        anchor: na::Vector2::new(200, 100),
-        name: "Target".to_string(),
-        options: Default::default()
-    };
-
-    edit.options.transform.scale = 10.0;
-
-    edit
-}
-
-*/
-fn img_edit(ui: &mut Ui, edit: &mut FrameEdit, sheet_size: V2, texture_id: TextureId) {
+fn img_edit(ui: &mut Ui, edit: &mut FrameEdit, poly_name: &str, sheet_size: V2, texture_id: TextureId) {
 
 
     let scale = edit.options.transform.scale;
@@ -370,14 +355,20 @@ fn img_edit(ui: &mut Ui, edit: &mut FrameEdit, sheet_size: V2, texture_id: Textu
     // draw "center" of polygon on base image with anchor = output_offset
     //TODO:
 
-    ui.polygon_editor(&mut edit.polygon, &mut edit.options);
+    if !edit.polygons.contains_key(poly_name) {
+        edit.polygons.insert(poly_name.to_string(), Default::default());
+    }
+
+    let polygon = edit.polygons.get_mut(poly_name).unwrap();
+
+    ui.polygon_editor(polygon, &mut edit.options);
 
     // draw ""Correct" polygon, with translation offset
     let mut transform = edit.options.transform;
 
     transform.translation = output_offset.to_v2();
     transform.scale = 1.0;
-    ui.view_polygon(&mut edit.polygon, &transform);
+    ui.view_polygon(polygon, &transform);
 
 }
 

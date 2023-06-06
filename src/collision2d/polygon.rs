@@ -53,6 +53,33 @@ impl Polygon {
         Some(t_1.lerp(t_2, t))
     }
 
+    pub fn direction(&self) -> Dir {
+
+        let mut num_wide = 0;
+
+        // assume right, and if not return left
+
+        for i in 1..self.vertices.len() {
+            let v1_i = (i + 1) % self.vertices.len();
+            let v2_i = (i + 2) % self.vertices.len();
+
+            let v0 = vec3(self.vertices[i]);
+            let v1 = vec3(self.vertices[v1_i]);
+            let v2 = vec3(self.vertices[v2_i]);
+
+            if is_wide_angle(v0, v1, v2) {
+                num_wide += 1;
+            }
+        }
+
+
+        if num_wide > (self.vertices.len()  / 2 ) {
+            return Dir::Left;
+        }
+
+        return Dir::Right;
+    }
+
 }
 
 
@@ -304,7 +331,7 @@ fn first_wide(sub_p: &SubPolygon) -> Option<usize> {
     None
 }
 
-fn direction(polygon: &Polygon) -> Dir {
+pub fn direction(polygon: &Polygon) -> Dir {
 
     let mut num_wide = 0;
 
@@ -341,7 +368,8 @@ fn is_wide_angle(v0: na::Vector3::<f32>, v1: na::Vector3::<f32>, v2: na::Vector3
 }
 
 
-enum Dir {
+#[derive(PartialEq)]
+pub enum Dir {
     Left,
     Right
 }
