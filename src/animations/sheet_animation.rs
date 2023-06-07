@@ -112,10 +112,10 @@ impl<'a> SheetAnimationPlayer<'a> {
         }
     }
 
-    pub fn get_polygon(&self, anim_id: AnimationId, name: &str) -> Option<&Polygon> {
+    pub fn get_polygon(&self, anim_id: AnimationId, name: &str) -> Option<(&Polygon, f32)> {
         if let Some(active) = self.animations.get(&anim_id) {
             if let Some(map) = active.sheet.collision_polygons.get(&active.frame) {
-                return map.get(name);
+                return map.get(name).map(|p| (p, active.scale));
             }
         }
 
