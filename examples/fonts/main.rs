@@ -1,7 +1,6 @@
 use gl_lib::{gl, helpers};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use deltatime;
 use gl_lib::text_rendering::font::{Font, MsdfFont, FntFont};
 use gl_lib::shader::BaseShader;
 
@@ -26,7 +25,6 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let mut delta_time = deltatime::Deltatime::new();
 
     let mut amount = 1;
 
@@ -43,8 +41,6 @@ fn main() -> Result<(), failure::Error> {
         unsafe {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
-        delta_time.update();
-
         ui.consume_events(&mut event_pump);
 
 
@@ -92,8 +88,6 @@ fn main() -> Result<(), failure::Error> {
             update_shaders(&mut ui, gl, &ts[index]);
         }
 */
-
-        let _dt = delta_time.time();
 
         ui.newline();
         ui.newline();

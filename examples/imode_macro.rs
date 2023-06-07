@@ -25,7 +25,7 @@ fn main() -> Result<(), failure::Error> {
 
     let p = "examples/2d_animation_player/assets/";
 
-    let a = Assets::load_all(&mut ui, p);
+    let a = Assets::load_all(&gl, p);
 
     println!("{:?}", a);
 

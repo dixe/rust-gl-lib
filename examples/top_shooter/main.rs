@@ -3,8 +3,6 @@ use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use sdl2::event;
 use gl_lib::texture::TextureId;
-use deltatime;
-
 
 mod shoot;
 mod damage_text;
@@ -30,7 +28,6 @@ fn main() -> Result<(), failure::Error> {
     let mut size = na::Vector2::<f32>::new(32.0, 32.0);
 
     let mut assets = load_assets(&mut ui);
-    let mut delta_time = deltatime::Deltatime::new();
     let mut state = State::Shoot(shoot::State::new());
     loop {
 
@@ -40,8 +37,7 @@ fn main() -> Result<(), failure::Error> {
         }
 
         ui.consume_events(&mut event_pump);
-        delta_time.update();
-        let dt = delta_time.time();
+        let dt = ui.dt();
 
         if ui.button("Reload") {
             assets = load_assets(&mut ui);

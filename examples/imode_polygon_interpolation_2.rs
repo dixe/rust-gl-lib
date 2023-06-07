@@ -3,9 +3,6 @@ use gl_lib::imode_gui::drawer2d::{*};
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::widgets::{PolygonOptions};
 use gl_lib::collision2d::polygon::{Polygon};
-use deltatime;
-
-
 
 type V2 = na::Vector2::<f32>;
 
@@ -52,7 +49,6 @@ fn main() -> Result<(), failure::Error> {
 
     let mut t = 0.5;
 
-    let mut delta_time = deltatime::Deltatime::new();
     let mut play = false;
 
     let mut animation_seconds = 1.0;
@@ -86,8 +82,7 @@ fn main() -> Result<(), failure::Error> {
         unsafe {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
-        delta_time.update();
-        let dt = delta_time.time();
+        let dt = ui.dt();
 
         ui.consume_events(&mut event_pump);
         handle_inputs(&mut ui);

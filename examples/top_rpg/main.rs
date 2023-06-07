@@ -2,7 +2,6 @@ use gl_lib::{gl, math::{self, AsV2, AsV2i}, na, helpers, color::Color};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::texture::TextureId;
-use deltatime;
 use serde::{Serialize, Deserialize};
 use gl_lib::general_animation::*;
 enum Mode {
@@ -35,8 +34,6 @@ fn main() -> Result<(), failure::Error> {
 
     let mut assets = load_assets(&mut ui);
 
-    let mut delta_time = deltatime::Deltatime::new();
-
     let mut player = Player {
         pos: V2::new(400.0, 300.0)
     };
@@ -57,8 +54,7 @@ fn main() -> Result<(), failure::Error> {
         }
 
         ui.consume_events(&mut event_pump);
-        delta_time.update();
-        let dt = delta_time.time();
+        let dt = ui.dt();
 
 
         if ui.button("Save") {

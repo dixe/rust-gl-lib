@@ -1,12 +1,10 @@
 use gl_lib::{gl, na, helpers, color::Color};
 use gl_lib::imode_gui::drawer2d::{*};
 use gl_lib::imode_gui::ui::*;
-use gl_lib::imode_gui::widgets::PolygonTransform;
 use sdl2::event;
 use std::collections::HashSet;
 use gl_lib::collision2d::gjk;
-use gl_lib::collision2d::polygon::{self, Polygon, ComplexPolygon};
-use deltatime;
+use gl_lib::collision2d::polygon::{self, Polygon, ComplexPolygon, PolygonTransform};
 use core::ops::Mul;
 
 
@@ -51,7 +49,6 @@ fn main() -> Result<(), failure::Error> {
     t_end.translation.y = 300.0;
     let mut t = 0.5;
 
-    let mut delta_time = deltatime::Deltatime::new();
     let mut play = false;
 
     let mut animation_seconds = 1.0;
@@ -61,8 +58,7 @@ fn main() -> Result<(), failure::Error> {
         unsafe {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
-        delta_time.update();
-        let dt = delta_time.time();
+        let dt = ui.dt();
 
         ui.consume_events(&mut event_pump);
         handle_inputs(&mut ui);

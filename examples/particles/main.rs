@@ -3,7 +3,6 @@ use gl_lib::color::Color;
 use gl_lib::particle_system::*;
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use deltatime;
 
 
 use sdl2::event;
@@ -32,7 +31,6 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
     let mut emitter = emitter::Emitter::new(10000, emitter::emit_1, emitter::update_1);
-    let mut delta_time = deltatime::Deltatime::new();
 
 
     let mut args = Args {
@@ -55,8 +53,6 @@ fn main() -> Result<(), failure::Error> {
         ui.consume_events(&mut event_pump);
         handle_inputs(&ui, &mut state);
 
-        delta_time.update();
-
         // ui
         ui.body_text(&format!("Speed: {:.2}", args.speed));
         ui.slider(&mut args.speed, 1.0, 200.0);
@@ -78,7 +74,7 @@ fn main() -> Result<(), failure::Error> {
             }
         }
 
-        let dt = delta_time.time();
+        let dt = ui.dt();
         emitter.update(dt);
         emitter.draw_all(&ui.drawer2D);
 

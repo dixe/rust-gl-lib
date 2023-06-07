@@ -15,7 +15,7 @@ pub struct SheetAnimation {
     pub texture_id: TextureId,
     pub animation: Animation<Sprite>,
     pub size: V2,
-    pub id: usize
+
 }
 
 
@@ -237,7 +237,6 @@ pub fn load_by_name(gl: &gl::Gl, path: &std::path::PathBuf, id: &mut usize) -> S
         texture_id,
         size: na::Vector2::new(sheet_anim.meta.size.w as f32, sheet_anim.meta.size.h as f32),
         animation: Animation { frames },
-        id: *id
     };
 
     *id += 1;
