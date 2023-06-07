@@ -6,7 +6,7 @@ use serde::{Serialize, Deserialize};
 mod sheet_array_animation;
 use sheet_array_animation as saa;
 use gl_lib::general_animation::{Animation, Animatable, Frame};
-use gl_lib::animations::sheet_animation::{SheetAnimation, Sprite};
+use gl_lib::animations::sheet_animation::{self, SheetAnimation, Sprite};
 
 pub type V2 = na::Vector2::<f32>;
 pub type V2i = na::Vector2::<i32>;
@@ -147,13 +147,13 @@ impl<'a> ActiveAnimation<'a> {
     fn update(&mut self, dt: f32) -> AnimationStatus {
         self.elapsed += dt;
 
-        self.cur_sprite = self.sheet.animation.at(self.elapsed);
+        self.cur_sprite = self.sheet.animation.at(self.elapsed).map(|x| x.0);
 
         if self.cur_sprite.is_none() {
             if self.repeat {
                 // maybe to % sheet.animation.duration to
                 self.elapsed = 0.0;
-                self.cur_sprite = self.sheet.animation.at(self.elapsed);
+                self.cur_sprite = self.sheet.animation.at(self.elapsed).map(|x| x.0);
             } else {
                 return AnimationStatus::Finished;
             }
@@ -205,7 +205,7 @@ fn render_sheet_frame(ui: &mut Ui, sheet: &SheetAnimation, frame: usize, scale: 
 
 fn render_sheet_elapsed(ui: &mut Ui, sheet: &SheetAnimation, elapsed: f32, scale: f32) {
 
-    if let Some(f) = &sheet.animation.at(elapsed) {
+    if let Some((f, _)) = &sheet.animation.at(elapsed) {
         let sprite = SheetSubSprite {
             sheet_size: sheet.size,
             pixel_l: f.x,
@@ -235,59 +235,9 @@ fn render_full_sheet(ui: &mut Ui, sheet: &SheetAnimation, scale: f32) {
 
 
 fn load_assets(ui: &mut Ui) -> Assets {
+    let mut id = 1;
     Assets {
-        idle: load_by_name(ui, "Player Sword Idle 48x48"),
-        attack: load_by_name(ui, "player sword atk 64x64"),
+        idle: sheet_animation::load_by_name(&ui.drawer2D.gl, &"examples/2d_animation_player/assets/", "idle", &mut id),
+        attack: sheet_animation::load_by_name(&ui.drawer2D.gl, &"examples/2d_animation_player/assets/", "attack", &mut id),
     }
-}
-
-
-
-fn load_by_name(ui: &mut Ui, name: &str) -> SheetAnimation {
-
-    let base_path = "examples/2d_animation_player/assets/";
-
-    let anim_json = std::fs::read_to_string(format!("{base_path}{name}.json"));
-    let sheet_anim : saa::SheetArrayAnimation = match anim_json {
-        Ok(json) => {
-            serde_json::from_str(&json).unwrap()
-        },
-        Err(err) => {
-            panic!("Error loading json file, creating default animation \n{:?}", err);
-        }
-    };
-
-    let size = V2::new(sheet_anim.meta.size.w as f32, (sheet_anim.meta.size.h /2) as f32);
-
-    let path = format!("{base_path}{}", &sheet_anim.meta.image);
-    let img = image::open(&path).unwrap().into_rgba8();;
-
-    let aspect = img.height() as f32 / img.width() as f32;
-    let texture_id = ui.register_image(&img);
-
-    let mut frames = vec![];
-
-
-    for frame in &sheet_anim.frames {
-
-        frames.push(Frame::<Sprite> {
-            data: Sprite
-            {
-                x: frame.frame.x,
-                y: frame.frame.y,
-                w: frame.frame.w,
-                h: frame.frame.h,
-            },
-            frame_seconds: frame.duration as f32 / 1000.0
-
-        });
-    }
-
-    let anim = SheetAnimation {
-        texture_id,
-        size: V2::new(sheet_anim.meta.size.w as f32, sheet_anim.meta.size.h as f32),
-        animation: Animation { frames },
-    };
-
-    anim
 }

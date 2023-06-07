@@ -1,15 +1,15 @@
-use gl_lib::{gl, na, helpers, color::Color};
+use gl_lib::{gl, na, helpers};
 use gl_lib::imode_gui::drawer2d::{*};
 use gl_lib::imode_gui::ui::*;
-use sdl2::event;
-use std::collections::HashSet;
-use gl_lib::collision2d::gjk;
-use gl_lib::collision2d::polygon::{self, Polygon, ComplexPolygon, PolygonTransform};
-use core::ops::Mul;
-
+use gl_lib::imode_gui::widgets::{PolygonOptions};
+use gl_lib::collision2d::polygon::{Polygon};
 
 type V2 = na::Vector2::<f32>;
-type V3 = na::Vector3::<f32>;
+
+enum State {
+    View,
+    Edit(usize)
+}
 
 fn main() -> Result<(), failure::Error> {
 
@@ -31,27 +31,51 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let mut polygon = Polygon {
-        vertices: vec![V2::new(32.0, 0.0),
-                       V2::new(0.0, 32.0),
-                       V2::new(32.0, 32.0),
-        ]
-    };
+    let mut polygons = vec![
+        Polygon {
+            vertices: vec![V2::new(32.0, 64.0),
+                           V2::new(300.0, 32.0),
+                           V2::new(32.0, 32.0),
+            ],
+        },
+        Polygon {
+            vertices: vec![V2::new(32.0, 70.0),
+                           V2::new(200.0, 32.0),
+                           V2::new(64.0, 32.0),
+            ]
+        }
+    ];
 
-    let mut t_start = PolygonTransform::default();
-    t_start.scale = 1.0;
-    t_start.translation.x = 10.0;
-    t_start.translation.y = 200.0;
 
-    let mut t_end = PolygonTransform::default();
-    t_end.scale = 2.0;
-    t_end.translation.x = 300.0;
-    t_end.translation.y = 300.0;
     let mut t = 0.5;
 
     let mut play = false;
 
     let mut animation_seconds = 1.0;
+
+    let mut options : Vec::<PolygonOptions> = vec![Default::default(), Default::default()];
+
+    options[0].transform.scale = 1.0;
+    options[1].transform.scale = 1.0;
+
+    let mut state = State::View;
+
+    // create windows, and set their initial position
+    ui.window_begin("t_start");
+    ui.window_end("t_start");
+    ui.window_begin("t_end");
+    ui.window_end("t_end");
+
+    let w_start = ui.windows.get_mut(&1).unwrap();
+    w_start.base_container_context.anchor_pos.x = 650;
+    w_start.base_container_context.anchor_pos.y = 50;
+
+    let w_end = ui.windows.get_mut(&2).unwrap();
+    w_end.base_container_context.anchor_pos.x = 900;
+    w_end.base_container_context.anchor_pos.y = 50;
+
+    let mut tmp_polygon = Polygon { vertices: vec![]};
+
     loop {
 
         // Basic clear gl stuff and get events to UI
@@ -63,128 +87,85 @@ fn main() -> Result<(), failure::Error> {
         ui.consume_events(&mut event_pump);
         handle_inputs(&mut ui);
 
-        // ui for t, and star and end transforms
-        ui.label("t");
-        ui.slider(&mut t, 0.0, 1.0);
 
-        ui.slider(&mut animation_seconds, 0.1, 3.0);
-        let txt = if play { "Pause"} else { "Play"};
-        if ui.button(txt) {
-            play = !play;
-        }
+        // UI
+        match state {
+            State::View => {
+                // draw polygons
+                ui.view_polygon(&mut polygons[0], &mut options[0].transform);
+                ui.view_polygon(&mut polygons[1], &mut options[1].transform);
 
-        if play {
-            t += dt * 1.0 / animation_seconds;
-            if t > 1.0 {
-                t = 0.0;
+                if ui.button(&format!("Edit 0 ({})", polygons[0].vertices.len())) {
+                    state = State::Edit(0)
+                }
+                if ui.button(&format!("Edit 1 ({})", polygons[1].vertices.len())) {
+                    state = State::Edit(1)
+                }
+
+                // ui for t, and star and end transforms
+                ui.label("t");
+                ui.slider(&mut t, 0.0, 1.0);
+
+                ui.slider(&mut animation_seconds, 0.1, 3.0);
+                let txt = if play { "Pause"} else { "Play"};
+                if ui.button(txt) {
+                    play = !play;
+                }
+
+                if play {
+                    t += dt * 1.0 / animation_seconds;
+                    if t > 1.0 {
+                        t = 0.0;
+                    }
+                }
+
+                ui.window_begin("t_start");
+                center_transform_ui(&mut ui, &mut polygons[0]);
+                ui.window_end("t_start");
+
+
+                ui.window_begin("t_end");
+                center_transform_ui(&mut ui, &mut polygons[1]);
+                ui.window_end("t_end");
+
+                if let Some(transform) = Polygon::interpolate(&mut tmp_polygon, &polygons[0], &options[0].transform, &polygons[1], &options[1].transform, t) {
+                    // draw tmp_polygon
+                    ui.view_polygon(&tmp_polygon, &transform);
+                }
+            },
+            State::Edit(i) => {
+                ui.polygon_editor(&mut polygons[i], &mut options[i]);
+                if ui.button("View") {
+                    state = State::View;
+                }
             }
         }
-
-        ui.window_begin("t_start");
-        transform_ui(&mut ui, &mut t_start);
-        ui.window_end("t_start");
-
-
-        ui.window_begin("t_end");
-        transform_ui(&mut ui, &mut t_end);
-        ui.window_end("t_end");
-
-        // draw polygons
-
-        ui.view_polygon(&polygon, &t_start);
-        ui.view_polygon(&polygon, &t_end);
-
-        interpolated(&mut ui, &polygon, &t_start, &t_end, t);
-
 
         window.gl_swap_window();
     }
 }
 
 
-fn interpolated(ui: &mut Ui, polygon: &Polygon, t_start: &PolygonTransform, t_end: &PolygonTransform, t: f32) {
+fn center_transform_ui(ui: &mut Ui, p: &mut Polygon) {
 
-    let transform = PolygonTransform {
-        translation: lerp(t_start.translation, t_end.translation, t),
-        rotation: lerp(t_start.rotation, t_end.rotation, t),
-        scale: lerp(t_start.scale, t_end.scale, t),
-    };
+    let mut c = p.center();
 
+    ui.label("center");
+    ui.newline();
 
-    ui.view_polygon(&polygon, &transform);
-
-}
-
-
-
-fn lerp<T: std::ops::Mul<f32, Output = T> + std::ops::Add<Output = T>>(a: T, b: T, t: f32) -> T  where f32: Mul<T, Output = T> {// where T: core::ops::Mul<T{
-    let t1 = ease_out_back(t);
-
-    let x :T = (1.0 - t1) * a;
-    let y :T = b * t1;
-
-    x + y
-}
-
-fn ease_out_circ(x: f32) -> f32 {
-    return f32::sqrt(1.0 - f32::powi(x - 1.0, 2));
-}
-
-fn ease_out_bounce(x: f32) -> f32 {
-    let n1 = 7.5625;
-    let d1 = 2.75;
-
-    if (x < 1.0 / d1) {
-        return n1 * x * x;
-    } else if (x < 2.0 / d1) {
-        return n1 * (x - 1.5 / d1) * x + 0.75;
-    } else if (x < 2.5 / d1) {
-        return n1 * (x - 2.25 / d1) * x + 0.9375;
-    } else {
-        return n1 * (x - 2.625 / d1) * x + 0.984375;
+    let mut x = c.x;
+    let mut y = c.y;
+    if ui.slider2d(&mut x, &mut y, 0.0, 1100.0, 0.0, 700.0) {
+        c.x = x;
+        c.y = y;
+        p.set_center(c);
     }
-}
-
-fn ease_out_back(x: f32) -> f32 {
-    let c1 = 1.70158;
-    let c3 = c1 + 1.0;
-
-    return 1.0 + c3 * f32::powi(x - 1.0, 3) + c1 * f32::powi(x - 1.0, 2);
-}
-
-
-fn transform_ui(ui: &mut Ui, transform: &mut PolygonTransform) {
-
-
-    ui.label("translation");
-    ui.newline();
-    let mut x = transform.translation.x;
-    let mut y = transform.translation.y;
-    ui.slider2d(&mut x, &mut y, 0.0, 1100.0, 0.0, 700.0);
-
-    transform.translation.x = x;
-    transform.translation.y = y;
-
-    ui.label("trans.x");
-    ui.slider(&mut transform.translation.x, 0.0, 1100.0);
-
-    ui.newline();
-    ui.label("trans.y");
-    ui.slider(&mut transform.translation.y, 0.0, 700.0);
-
-    ui.newline();
-
-    ui.label("scale");
-    ui.slider(&mut transform.scale, 0.50, 10.0);
 
 }
 
 fn handle_inputs(ui: &mut Ui) {
 
-    use event::Event::*;
-    use sdl2::keyboard::Keycode;
-
-    for e in &ui.frame_events {
+    for _e in &ui.frame_events {
 
     }
 }

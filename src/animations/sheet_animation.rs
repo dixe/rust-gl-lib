@@ -1,3 +1,5 @@
+use std::path::{Path, PathBuf};
+use failure;
 use crate::texture::{self, TextureId};
 use crate::general_animation::{Animation, Animatable, Frame};
 use crate::{gl, na};
@@ -6,14 +8,19 @@ use crate::imode_gui::ui::Ui;
 use crate::math::numeric::Numeric;
 use std::collections::HashMap;
 use crate::math::{AsV2, AsV2i};
+use crate::collision2d::polygon::Polygon;
 
 
+
+pub type AnimationId = usize;
 type V2 = na::Vector2::<f32>;
 
 #[derive(Debug)]
 pub struct SheetAnimation {
     pub texture_id: TextureId,
+    pub name: String,
     pub animation: Animation<Sprite>,
+    pub collision_polygons: SheetCollisionPolygons,
     pub size: V2,
 
 }
@@ -89,9 +96,9 @@ pub struct Meta {
 
 
 pub struct SheetAnimationPlayer<'a> {
-    animations: HashMap::<usize, ActiveAnimation<'a>>,
-    next_id: usize,
-    clear_buffer: Vec::<usize>
+    animations: HashMap::<AnimationId, ActiveAnimation<'a>>,
+    next_id: AnimationId,
+    clear_buffer: Vec::<AnimationId>
 }
 
 
@@ -105,13 +112,24 @@ impl<'a> SheetAnimationPlayer<'a> {
         }
     }
 
-    pub fn start(&mut self, sheet_anim: &'a SheetAnimation, scale: f32, repeat: bool) -> usize {
+    pub fn get_polygon(&self, anim_id: AnimationId, name: &str) -> Option<&Polygon> {
+        if let Some(active) = self.animations.get(&anim_id) {
+            if let Some(map) = active.sheet.collision_polygons.get(&active.frame) {
+                return map.get(name);
+            }
+        }
+
+        None
+    }
+
+    pub fn start(&mut self, sheet_anim: &'a SheetAnimation, scale: f32, repeat: bool) -> AnimationId {
         let id = self.next_id;
 
         self.animations.insert(id,
                                ActiveAnimation {
                                    sheet: sheet_anim,
                                    repeat,
+                                   frame: 0,
                                    elapsed: 0.0,
                                    sprite: sheet_anim.animation.frame(0),
                                    scale,
@@ -129,15 +147,15 @@ impl<'a> SheetAnimationPlayer<'a> {
         for (id,anim) in &mut self.animations {
             anim.elapsed += dt;
 
-            if let Some(s) = anim.sheet.animation.at(anim.elapsed) {
+            if let Some((s, frame)) = anim.sheet.animation.at(anim.elapsed) {
                 anim.sprite = s;
+                anim.frame = frame;
             } else {
                 if !anim.repeat {
                     self.clear_buffer.push(*id);
                 }
                 else {
                     anim.elapsed = 0.0;
-                    anim.sheet.animation.at(anim.elapsed);
                 }
             }
         }
@@ -147,15 +165,15 @@ impl<'a> SheetAnimationPlayer<'a> {
         }
     }
 
-    pub fn remove(&mut self, id: usize) {
+    pub fn remove(&mut self, id: AnimationId) {
         self.animations.remove(&id);
     }
 
-    pub fn expired(&self, id: usize) -> bool {
+    pub fn expired(&self, id: AnimationId) -> bool {
         self.animations.contains_key(&id)
     }
 
-    pub fn draw<T : Numeric + std::fmt::Debug>(&mut self, drawer2D: &mut Drawer2D, pos: na::Vector2::<T>, anim_id: usize) {
+    pub fn draw<T : Numeric + std::fmt::Debug>(&mut self, drawer2D: &mut Drawer2D, pos: na::Vector2::<T>, anim_id: AnimationId) {
         if let Some(anim) = self.animations.get(&anim_id) {
 
 
@@ -182,18 +200,52 @@ impl<'a> SheetAnimationPlayer<'a> {
 pub type SheetCollisionPolygons = HashMap::<usize, HashMap::<String, crate::collision2d::polygon::Polygon>>;
 
 
+pub fn load_sheet_collision_polygons<P: AsRef<Path> + std::fmt::Debug>(path: &P, name: &str) -> SheetCollisionPolygons {
+    let mut p = PathBuf::new();
+    p.push(path);
+    p.push(format!("{name}_polygons.json"));
+
+    let json = std::fs::read_to_string(&p);
+    match json {
+        Ok(json) => {
+            match serde_json::from_str(&json) {
+                Ok(data) => data,
+                Err(err) => {
+                    println!("Collision polyogn path '{:?}'", &p);
+                    println!("Jsonfile in the wrong format. Creating default(empty) frame polygons\n{:?}", err);
+                    Default::default()
+                }
+            }
+        },
+        Err(err) => {
+            println!("Collision polyogn path '{:?}'", &p);
+            println!("Error loading json file. Creating default(empty) frame polygons\n{:?}", err);
+            Default::default()
+        }
+    }
+}
+
+
+
+
 struct ActiveAnimation<'a> {
     sheet: &'a SheetAnimation,
     repeat: bool,
+    frame: usize,
     elapsed: f32,
     scale: f32,
     sprite: Sprite
 }
 
 
-pub fn load_by_name(gl: &gl::Gl, path: &std::path::PathBuf, id: &mut usize) -> SheetAnimation {
+pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, name: &str, id: &mut usize) -> SheetAnimation {
 
-    let anim_json = std::fs::read_to_string(path);
+    let mut p = PathBuf::new();
+    p.push(path);
+    p.push(format!("{name}.json"));
+
+    let anim_json = std::fs::read_to_string(p);
+
     let sheet_anim : SheetArrayAnimation = match anim_json {
         Ok(json) => {
             serde_json::from_str(&json).unwrap()
@@ -205,9 +257,10 @@ pub fn load_by_name(gl: &gl::Gl, path: &std::path::PathBuf, id: &mut usize) -> S
 
     let size = na::Vector2::new(sheet_anim.meta.size.w as f32, (sheet_anim.meta.size.h /2) as f32);
 
-    let mut base_path = path.clone();
+    let mut base_path = PathBuf::new();
 
-    base_path.pop();
+    base_path.push(path);
+
     base_path.push(&sheet_anim.meta.image);
 
     let img = image::open(&base_path).unwrap().into_rgba8();
@@ -233,8 +286,13 @@ pub fn load_by_name(gl: &gl::Gl, path: &std::path::PathBuf, id: &mut usize) -> S
         });
     }
 
+
+    let collision_polygons = load_sheet_collision_polygons(&path, name);
+
     let anim = SheetAnimation {
         texture_id,
+        name: name.to_string(),
+        collision_polygons,
         size: na::Vector2::new(sheet_anim.meta.size.w as f32, sheet_anim.meta.size.h as f32),
         animation: Animation { frames },
     };

@@ -89,6 +89,7 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
     // impl close
     res += "}\n";
 
+    //println!("{}", res);
     res.parse().unwrap()
 
 }
@@ -104,7 +105,7 @@ fn add_load_all(res: &mut String, name: &str, names: &std::collections::HashSet:
 
 
     for field_name in names {
-        *res += &format!("{}:  gl_lib::animations::sheet_animation::load_by_name(gl, &std::path::Path::new(path).join(\"{field_name}.json\"), &mut id),\n", field_name.to_lowercase())
+        *res += &format!("{}: gl_lib::animations::sheet_animation::load_by_name(gl, &std::path::Path::new(path), &\"{field_name}\", &mut id),\n", field_name.to_lowercase())
 
     }
 

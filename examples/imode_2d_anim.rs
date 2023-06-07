@@ -37,7 +37,6 @@ fn main() -> Result<(), failure::Error> {
 
     let mut anim_id = player.start(&assets.attack, 3.0, true);
 
-    println!("{:#?}", assets);
     let mut pos = V2i::new(300, 400);
 
     loop {
@@ -89,7 +88,6 @@ struct EntityCollidable<'a> {
 
 
 /*
-
 /// Find weapon/spell collision with hittable part of target
 fn find_collision(attacks: &[EntityCollidable], targets: &[EntityCollidable]) {
 
@@ -99,7 +97,7 @@ fn find_collision(attacks: &[EntityCollidable], targets: &[EntityCollidable]) {
                 if collision(attack.collision_polygon, attack.transform,
                              target.collision_polygon, target.transform) {
 
-                    add collision to output
+                    //add collision to output
                 }
             }
         }
@@ -110,9 +108,11 @@ fn find_collision(attacks: &[EntityCollidable], targets: &[EntityCollidable]) {
 /// Method 1
 /// store polygons on animaiton_sheet, each frame has a hashmap<string, polygon>, get_polygon takes animation_id, and a polygon_name,
 ///returns Option<&Polygon>
-fn get_attack_polygon(animaiton_id: usize, player: &SheetAnimationPlayer) {
+fn get_attack_polygon(animation_id: usize, player: &SheetAnimationPlayer) {
     // animaiton_sheet_player know which frame and wich animation
     let attack_polygon = player.get_polygon(animation_id, "attack");
 
     let body_polygon = player.get_polygon(animation_id, "body");
+
+}
 */

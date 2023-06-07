@@ -23,7 +23,7 @@ impl<T: Animatable> Animation<T> {
         seconds
     }
 
-    pub fn at(&self, elapsed: f32) -> Option<T> {
+    pub fn at(&self, elapsed: f32) -> Option<(T, usize)> {
         let mut skipped = 0.0;
         for i in 0..self.frames.len() {
             skipped += self.frames[i].frame_seconds;
@@ -43,7 +43,7 @@ impl<T: Animatable> Animation<T> {
 
                 let t = math::clamp01(elapsed,start, end);
 
-                return Some(T::lerp(&f1.data, &f2.data, t));
+                return Some((T::lerp(&f1.data, &f2.data, t), i));
 
             }
         }

@@ -6,7 +6,7 @@ use gl_lib::collision2d::polygon::{Polygon, Dir};
 use gl_lib::texture::TextureId;
 use gl_lib::typedef::*;
 use gl_lib_proc::sheet_assets;
-use gl_lib::animations::sheet_animation::{SheetCollisionPolygons, Sprite, SheetAnimation};
+use gl_lib::animations::sheet_animation::{self, SheetCollisionPolygons, Sprite, SheetAnimation};
 use std::path::{Path, PathBuf};
 use gl_lib::math::*;
 use std::collections::HashMap;
@@ -196,10 +196,6 @@ fn save_all(path_s: &str, edit: &Edit) {
 
     let mut data = SheetCollisionPolygons::default();
 
-
-
-
-
     for i in 0..edit.sheet.frames.len() {
         data.insert(i, edit.sheet.frames[i].polygons.clone());
     }
@@ -215,26 +211,6 @@ fn save_all(path_s: &str, edit: &Edit) {
 }
 
 
-fn load_all<P: AsRef<Path> + std::fmt::Debug>(path: &P) -> SheetCollisionPolygons {
-    let json = std::fs::read_to_string(path);
-    match json {
-        Ok(json) => {
-            match serde_json::from_str(&json) {
-                Ok(data) => data,
-                Err(err) => {
-                    println!("{:?}", &path);
-                    println!("Jsonfile in the wrong format. Creating default(empty) frame polygons\n{:?}", err);
-                    Default::default()
-                }
-            }
-        },
-        Err(err) => {
-            println!("{:?}", &path);
-            println!("Error loading json file. Creating default(empty) frame polygons\n{:?}", err);
-            Default::default()
-        }
-    }
-}
 
 fn save(edit: &Edit, frame: usize) {
     match serde_json::to_string(&edit.sheet.frames[frame].polygons) {
@@ -255,7 +231,7 @@ fn create_sheet_edit(path_s: &str, name: String, sheet: &SheetAnimation) -> Shee
     path.push(&format!("{}_polygons.json", &name));
 
     let mut frames : Vec::<FrameEdit> = vec![];
-    let polygons = load_all(&path);
+    let polygons = sheet_animation::load_sheet_collision_polygons(&path);
 
     let mut f = 0;
 
