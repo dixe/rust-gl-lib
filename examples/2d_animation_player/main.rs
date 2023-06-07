@@ -8,7 +8,7 @@ use gl_lib::animations::sheet_animation::{SheetAnimation, Sprite, SheetAnimation
 use gl_lib::typedef::*;
 use gl_lib::collision2d::polygon::{PolygonTransform, ComplexPolygon};
 use gl_lib::math::AsV2;
-
+use sdl2::event;
 
 
 // generate assets struct
@@ -37,16 +37,17 @@ fn main() -> Result<(), failure::Error> {
 
     let mut player = SheetAnimationPlayer::new();
 
-    let mut anim_id = player.start(&assets.attack, 4.0, true);
     let mut anim_id2 = player.start(&assets.idle, 4.0, true);
 
-    let mut pos = V2i::new(400, 600);
+    let mut pos = V2::new(400.0, 600.0);
 
     let mut pos2 = V2i::new(500, 600);
 
     let mut playing = true;
 
+    let mut inputs = Inputs::default();
 
+    let mut player_state = PlayerState::Idle(player.start(&assets.idle, 4.0, true));
 
     let mut time_scale = 1.0;
     let mut poly_name = "body".to_string();
@@ -58,18 +59,46 @@ fn main() -> Result<(), failure::Error> {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
         ui.consume_events(&mut event_pump);
+        handle_inputs(&mut ui, &mut inputs);
         let dt = ui.dt() * time_scale;;
 
 
+            match player_state {
+                PlayerState::Idle(_) => {
+                    if inputs.left {
+                        pos.x -= 100.0 * dt;
+                    }
+
+                    if inputs.right {
+                        pos.x += 100.0 * dt;
+                    }
+                },
+                PlayerState::Attack(_) => {
+                }
+            }
+
         if ui.button("Idle") {
-            player.remove(anim_id);
-            anim_id = player.start(&assets.idle, 4.0, true)
+            match player_state {
+                PlayerState::Idle(_) => {},
+                PlayerState::Attack(id) => {
+                    player.remove(id);
+                    let anim_id = player.start(&assets.idle, 4.0, true);
+                    player_state = PlayerState::Idle(anim_id);
+
+                }
+            }
         }
 
 
-        if ui.button("Attack") {
-            player.remove(anim_id);
-            anim_id = player.start(&assets.attack, 4.0, true)
+        if ui.button("Attack") || inputs.mouse {
+            match player_state {
+                PlayerState::Idle(id) => {
+                    player.remove(id);
+                    let anim_id = player.start(&assets.attack, 4.0, false);
+                    player_state = PlayerState::Attack(anim_id);
+                },
+                PlayerState::Attack(_) => {}
+            }
         }
 
         if ui.button("Play/Pause") {
@@ -83,7 +112,7 @@ fn main() -> Result<(), failure::Error> {
 
         ui.drawer2D.z = 1.0;
         // drag animation to be where we want
-        ui.drag_point(&mut pos, 10.0);
+        //ui.drag_point(&mut pos, 10.0);
 
         ui.drag_point(&mut pos2, 10.0);
         ui.drawer2D.z = 0.0;
@@ -92,14 +121,25 @@ fn main() -> Result<(), failure::Error> {
 
         if playing {
             player.update(dt);
+
+            match player_state {
+                PlayerState::Idle(_) => {},
+                PlayerState::Attack(id) => {
+                    if player.expired(id) {
+                        let anim_id = player.start(&assets.idle, 4.0, true);
+                        player_state = PlayerState::Idle(anim_id);
+
+                    }
+                }
+            }
+
         }
+
 
         ui.small_text(&format!("{:?}", hits));
 
-
-
         // draw animation frame at locations
-        player.draw(&mut ui.drawer2D, pos, anim_id);
+        player.draw(&mut ui.drawer2D, pos, player_state.animation_id());
         player.draw(&mut ui.drawer2D, pos2, anim_id2);
 
 
@@ -108,7 +148,7 @@ fn main() -> Result<(), failure::Error> {
 
         let ct = CollisionTest {
             player: &player,
-            attacker: anim_id,
+            attacker: player_state.animation_id(),
             target: anim_id2,
             target_pos: pos2.v2(),
             attack_pos: pos.v2()
@@ -127,6 +167,20 @@ fn main() -> Result<(), failure::Error> {
     }
 }
 
+
+enum PlayerState {
+    Idle(AnimationId),
+    Attack(AnimationId)
+}
+
+impl PlayerState {
+    fn animation_id(&self) -> AnimationId {
+        match self {
+            Self::Idle(id) => *id,
+            Self::Attack(id)=> *id,
+        }
+    }
+}
 
 struct CollisionTest<'a> {
     player: &'a SheetAnimationPlayer<'a>,
@@ -159,6 +213,47 @@ fn collide_draw(drawer2d: &mut Drawer2D, ct: &CollisionTest) -> bool {
 }
 
 
+#[derive(Default)]
+struct Inputs {
+    left: bool,
+    right: bool,
+    mouse: bool
+}
+
+
+
+fn handle_inputs(ui: &mut Ui, inputs: &mut Inputs) {
+
+    use event::Event::*;
+    use sdl2::keyboard::Keycode::*;
+
+    inputs.mouse = false;
+
+    for e in &ui.frame_events {
+        match e {
+            KeyDown { keycode: Some(D), ..} => {
+                inputs.right = true;
+            },
+            KeyDown { keycode: Some(A), ..} => {
+                inputs.left = true;
+            },
+            KeyUp { keycode: Some(D), ..} => {
+                inputs.right = false;
+            },
+            KeyUp { keycode: Some(A), ..} => {
+                inputs.left = false;
+            },
+            MouseButtonUp {..} => {
+                inputs.mouse = true;
+            }
+            _ => {}
+        }
+    }
+}
+
+
+
+/*
 
 struct EntityCollidable<'a> {
     entity_id: usize,
@@ -166,14 +261,6 @@ struct EntityCollidable<'a> {
     collision_polygon : ComplexPolygon<'a>,
     transform: na::Matrix3::<f32> // homogeneous 3d matrixt for transforming V2 in 2d
 }
-
-
-
-
-
-
-
-/*
 
 /// Find weapon/spell collision with hittable part of target
 fn find_collision(attacks: &[EntityCollidable], targets: &[EntityCollidable]) {

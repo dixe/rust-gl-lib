@@ -172,7 +172,7 @@ impl<'a> SheetAnimationPlayer<'a> {
     }
 
     pub fn expired(&self, id: AnimationId) -> bool {
-        self.animations.contains_key(&id)
+        !self.animations.contains_key(&id)
     }
 
     pub fn draw<T : Numeric + std::fmt::Debug>(&mut self, drawer2D: &mut Drawer2D, pos: na::Vector2::<T>, anim_id: AnimationId) {
