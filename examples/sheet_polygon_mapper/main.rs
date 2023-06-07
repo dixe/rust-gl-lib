@@ -37,7 +37,7 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
     let path =  "examples/2d_animation_player/assets/";
-    let assets = Assets::load_all(&gl, path);
+    let mut assets = Assets::load_all(&gl, path);
 
     let mut state = State::Selecting;
 
@@ -55,22 +55,21 @@ fn main() -> Result<(), failure::Error> {
         handle_inputs(&mut ui);
         match state {
             State::Selecting => {
-                if ui.button("idle") {
-                    state = State::Edit(Edit {
-                        sheet: create_sheet_edit(path, "idle", &assets.idle),
-                        name: "body".to_owned(),
-                        frame: 0
-                    });
+
+                for (name, asset) in assets.all_names() {
+                    if ui.button(name) {
+                        state = State::Edit(Edit {
+                            sheet: create_sheet_edit(path, name, asset),
+                            name: "body".to_owned(),
+                            frame: 0
+                        });
+                    }
                 }
 
-                if ui.button("attack") {
-                    state = State::Edit(Edit {
-                        sheet: create_sheet_edit(path, "attack", &assets.attack),
-                        name: "body".to_owned(),
-                        frame: 0
-                    });
+                ui.newline();
+                if ui.button("Reload") {
+                    assets = Assets::load_all(&gl, path);
                 }
-
 
             },
             State::Edit(ref mut edit) => {

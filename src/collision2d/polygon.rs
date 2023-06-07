@@ -5,7 +5,6 @@ use crate::imode_gui::drawer2d;
 use serde::{Serialize, Deserialize};
 use crate::math;
 use crate::math::Homogeneous;
-
 type V2 = na::Vector2::<f32>;
 type V3 = na::Vector3::<f32>;
 

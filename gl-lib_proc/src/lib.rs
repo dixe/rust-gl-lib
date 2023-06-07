@@ -85,24 +85,40 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
     res += &format!("impl {name} {{\n");
     add_load_all(&mut res, &name, &names);
 
+    add_all_names(&mut res, &name, &names);
+
 
     // impl close
     res += "}\n";
 
-    //println!("{}", res);
+    println!("{}", res);
     res.parse().unwrap()
 
 }
 
+fn add_all_names(res: &mut String, name: &str, names: &std::collections::HashSet::<String>) {
+
+    *res += "pub fn all_names(&self) -> Vec::<(&str, &gl_lib::animations::sheet_animation::SheetAnimation)>{\n";
+    *res += "vec![\n";
+
+
+    for field_name in names {
+        *res += &format!("(\"{}\", &self.{}),\n", field_name.to_lowercase(), field_name.to_lowercase())
+
+    }
+
+    *res += "]\n";
+
+
+    // pub fn {
+    *res += "}\n";
+}
+
 fn add_load_all(res: &mut String, name: &str, names: &std::collections::HashSet::<String>) {
-
-
 
     *res += &format!("pub fn load_all(gl: &gl_lib::gl::Gl, path: &str) -> {name} {{\n");
     *res += &format!("let mut id = 1;\n");
     *res += &format!("{name} {{\n ");
-
-
 
     for field_name in names {
         *res += &format!("{}: gl_lib::animations::sheet_animation::load_by_name(gl, &std::path::Path::new(path), &\"{field_name}\", &mut id),\n", field_name.to_lowercase())
