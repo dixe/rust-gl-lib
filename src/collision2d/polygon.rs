@@ -4,6 +4,7 @@ use crate::collision2d::gjk;
 use crate::imode_gui::drawer2d;
 use serde::{Serialize, Deserialize};
 use crate::math;
+use crate::math::Homogeneous;
 
 type V2 = na::Vector2::<f32>;
 type V3 = na::Vector3::<f32>;
@@ -89,6 +90,7 @@ pub struct PolygonTransform {
     pub translation: V2,
     pub rotation: f32,
     pub scale: f32,
+    pub flip_y: bool
 }
 
 impl PolygonTransform {
@@ -99,9 +101,14 @@ impl PolygonTransform {
         scale[0] = self.scale;
         scale[4] = self.scale;
 
+        let y_flip = if self.flip_y { -1.0 } else { 1.0 };
+        let mut flip = na::Matrix3::identity();
+        flip[0] = y_flip;
+
         let trans: na::Translation2::<f32> = self.translation.into();
         let rot = na::Rotation2::new(self.rotation);
-        trans.to_homogeneous() * rot.to_homogeneous() * scale
+
+        trans.to_homogeneous() * rot.to_homogeneous() * flip * scale
 
     }
 
@@ -121,7 +128,8 @@ impl PolygonTransform {
         Self {
             translation: self.translation.lerp(&other.translation, t),
             rotation: math::lerp(self.rotation, other.rotation, t),
-            scale: math::lerp(self.scale, other.scale, t)
+            scale: math::lerp(self.scale, other.scale, t),
+            flip_y: other.flip_y // can't realy interpolate flip_y
         }
     }
 }
@@ -390,7 +398,7 @@ pub enum Dir {
 pub struct ComplexPolygon<'a> {
     pub polygon: &'a Polygon,
     pub indices: &'a Vec::<usize>,
-    pub transform: &'a na::Matrix3::<f32>
+    pub transform: &'a na::Matrix3::<f32>,
 }
 
 impl<'a> ComplexPolygon<'a> {
@@ -444,18 +452,4 @@ impl<'a> drawer2d::ConvexPolygon for ComplexPolygon<'a> {
             buffer.push(0.0);
         }
     }
-}
-
-
-trait Homogeneous {
-
-    fn homogeneous(&self) -> V3;
-}
-
-impl Homogeneous for V2 {
-
-    fn homogeneous(&self) -> V3 {
-        self.push(1.0)
-    }
-
 }

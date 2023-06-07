@@ -4,7 +4,7 @@ use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::Pos;
 use gl_lib::general_animation::{Animation, Animatable, Frame};
-use gl_lib::animations::sheet_animation::{SheetAnimation, Sprite, SheetAnimationPlayer, AnimationId};
+use gl_lib::animations::sheet_animation::{Start, SheetAnimation, Sprite, SheetAnimationPlayer, AnimationId};
 use gl_lib::typedef::*;
 use gl_lib::collision2d::polygon::{PolygonTransform, ComplexPolygon};
 use gl_lib::math::AsV2;
@@ -37,7 +37,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut player = SheetAnimationPlayer::new();
 
-    let mut anim_id2 = player.start(&assets.idle, 4.0, true);
+
 
     let mut pos = V2::new(400.0, 600.0);
 
@@ -47,11 +47,17 @@ fn main() -> Result<(), failure::Error> {
 
     let mut inputs = Inputs::default();
 
-    let mut player_state = PlayerState::Idle(player.start(&assets.idle, 4.0, true));
+    let scale = 4.0;
+    let mut flip_y = false;
+    let mut player_state = PlayerState::Idle(player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y}));
+
+    let mut anim_id2 = player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y});
 
     let mut time_scale = 1.0;
     let mut poly_name = "body".to_string();
     let mut hits = 0;
+
+
     loop {
 
         // Basic clear gl stuff and get events to UI
@@ -62,19 +68,28 @@ fn main() -> Result<(), failure::Error> {
         handle_inputs(&mut ui, &mut inputs);
         let dt = ui.dt() * time_scale;;
 
-
-            match player_state {
-                PlayerState::Idle(_) => {
-                    if inputs.left {
-                        pos.x -= 100.0 * dt;
-                    }
-
-                    if inputs.right {
-                        pos.x += 100.0 * dt;
-                    }
-                },
-                PlayerState::Attack(_) => {
+        match player_state {
+            PlayerState::Idle(_) => {
+                if inputs.left {
+                    pos.x -= 100.0 * dt;
+                    flip_y = true;
                 }
+
+                if inputs.right {
+                    pos.x += 100.0 * dt;
+                    flip_y = false;
+                }
+            },
+            PlayerState::Attack(_) => {
+            }
+        }
+
+
+         match player_state {
+                PlayerState::Idle(id) => {
+                    player.flip_y(id, flip_y);
+                },
+                PlayerState::Attack(_) => {}
             }
 
         if ui.button("Idle") {
@@ -82,7 +97,7 @@ fn main() -> Result<(), failure::Error> {
                 PlayerState::Idle(_) => {},
                 PlayerState::Attack(id) => {
                     player.remove(id);
-                    let anim_id = player.start(&assets.idle, 4.0, true);
+                    let anim_id = player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y});
                     player_state = PlayerState::Idle(anim_id);
 
                 }
@@ -94,7 +109,7 @@ fn main() -> Result<(), failure::Error> {
             match player_state {
                 PlayerState::Idle(id) => {
                     player.remove(id);
-                    let anim_id = player.start(&assets.attack, 4.0, false);
+                    let anim_id = player.start(Start {sheet: &assets.attack, scale, repeat: false, flip_y});
                     player_state = PlayerState::Attack(anim_id);
                 },
                 PlayerState::Attack(_) => {}
@@ -105,8 +120,12 @@ fn main() -> Result<(), failure::Error> {
             playing = !playing;
         }
 
+        if ui.button("Flip y") {
+            flip_y = !flip_y;
+        }
+
         ui.label("Time scale");
-         ui.slider(&mut time_scale, 0.1, 3.1);
+        ui.slider(&mut time_scale, 0.1, 3.1);
 
         ui.textbox(&mut poly_name);
 
@@ -126,7 +145,7 @@ fn main() -> Result<(), failure::Error> {
                 PlayerState::Idle(_) => {},
                 PlayerState::Attack(id) => {
                     if player.expired(id) {
-                        let anim_id = player.start(&assets.idle, 4.0, true);
+                        let anim_id = player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y});
                         player_state = PlayerState::Idle(anim_id);
 
                     }
@@ -155,7 +174,7 @@ fn main() -> Result<(), failure::Error> {
         };
 
 
-        if collide_draw(&mut ui.drawer2D, &ct) {
+        if collide_draw(&mut ui, &ct) {
             hits += 1;
         }
 
@@ -190,22 +209,30 @@ struct CollisionTest<'a> {
     attack_pos: V2
 }
 
-fn collide_draw(drawer2d: &mut Drawer2D, ct: &CollisionTest) -> bool {
+fn collide_draw(ui: &mut Ui, ct: &CollisionTest) -> bool {
 
     let mut res = false;
-    if let Some((target, target_scale)) = ct.player.get_polygon(ct.target, "body") {
+    if let Some((target, target_scale, target_flip_y)) = ct.player.get_polygon(ct.target, "body") {
 
-        if let Some((attack, attack_scale)) = ct.player.get_polygon(ct.attacker, "attack") {
+        if let Some((attack, attack_scale, attack_flip_y)) = ct.player.get_polygon(ct.attacker, "attack") {
 
             let mut target_transform = PolygonTransform::default();
             target_transform.scale = target_scale;
             target_transform.translation = ct.target_pos;
+            target_transform.flip_y = target_flip_y;
 
             let mut attack_transform = PolygonTransform::default();
             attack_transform.scale = attack_scale;
             attack_transform.translation = ct.attack_pos;
+            attack_transform.flip_y = attack_flip_y;
 
-            res = attack.collide_draw(drawer2d, &attack_transform.mat3(), target, &target_transform.mat3());
+            res = attack.collide_draw(&mut ui.drawer2D, &attack_transform.mat3(), target, &target_transform.mat3());
+
+            if res {
+            ui.view_polygon(&attack.polygon, &attack_transform);
+
+                ui.view_polygon(&target.polygon, &target_transform);
+            }
         }
     }
 

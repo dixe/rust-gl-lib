@@ -11,6 +11,6 @@ void main()
 {
 
   vec4 pos = transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);
-  OUT.Color = vec4(0.9, 0.1, 0., 1.0);
+  OUT.Color = vec4(0.0, 0.1, 0., 1.0);
   gl_Position = pos;
 }

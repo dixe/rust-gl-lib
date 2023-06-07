@@ -104,6 +104,13 @@ pub struct SheetAnimationPlayer<'a> {
 }
 
 
+pub struct Start<'a> {
+    pub sheet: &'a SheetAnimation,
+    pub scale: f32,
+    pub repeat: bool,
+    pub flip_y: bool,
+}
+
 impl<'a> SheetAnimationPlayer<'a> {
 
     pub fn new() -> Self {
@@ -114,27 +121,34 @@ impl<'a> SheetAnimationPlayer<'a> {
         }
     }
 
-    pub fn get_polygon(&self, anim_id: AnimationId, name: &str) -> Option<(&SheetCollisionPolygon, f32)> {
+    pub fn get_polygon(&self, anim_id: AnimationId, name: &str) -> Option<(&SheetCollisionPolygon, f32, bool)> {
         if let Some(active) = self.animations.get(&anim_id) {
             if let Some(map) = active.sheet.collision_polygons.get(&active.frame) {
-                return map.get(name).map(|p| (p, active.scale));
+                return map.get(name).map(|p| (p, active.scale, active.flip_y));
             }
         }
 
         None
     }
 
-    pub fn start(&mut self, sheet_anim: &'a SheetAnimation, scale: f32, repeat: bool) -> AnimationId {
+    pub fn flip_y(&mut self, anim_id: AnimationId, flip_y: bool) {
+        if let Some(active) = self.animations.get_mut(&anim_id) {
+            active.flip_y = flip_y;
+        }
+    }
+
+    pub fn start(&mut self, start: Start<'a>) -> AnimationId {
         let id = self.next_id;
 
         self.animations.insert(id,
                                ActiveAnimation {
-                                   sheet: sheet_anim,
-                                   repeat,
+                                   sheet: start.sheet,
+                                   repeat: start.repeat,
                                    frame: 0,
                                    elapsed: 0.0,
-                                   sprite: sheet_anim.animation.frame(0),
-                                   scale,
+                                   sprite: start.sheet.animation.frame(0),
+                                   scale: start.scale,
+                                   flip_y: start.flip_y,
                                });
 
         self.next_id += 1;
@@ -185,6 +199,7 @@ impl<'a> SheetAnimationPlayer<'a> {
                 pixel_r: anim.sprite.x + anim.sprite.w,
                 pixel_b: anim.sprite.y,
                 pixel_t: anim.sprite.y + anim.sprite.h,
+                flip_y: anim.flip_y
             };
 
             let size = na::Vector2::new(anim.sprite.w, anim.sprite.h).v2() * anim.scale;
@@ -238,6 +253,7 @@ struct ActiveAnimation<'a> {
     frame: usize,
     elapsed: f32,
     scale: f32,
+    flip_y: bool,
     sprite: Sprite
 }
 
@@ -370,8 +386,9 @@ impl SheetCollisionPolygon {
     }
 
 
-        pub fn collide_draw(&self, drawer2d: &mut Drawer2D, transform: &na::Matrix3::<f32>, other: &SheetCollisionPolygon, transform_other: &na::Matrix3::<f32>) -> bool {
+    pub fn collide_draw(&self, drawer2d: &mut Drawer2D, transform: &na::Matrix3::<f32>, other: &SheetCollisionPolygon, transform_other: &na::Matrix3::<f32>) -> bool {
         let mut res = false;
+
         for indices_1 in &self.sub_divisions {
             let sub_p_1 = ComplexPolygon {
                 polygon: &self.polygon,
@@ -388,11 +405,10 @@ impl SheetCollisionPolygon {
 
 
                 let collision = gjk::gjk_intersection(&sub_p_1, &sub_p_2);
-                if collision {
 
+                if collision {
                     drawer2d.convex_polygon(&sub_p_1);
                     drawer2d.convex_polygon(&sub_p_2);
-
                     return true;
                 }
             }

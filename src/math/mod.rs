@@ -56,3 +56,30 @@ impl<T : Numeric + std::fmt::Debug> AsV2i for na::Vector2::<T> {
     }
 
 }
+
+
+pub trait Transform2 {
+    fn transform(&self, transform: na::Matrix3::<f32>) -> Self;
+}
+
+
+impl Transform2 for na::Vector2::<f32> {
+    fn transform(&self, transform: na::Matrix3::<f32>) -> Self {
+        let transformed  = transform * self.homogeneous();
+        transformed.xy() / transformed.z
+    }
+}
+
+
+pub trait Homogeneous {
+
+    fn homogeneous(&self) -> na::Vector3::<f32>;
+}
+
+impl Homogeneous for na::Vector2::<f32> {
+
+    fn homogeneous(&self) -> na::Vector3::<f32> {
+        self.push(1.0)
+    }
+
+}

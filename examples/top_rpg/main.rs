@@ -77,7 +77,7 @@ fn main() -> Result<(), failure::Error> {
                 let new_elapsed = elapsed + dt;
                 mode = Mode::Play(new_elapsed);
 
-                if let Some(transform) = animation.at(elapsed) {
+                if let Some((transform, _)) = animation.at(elapsed) {
                     cur_transform = transform;
                 } else {
                     mode = Mode::Edit(0);

@@ -300,6 +300,7 @@ fn img_edit(ui: &mut Ui, edit: &mut FrameEdit, poly_name: &str, sheet_size: V2, 
         pixel_r: edit.sprite.x + edit.sprite.w,
         pixel_b: edit.sprite.y,
         pixel_t: edit.sprite.y + edit.sprite.h,
+        flip_y: false
     };
 
 
@@ -322,6 +323,7 @@ fn img_edit(ui: &mut Ui, edit: &mut FrameEdit, poly_name: &str, sheet_size: V2, 
         pixel_r: edit.sprite.x + edit.sprite.w,
         pixel_b: edit.sprite.y,
         pixel_t: edit.sprite.y + edit.sprite.h,
+        flip_y: false
     };
 
     // draw "center" of polygon on base image with anchor = output_offset

@@ -151,7 +151,7 @@ impl Drawer2D {
 
         let geom = Geom { x, y, w, h };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
         self.color_square_shader.set_mat4(&self.gl, "transform", transform);
 
         self.color_square.render(&self.gl);
@@ -171,7 +171,7 @@ impl Drawer2D {
             h: r * 2.0,
         };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
 
 
         self.circle_shader.set_transform(transform);
@@ -209,7 +209,7 @@ impl Drawer2D {
             h: r * 2.0,
         };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
 
 
         self.circle_outline_shader.set_transform(transform);
@@ -266,7 +266,7 @@ impl Drawer2D {
 
         let geom = Geom { x, y, w, h };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
 
         self.color_square_h_line_shader.set_mat4(&self.gl, "transform", transform);
 
@@ -280,7 +280,7 @@ impl Drawer2D {
 
         let geom = Geom { x, y, w, h };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0,  &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
+        let transform = unit_square_transform_matrix(&geom, 0.0,  &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
 
 
         self.rounded_rect_shader.set_transform(transform);
@@ -350,7 +350,7 @@ impl Drawer2D {
             h: size.y
         };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
         self.texture_shader.setup(ts::Uniforms { texture_id, transform });
 
         self.texture_square.render(&self.gl);
@@ -369,7 +369,9 @@ impl Drawer2D {
         };
 
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(size.x.to_f32() / 2.0, size.y.to_f32()), self.z);
+        let y_flip = if sprite.flip_y { -1.0} else { 1.0};
+
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(size.x.to_f32() / 2.0, size.y.to_f32()), y_flip, self.z);
         self.texture_shader.setup(ts::Uniforms { texture_id, transform });
 
         let l = sprite.pixel_l as f32 / sprite.sheet_size.x;
@@ -396,7 +398,7 @@ impl Drawer2D {
         };
 
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), self.z);
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
 
         self.texture_shader.setup(ts::Uniforms { texture_id, transform });
 
@@ -415,7 +417,8 @@ pub struct SheetSubSprite {
     pub pixel_l: i32,
     pub pixel_r: i32,
     pub pixel_t: i32,
-    pub pixel_b: i32
+    pub pixel_b: i32,
+    pub flip_y: bool
 }
 
 
@@ -488,7 +491,9 @@ fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numer
     geom: &Geom<T1, T2, T3, T4>,
     radians: f32,
     viewport: &viewport::Viewport,
-    anchor: na::Vector2::<T5>, z: f32) -> na::Matrix4::<f32> {
+    anchor: na::Vector2::<T5>,
+    y_flip: f32,
+    z: f32) -> na::Matrix4::<f32> {
 
     let mut scale = na::Matrix4::<f32>::identity();
     scale[0] = geom.w.to_f32();
@@ -513,7 +518,11 @@ fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numer
 
     let proj = Orthographic3::new(0.0, viewport.w as f32, 0.0, viewport.h as f32, -10.0, 100.0);
 
-    proj.to_homogeneous() * t.to_homogeneous() * rot.to_homogeneous() * scale
+    let mut flip = na::Matrix4::identity();
+    flip[0] = y_flip;
+    flip[5] = 1.0;
+
+    proj.to_homogeneous() * t.to_homogeneous() * rot.to_homogeneous() * flip * scale
 
 }
 

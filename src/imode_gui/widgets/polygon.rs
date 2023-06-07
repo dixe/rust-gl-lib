@@ -2,7 +2,7 @@ use super::*;
 use crate::collision2d::polygon::{Polygon, PolygonTransform};
 use crate::collision2d::gjk::Shape;
 use std::collections::HashSet;
-
+use crate::math::Transform2;
 
 type V2 = na::Vector2::<f32>;
 
@@ -194,26 +194,28 @@ impl Ui {
 
     }
 
-    pub fn view_polygon(&mut self, polygon: &Polygon, transform: &PolygonTransform) {
+    pub fn view_polygon(&mut self, polygon: &Polygon, p_trans: &PolygonTransform) {
+
+        let transform = p_trans.mat3();
 
         let len = polygon.vertices.len();
         let color = Color::Rgb(0, 0, 0);
         for i in 0..len {
-            let v = transform.map(polygon.vertices[i]);
+            let v = polygon.vertices[i].transform(transform);
 
             let mut r = 1.0;
             self.drawer2D.circle(v.x, v.y, r, color);
 
             if i < len - 1 {
-                let p1 = transform.map(polygon.vertices[i]);
-                let p2 = transform.map(polygon.vertices[i + 1]);
-                self.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 2.0);
+                let p2 = polygon.vertices[i + 1].transform(transform);
+                self.drawer2D.line(v.x, v.y, p2.x, p2.y, 2.0);
             }
         }
 
         if len > 2 {
-            let p1 = transform.map(polygon.vertices[len - 1]);
-            let p2 = transform.map(polygon.vertices[0]);
+            let p1 = polygon.vertices[len - 1].transform(transform);
+            let p2 = polygon.vertices[0].transform(transform);
+
             self.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 2.0);
         }
     }
