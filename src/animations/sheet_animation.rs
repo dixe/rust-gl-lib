@@ -8,7 +8,8 @@ use crate::imode_gui::ui::Ui;
 use crate::math::numeric::Numeric;
 use std::collections::HashMap;
 use crate::math::{AsV2, AsV2i};
-use crate::collision2d::polygon::Polygon;
+use crate::collision2d::polygon::{self, Polygon, ComplexPolygon};
+use crate::collision2d::gjk;
 
 
 
@@ -20,7 +21,7 @@ pub struct SheetAnimation {
     pub texture_id: TextureId,
     pub name: String,
     pub animation: Animation<Sprite>,
-    pub collision_polygons: SheetCollisionPolygons,
+    pub collision_polygons: ProcessedSheetCollisionPolygons,
     pub size: V2,
 
 }
@@ -95,6 +96,7 @@ pub struct Meta {
 }
 
 
+
 pub struct SheetAnimationPlayer<'a> {
     animations: HashMap::<AnimationId, ActiveAnimation<'a>>,
     next_id: AnimationId,
@@ -112,7 +114,7 @@ impl<'a> SheetAnimationPlayer<'a> {
         }
     }
 
-    pub fn get_polygon(&self, anim_id: AnimationId, name: &str) -> Option<(&Polygon, f32)> {
+    pub fn get_polygon(&self, anim_id: AnimationId, name: &str) -> Option<(&SheetCollisionPolygon, f32)> {
         if let Some(active) = self.animations.get(&anim_id) {
             if let Some(map) = active.sheet.collision_polygons.get(&active.frame) {
                 return map.get(name).map(|p| (p, active.scale));
@@ -198,6 +200,8 @@ impl<'a> SheetAnimationPlayer<'a> {
 /// Frame to polygons map. Name to polygon, fx body, attack, ect.
 //#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub type SheetCollisionPolygons = HashMap::<usize, HashMap::<String, crate::collision2d::polygon::Polygon>>;
+
+pub type ProcessedSheetCollisionPolygons = HashMap::<usize, HashMap::<String, SheetCollisionPolygon>>;
 
 
 pub fn load_sheet_collision_polygons<P: AsRef<Path> + std::fmt::Debug>(path: &P, name: &str) -> SheetCollisionPolygons {
@@ -287,7 +291,35 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, nam
     }
 
 
-    let collision_polygons = load_sheet_collision_polygons(&path, name);
+    let  polygons = load_sheet_collision_polygons(&path, name);
+
+
+    let mut collision_polygons : ProcessedSheetCollisionPolygons = Default::default();
+
+    // make subdivisions for polygon and create new hashmap
+    for (frame, map) in &polygons {
+        let mut inner : HashMap::<String, SheetCollisionPolygon> = Default::default();
+
+        for (name, polygon) in map {
+
+            let mut new_poly = polygon.clone();
+
+
+            let mut sub_divisions = vec![];
+
+            for sub in polygon::calculate_subdivision(&mut new_poly) {
+                sub_divisions.push(sub.indices);
+            }
+
+            inner.insert(name.to_string(), SheetCollisionPolygon {
+                polygon: new_poly,
+                sub_divisions
+            });
+        }
+
+        collision_polygons.insert(*frame, inner);
+    }
+
 
     let anim = SheetAnimation {
         texture_id,
@@ -299,4 +331,73 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, nam
 
     *id += 1;
     anim
+}
+
+#[derive(Default, Debug)]
+pub struct SheetCollisionPolygon {
+    pub polygon: Polygon,
+    sub_divisions: Vec::<Vec::<usize>>,
+}
+
+
+impl SheetCollisionPolygon {
+
+
+    pub fn collide(&self, transform: &na::Matrix3::<f32>, other: &SheetCollisionPolygon, transform_other: &na::Matrix3::<f32>) -> bool {
+        let mut res = false;
+        for indices_1 in &self.sub_divisions {
+            let sub_p_1 = ComplexPolygon {
+                polygon: &self.polygon,
+                indices: &indices_1,
+                transform
+            };
+
+            for indices_2 in &other.sub_divisions {
+                let sub_p_2 = ComplexPolygon {
+                    polygon: &other.polygon,
+                    indices: &indices_2,
+                    transform: transform_other
+                };
+
+                let collision = gjk::gjk_intersection(&sub_p_1, &sub_p_2);
+                if collision {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+
+        pub fn collide_draw(&self, drawer2d: &mut Drawer2D, transform: &na::Matrix3::<f32>, other: &SheetCollisionPolygon, transform_other: &na::Matrix3::<f32>) -> bool {
+        let mut res = false;
+        for indices_1 in &self.sub_divisions {
+            let sub_p_1 = ComplexPolygon {
+                polygon: &self.polygon,
+                indices: &indices_1,
+                transform
+            };
+
+            for indices_2 in &other.sub_divisions {
+                let sub_p_2 = ComplexPolygon {
+                    polygon: &other.polygon,
+                    indices: &indices_2,
+                    transform: transform_other
+                };
+
+
+                let collision = gjk::gjk_intersection(&sub_p_1, &sub_p_2);
+                if collision {
+
+                    drawer2d.convex_polygon(&sub_p_1);
+                    drawer2d.convex_polygon(&sub_p_2);
+
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
 }

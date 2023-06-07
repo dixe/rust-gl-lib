@@ -93,6 +93,18 @@ pub struct PolygonTransform {
 
 impl PolygonTransform {
 
+
+    pub fn mat3(&self) -> na::Matrix3::<f32> {
+        let mut scale = na::Matrix3::<f32>::identity();
+        scale[0] = self.scale;
+        scale[4] = self.scale;
+
+        let trans: na::Translation2::<f32> = self.translation.into();
+        let rot = na::Rotation2::new(self.rotation);
+        trans.to_homogeneous() * rot.to_homogeneous() * scale
+
+    }
+
     pub fn map(&self, mut v: V2) -> V2 {
         v *= self.scale;
         v += self.translation;
@@ -378,14 +390,16 @@ pub enum Dir {
 pub struct ComplexPolygon<'a> {
     pub polygon: &'a Polygon,
     pub indices: &'a Vec::<usize>,
-    pub transform: na::Matrix3::<f32>
+    pub transform: &'a na::Matrix3::<f32>
 }
 
 impl<'a> ComplexPolygon<'a> {
 
     fn transformed(&self, idx: usize) -> V2 {
-        let transformed : V3 = self.transform * self.polygon.vertices[self.indices[0]].homogeneous();
-        na::Vector2::from_homogeneous(transformed).unwrap()
+        // No it should not be self.indice[idx],
+        let transformed : V3 = self.transform * self.polygon.vertices[idx].homogeneous();
+
+        transformed.xy() / transformed.z
     }
 }
 
@@ -424,7 +438,7 @@ impl<'a> gjk::Shape for ComplexPolygon<'a> {
 impl<'a> drawer2d::ConvexPolygon for ComplexPolygon<'a> {
     fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32) {
         for &i in self.indices {
-            let v = self.polygon.vertices[i];
+            let v = self.transformed(i);
             buffer.push(v.x);
             buffer.push(viewport_height - v.y);
             buffer.push(0.0);

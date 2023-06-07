@@ -4,7 +4,7 @@ use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::Pos;
 use gl_lib::general_animation::{Animation, Animatable, Frame};
-use gl_lib::animations::sheet_animation::{SheetAnimation, Sprite, SheetAnimationPlayer};
+use gl_lib::animations::sheet_animation::{SheetAnimation, Sprite, SheetAnimationPlayer, AnimationId};
 use gl_lib::typedef::*;
 use gl_lib::collision2d::polygon::{PolygonTransform, ComplexPolygon};
 use gl_lib::math::AsV2;
@@ -40,13 +40,17 @@ fn main() -> Result<(), failure::Error> {
     let mut anim_id = player.start(&assets.attack, 4.0, true);
     let mut anim_id2 = player.start(&assets.idle, 4.0, true);
 
-    let mut pos = V2i::new(300, 400);
+    let mut pos = V2i::new(400, 600);
+
+    let mut pos2 = V2i::new(500, 600);
 
     let mut playing = true;
 
 
 
+    let mut time_scale = 1.0;
     let mut poly_name = "body".to_string();
+    let mut hits = 0;
     loop {
 
         // Basic clear gl stuff and get events to UI
@@ -54,29 +58,34 @@ fn main() -> Result<(), failure::Error> {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
         ui.consume_events(&mut event_pump);
-        let dt = ui.dt();
+        let dt = ui.dt() * time_scale;;
 
 
         if ui.button("Idle") {
             player.remove(anim_id);
-            anim_id = player.start(&assets.idle, 3.0, true)
+            anim_id = player.start(&assets.idle, 4.0, true)
         }
 
 
         if ui.button("Attack") {
             player.remove(anim_id);
-            anim_id = player.start(&assets.attack, 3.0, true)
+            anim_id = player.start(&assets.attack, 4.0, true)
         }
 
         if ui.button("Play/Pause") {
             playing = !playing;
         }
 
+        ui.label("Time scale");
+         ui.slider(&mut time_scale, 0.1, 3.1);
+
         ui.textbox(&mut poly_name);
 
         ui.drawer2D.z = 1.0;
         // drag animation to be where we want
         ui.drag_point(&mut pos, 10.0);
+
+        ui.drag_point(&mut pos2, 10.0);
         ui.drawer2D.z = 0.0;
 
         // update animations
@@ -85,21 +94,68 @@ fn main() -> Result<(), failure::Error> {
             player.update(dt);
         }
 
-        if let Some((polygon, scale)) = player.get_polygon(anim_id, &poly_name) {
+        ui.small_text(&format!("{:?}", hits));
 
-            let mut transform = PolygonTransform::default();
-            transform.scale = scale;
-            transform.translation = pos.v2();
-            ui.view_polygon(polygon, &transform);
-        } else {
 
+
+        // draw animation frame at locations
+        player.draw(&mut ui.drawer2D, pos, anim_id);
+        player.draw(&mut ui.drawer2D, pos2, anim_id2);
+
+
+        // draw polygons on top
+        ui.drawer2D.z = 1.0;
+
+        let ct = CollisionTest {
+            player: &player,
+            attacker: anim_id,
+            target: anim_id2,
+            target_pos: pos2.v2(),
+            attack_pos: pos.v2()
+        };
+
+
+        if collide_draw(&mut ui.drawer2D, &ct) {
+            hits += 1;
         }
 
-        // draw animation frame at location
-        player.draw(&mut ui.drawer2D, pos, anim_id);
+        // reset
+        ui.drawer2D.z = 0.0;
+
 
         window.gl_swap_window();
     }
+}
+
+
+struct CollisionTest<'a> {
+    player: &'a SheetAnimationPlayer<'a>,
+    attacker: AnimationId,
+    target: AnimationId,
+    target_pos: V2,
+    attack_pos: V2
+}
+
+fn collide_draw(drawer2d: &mut Drawer2D, ct: &CollisionTest) -> bool {
+
+    let mut res = false;
+    if let Some((target, target_scale)) = ct.player.get_polygon(ct.target, "body") {
+
+        if let Some((attack, attack_scale)) = ct.player.get_polygon(ct.attacker, "attack") {
+
+            let mut target_transform = PolygonTransform::default();
+            target_transform.scale = target_scale;
+            target_transform.translation = ct.target_pos;
+
+            let mut attack_transform = PolygonTransform::default();
+            attack_transform.scale = attack_scale;
+            attack_transform.translation = ct.attack_pos;
+
+            res = attack.collide_draw(drawer2d, &attack_transform.mat3(), target, &target_transform.mat3());
+        }
+    }
+
+    res
 }
 
 
@@ -113,7 +169,12 @@ struct EntityCollidable<'a> {
 
 
 
+
+
+
+
 /*
+
 /// Find weapon/spell collision with hittable part of target
 fn find_collision(attacks: &[EntityCollidable], targets: &[EntityCollidable]) {
 
@@ -130,7 +191,8 @@ fn find_collision(attacks: &[EntityCollidable], targets: &[EntityCollidable]) {
     }
 }
 
-
+ */
+/*
 /// Method 1
 /// store polygons on animaiton_sheet, each frame has a hashmap<string, polygon>, get_polygon takes animation_id, and a polygon_name,
 ///returns Option<&Polygon>
@@ -141,4 +203,5 @@ fn get_attack_polygon(animation_id: usize, player: &SheetAnimationPlayer) {
     let body_polygon = player.get_polygon(animation_id, "body");
 
 }
+
 */

@@ -57,7 +57,7 @@ fn main() -> Result<(), failure::Error> {
             State::Selecting => {
                 if ui.button("idle") {
                     state = State::Edit(Edit {
-                        sheet: create_sheet_edit(path, "idle".to_string(), &assets.idle),
+                        sheet: create_sheet_edit(path, "idle", &assets.idle),
                         name: "body".to_owned(),
                         frame: 0
                     });
@@ -65,7 +65,7 @@ fn main() -> Result<(), failure::Error> {
 
                 if ui.button("attack") {
                     state = State::Edit(Edit {
-                        sheet: create_sheet_edit(path, "attack".to_string(), &assets.attack),
+                        sheet: create_sheet_edit(path, "attack", &assets.attack),
                         name: "body".to_owned(),
                         frame: 0
                     });
@@ -224,14 +224,10 @@ fn save(edit: &Edit, frame: usize) {
 }
 
 
-fn create_sheet_edit(path_s: &str, name: String, sheet: &SheetAnimation) -> SheetEdit {
-
-    let mut path = PathBuf::new();
-    path.push(path_s);
-    path.push(&format!("{}_polygons.json", &name));
+fn create_sheet_edit(path: &str, name: &str, sheet: &SheetAnimation) -> SheetEdit {
 
     let mut frames : Vec::<FrameEdit> = vec![];
-    let polygons = sheet_animation::load_sheet_collision_polygons(&path);
+    let polygons = sheet_animation::load_sheet_collision_polygons(&path, name);
 
     let mut f = 0;
 
@@ -253,7 +249,7 @@ fn create_sheet_edit(path_s: &str, name: String, sheet: &SheetAnimation) -> Shee
     }
 
     SheetEdit {
-        name: name,
+        name: name.to_string(),
         size: sheet.size,
         texture_id: sheet.texture_id,
         scale: 10.0,

@@ -412,19 +412,20 @@ fn poly_collision(drawer2D: &mut Drawer2D, p1: &Poly, p2: &Poly) -> bool {
         let sub_p_1 = ComplexPolygon {
             polygon: &p1.polygon,
             indices: &indices_1,
-            transform: na::Matrix3::identity()
+            transform: &na::Matrix3::identity()
         };
 
         for indices_2 in &p2.sub_divisions {
             let sub_p_2 = ComplexPolygon {
                 polygon: &p2.polygon,
                 indices: &indices_2,
-                transform: na::Matrix3::identity()
+                transform: &na::Matrix3::identity()
             };
 
             let collision = gjk::gjk_intersection(&sub_p_1, &sub_p_2);
             if collision {
                 res = true;
+                println!("COL");
                 drawer2D.convex_polygon(&sub_p_1);
                 drawer2D.convex_polygon(&sub_p_2);
 
