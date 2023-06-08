@@ -162,7 +162,7 @@ impl<'a> SubPolygon<'a> {
 
 pub fn calculate_subdivision(polygon: &mut Polygon) -> Vec::<SubPolygon> {
     for _ in polygon.intersections() {
-        return vec![];
+        return vec![]
     }
 
     let dir = direction(&polygon);
@@ -191,7 +191,12 @@ pub fn calculate_subdivision(polygon: &mut Polygon) -> Vec::<SubPolygon> {
         // and does not make a line outside the polygon
 
         if let Some(wide_idx) = first_wide(&sub_p) {
-            let connection = find_valid_connection(&sub_p, wide_idx);
+            let connection = match find_valid_connection(&sub_p, wide_idx) {
+                Ok(c) => c,
+                Err(e) => {
+                    return vec![];
+                }
+            };
 
             // connection and wide_idx is indices into indices of sub_p
             let(s1,s2) = split_polygon(sub_p, wide_idx, connection);
@@ -246,7 +251,7 @@ fn split_polygon(sub_p: SubPolygon, from: usize, to: usize) -> (SubPolygon, SubP
     (s1, s2)
 }
 
-fn find_valid_connection(sub_p: &SubPolygon, idx: usize) -> usize {
+fn find_valid_connection(sub_p: &SubPolygon, idx: usize) -> Result::<usize, failure::Error> {
     let cur_p = sub_p.vertex(idx);
 
     let len = sub_p.len();
@@ -280,11 +285,11 @@ fn find_valid_connection(sub_p: &SubPolygon, idx: usize) -> usize {
 
 
         if valid && is_inside(idx, conn_idx, &sub_p) {
-            return conn_idx;
+            return Ok(conn_idx);
         }
     }
 
-    panic!("Should always find a valid one in loop search");
+    failure::bail!("Could not find a valid loop connection in loop search")
 }
 
 

@@ -70,6 +70,7 @@ impl Drawer2D {
 
         let texture_shader = TextureShader::new(gl)?;
 
+
         let color_square_h_line_shader = Box::new(color_square::ColorSquare::h_line_shader(&gl)?);
 
         let polygon_shader = Box::new(polygon::Polygon::create_shader(gl)?);

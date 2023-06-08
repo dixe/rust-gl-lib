@@ -1,4 +1,5 @@
-use gl_lib::{gl, na, helpers};
+use gl_lib::{gl, na, helpers, shader};
+use gl_lib::image::*;
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 
@@ -7,6 +8,22 @@ use gl_lib::imode_gui::ui::*;
 
 
 fn main() -> Result<(), failure::Error> {
+
+    let args: Vec<String> = std::env::args().collect();
+
+    let mut path = "examples/imode_image/Consolas_0_32.png";
+    if args.len() > 1 {
+        path = &args[1];
+    } else {
+        println!("Using default img path {path}");
+    }
+    let mut pre_mul = false;
+    for arg in &args {
+        if arg == "--premul" {
+            pre_mul = true;
+        }
+    }
+
 
     let sdl_setup = helpers::setup_sdl()?;
     let window = sdl_setup.window;
@@ -24,10 +41,13 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let img = image::open("examples/imode_image/Consolas_0_32.png").unwrap().into_rgba8();;
+    let mut img = image::open(path).unwrap().into_rgba8();
+    if pre_mul {
+        img.pre_multiply_alpha();
+    }
 
     let aspect = img.height() as f32 / img.width() as f32;
-    let texture_id = ui.register_image(&img);
+    let texture_id = ui.register_image_nearest(&img);
 
     let mut size = na::Vector2::<f32>::new(100.0, 100.0 * aspect);
 
@@ -43,6 +63,19 @@ fn main() -> Result<(), failure::Error> {
         ui.slider(&mut size.x, 10.0, 1000.0);
         size.y = size.x * aspect;
 
+        if ui.button("Reload shader") {
+            let vert = std::fs::read_to_string("assets/shaders/objects/image.vert").unwrap();
+            let frag = std::fs::read_to_string("assets/shaders/objects/image.frag").unwrap();
+
+            match shader::BaseShader::new(&gl, &vert, &frag) {
+                Ok(s) => {
+                    ui.drawer2D.texture_shader.shader = s;
+                },
+                Err(e) => {
+                    println!("{:?}", e);
+                }
+            }
+        }
         ui.newline();
 
         ui.image(texture_id, size);

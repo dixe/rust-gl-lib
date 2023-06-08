@@ -6,7 +6,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 48, "h": 48 },
     "sourceSize": { "w": 48, "h": 48 },
-    "duration": 80
+    "duration": 100
    },
    {
     "filename": "roll 1.aseprite",
@@ -15,7 +15,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 48, "h": 48 },
     "sourceSize": { "w": 48, "h": 48 },
-    "duration": 80
+    "duration": 100
    },
    {
     "filename": "roll 2.aseprite",
@@ -24,7 +24,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 48, "h": 48 },
     "sourceSize": { "w": 48, "h": 48 },
-    "duration": 80
+    "duration": 100
    },
    {
     "filename": "roll 3.aseprite",
@@ -33,7 +33,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 48, "h": 48 },
     "sourceSize": { "w": 48, "h": 48 },
-    "duration": 80
+    "duration": 100
    },
    {
     "filename": "roll 4.aseprite",
@@ -42,7 +42,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 48, "h": 48 },
     "sourceSize": { "w": 48, "h": 48 },
-    "duration": 80
+    "duration": 100
    },
    {
     "filename": "roll 5.aseprite",
@@ -51,7 +51,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 48, "h": 48 },
     "sourceSize": { "w": 48, "h": 48 },
-    "duration": 80
+    "duration": 100
    },
    {
     "filename": "roll 6.aseprite",
@@ -60,7 +60,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 48, "h": 48 },
     "sourceSize": { "w": 48, "h": 48 },
-    "duration": 80
+    "duration": 100
    }
  ],
  "meta": {

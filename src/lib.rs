@@ -30,6 +30,8 @@ pub mod math;
 
 pub mod widget_gui;
 
+pub mod image;
+
 pub mod sdl_gui;
 
 pub mod controller;

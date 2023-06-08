@@ -9,8 +9,6 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
 
     let mut iter = item.clone().into_iter();
 
-    println!("{:#?}", item);
-
     let name = match iter.next().unwrap() {
         TokenTree::Ident(ident) => {
             ident.to_string()
@@ -91,7 +89,7 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
     // impl close
     res += "}\n";
 
-    println!("{}", res);
+    //println!("{}", res);
     res.parse().unwrap()
 
 }

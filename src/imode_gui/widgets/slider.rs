@@ -9,6 +9,7 @@ impl Ui {
         // figure out button layout
 
         let start = item.to_f64();
+
         let id = self.next_id();
 
         let mut rect = Rect {
@@ -77,7 +78,7 @@ impl Ui {
         }
         self.drawer2D.rounded_rect_color(rect.x + x, rect.y, knob_width, rect.h , color);
 
-        item.to_f64() == start
+        self.is_active(id)
     }
 
 

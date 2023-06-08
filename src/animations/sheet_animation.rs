@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use crate::math::{AsV2, AsV2i};
 use crate::collision2d::polygon::{self, Polygon, ComplexPolygon};
 use crate::collision2d::gjk;
-
+use crate::image::PreMulAlpha;
 
 
 pub type AnimationId = usize;
@@ -119,6 +119,16 @@ impl<'a> SheetAnimationPlayer<'a> {
             next_id: 1,
             clear_buffer: vec![]
         }
+    }
+
+
+    pub fn get_polygon_map(&self, anim_id: AnimationId) -> Option::<&std::collections::hash_map::HashMap<std::string::String, SheetCollisionPolygon>> {
+        if let Some(active) = self.animations.get(&anim_id) {
+            if let Some(map) = active.sheet.collision_polygons.get(&active.frame) {
+                return Some(map);
+            }
+        }
+        None
     }
 
     pub fn get_polygon(&self, anim_id: AnimationId, name: &str) -> Option<(&SheetCollisionPolygon, f32, bool)> {
@@ -283,7 +293,14 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, nam
 
     base_path.push(&sheet_anim.meta.image);
 
-    let img = image::open(&base_path).unwrap().into_rgba8();
+    let mut img = image::open(&base_path).unwrap().into_rgba8();
+
+    //pre multiply alpha since open gl and shaders assume that;
+
+    img.pre_multiply_alpha();
+
+
+
 
     let aspect = img.height() as f32 / img.width() as f32;
     let texture_id = texture::gen_texture_rgba_nearest(gl, &img);

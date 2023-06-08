@@ -146,6 +146,13 @@ fn main() -> Result<(), failure::Error> {
                     new_name = "".to_string();
                 }
 
+                ui.newline();
+                if ui.button("Reset") {
+                    let p = edit.sheet.frames[edit.frame].polygons.get_mut(&edit.name).unwrap();
+                    *p = Polygon::default();
+                }
+
+
                 img_edit(&mut ui, &mut edit.sheet.frames[edit.frame], &edit.name, edit.sheet.size, edit.sheet.texture_id);
 
                 if ret {

@@ -33,30 +33,28 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let assets = Assets::load_all(&gl, "examples/2d_animation_player/assets/");
+    let path = "examples/2d_animation_player/assets/";
+    let assets = Assets::load_all(&gl, path);
 
     let mut player = SheetAnimationPlayer::new();
 
-
-
-    let mut pos = V2::new(400.0, 600.0);
+    let mut pos = V2i::new(400, 600);
 
     let mut pos2 = V2i::new(500, 600);
 
     let mut playing = true;
 
-    let mut inputs = Inputs::default();
 
-    let scale = 4.0;
+    let mut scale = 4.0;
     let mut flip_y = false;
-    let mut player_state = PlayerState::Idle(player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y}));
-
-    let mut anim_id2 = player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y});
 
     let mut time_scale = 1.0;
-    let mut poly_name = "body".to_string();
     let mut hits = 0;
 
+    let mut cur_anim = &assets.idle;
+    let mut anim_id = player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y});
+
+    let mut show_col_pol = true;
 
     loop {
 
@@ -65,55 +63,19 @@ fn main() -> Result<(), failure::Error> {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
         ui.consume_events(&mut event_pump);
-        handle_inputs(&mut ui, &mut inputs);
         let dt = ui.dt() * time_scale;;
 
-        match player_state {
-            PlayerState::Idle(_) => {
-                if inputs.left {
-                    pos.x -= 100.0 * dt;
-                    flip_y = true;
-                }
-
-                if inputs.right {
-                    pos.x += 100.0 * dt;
-                    flip_y = false;
-                }
-            },
-            PlayerState::Attack(_) => {
+        for (name, asset) in assets.all_names() {
+            if ui.button(name) {
+                player.remove(anim_id);
+                cur_anim = &asset;
+                anim_id = player.start(Start {sheet: &asset, scale, repeat: true, flip_y});
             }
         }
 
-
-         match player_state {
-                PlayerState::Idle(id) => {
-                    player.flip_y(id, flip_y);
-                },
-                PlayerState::Attack(_) => {}
-            }
-
-        if ui.button("Idle") {
-            match player_state {
-                PlayerState::Idle(_) => {},
-                PlayerState::Attack(id) => {
-                    player.remove(id);
-                    let anim_id = player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y});
-                    player_state = PlayerState::Idle(anim_id);
-
-                }
-            }
-        }
-
-
-        if ui.button("Attack") || inputs.mouse {
-            match player_state {
-                PlayerState::Idle(id) => {
-                    player.remove(id);
-                    let anim_id = player.start(Start {sheet: &assets.attack, scale, repeat: false, flip_y});
-                    player_state = PlayerState::Attack(anim_id);
-                },
-                PlayerState::Attack(_) => {}
-            }
+        ui.newline();
+        if ui.button("Reload") {
+            //assets = Assets::load_all(&gl, path);
         }
 
         if ui.button("Play/Pause") {
@@ -122,16 +84,25 @@ fn main() -> Result<(), failure::Error> {
 
         if ui.button("Flip y") {
             flip_y = !flip_y;
+            player.remove(anim_id);
+            anim_id = player.start(Start {sheet: &cur_anim, scale, repeat: true, flip_y});
         }
+
+        ui.label("Show collision polygons");
+        ui.checkbox(&mut show_col_pol);
 
         ui.label("Time scale");
         ui.slider(&mut time_scale, 0.1, 3.1);
 
-        ui.textbox(&mut poly_name);
+        ui.label("scale");
+        if ui.slider(&mut scale, 0.1, 6.0) {
+            player.remove(anim_id);
+            anim_id = player.start(Start {sheet: &cur_anim, scale, repeat: true, flip_y});
+        }
 
         ui.drawer2D.z = 1.0;
         // drag animation to be where we want
-        //ui.drag_point(&mut pos, 10.0);
+        ui.drag_point(&mut pos, 10.0);
 
         ui.drag_point(&mut pos2, 10.0);
         ui.drawer2D.z = 0.0;
@@ -140,182 +111,29 @@ fn main() -> Result<(), failure::Error> {
 
         if playing {
             player.update(dt);
+        }
 
-            match player_state {
-                PlayerState::Idle(_) => {},
-                PlayerState::Attack(id) => {
-                    if player.expired(id) {
-                        let anim_id = player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y});
-                        player_state = PlayerState::Idle(anim_id);
 
-                    }
+        // draw animation frame at locations
+        player.draw(&mut ui.drawer2D, pos, anim_id);
+
+        if show_col_pol {
+            if let Some(keys) = player.get_polygon_map(anim_id) {
+                for (name, p) in keys {
+
+                    let mut transform = PolygonTransform::default();
+                    transform.scale = scale;
+                    transform.translation = pos.v2();
+                    transform.flip_y = flip_y;
+
+                    ui.view_polygon(&p.polygon, &transform);
+
                 }
             }
 
         }
-
-
-        ui.small_text(&format!("{:?}", hits));
-
-        // draw animation frame at locations
-        player.draw(&mut ui.drawer2D, pos, player_state.animation_id());
-        player.draw(&mut ui.drawer2D, pos2, anim_id2);
-
-
-        // draw polygons on top
-        ui.drawer2D.z = 1.0;
-
-        let ct = CollisionTest {
-            player: &player,
-            attacker: player_state.animation_id(),
-            target: anim_id2,
-            target_pos: pos2.v2(),
-            attack_pos: pos.v2()
-        };
-
-
-        if collide_draw(&mut ui, &ct) {
-            hits += 1;
-        }
-
-        // reset
-        ui.drawer2D.z = 0.0;
 
 
         window.gl_swap_window();
     }
 }
-
-
-enum PlayerState {
-    Idle(AnimationId),
-    Attack(AnimationId)
-}
-
-impl PlayerState {
-    fn animation_id(&self) -> AnimationId {
-        match self {
-            Self::Idle(id) => *id,
-            Self::Attack(id)=> *id,
-        }
-    }
-}
-
-struct CollisionTest<'a> {
-    player: &'a SheetAnimationPlayer<'a>,
-    attacker: AnimationId,
-    target: AnimationId,
-    target_pos: V2,
-    attack_pos: V2
-}
-
-fn collide_draw(ui: &mut Ui, ct: &CollisionTest) -> bool {
-
-    let mut res = false;
-    if let Some((target, target_scale, target_flip_y)) = ct.player.get_polygon(ct.target, "body") {
-
-        if let Some((attack, attack_scale, attack_flip_y)) = ct.player.get_polygon(ct.attacker, "attack") {
-
-            let mut target_transform = PolygonTransform::default();
-            target_transform.scale = target_scale;
-            target_transform.translation = ct.target_pos;
-            target_transform.flip_y = target_flip_y;
-
-            let mut attack_transform = PolygonTransform::default();
-            attack_transform.scale = attack_scale;
-            attack_transform.translation = ct.attack_pos;
-            attack_transform.flip_y = attack_flip_y;
-
-            res = attack.collide_draw(&mut ui.drawer2D, &attack_transform.mat3(), target, &target_transform.mat3());
-
-            if res {
-            ui.view_polygon(&attack.polygon, &attack_transform);
-
-                ui.view_polygon(&target.polygon, &target_transform);
-            }
-        }
-    }
-
-    res
-}
-
-
-#[derive(Default)]
-struct Inputs {
-    left: bool,
-    right: bool,
-    mouse: bool
-}
-
-
-
-fn handle_inputs(ui: &mut Ui, inputs: &mut Inputs) {
-
-    use event::Event::*;
-    use sdl2::keyboard::Keycode::*;
-
-    inputs.mouse = false;
-
-    for e in &ui.frame_events {
-        match e {
-            KeyDown { keycode: Some(D), ..} => {
-                inputs.right = true;
-            },
-            KeyDown { keycode: Some(A), ..} => {
-                inputs.left = true;
-            },
-            KeyUp { keycode: Some(D), ..} => {
-                inputs.right = false;
-            },
-            KeyUp { keycode: Some(A), ..} => {
-                inputs.left = false;
-            },
-            MouseButtonUp {..} => {
-                inputs.mouse = true;
-            }
-            _ => {}
-        }
-    }
-}
-
-
-
-/*
-
-struct EntityCollidable<'a> {
-    entity_id: usize,
-    team_id: usize,
-    collision_polygon : ComplexPolygon<'a>,
-    transform: na::Matrix3::<f32> // homogeneous 3d matrixt for transforming V2 in 2d
-}
-
-/// Find weapon/spell collision with hittable part of target
-fn find_collision(attacks: &[EntityCollidable], targets: &[EntityCollidable]) {
-
-    for attack in attacks {
-        for target in targets {
-            if attack.team_id != target.team_id {
-                if collision(attack.collision_polygon, attack.transform,
-                             target.collision_polygon, target.transform) {
-
-                    //add collision to output
-                }
-            }
-        }
-    }
-}
-
- */
-/*
-/// Method 1
-/// store polygons on animaiton_sheet, each frame has a hashmap<string, polygon>, get_polygon takes animation_id, and a polygon_name,
-///returns Option<&Polygon>
-fn get_attack_polygon(animation_id: usize, player: &SheetAnimationPlayer) {
-    // animaiton_sheet_player know which frame and wich animation
-    let attack_polygon = player.get_polygon(animation_id, "attack");
-
-    let body_polygon = player.get_polygon(animation_id, "body");
-
-}
-
-*/
