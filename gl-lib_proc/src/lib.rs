@@ -4,6 +4,14 @@ use proc_macro::Ident;
 use litrs;
 
 use std::convert::TryFrom;
+
+#[derive(Debug)]
+enum JsonNames {
+    NotValid,
+    Names(Vec::<String>),
+    UseFileName
+}
+
 #[proc_macro]
 pub fn sheet_assets(item: TokenStream) -> TokenStream {
 
@@ -36,8 +44,10 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
     };
 
 
-    let mut json_files = std::collections::HashSet::new();
-    let mut png_files = std::collections::HashSet::new();
+    let mut json_files = std::collections::HashSet::<String>::new();
+
+    let mut asset_names = std::collections::HashSet::<String>::new();
+
 
     let mut res = format!("#[derive(Debug)] struct {name} {{\n");
 
@@ -48,15 +58,24 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
                 if file_type.is_file() {
 
                     let file_name = e.file_name().into_string().unwrap();
-
                     let file_name_no_ending = file_name.split(".").next().unwrap().to_string();
 
                     if file_name.ends_with(".json") {
-                        json_files.insert(file_name_no_ending.clone());
-                    }
+                        let json_names = load_json_animation_names(&e.path());
 
-                    if file_name.ends_with(".png") {
-                        png_files.insert(file_name_no_ending.clone());
+                        match json_names {
+                            JsonNames::Names(v) => {
+                                json_files.insert(file_name_no_ending.clone());
+                                for name in &v {
+                                    asset_names.insert(name.to_string());
+                                }
+                            },
+                            JsonNames::UseFileName => {
+                                asset_names.insert(file_name_no_ending.clone());
+                                json_files.insert(file_name_no_ending.clone());
+                            }
+                            JsonNames::NotValid => { continue;}
+                        }
                     }
                 }
             },
@@ -64,16 +83,10 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
         }
     }
 
-    let mut names = std::collections::HashSet::new();
 
-    for json in &json_files {
-        if png_files.contains(json) {
-            res += &format!("pub {}: gl_lib::animations::sheet_animation::SheetAnimation,\n", json.to_lowercase());
-            names.insert(json.clone());
-
-        }
+    for asset_name in &asset_names {
+        res += &format!("{asset_name}: gl_lib::animations::sheet_animation::SheetAnimation,\n");
     }
-
 
 
     let end = "}\n";
@@ -81,18 +94,48 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
     res += end;
 
     res += &format!("impl {name} {{\n");
-    add_load_all(&mut res, &name, &names);
+    add_load_all(&mut res, &name, &json_files, &asset_names);
 
-    add_all_names(&mut res, &name, &names);
+    add_all_names(&mut res, &name, &asset_names);
 
 
     // impl close
     res += "}\n";
 
-    //println!("{}", res);
+    println!("{}", res);
     res.parse().unwrap()
 
 }
+
+
+
+/// Load json file, and extrat animation names
+fn load_json_animation_names(path: &std::path::Path) -> JsonNames {
+
+    let anim_json = std::fs::read_to_string(path).unwrap();
+
+
+    let sheet_anim : SheetArrayAnimation = match serde_json::from_str(&anim_json) {
+        Ok(sheet) => {
+            sheet
+        },
+        Err(err) => {
+            return JsonNames::NotValid;
+        }
+    };
+    if sheet_anim.meta.frameTags.len () == 0 {
+            return JsonNames::UseFileName;
+    }
+
+    let mut names = vec![];
+    for tag in &sheet_anim.meta.frameTags {
+        names.push(tag.name.clone());
+    }
+
+
+    JsonNames::Names(names)
+}
+
 
 fn add_all_names(res: &mut String, name: &str, names: &std::collections::HashSet::<String>) {
 
@@ -112,15 +155,44 @@ fn add_all_names(res: &mut String, name: &str, names: &std::collections::HashSet
     *res += "}\n";
 }
 
-fn add_load_all(res: &mut String, name: &str, names: &std::collections::HashSet::<String>) {
+use serde::{Serialize, Deserialize};
 
-    *res += &format!("pub fn load_all(gl: &gl_lib::gl::Gl, path: &str) -> {name} {{\n");
+#[derive(Default, Debug, Serialize, Deserialize)]
+struct SheetArrayAnimation {
+    pub meta: Meta,
+}
+
+
+#[derive(Default, Debug, Serialize, Deserialize)]
+struct Meta {
+    pub frameTags: Vec::<FrameTag>
+}
+
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+struct FrameTag {
+    pub name: String,
+}
+
+
+
+fn add_load_all(res: &mut String, struct_name: &str, file_names: &std::collections::HashSet::<String>, asset_names: &std::collections::HashSet::<String>) {
+
+    *res += &format!("pub fn load_all(gl: &gl_lib::gl::Gl, path: &str) -> {struct_name} {{\n");
     *res += &format!("let mut id = 1;\n");
-    *res += &format!("{name} {{\n ");
 
-    for field_name in names {
-        *res += &format!("{}: gl_lib::animations::sheet_animation::load_by_name(gl, &std::path::Path::new(path), &\"{field_name}\", &mut id),\n", field_name.to_lowercase())
+    *res += "let mut assets = std::collections::HashMap::<String, gl_lib::animations::sheet_animation::SheetAnimation>::new();\n\n";
 
+    for file_name in file_names {
+        *res += &format!("\nfor asset in gl_lib::animations::sheet_animation::load_by_name(gl, &path, \"{file_name}\", &mut id) {{
+            assets.insert(asset.name.clone(), asset.clone());\n}}\n");
+    }
+
+
+    *res += &format!("{struct_name} {{\n ");
+
+    for field_name in asset_names {
+        *res += &format!("{}: assets.remove(\"{field_name}\").unwrap(),\n", field_name.to_lowercase())
     }
 
     // {name} {

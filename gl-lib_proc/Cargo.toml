@@ -5,8 +5,12 @@ authors = ["Nikolaj Østergaard <niko.fris@gmail.com>"]
 edition = "2018"
 license = "MIT"
 
+
 [dependencies]
 litrs = "0.4.0"
+serde = {version ="1.0.160", features = ["derive"] }
+serde_json = "1.0.96"
+
 
 [lib]
 proc-macro = true

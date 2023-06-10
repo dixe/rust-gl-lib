@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 
 type V2 = na::Vector2::<f32>;
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct Animation<T: Animatable> {
     pub frames: Vec::<Frame<T>>,
 }
@@ -52,8 +52,8 @@ impl<T: Animatable> Animation<T> {
 }
 
 
-#[derive(Default, Debug, Serialize, Deserialize)]
-pub struct Frame<T: Animatable + Copy> {
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct Frame<T: Animatable + Clone + Copy> {
     pub data:T,
     pub frame_seconds: f32,
 }

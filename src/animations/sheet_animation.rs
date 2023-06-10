@@ -16,7 +16,7 @@ use crate::image::PreMulAlpha;
 pub type AnimationId = usize;
 type V2 = na::Vector2::<f32>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SheetAnimation {
     pub texture_id: TextureId,
     pub name: String,
@@ -50,7 +50,7 @@ use serde::{Serialize, Deserialize};
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct SheetArrayAnimation {
     pub frames: Vec::<ArrayFrame>,
-    pub meta: Meta
+    pub meta: Meta,
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
@@ -92,8 +92,17 @@ pub struct SourceSize {
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct Meta {
     pub image: String,
-    pub size: Size
+    pub size: Size,
+    pub frameTags: Vec::<FrameTag>
 }
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct FrameTag {
+    pub name: String,
+    pub from: usize,
+    pub to: usize
+}
+
 
 
 
@@ -267,12 +276,11 @@ struct ActiveAnimation<'a> {
     sprite: Sprite
 }
 
-
-pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, name: &str, id: &mut usize) -> SheetAnimation {
+pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, file_name: &str, id: &mut usize) -> Vec::<SheetAnimation> {
 
     let mut p = PathBuf::new();
     p.push(path);
-    p.push(format!("{name}.json"));
+    p.push(format!("{file_name}.json"));
 
     let anim_json = std::fs::read_to_string(p);
 
@@ -299,14 +307,10 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, nam
 
     img.pre_multiply_alpha();
 
-
-
-
     let aspect = img.height() as f32 / img.width() as f32;
     let texture_id = texture::gen_texture_rgba_nearest(gl, &img);
 
     let mut frames = vec![];
-
 
     for frame in &sheet_anim.frames {
 
@@ -324,49 +328,62 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, nam
     }
 
 
-    let  polygons = load_sheet_collision_polygons(&path, name);
+    // use frameTags as animationNames
+    let mut animations = sheet_anim.meta.frameTags.clone();
 
 
-    let mut collision_polygons : ProcessedSheetCollisionPolygons = Default::default();
-
-    // make subdivisions for polygon and create new hashmap
-    for (frame, map) in &polygons {
-        let mut inner : HashMap::<String, SheetCollisionPolygon> = Default::default();
-
-        for (name, polygon) in map {
-
-            let mut new_poly = polygon.clone();
-
-
-            let mut sub_divisions = vec![];
-
-            for sub in polygon::calculate_subdivision(&mut new_poly) {
-                sub_divisions.push(sub.indices);
-            }
-
-            inner.insert(name.to_string(), SheetCollisionPolygon {
-                polygon: new_poly,
-                sub_divisions
-            });
-        }
-
-        collision_polygons.insert(*frame, inner);
+    // if no tags, use file name
+    if animations.len() == 0 {
+        animations.push(FrameTag { name: file_name.to_string(), from: 0, to: sheet_anim.frames.len() - 1 });
     }
 
+    let mut res = vec![];
+    for tag in &animations {
+        let polygons = load_sheet_collision_polygons(&path, &tag.name);
 
-    let anim = SheetAnimation {
-        texture_id,
-        name: name.to_string(),
-        collision_polygons,
-        size: na::Vector2::new(sheet_anim.meta.size.w as f32, sheet_anim.meta.size.h as f32),
-        animation: Animation { frames },
-    };
+        let mut collision_polygons : ProcessedSheetCollisionPolygons = Default::default();
 
-    *id += 1;
-    anim
+        // make subdivisions for polygon and create new hashmap
+        for (frame, map) in &polygons {
+            let mut inner : HashMap::<String, SheetCollisionPolygon> = Default::default();
+
+            for (name, polygon) in map {
+
+                let mut new_poly = polygon.clone();
+
+
+                let mut sub_divisions = vec![];
+
+                for sub in polygon::calculate_subdivision(&mut new_poly) {
+                    sub_divisions.push(sub.indices);
+                }
+
+                inner.insert(tag.name.clone(), SheetCollisionPolygon {
+                    polygon: new_poly,
+                    sub_divisions
+                });
+            }
+
+            collision_polygons.insert(*frame, inner);
+        }
+
+
+        let anim = SheetAnimation {
+            texture_id,
+            name: tag.name.clone(),
+            collision_polygons,
+            size: na::Vector2::new(sheet_anim.meta.size.w as f32, sheet_anim.meta.size.h as f32),
+            animation: Animation { frames: frames[tag.from..=tag.to].iter().map(|f| (*f).clone()).collect() },
+        };
+
+        *id += 1;
+        res.push(anim);
+    }
+    res
+
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct SheetCollisionPolygon {
     pub polygon: Polygon,
     sub_divisions: Vec::<Vec::<usize>>,

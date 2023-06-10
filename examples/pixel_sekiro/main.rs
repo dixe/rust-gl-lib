@@ -48,6 +48,7 @@ fn main() -> Result<(), failure::Error> {
     let mut flip_y = false;
     let mut player = Entity {
         state: EntityState::Idle(animation_player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y})),
+        attack_counter: 0,
         pos: V2::new(400.0, 600.0),
         vel: V2::identity(),
     };
@@ -85,9 +86,11 @@ fn main() -> Result<(), failure::Error> {
                 }
 
                 if inputs.mouse {
+                    let attack =  &assets.attack_1;
+                    player.attack_counter = (player.attack_counter + 1 ) % 2;
                     player.vel.x = 0.0;
                     animation_player.remove(id);
-                    let anim_id = animation_player.start(Start {sheet: &assets.attack, scale, repeat: false, flip_y});
+                    let anim_id = animation_player.start(Start {sheet: &attack, scale, repeat: false, flip_y});
                     player.state = EntityState::Attack(anim_id);
                 }
 
@@ -154,8 +157,16 @@ fn main() -> Result<(), failure::Error> {
                 EntityState::Idle(_) => {},
                 EntityState::Attack(id) => {
                     if animation_player.expired(id) {
-                        let anim_id = animation_player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y});
-                        player.state = EntityState::Idle(anim_id);
+
+                        if player.attack_counter > 0 {
+                            player.attack_counter = (player.attack_counter + 1) % 2;
+
+                            let anim_id = animation_player.start(Start {sheet: &assets.attack_2, scale, repeat: false, flip_y});
+                            player.state = EntityState::Attack(anim_id);
+                        } else {
+                            let anim_id = animation_player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y});
+                            player.state = EntityState::Idle(anim_id);
+                        }
                     }
                 },
                 EntityState::Roll(id) => {
@@ -205,6 +216,7 @@ struct Scene {
 
 struct Entity {
     pub state: EntityState,
+    pub attack_counter: usize,
     pub pos: V2,
     pub vel: V2
 }
