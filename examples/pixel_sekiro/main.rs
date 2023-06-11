@@ -8,9 +8,8 @@ use gl_lib::animations::sheet_animation::{Start, SheetAnimation, Sprite, SheetAn
 use gl_lib::typedef::*;
 use gl_lib::collision2d::polygon::{PolygonTransform, ComplexPolygon};
 use gl_lib::math::AsV2;
-use sdl2::event;
 
-
+mod inputs;
 // generate assets struct
 sheet_assets!{Assets "examples/2d_animation_player/assets/"}
 
@@ -42,7 +41,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut playing = true;
 
-    let mut inputs = Inputs::default();
+    let mut inputs = inputs::Inputs::default();
 
     let scale = 4.0;
     let mut flip_y = false;
@@ -68,7 +67,7 @@ fn main() -> Result<(), failure::Error> {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
         ui.consume_events(&mut event_pump);
-        handle_inputs(&mut ui, &mut inputs);
+        inputs::handle_inputs(&mut ui, &mut inputs);
         let dt = ui.dt() * time_scale;;
 
         match player.state {
@@ -85,7 +84,7 @@ fn main() -> Result<(), failure::Error> {
                     flip_y = false;
                 }
 
-                if inputs.mouse {
+                if inputs.mouse() {
                     let attack =  &assets.attack_1;
                     player.attack_counter = (player.attack_counter + 1 ) % 2;
                     player.vel.x = 0.0;
@@ -155,17 +154,29 @@ fn main() -> Result<(), failure::Error> {
             animation_player.update(dt);
             match player.state {
                 EntityState::Idle(_) => {},
+                EntityState::Recover(id) => {
+                    if animation_player.expired(id) {
+                        // TODO: Next state, could be run or attack, and not idle
+                        let anim_id = animation_player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y});
+                        player.state = EntityState::Idle(anim_id);
+
+                        // clears input buffer for mouse, if any
+                        inputs.mouse();
+                    }
+                },
                 EntityState::Attack(id) => {
+
                     if animation_player.expired(id) {
 
-                        if player.attack_counter > 0 {
+                        if player.attack_counter > 0 && inputs.mouse() {
                             player.attack_counter = (player.attack_counter + 1) % 2;
-
                             let anim_id = animation_player.start(Start {sheet: &assets.attack_2, scale, repeat: false, flip_y});
                             player.state = EntityState::Attack(anim_id);
                         } else {
-                            let anim_id = animation_player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y});
-                            player.state = EntityState::Idle(anim_id);
+                            let sheet = if player.attack_counter == 1 { &assets.attack_1_recover} else {&assets.attack_2_recover};
+                            let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
+                            player.attack_counter = 0;
+                            player.state = EntityState::Recover(anim_id);
                         }
                     }
                 },
@@ -177,8 +188,6 @@ fn main() -> Result<(), failure::Error> {
                 }
             }
         }
-
-
 
 
         // draw animation frame at locations
@@ -226,12 +235,14 @@ enum EntityState {
     Idle(AnimationId),
     Attack(AnimationId),
     Roll(AnimationId),
+    Recover(AnimationId),
 }
 
 impl EntityState {
     fn animation_id(&self) -> AnimationId {
         match self {
             Self::Idle(id) => *id,
+            Self::Recover(id) => *id,
             Self::Attack(id)=> *id,
             Self::Roll(id)=> *id,
         }
@@ -276,57 +287,6 @@ fn collide_draw(ui: &mut Ui, ct: &CollisionTest) -> bool {
     res
 }
 
-
-#[derive(Default)]
-struct Inputs {
-    left: bool,
-    right: bool,
-    mouse: bool,
-    space: bool
-}
-
-
-
-fn handle_inputs(ui: &mut Ui, inputs: &mut Inputs) {
-
-    use event::Event::*;
-    use sdl2::keyboard::Keycode::*;
-
-    inputs.mouse = false;
-
-    for e in &ui.frame_events {
-        match e {
-            KeyDown { keycode: Some(D), ..} => {
-                inputs.right = true;
-            },
-
-            KeyDown { keycode: Some(Space), ..} => {
-                inputs.space = true;
-            },
-
-            KeyUp { keycode: Some(Space), ..} => {
-                inputs.space = false;
-            },
-
-            KeyDown { keycode: Some(A), ..} => {
-                inputs.left = true;
-            },
-
-            KeyUp { keycode: Some(D), ..} => {
-                inputs.right = false;
-            },
-
-            KeyUp { keycode: Some(A), ..} => {
-                inputs.left = false;
-            },
-
-            MouseButtonUp {..} => {
-                inputs.mouse = true;
-            }
-            _ => {}
-        }
-    }
-}
 
 
 

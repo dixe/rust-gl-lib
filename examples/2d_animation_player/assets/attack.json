@@ -133,24 +133,6 @@
     "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
     "sourceSize": { "w": 64, "h": 64 },
     "duration": 65
-   },
-   {
-    "filename": "attack 15.aseprite",
-    "frame": { "x": 960, "y": 0, "w": 64, "h": 64 },
-    "rotated": false,
-    "trimmed": false,
-    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
-    "sourceSize": { "w": 64, "h": 64 },
-    "duration": 65
-   },
-   {
-    "filename": "attack 16.aseprite",
-    "frame": { "x": 1024, "y": 0, "w": 64, "h": 64 },
-    "rotated": false,
-    "trimmed": false,
-    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
-    "sourceSize": { "w": 64, "h": 64 },
-    "duration": 65
    }
  ],
  "meta": {
@@ -158,15 +140,15 @@
   "version": "1.2.40-x64",
   "image": "attack.png",
   "format": "RGBA8888",
-  "size": { "w": 1088, "h": 64 },
+  "size": { "w": 960, "h": 64 },
   "scale": "1",
   "frameTags": [
-   { "name": "attack_1", "from": 0, "to": 5, "direction": "forward" },
-   { "name": "attack_2", "from": 6, "to": 11, "direction": "forward" },
-   { "name": "attack_3", "from": 12, "to": 16, "direction": "forward" }
+   { "name": "attack_1", "from": 0, "to": 4, "direction": "forward" },
+   { "name": "attack_2", "from": 5, "to": 9, "direction": "forward" },
+   { "name": "attack_1_recover", "from": 10, "to": 10, "direction": "forward" },
+   { "name": "attack_2_recover", "from": 11, "to": 14, "direction": "forward" }
   ],
   "layers": [
-   { "name": "bg", "opacity": 255, "blendMode": "normal" },
    { "name": "Back Leg", "opacity": 255, "blendMode": "normal" },
    { "name": "Back Arm", "opacity": 255, "blendMode": "normal" },
    { "name": "Torso", "opacity": 255, "blendMode": "normal" },

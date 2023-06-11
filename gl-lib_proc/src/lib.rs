@@ -102,7 +102,7 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
     // impl close
     res += "}\n";
 
-    println!("{}", res);
+    //println!("{}", res);
     res.parse().unwrap()
 
 }
