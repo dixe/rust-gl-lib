@@ -6,14 +6,16 @@ use gl_lib::collision2d::polygon::{Polygon, Dir};
 use gl_lib::texture::TextureId;
 use gl_lib::typedef::*;
 use gl_lib_proc::sheet_assets;
-use gl_lib::animations::sheet_animation::{self, SheetCollisionPolygons, Sprite, SheetAnimation};
+use gl_lib::animations::sheet_animation::{self, SheetCollisionPolygons, Sprite, SheetAnimation, load_folder};
 use std::path::{Path, PathBuf};
 use gl_lib::math::*;
 use std::collections::HashMap;
+use itertools::Itertools;
 
+/*
 // generate assets struct
 sheet_assets!{Assets "examples/2d_animation_player/assets/"}
-
+*/
 
 
 fn main() -> Result<(), failure::Error> {
@@ -36,8 +38,8 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let path =  "examples/2d_animation_player/assets/";
-    let mut assets = Assets::load_all(&gl, path);
+    let path : String = "examples/2d_animation_player/assets/".to_string();
+    let mut assets = load_folder(&gl, &path);
 
     let mut state = State::Selecting;
 
@@ -55,20 +57,27 @@ fn main() -> Result<(), failure::Error> {
         handle_inputs(&mut ui);
         match state {
             State::Selecting => {
-
-                for (name, asset) in assets.all_names() {
-                    if ui.button(name) {
-                        state = State::Edit(Edit {
-                            sheet: create_sheet_edit(path, name, asset),
-                            name: "body".to_owned(),
-                            frame: 0
-                        });
+                for (folder_name, map) in assets.iter().sorted_by_key(|x| x.0) {
+                    ui.label(folder_name);
+                    let mut p = PathBuf::new();
+                    p.push(&path);
+                    p.push(folder_name);
+                    for (name, asset) in map {
+                        if ui.button(name) {
+                            state = State::Edit(Edit {
+                                sheet: create_sheet_edit(&p, name, asset),
+                                name: "body".to_owned(),
+                                folder: folder_name.to_string(),
+                                frame: 0
+                            });
+                        }
                     }
+                    ui.newline();
                 }
 
                 ui.newline();
                 if ui.button("Reload") {
-                    assets = Assets::load_all(&gl, path);
+                    assets = load_folder(&gl, &path);
                 }
 
             },
@@ -107,7 +116,7 @@ fn main() -> Result<(), failure::Error> {
                 if ui.button("Save All") {
                     clean(&mut edit.sheet);
                     right_align(&mut edit.sheet);
-                    save_all("examples/2d_animation_player/assets/", &edit);
+                    save_all(&path, &edit);
 
                 }
 
@@ -194,10 +203,11 @@ fn clean(sheet: &mut SheetEdit) {
 }
 
 
-fn save_all(path_s: &str, edit: &Edit) {
+fn save_all<P: AsRef<Path>>(p: &P, edit: &Edit) {
 
     let mut path = PathBuf::new();
-    path.push(path_s);
+    path.push(p);
+    path.push(&edit.folder);
     path.push(&format!("{}_polygons.json", &edit.sheet.name));
 
     let mut data = SheetCollisionPolygons::default();
@@ -230,7 +240,7 @@ fn save(edit: &Edit, frame: usize) {
 }
 
 
-fn create_sheet_edit(path: &str, name: &str, sheet: &SheetAnimation) -> SheetEdit {
+fn create_sheet_edit<P: AsRef<Path> + std::fmt::Debug>(path: &P, name: &str, sheet: &SheetAnimation) -> SheetEdit {
 
     let mut frames : Vec::<FrameEdit> = vec![];
     let polygons = sheet_animation::load_sheet_collision_polygons(&path, name);
@@ -271,6 +281,7 @@ enum State {
 struct Edit {
     sheet: SheetEdit,
     name: String,
+    folder: String,
     frame: usize
 }
 

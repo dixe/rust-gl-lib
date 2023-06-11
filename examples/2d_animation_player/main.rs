@@ -4,16 +4,20 @@ use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::Pos;
 use gl_lib::general_animation::{Animation, Animatable, Frame};
-use gl_lib::animations::sheet_animation::{Start, SheetAnimation, Sprite, SheetAnimationPlayer, AnimationId};
+use gl_lib::animations::sheet_animation::{Start, SheetAnimation, Sprite, SheetAnimationPlayer, AnimationId, load_folder};
 use gl_lib::typedef::*;
 use gl_lib::collision2d::polygon::{PolygonTransform, ComplexPolygon};
 use gl_lib::math::AsV2;
 use sdl2::event;
+use itertools::Itertools;
 
 
+/*
 // generate assets struct
-sheet_assets!{Assets "examples/2d_animation_player/assets/"}
+sheet_assets!{PlayerAssets "examples/2d_animation_player/assets/player/"}
 
+sheet_assets!{SkeletonAssets "examples/2d_animation_player/assets/player/"}
+*/
 
 
 fn main() -> Result<(), failure::Error> {
@@ -34,7 +38,11 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
     let path = "examples/2d_animation_player/assets/";
-    let assets = Assets::load_all(&gl, path);
+    let assets = load_folder(&gl, path);
+
+
+    //let path = "examples/2d_animation_player/assets/player/";
+    //let assets = PlayerAssets::load_all(&gl, path);
 
     let mut player = SheetAnimationPlayer::new();
 
@@ -51,8 +59,9 @@ fn main() -> Result<(), failure::Error> {
     let mut time_scale = 1.0;
     let mut hits = 0;
 
-    let mut cur_anim = &assets.idle;
-    let mut anim_id = player.start(Start {sheet: &assets.idle, scale, repeat: true, flip_y});
+    let mut cur_anim = assets.get("player").unwrap().get("idle").unwrap();
+
+    let mut anim_id = 0;
 
     let mut show_col_pol = true;
 
@@ -65,12 +74,16 @@ fn main() -> Result<(), failure::Error> {
         ui.consume_events(&mut event_pump);
         let dt = ui.dt() * time_scale;;
 
-        for (name, asset) in assets.all_names() {
-            if ui.button(name) {
-                player.remove(anim_id);
-                cur_anim = &asset;
-                anim_id = player.start(Start {sheet: &asset, scale, repeat: true, flip_y});
+        for (folder_name, map) in assets.iter().sorted_by_key(|x| x.0) {
+            ui.label(folder_name);
+            for (name, asset) in map {
+                if ui.button(&asset.name) {
+                    player.remove(anim_id);
+                    cur_anim = &asset;
+                    anim_id = player.start(Start {sheet: &asset, scale, repeat: true, flip_y});
+                }
             }
+            ui.newline();
         }
 
         ui.newline();
@@ -120,7 +133,6 @@ fn main() -> Result<(), failure::Error> {
         if show_col_pol {
             if let Some(keys) = player.get_polygon_map(anim_id) {
                 for (name, p) in keys {
-
                     let mut transform = PolygonTransform::default();
                     transform.scale = scale;
                     transform.translation = pos.v2();

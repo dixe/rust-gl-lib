@@ -1,3 +1,4 @@
+use walkdir::WalkDir;
 use std::path::{Path, PathBuf};
 use failure;
 use crate::texture::{self, TextureId};
@@ -276,32 +277,25 @@ struct ActiveAnimation<'a> {
     sprite: Sprite
 }
 
-pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, file_name: &str, id: &mut usize) -> Vec::<SheetAnimation> {
 
-    let mut p = PathBuf::new();
-    p.push(path);
-    p.push(format!("{file_name}.json"));
+pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, json_path: &P, file_name: &str, id: &mut usize) -> Result<Vec::<SheetAnimation>, failure::Error> {
 
-    let anim_json = std::fs::read_to_string(p);
+    let anim_json = std::fs::read_to_string(json_path)?;
 
-    let sheet_anim : SheetArrayAnimation = match anim_json {
-        Ok(json) => {
-            serde_json::from_str(&json).unwrap()
-        },
-        Err(err) => {
-            panic!("Error loading json file \n{:?}", err);
-        }
-    };
+    let sheet_anim : SheetArrayAnimation = serde_json::from_str(&anim_json)?;
 
     let size = na::Vector2::new(sheet_anim.meta.size.w as f32, (sheet_anim.meta.size.h /2) as f32);
 
     let mut base_path = PathBuf::new();
 
-    base_path.push(path);
+    base_path.push(json_path);
+    // remove file name
+    base_path.pop();
 
+    // add img filename
     base_path.push(&sheet_anim.meta.image);
 
-    let mut img = image::open(&base_path).unwrap().into_rgba8();
+    let mut img = image::open(&base_path)?.into_rgba8();
 
     //pre multiply alpha since open gl and shaders assume that;
 
@@ -338,8 +332,9 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, fil
     }
 
     let mut res = vec![];
+    base_path.pop();
     for tag in &animations {
-        let polygons = load_sheet_collision_polygons(&path, &tag.name);
+        let polygons = load_sheet_collision_polygons(&base_path, &tag.name);
 
         let mut collision_polygons : ProcessedSheetCollisionPolygons = Default::default();
 
@@ -347,7 +342,7 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, fil
         for (frame, map) in &polygons {
             let mut inner : HashMap::<String, SheetCollisionPolygon> = Default::default();
 
-            for (name, polygon) in map {
+            for (polygon_name, polygon) in map {
 
                 let mut new_poly = polygon.clone();
 
@@ -358,7 +353,7 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, fil
                     sub_divisions.push(sub.indices);
                 }
 
-                inner.insert(tag.name.clone(), SheetCollisionPolygon {
+                inner.insert(polygon_name.clone(), SheetCollisionPolygon {
                     polygon: new_poly,
                     sub_divisions
                 });
@@ -366,7 +361,6 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, fil
 
             collision_polygons.insert(*frame, inner);
         }
-
 
         let anim = SheetAnimation {
             texture_id,
@@ -379,7 +373,8 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P, fil
         *id += 1;
         res.push(anim);
     }
-    res
+
+    Ok(res)
 
 }
 
@@ -450,4 +445,56 @@ impl SheetCollisionPolygon {
 
         false
     }
+}
+
+
+
+
+pub type SheetAssets = std::collections::HashMap::<String, std::collections::HashMap::<String, SheetAnimation>>;
+
+
+pub fn load_folder<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P) -> SheetAssets {
+
+    let mut id = 0;
+    let dir = match std::fs::read_dir(&path) {
+        Ok(d) => d,
+        Err(err) => {
+            println!("Path was '{:?}'", &path);
+            panic!("{}",err);
+        }
+    };
+
+    let mut res = SheetAssets::default();
+
+    for entry in WalkDir::new(path)
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|e| !e.file_type().is_dir()) {
+            let file_name = entry.file_name().to_str().unwrap();
+            let file_name_no_ending = file_name.split(".").next().unwrap().to_string();
+            if file_name.ends_with(".json") {
+                let json_names = match load_by_name(gl, &entry.path(), &file_name_no_ending, &mut id) {
+                    Ok(mut sheet_anims) => {
+                        let mut pb = std::path::PathBuf::new();
+                        pb.push(entry.path());
+                        pb.pop();
+                        let dir_name = pb.file_name().unwrap().to_str().unwrap().to_string();
+                        if !res.contains_key(&dir_name) {
+                            res.insert(dir_name.clone(), Default::default());
+                        }
+
+                        let map = res.get_mut(&dir_name).unwrap();
+                        while let Some(sheet) = sheet_anims.pop() {
+                            map.insert(sheet.name.clone(), sheet);
+
+                        }
+                    },
+                    Err(e) => {
+
+                    }
+                };
+            }
+        }
+
+    res
 }

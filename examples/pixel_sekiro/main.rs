@@ -60,6 +60,8 @@ fn main() -> Result<(), failure::Error> {
 
     let mut roll_speed = 150.0;
 
+
+    let mut show_col_boxes = false;
     loop {
 
         // Basic clear gl stuff and get events to UI
@@ -132,6 +134,10 @@ fn main() -> Result<(), failure::Error> {
         ui.label("Time scale");
         ui.slider(&mut time_scale, 0.1, 3.1);
         ui.small_text(&format!("{:?}", hits));
+
+        ui.label("Show collision boxes");
+        ui.checkbox(&mut show_col_boxes);
+
 
         ui.newline();
         ui.label("Roll speed");
@@ -207,7 +213,7 @@ fn main() -> Result<(), failure::Error> {
         };
 
 
-        if collide_draw(&mut ui, &ct) {
+        if collide_draw(&mut ui, &ct, show_col_boxes) {
             hits += 1;
         }
 
@@ -257,17 +263,21 @@ struct CollisionTest<'a> {
     attack_pos: V2
 }
 
-fn collide_draw(ui: &mut Ui, ct: &CollisionTest) -> bool {
+fn collide_draw(ui: &mut Ui, ct: &CollisionTest, draw: bool) -> bool {
 
     let mut res = false;
     if let Some((target, target_scale, target_flip_y)) = ct.animation_player.get_polygon(ct.target, "body") {
 
-        if let Some((attack, attack_scale, attack_flip_y)) = ct.animation_player.get_polygon(ct.attacker, "attack") {
+        if draw {
+            ui.view_polygon(&attack.polygon, &target_transform);
+        }
 
-            let mut target_transform = PolygonTransform::default();
-            target_transform.scale = target_scale;
-            target_transform.translation = ct.target_pos;
-            target_transform.flip_y = target_flip_y;
+        let mut target_transform = PolygonTransform::default();
+        target_transform.scale = target_scale;
+        target_transform.translation = ct.target_pos;
+        target_transform.flip_y = target_flip_y;
+
+        if let Some((attack, attack_scale, attack_flip_y)) = ct.animation_player.get_polygon(ct.attacker, "attack") {
 
             let mut attack_transform = PolygonTransform::default();
             attack_transform.scale = attack_scale;
@@ -276,11 +286,10 @@ fn collide_draw(ui: &mut Ui, ct: &CollisionTest) -> bool {
 
             res = attack.collide_draw(&mut ui.drawer2D, &attack_transform.mat3(), target, &target_transform.mat3());
 
-            if res {
-            ui.view_polygon(&attack.polygon, &attack_transform);
-
-                ui.view_polygon(&target.polygon, &target_transform);
+            if draw {
+                ui.view_polygon(&attack.polygon, &attack_transform);
             }
+
         }
     }
 

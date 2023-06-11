@@ -1,0 +1,185 @@
+{ "frames": [
+   {
+    "filename": "Skeleton Attack 0.ase",
+    "frame": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 1.ase",
+    "frame": { "x": 70, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 2.ase",
+    "frame": { "x": 140, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 3.ase",
+    "frame": { "x": 210, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 4.ase",
+    "frame": { "x": 280, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 5.ase",
+    "frame": { "x": 350, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 6.ase",
+    "frame": { "x": 420, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 7.ase",
+    "frame": { "x": 490, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 8.ase",
+    "frame": { "x": 560, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 9.ase",
+    "frame": { "x": 630, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 10.ase",
+    "frame": { "x": 700, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 11.ase",
+    "frame": { "x": 770, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 12.ase",
+    "frame": { "x": 840, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 13.ase",
+    "frame": { "x": 910, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 14.ase",
+    "frame": { "x": 980, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 15.ase",
+    "frame": { "x": 1050, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 16.ase",
+    "frame": { "x": 1120, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 17.ase",
+    "frame": { "x": 1190, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.2.40-x64",
+  "image": "Skeleton Attack.png",
+  "format": "RGBA8888",
+  "size": { "w": 1260, "h": 37 },
+  "scale": "1",
+  "frameTags": [
+   { "name": "attack", "from": 0, "to": 17, "direction": "forward" }
+  ],
+  "layers": [
+   { "name": "legs", "opacity": 255, "blendMode": "normal" },
+   { "name": "arms", "opacity": 255, "blendMode": "normal" },
+   { "name": "body", "opacity": 255, "blendMode": "normal" },
+   { "name": "solo arm", "opacity": 255, "blendMode": "normal" },
+   { "name": "head", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}
