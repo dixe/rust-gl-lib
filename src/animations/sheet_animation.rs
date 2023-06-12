@@ -103,15 +103,11 @@ pub struct FrameTag {
     pub to: usize
 }
 
-
-
-
 pub struct SheetAnimationPlayer<'a> {
     animations: HashMap::<AnimationId, ActiveAnimation<'a>>,
     next_id: AnimationId,
     clear_buffer: Vec::<AnimationId>
 }
-
 
 pub struct Start<'a> {
     pub sheet: &'a SheetAnimation,
@@ -147,6 +143,15 @@ impl<'a> SheetAnimationPlayer<'a> {
             }
         }
 
+        None
+    }
+
+
+    pub fn frame(&self, anim_id: AnimationId) -> Option<usize> {
+
+        if let Some(active) = self.animations.get(&anim_id) {
+            return Some(active.frame);
+        }
         None
     }
 
@@ -344,8 +349,6 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, json_path: &P
             for (polygon_name, polygon) in map {
 
                 let mut new_poly = polygon.clone();
-
-
                 let mut sub_divisions = vec![];
 
                 for sub in polygon::calculate_subdivision(&mut new_poly) {
@@ -356,6 +359,7 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, json_path: &P
                     polygon: new_poly,
                     sub_divisions
                 });
+
             }
 
             collision_polygons.insert(*frame, inner);

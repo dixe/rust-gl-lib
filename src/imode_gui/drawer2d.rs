@@ -42,6 +42,7 @@ pub struct Drawer2D {
     polygon_vertex_buffer: Vec::<f32>,
     polygon_indices_buffer: Vec::<u32>,
 
+    pub color: Color,
     // fonts
     pub font_cache: FontCache,
 
@@ -98,8 +99,8 @@ impl Drawer2D {
             polygon_indices_buffer: vec![],
             polygon_vertex_buffer: vec![],
             color_square_h_line_shader,
-            z: 0.0
-
+            z: 0.0,
+            color: Color::Rgb(0,0,0)
         })
     }
 
@@ -120,7 +121,6 @@ impl Drawer2D {
         let y1 = y1_t.to_f64();
         let thickness = thickness_t.to_f64();
 
-
         let mut v = Vector2::<f64>::new(x1.to_f64(), y1.to_f64()) - Vector2::<f64>::new(x.to_f64(), y.to_f64());
 
 
@@ -134,10 +134,7 @@ impl Drawer2D {
 
         self.rounded_rect_shader.set_transform(transform);
 
-
-        let color = Color::Rgb(0,0,0);
-
-        self.rounded_rect_shader.set_uniforms(rrs::Uniforms { color,
+        self.rounded_rect_shader.set_uniforms(rrs::Uniforms { color: self.color,
                                                               pixel_height: 1.0 as f32,
                                                               pixel_width: 1.0 as f32,
                                                               radius: 0.0
@@ -242,7 +239,7 @@ impl Drawer2D {
         self.polygon_indices_buffer.clear();
 
         // setup vertex and indices buffer
-        p.set_vertices(&mut self.polygon_vertex_buffer, self.viewport.h as f32);
+        p.set_vertices(&mut self.polygon_vertex_buffer, self.viewport.h as f32, self.z);
 
         // convex polygon, avery triangle can be drawn with vertex 0 as "base"
         let triangles = self.polygon_vertex_buffer.len()/3 - 2;
@@ -553,22 +550,22 @@ struct Geom<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric> {
 
 
 pub trait ConvexPolygon {
-    fn set_vertices(&self, buffer :&mut Vec::<f32>, viewport_height: f32);
+    fn set_vertices(&self, buffer :&mut Vec::<f32>, viewport_height: f32, z: f32);
 }
 
 
 impl ConvexPolygon for &[na::Vector2::<f32> ]{
-    fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32) {
+    fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32, z: f32) {
         for v in *self {
             buffer.push(v.x);
             buffer.push(viewport_height - v.y);
-            buffer.push(0.0);
+            buffer.push(z);
         }
     }
 }
 
 impl ConvexPolygon for &[na::Vector3::<f32> ]{
-    fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32) {
+    fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32, _: f32) {
         for v in *self {
             buffer.push(v.x);
             buffer.push(viewport_height - v.y);

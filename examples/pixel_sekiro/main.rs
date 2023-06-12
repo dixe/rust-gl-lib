@@ -56,9 +56,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut time_scale = 1.0;
     let mut poly_name = "body".to_string();
-    let mut hits = 0;
 
-    let mut roll_speed = 150.0;
 
     loop {
 
@@ -82,7 +80,7 @@ fn main() -> Result<(), failure::Error> {
 
         ui.label("Time scale");
         ui.slider(&mut time_scale, 0.1, 3.1);
-        ui.small_text(&format!("{:?}", hits));
+        ui.small_text(&format!("{:?}", scene.hits));
 
         ui.label("Show collision boxes");
         ui.checkbox(&mut scene.show_col_boxes);
@@ -99,6 +97,9 @@ fn main() -> Result<(), failure::Error> {
 
         ui.drawer2D.z = 1.0;
         ui.drag_point(&mut pos2, 10.0);
+        if let Some(ref mut enemy) = scene.enemy {
+            enemy.pos = pos2.v2();
+        }
         ui.drawer2D.z = 0.0;
 
         // draw animation frame at locations

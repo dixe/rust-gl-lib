@@ -74,10 +74,10 @@ impl Ui {
         windows.insert(0, base_window);
 
         unsafe {
-            drawer2D.gl.Enable(gl::DEPTH_TEST);
-            drawer2D.gl.DepthFunc(gl::LEQUAL);
-
+            //drawer2D.gl.Enable(gl::DEPTH_TEST);
+            //drawer2D.gl.DepthFunc(gl::LEQUAL);
         }
+
         let mut deltatime = deltatime::Deltatime::new();
 
         Self {

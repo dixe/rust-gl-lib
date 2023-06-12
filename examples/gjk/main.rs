@@ -4,7 +4,9 @@ use gl_lib::imode_gui::ui::*;
 use sdl2::event;
 use std::collections::HashSet;
 use gl_lib::collision2d::gjk;
-use gl_lib::collision2d::polygon::{self, Polygon, ComplexPolygon};
+use gl_lib::collision2d::polygon::{self, Polygon, ComplexPolygon, PolygonTransform};
+use std::collections::HashMap;
+use gl_lib::imode_gui::widgets::PolygonOptions;
 
 
 type V2 = na::Vector2::<f32>;
@@ -25,6 +27,16 @@ fn new_poly() -> Poly {
 
     poly.select_all();
     poly
+}
+
+fn load(path: &str, frame: usize, name: &str) -> Polygon {
+
+    let json = std::fs::read_to_string(path).unwrap();
+    let ps: HashMap::<usize, HashMap::<String, Polygon>> = serde_json::from_str(&json).unwrap();
+    let mut polygon = ps.get(&frame).unwrap().get(name).unwrap().clone();
+
+
+    polygon
 }
 
 fn main() -> Result<(), failure::Error> {
@@ -50,12 +62,41 @@ fn main() -> Result<(), failure::Error> {
     let mut options = options::Options::default();
 
     options.selected_v_color = Color::Rgb(25, 41, 187);
+    let mut p1 = new_poly();
+    let mut p2 = new_poly();
+
+    p1.polygon = load("examples/gjk/error.json", 0, "body");
+
+
+
+    p1.transform.scale = 10.0;
+    p1.transform.translation.x = 500.0;
+    p1.transform.translation.y = 600.0;
+    p1.transform.flip_y = false;
+
+
+
+    p2.polygon = load("examples/2d_animation_player/assets/player/attack_1_polygons.json", 2, "attack");
+    p2.polygon = load("examples/2d_animation_player/assets/player/attack_1_polygons.json", 3, "attack");
+
+
+
+    p2.transform.scale = 10.0;
+    p2.transform.translation.x = 400.0;
+    p2.transform.translation.y = 600.0;
+    p2.transform.flip_y = false;
+
+
+
+
     let mut state = State {
-        polygons: vec![ new_poly() ],
+        polygons: vec![ p1,  ],
         polygon_mode: PolygonMode::Object(Some(0)),
         mode: Mode::NewPoint,
         options,
     };
+
+    calc_and_set_subdivision(&mut state.polygons);
 
     loop {
 
@@ -92,8 +133,14 @@ fn main() -> Result<(), failure::Error> {
 
                 if let Some(id) = idx {
                     if ui.button("to edit mode") {
-                        state.polygon_mode = PolygonMode::Edit(id);
+                        let mut options = PolygonOptions::default();
+                        options.transform = state.polygons[id].transform;
+                        state.polygon_mode = PolygonMode::Edit(id, options);
                     }
+                }
+
+                if ui.button("Calc sub") {
+                    calc_and_set_subdivision(&mut state.polygons);
                 }
                 for i in 0..state.polygons.len() {
 
@@ -127,9 +174,14 @@ fn main() -> Result<(), failure::Error> {
                         color = state.options.selected_v_color;
                     }
 
+                    ui.view_polygon(&poly.polygon, &poly.transform);
+
+                    /*
+
                     if ui.view_raw_polygon(&mut poly.polygon, true, state.options.show_idx, state.options.show_pos, color) {
                         state.polygon_mode = PolygonMode::Object(Some(i));
                     }
+                     */
 
                     render_sub_poly(&mut ui, poly);
                     i += 1;
@@ -137,17 +189,26 @@ fn main() -> Result<(), failure::Error> {
                 }
             },
 
-            PolygonMode::Edit(idx) => {
+            PolygonMode::Edit(idx, mut options) => {
                 draggable = Some(idx);
                 ui.small_text("Edit mode");
-                if ui.button("to obj mode") {
+
+                options.show_idx = state.options.show_idx;
+
+                ui.slider(&mut options.transform.scale, 1.0, 10.0);
+
+                ui.polygon_editor(&mut state.polygons[idx].polygon, &mut options);
+                state.polygons[idx].transform = options.transform;
+                state.polygon_mode = PolygonMode::Edit(idx, options);
+
+                 if ui.button("to obj mode") {
                     state.polygon_mode = PolygonMode::Object(Some(idx));
                     for poly in &mut state.polygons {
                         poly.select_all();
                     }
                 }
+                //edit_raw_polygon(&mut state.polygons[idx].polygon, state.options.show_idx, state.options.show_pos, &mut None);
 
-                ui.edit_raw_polygon(&mut state.polygons[idx].polygon, state.options.show_idx, state.options.show_pos, &mut None);
             }
         }
         render_mode(&mut ui, &state.mode);
@@ -175,20 +236,21 @@ fn render_sub_poly(ui: &mut Ui, poly: &mut Poly) {
 
     let polygon = &poly.polygon;
 
+    ui.drawer2D.color = Color::Rgb(255, 10, 10);
     for sub in &poly.sub_divisions {
         let len = sub.len();
         for idx in 0..len {
             let i1 = sub[idx];
             let i2 = sub[(idx + 1) % len];
 
-            let p1 = polygon.vertices[i1];
-            let p2 = polygon.vertices[i2];
+            let p1 = poly.transform.map(polygon.vertices[i1]);
+            let p2 = poly.transform.map(polygon.vertices[i2]);
 
             ui.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 2.0);
-
-
         }
     }
+
+    ui.drawer2D.color = Color::Rgb(0, 0, 0);
 }
 
 struct State {
@@ -198,11 +260,12 @@ struct State {
     options: options::Options
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct Poly {
     polygon: Polygon,
     sub_divisions: Vec::<Vec::<usize>>,
     selected: HashSet::<usize>,
+    transform: PolygonTransform
 }
 impl Poly {
 
@@ -215,7 +278,7 @@ impl Poly {
 
 enum PolygonMode {
     Object(Option<usize>),
-    Edit(usize),
+    Edit(usize, PolygonOptions),
 }
 
 pub enum Mode {
@@ -236,7 +299,7 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
             PolygonMode::Object(_) => {
                 handle_object_mode(&e, &mut state.mode, &mut state.options);
             },
-            PolygonMode::Edit(idx) => {
+            PolygonMode::Edit(idx, _) => {
                 handle_edit_mode(&e, state.polygons.get_mut(idx).unwrap(), &mut state.mode);
             }
         }
@@ -270,7 +333,9 @@ fn handle_inputs(ui: &mut Ui, state: &mut State) {
                     PolygonMode::Object(id) => {
                         if let Some(idx) = id {
                             if idx < state.polygons.len() {
-                                state.polygon_mode = PolygonMode::Edit(idx);
+                                let mut options = PolygonOptions::default();
+                                options.transform = state.polygons[idx].transform;
+                                state.polygon_mode = PolygonMode::Edit(idx, options);
                             }
                         }
                     },
@@ -412,20 +477,19 @@ fn poly_collision(drawer2D: &mut Drawer2D, p1: &Poly, p2: &Poly) -> bool {
         let sub_p_1 = ComplexPolygon {
             polygon: &p1.polygon,
             indices: &indices_1,
-            transform: &na::Matrix3::identity()
+            transform: &p1.transform.mat3(),
         };
 
         for indices_2 in &p2.sub_divisions {
             let sub_p_2 = ComplexPolygon {
                 polygon: &p2.polygon,
                 indices: &indices_2,
-                transform: &na::Matrix3::identity()
+                transform: &p2.transform.mat3(),
             };
 
             let collision = gjk::gjk_intersection(&sub_p_1, &sub_p_2);
             if collision {
                 res = true;
-                println!("COL");
                 drawer2D.convex_polygon(&sub_p_1);
                 drawer2D.convex_polygon(&sub_p_2);
 

@@ -2,7 +2,7 @@ use gl_lib::{gl, na, helpers};
 use gl_lib::imode_gui::drawer2d::{*};
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::widgets::PolygonOptions;
-use gl_lib::collision2d::polygon::{Polygon, Dir};
+use gl_lib::collision2d::polygon::{Polygon, Dir, self};
 use gl_lib::texture::TextureId;
 use gl_lib::typedef::*;
 use gl_lib_proc::sheet_assets;
@@ -160,6 +160,13 @@ fn main() -> Result<(), failure::Error> {
                     let p = edit.sheet.frames[edit.frame].polygons.get_mut(&edit.name).unwrap();
                     *p = Polygon::default();
                 }
+
+                if ui.button("Calc sub") {
+                    let p = edit.sheet.frames[edit.frame].polygons.get_mut(&edit.name).unwrap();
+                    polygon::calculate_subdivision(p);
+                    println!("{:?}", p.direction());
+                }
+
 
 
                 img_edit(&mut ui, &mut edit.sheet.frames[edit.frame], &edit.name, edit.sheet.size, edit.sheet.texture_id);

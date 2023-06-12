@@ -12,7 +12,8 @@ pub struct Scene<'a: 'b, 'b> {
     pub player_assets: &'a PlayerAssets,
     pub animation_player: &'b mut SheetAnimationPlayer<'a>,
     pub assets: &'a SheetAssets,
-    pub show_col_boxes: bool
+    pub show_col_boxes: bool,
+    pub hits: usize
 }
 
 
@@ -29,13 +30,14 @@ pub fn new<'a: 'b, 'b>(player_assets: &'a PlayerAssets,
             vel: V2::identity(),
             inputs: inputs::Inputs::default(),
             flip_y: 1.0,
-
+            asset_name: "player".to_string()
         },
         enemy: None,
         animation_player,
         player_assets,
         assets,
-        show_col_boxes: true
+        show_col_boxes: true,
+        hits: 0
     }
 }
 
@@ -51,7 +53,8 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
             pos,
             vel: V2::identity(),
             inputs: inputs::Inputs::default(),
-            flip_y: -1.0
+            flip_y: -1.0,
+            asset_name: name.to_string()
         });
     }
 
@@ -65,10 +68,10 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
         let scale = 4.0;
         let roll_speed = 150.0;
 
-        update_entity(&mut self.player, scale, self.player_assets, self.animation_player, roll_speed, dt);
+        update_entity(&mut self.player, scale, self.assets, self.animation_player, roll_speed, dt);
 
         if let Some(ref mut enemy) = self.enemy {
-            //update_entity(&mut enemy, scale, &skeleton_assets, &mut animation_player, roll_speed);
+            update_entity(enemy, scale, self.assets, self.animation_player, roll_speed, dt);
         }
 
         // update flip  -- maybe do in normal match statement
@@ -96,6 +99,7 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
 
         if let Some(enemy) = &self.enemy {
             if self.hit(ui, &self.player, &enemy) {
+                self.hits += 1;
                 println!("player hit enemy");
             }
 
@@ -114,11 +118,13 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
                 attack_pos: attacker.pos
         };
 
-        collide_draw(ui, &ct, self.show_col_boxes)
+        ui.drawer2D.z = 2.0;
+        let res = collide_draw(ui, &ct, self.show_col_boxes);
+        ui.drawer2D.z = 0.0;
+
+        res
 
     }
-
-
 }
 
 
@@ -147,12 +153,27 @@ fn collide_draw(ui: &mut Ui, ct: &CollisionTest, draw: bool) -> bool {
 
         if let Some((attack, attack_scale, attack_flip_y)) = ct.animation_player.get_polygon(ct.attacker, "attack") {
 
+            let frame = ct.animation_player.frame(ct.attacker);
+            if let Some(f) = frame {
+                if f == 3 {
+                    let dbug = 2;
+                }
+            }
+
             let mut attack_transform = PolygonTransform::default();
             attack_transform.scale = attack_scale;
             attack_transform.translation = ct.attack_pos;
             attack_transform.flip_y = attack_flip_y;
 
             res = attack.collide_draw(&mut ui.drawer2D, &attack_transform.mat3(), target, &target_transform.mat3());
+
+            if let Some(f) = frame {
+                if !res && f == 3 {
+                    let f2 = ct.animation_player.frame(ct.target);
+                    let dbug = 2;
+                    println!("{:?}", f2);
+                }
+            }
 
             if draw {
                 ui.view_polygon(&attack.polygon, &attack_transform);

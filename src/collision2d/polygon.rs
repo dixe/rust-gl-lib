@@ -54,30 +54,7 @@ impl Polygon {
     }
 
     pub fn direction(&self) -> Dir {
-
-        let mut num_wide = 0;
-
-        // assume right, and if not return left
-
-        for i in 1..self.vertices.len() {
-            let v1_i = (i + 1) % self.vertices.len();
-            let v2_i = (i + 2) % self.vertices.len();
-
-            let v0 = vec3(self.vertices[i]);
-            let v1 = vec3(self.vertices[v1_i]);
-            let v2 = vec3(self.vertices[v2_i]);
-
-            if is_wide_angle(v0, v1, v2) {
-                num_wide += 1;
-            }
-        }
-
-
-        if num_wide > (self.vertices.len()  / 2 ) {
-            return Dir::Left;
-        }
-
-        return Dir::Right;
+        direction(&self)
     }
 
 }
@@ -174,6 +151,8 @@ pub fn calculate_subdivision(polygon: &mut Polygon) -> Vec::<SubPolygon> {
         }
     }
 
+    let dir = direction(&polygon);
+
     let mut input_sub_p = SubPolygon {
         polygon,
         indices: vec![]
@@ -194,7 +173,8 @@ pub fn calculate_subdivision(polygon: &mut Polygon) -> Vec::<SubPolygon> {
             let connection = match find_valid_connection(&sub_p, wide_idx) {
                 Ok(c) => c,
                 Err(e) => {
-                    return vec![];
+                    println!("{:?}", e);
+                    return vec![sub_p];
                 }
             };
 
@@ -359,7 +339,11 @@ pub fn direction(polygon: &Polygon) -> Dir {
 
     let mut num_wide = 0;
 
-    // assume right, and if not return left
+    // assume right, and calc interier and exterier angle.
+    // Interier should be smaller, so if not, then we are left
+
+    let mut int_angle = 0.0;
+    let mut ext_angle = 0.0;
 
     for i in 1..polygon.vertices.len() {
         let v1_i = (i + 1) % polygon.vertices.len();
@@ -369,17 +353,39 @@ pub fn direction(polygon: &Polygon) -> Dir {
         let v1 = vec3(polygon.vertices[v1_i]);
         let v2 = vec3(polygon.vertices[v2_i]);
 
-        if is_wide_angle(v0, v1, v2) {
-            num_wide += 1;
+
+        let mut from_dir = v0 - v1;
+        let mut to_dir = v2 - v1;
+        // sdl inverse coords, neeed to be fixed when using atan2
+        from_dir.y *= -1.0;
+        to_dir.y *= -1.0;
+
+        // angle between from vec and to vec
+        let mut a1 = from_dir.y.atan2(from_dir.x);
+
+        if a1 < 0.0 {
+            a1 += std::f32::consts::TAU;
         }
+
+        let mut a2 = to_dir.y.atan2(to_dir.x);
+        while a2 < a1 {
+            a2 += std::f32::consts::TAU;
+        }
+
+
+        let angle = a2 - a1;
+
+        let inv_angle = std::f32::consts::TAU - angle;
+        int_angle += angle;
+        ext_angle += inv_angle;
     }
 
-
-    if num_wide > (polygon.vertices.len()  / 2 ) {
+    if int_angle < ext_angle {
+        return Dir::Right;
+    } else {
         return Dir::Left;
     }
 
-    return Dir::Right;
 }
 
 fn vec3(v: V2) -> V3 {
@@ -392,7 +398,7 @@ fn is_wide_angle(v0: na::Vector3::<f32>, v1: na::Vector3::<f32>, v2: na::Vector3
 }
 
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Dir {
     Left,
     Right
@@ -448,12 +454,12 @@ impl<'a> gjk::Shape for ComplexPolygon<'a> {
 }
 
 impl<'a> drawer2d::ConvexPolygon for ComplexPolygon<'a> {
-    fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32) {
+    fn set_vertices(&self, buffer: &mut Vec::<f32>, viewport_height: f32, z: f32) {
         for &i in self.indices {
             let v = self.transformed(i);
             buffer.push(v.x);
             buffer.push(viewport_height - v.y);
-            buffer.push(0.0);
+            buffer.push(z);
         }
     }
 }

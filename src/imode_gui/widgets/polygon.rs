@@ -79,10 +79,15 @@ impl Ui {
                             polygon.vertices.pop();
                             len = polygon.vertices.len();
                             // clear selected if len < current selected
+                            if let Some(sel) = selected {
+                                if *sel >= polygon.vertices.len() {
+                                    *selected = None;
+                                }
+                            }
                         }
                     },
 
-                    KeyUp { keycode: Some(Keycode::A), keymod, ..} => {
+                    KeyUp { keycode: Some(Keycode::A), ..} => {
                         // add before selected (left)
                         if let Some(i) = selected {
 
@@ -98,7 +103,7 @@ impl Ui {
                         }
                     },
 
-                    KeyUp { keycode: Some(Keycode::D), keymod, ..} => {
+                    KeyUp { keycode: Some(Keycode::D), ..} => {
                         // add after selected (left)
                         if let Some(i) = selected {
 
@@ -109,6 +114,14 @@ impl Ui {
                             polygon.vertices.insert(*i + 1, new_v);
 
 
+                        }
+                    },
+
+                    KeyUp { keycode: Some(Keycode::E), ..} => {
+                        if let Some(i) = selected {
+                            polygon.vertices.remove(*i);
+                            len = polygon.vertices.len();
+                            *selected = None;
                         }
                     },
                     _ => {},
@@ -129,6 +142,7 @@ impl Ui {
         }
 
 
+        let len = polygon.vertices.len();
 
         for i in 0..len {
             let v = &mut polygon.vertices[i];
@@ -229,7 +243,7 @@ impl Ui {
 
         let active = self.is_active(id);
 
-        let interacted = self.edit_raw_polygon(polygon, false, false, &mut options.selected) ;
+        let interacted = self.edit_raw_polygon(polygon, options.show_idx, false, &mut options.selected) ;
 
         if let Some(Interaction::Vertex(i)) = interacted {
             options.selected.insert(i);
@@ -247,7 +261,8 @@ impl Ui {
 pub struct PolygonOptions {
     selected: Option<usize>,
     pub transform: PolygonTransform,
-    tmp_polygon: Polygon
+    tmp_polygon: Polygon,
+    pub show_idx: bool
 }
 
 
