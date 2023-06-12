@@ -1,0 +1,122 @@
+{ "frames": [
+   {
+    "filename": "Skeleton Idle 0.ase",
+    "frame": { "x": 0, "y": 0, "w": 36, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 36, "h": 32 },
+    "sourceSize": { "w": 36, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Idle 1.ase",
+    "frame": { "x": 36, "y": 0, "w": 36, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 36, "h": 32 },
+    "sourceSize": { "w": 36, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Idle 2.ase",
+    "frame": { "x": 72, "y": 0, "w": 36, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 36, "h": 32 },
+    "sourceSize": { "w": 36, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Idle 3.ase",
+    "frame": { "x": 108, "y": 0, "w": 36, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 36, "h": 32 },
+    "sourceSize": { "w": 36, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Idle 4.ase",
+    "frame": { "x": 144, "y": 0, "w": 36, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 36, "h": 32 },
+    "sourceSize": { "w": 36, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Idle 5.ase",
+    "frame": { "x": 180, "y": 0, "w": 36, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 36, "h": 32 },
+    "sourceSize": { "w": 36, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Idle 6.ase",
+    "frame": { "x": 216, "y": 0, "w": 36, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 36, "h": 32 },
+    "sourceSize": { "w": 36, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Idle 7.ase",
+    "frame": { "x": 252, "y": 0, "w": 36, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 36, "h": 32 },
+    "sourceSize": { "w": 36, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Idle 8.ase",
+    "frame": { "x": 288, "y": 0, "w": 36, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 36, "h": 32 },
+    "sourceSize": { "w": 36, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Idle 9.ase",
+    "frame": { "x": 324, "y": 0, "w": 36, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 36, "h": 32 },
+    "sourceSize": { "w": 36, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Idle 10.ase",
+    "frame": { "x": 360, "y": 0, "w": 36, "h": 32 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 36, "h": 32 },
+    "sourceSize": { "w": 36, "h": 32 },
+    "duration": 100
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.2.40-x64",
+  "image": "Skeleton Idle.png",
+  "format": "RGBA8888",
+  "size": { "w": 396, "h": 32 },
+  "scale": "1",
+  "frameTags": [
+   { "name": "idle", "from": 0, "to": 10, "direction": "forward" }
+  ],
+  "layers": [
+   { "name": "legs", "opacity": 255, "blendMode": "normal" },
+   { "name": "arms", "opacity": 255, "blendMode": "normal" },
+   { "name": "body", "opacity": 255, "blendMode": "normal" },
+   { "name": "solo arm", "opacity": 255, "blendMode": "normal" },
+   { "name": "head", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

@@ -1,8 +1,7 @@
 extern crate proc_macro;
 use proc_macro::{TokenStream, TokenTree};
-use proc_macro::Ident;
 use litrs;
-
+use walkdir::WalkDir;
 use std::convert::TryFrom;
 
 #[derive(Debug)]
@@ -32,8 +31,35 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
         Err(e) => return e.to_compile_error(),
     };
 
+    let mut res = "".to_string();
+    for entry in WalkDir::new(path)
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|e| e.file_type().is_dir()) {
+            res += "\n\n";
+            res += &create_struct_from_folder(entry.path(), &name);
+        }
 
-    let mut res = format!("#[derive(Debug, Clone, Copy)] struct {name} {{\n");
+
+    //println!("{}", res);
+    res.parse().unwrap()
+}
+
+
+fn upper_first_letter(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+    }
+}
+
+
+fn create_struct_from_folder(path: &std::path::Path, base_name: &str) -> String {
+
+    // crate name from base_name and folder name, fx PlayerAssets
+    let dir_name = path.file_name().unwrap().to_str().unwrap();
+    let name = format!("{}{}", upper_first_letter(dir_name), base_name);
 
     let dir = match std::fs::read_dir(&path) {
         Ok(d) => d,
@@ -49,7 +75,7 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
     let mut asset_names = std::collections::HashSet::<String>::new();
 
 
-    let mut res = format!("#[derive(Debug)] struct {name} {{\n");
+    let mut res = format!("#[derive(Debug)]\n pub struct {name} {{\n");
 
     for dir_entry in dir {
         match dir_entry {
@@ -94,17 +120,16 @@ pub fn sheet_assets(item: TokenStream) -> TokenStream {
     res += end;
 
     res += &format!("impl {name} {{\n");
-    add_load_all(&mut res, &name, &json_files, &asset_names);
 
-    add_all_names(&mut res, &name, &asset_names);
+    add_load_all(&mut res, &name, &json_files, &asset_names, &dir_name);
+
+    add_all_names(&mut res, &asset_names);
 
 
     // impl close
-    res += "}\n";
+    res += "}\n\n\n";
 
-    //println!("{}", res);
-    res.parse().unwrap()
-
+    res
 }
 
 
@@ -119,7 +144,7 @@ fn load_json_animation_names(path: &std::path::Path) -> JsonNames {
         Ok(sheet) => {
             sheet
         },
-        Err(err) => {
+        Err(_) => {
             return JsonNames::NotValid;
         }
     };
@@ -137,7 +162,7 @@ fn load_json_animation_names(path: &std::path::Path) -> JsonNames {
 }
 
 
-fn add_all_names(res: &mut String, name: &str, names: &std::collections::HashSet::<String>) {
+fn add_all_names(res: &mut String, names: &std::collections::HashSet::<String>) {
 
     *res += "pub fn all_names(&self) -> Vec::<(&str, &gl_lib::animations::sheet_animation::SheetAnimation)>{\n";
     *res += "vec![\n";
@@ -176,16 +201,26 @@ struct FrameTag {
 
 
 
-fn add_load_all(res: &mut String, struct_name: &str, file_names: &std::collections::HashSet::<String>, asset_names: &std::collections::HashSet::<String>) {
+fn add_load_all(res: &mut String, struct_name: &str, file_names: &std::collections::HashSet::<String>, asset_names: &std::collections::HashSet::<String>, dir_name: &str) {
 
     *res += &format!("pub fn load_all(gl: &gl_lib::gl::Gl, path: &str) -> {struct_name} {{\n");
     *res += &format!("let mut id = 1;\n");
 
     *res += "let mut assets = std::collections::HashMap::<String, gl_lib::animations::sheet_animation::SheetAnimation>::new();\n\n";
 
+    *res += "let mut pb = std::path::PathBuf::new();\n";
+
+    *res += "pb.push(path);\n";
+
+    *res += &format!("pb.push(\"{dir_name}\");\n");
+
     for file_name in file_names {
-        *res += &format!("\nfor asset in gl_lib::animations::sheet_animation::load_by_name(gl, &path, \"{file_name}\", &mut id) {{
+
+        *res += &format!("pb.push(\"{file_name}.json\");\n");
+
+        *res += &format!("\nfor asset in gl_lib::animations::sheet_animation::load_by_name(gl, &pb, \"{file_name}\", &mut id).unwrap() {{
             assets.insert(asset.name.clone(), asset.clone());\n}}\n");
+        *res += "pb.pop();\n";
     }
 
 

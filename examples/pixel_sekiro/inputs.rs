@@ -10,15 +10,15 @@ pub struct Inputs {
     pub left: bool,
     pub right: bool,
     // TODO: make this better
-    mouse: Option<Instant>,
+    attack: Option<Instant>,
     pub space: bool
 }
 
 
 impl Inputs {
-    pub fn mouse(&mut self) -> bool {
-        if let Some(_) = self.mouse {
-            self.mouse = None;
+    pub fn attack(&mut self) -> bool {
+        if let Some(_) = self.attack {
+            self.attack = None;
             return true;
         }
         false
@@ -34,10 +34,10 @@ pub fn handle_inputs(ui: &mut Ui, inputs: &mut Inputs) {
 
     // update input buffering
 
-    if let Some(inst) = inputs.mouse {
+    if let Some(inst) = inputs.attack {
         let dur = inst.elapsed();
         if dur.as_millis() > 5000 {
-            inputs.mouse = None
+            inputs.attack = None
         }
     }
 
@@ -68,7 +68,7 @@ pub fn handle_inputs(ui: &mut Ui, inputs: &mut Inputs) {
             },
 
             MouseButtonUp {..} => {
-                inputs.mouse = Some(Instant::now());
+                inputs.attack = Some(Instant::now());
             }
             _ => {}
         }

@@ -1,0 +1,518 @@
+{ "frames": [
+   {
+    "filename": "NightBorne 0.aseprite",
+    "frame": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 1.aseprite",
+    "frame": { "x": 80, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 2.aseprite",
+    "frame": { "x": 160, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 3.aseprite",
+    "frame": { "x": 240, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 4.aseprite",
+    "frame": { "x": 320, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 5.aseprite",
+    "frame": { "x": 400, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 6.aseprite",
+    "frame": { "x": 480, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 7.aseprite",
+    "frame": { "x": 560, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 8.aseprite",
+    "frame": { "x": 640, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 9.aseprite",
+    "frame": { "x": 720, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 10.aseprite",
+    "frame": { "x": 800, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 11.aseprite",
+    "frame": { "x": 880, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 12.aseprite",
+    "frame": { "x": 960, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 13.aseprite",
+    "frame": { "x": 1040, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 14.aseprite",
+    "frame": { "x": 1120, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 15.aseprite",
+    "frame": { "x": 1200, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 16.aseprite",
+    "frame": { "x": 1280, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 17.aseprite",
+    "frame": { "x": 1360, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 18.aseprite",
+    "frame": { "x": 1440, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 19.aseprite",
+    "frame": { "x": 1520, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 20.aseprite",
+    "frame": { "x": 1600, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 21.aseprite",
+    "frame": { "x": 1680, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 22.aseprite",
+    "frame": { "x": 1760, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 23.aseprite",
+    "frame": { "x": 1840, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 24.aseprite",
+    "frame": { "x": 1920, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 25.aseprite",
+    "frame": { "x": 2000, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 26.aseprite",
+    "frame": { "x": 2080, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 27.aseprite",
+    "frame": { "x": 2160, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 28.aseprite",
+    "frame": { "x": 2240, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 29.aseprite",
+    "frame": { "x": 2320, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 30.aseprite",
+    "frame": { "x": 2400, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 31.aseprite",
+    "frame": { "x": 2480, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 32.aseprite",
+    "frame": { "x": 2560, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 33.aseprite",
+    "frame": { "x": 2640, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 34.aseprite",
+    "frame": { "x": 2720, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 35.aseprite",
+    "frame": { "x": 2800, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 36.aseprite",
+    "frame": { "x": 2880, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 37.aseprite",
+    "frame": { "x": 2960, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 38.aseprite",
+    "frame": { "x": 3040, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 39.aseprite",
+    "frame": { "x": 3120, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 40.aseprite",
+    "frame": { "x": 3200, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 41.aseprite",
+    "frame": { "x": 3280, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 42.aseprite",
+    "frame": { "x": 3360, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 43.aseprite",
+    "frame": { "x": 3440, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 44.aseprite",
+    "frame": { "x": 3520, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 45.aseprite",
+    "frame": { "x": 3600, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 46.aseprite",
+    "frame": { "x": 3680, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 47.aseprite",
+    "frame": { "x": 3760, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 48.aseprite",
+    "frame": { "x": 3840, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 49.aseprite",
+    "frame": { "x": 3920, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 50.aseprite",
+    "frame": { "x": 4000, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 51.aseprite",
+    "frame": { "x": 4080, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 52.aseprite",
+    "frame": { "x": 4160, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 53.aseprite",
+    "frame": { "x": 4240, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   },
+   {
+    "filename": "NightBorne 54.aseprite",
+    "frame": { "x": 4320, "y": 0, "w": 80, "h": 80 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 80 },
+    "sourceSize": { "w": 80, "h": 80 },
+    "duration": 100
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.2.40-x64",
+  "image": "NightBorne.png",
+  "format": "RGBA8888",
+  "size": { "w": 4400, "h": 80 },
+  "scale": "1",
+  "frameTags": [
+   { "name": "idle", "from": 0, "to": 8, "direction": "forward" },
+   { "name": "run", "from": 9, "to": 14, "direction": "forward" },
+   { "name": "attack", "from": 15, "to": 26, "direction": "forward" },
+   { "name": "hit", "from": 27, "to": 31, "direction": "forward" },
+   { "name": "death", "from": 32, "to": 54, "direction": "forward" }
+  ],
+  "layers": [
+   { "name": "Sprite Sheet", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}
