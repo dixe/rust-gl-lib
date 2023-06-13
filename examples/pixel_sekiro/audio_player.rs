@@ -1,95 +1,125 @@
-use sdl2::audio::AudioSpecDesired;
-use sdl2::audio::{AudioCallback, AudioDevice};
+use sdl2::audio::{AudioSpecDesired, AudioCallback, AudioDevice, AudioSpecWAV, AudioCVT, AudioFormat};
 
 
-
-struct SquareWave {
-    phase_inc: f32,
-    phase: f32,
-    volume: f32,
-    master_volume: f32
+#[derive(Clone)]
+struct WavFile {
+    buffer: Vec::<u8>,
+    pos: usize,
+    master_volume: f32,
+    done: bool
 }
 
-impl AudioCallback for SquareWave {
-    type Channel = f32;
+impl AudioCallback for WavFile {
+    type Channel = u8;
 
-    fn callback(&mut self, out: &mut [f32]) {
-        // Generate a square wave
+    fn callback(&mut self, out: &mut [u8]) {
+
         for x in out.iter_mut() {
-            *x = if self.phase <= 0.5 {
-                self.volume * self.master_volume
-            } else {
-                -self.volume * self.master_volume
-            };
-            self.phase = (self.phase + self.phase_inc) % 1.0;
+            // our own pause, since using pause/resume seems to not always work imediatly
+            if self.done {
+                *x = 128;
+                continue;
+            }
+
+            let pre_scale = *self.buffer.get(self.pos).unwrap_or(&128);
+            let scaled_signed_float = (pre_scale as f32 - 128.0) * self.master_volume;
+            let scaled = (scaled_signed_float + 128.0) as u8;
+            *x = scaled;
+            self.pos += 1;
+            self.done = self.pos >= self.buffer.len();
         }
     }
 }
 
 struct Channel {
     spec: AudioSpecDesired,
-    device: AudioDevice<SquareWave>,
-    vol: f32,
-    freq: f32,
-    play_seconds: f32
+    device: AudioDevice<WavFile>,
 }
 
-
 pub struct AudioPlayer {
-    channels: Vec::<Channel>,
+    channel: Channel,
     audio_subsystem: sdl2::AudioSubsystem,
     desired_spec: AudioSpecDesired,
     master_volume: f32,
+    wav_file: WavFile
 }
 
 
 impl AudioPlayer {
 
     pub fn new(audio_subsystem: sdl2::AudioSubsystem) -> Self {
-        Self {
-            audio_subsystem,
-            channels: vec![],
-            master_volume: 0.25,
-            desired_spec: AudioSpecDesired {
-                freq: Some(44100),
-                channels: Some(1),  // mono
-                samples: None       // default sample size
-            }
-        }
-    }
 
-    pub fn update(&mut self, dt: f32) {
-        for channel in &mut self.channels {
-            channel.play_seconds -= dt;
-            if channel.play_seconds < 0.0 {
-                channel.device.pause();
-            }
-        }
-    }
+        let wav_raw_file = AudioSpecWAV::load_wav(&"examples/pixel_sekiro/assets/audio/test.wav").expect("Could not load test WAV file");
 
+        let cvt = AudioCVT::new(
+            wav_raw_file.format,
+            wav_raw_file.channels,
+            wav_raw_file.freq,
+            AudioFormat::U8,
+            1,
+            44_100
+        ).expect("Could not convert WAV file");
 
-    pub fn play_sound(&mut self) {
-        println!("{:?}", self.channels.len());
-        let device = self.audio_subsystem.open_playback(None, &self.desired_spec, |spec| {
-            // initialize the audio callback
-            SquareWave {
-                phase_inc: 440.0 / spec.freq as f32,
-                phase: 0.0,
-                volume: 1.0,
-                master_volume: self.master_volume,
+        let data = cvt.convert(wav_raw_file.buffer().to_vec());
+
+        let wav_file = WavFile {
+            done: false,
+            buffer: data,
+            pos: 0,
+            master_volume: 0.25
+        };
+
+        let desired_spec = AudioSpecDesired {
+            freq: Some(44_100),
+            channels: Some(1),  // mono
+            samples: None       // default sample size
+        };
+
+        let device = audio_subsystem.open_playback(None, &desired_spec, |spec| {
+            WavFile {
+                done: false,
+                buffer: vec![],
+                pos: 0,
+                master_volume: 0.25
             }
         }).unwrap();
 
-
-        let mut channel =  Channel {
-            spec: self.desired_spec.clone(),
+        let mut channel = Channel {
+            spec: desired_spec.clone(),
             device,
-            vol:0.70,
-            freq: 440.0,
-            play_seconds: 0.5
         };
-        channel.device.resume();
 
-        self.channels.push(channel);
+        Self {
+            audio_subsystem,
+            channel,
+            master_volume: 0.25,
+            desired_spec,
+            wav_file
+        }
+
+    }
+
+    pub fn update(&mut self, dt: f32) {
+
+        let done = {
+            let mut cb = self.channel.device.lock();
+            cb.done
+        };
+
+        if done {
+            // maybe just always play, just in callback when done is true, output 128 i.e. silence
+            self.channel.device.pause();
+        }
+    }
+
+    pub fn play_sound(&mut self) {
+        // mutate channel data
+        {
+            let mut cb = self.channel.device.lock();
+            cb.buffer = self.wav_file.buffer.clone();
+            cb.pos = 0;
+            cb.done = false;
+        }
+        self.channel.device.resume();
     }
 }
