@@ -57,7 +57,7 @@ fn main() -> Result<(), failure::Error> {
         samples: None       // default sample size
     };
 
-    let mut master_vol = 0.3;
+    let mut master_vol = 0.25;
 
     let device = audio_subsystem.open_playback(None, &desired_spec, |spec| {
         // initialize the audio callback
@@ -118,7 +118,7 @@ fn main() -> Result<(), failure::Error> {
         // master volumne, only update devices when there are changes
         ui.label("Master");
         let mut new_vol = master_vol;
-        ui.slider(&mut new_vol, 0.0, 0.3);
+        ui.slider(&mut new_vol, 0.0, 0.25);
 
 
         if new_vol != master_vol {

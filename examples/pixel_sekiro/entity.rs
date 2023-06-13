@@ -2,7 +2,7 @@ use gl_lib::animations::sheet_animation::{Start, SheetAnimation, Sprite, SheetAn
 use gl_lib::typedef::*;
 use crate::PlayerAssets;
 use crate::inputs::Inputs;
-
+use crate::audio_player::AudioPlayer;
 
 
 pub enum EntityState {
@@ -94,6 +94,7 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
                                  assets: &'a SheetAssets,
                                  animation_player: &'b mut SheetAnimationPlayer<'a>,
                                  roll_speed: f32,
+                                 audio_player: &mut AudioPlayer,
                                  dt: f32) {
     let flip_y = entity.flip_y < 0.0;
     match entity.state {
@@ -117,6 +118,7 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
                 let sheet = &assets.attack(&entity.asset_name, entity.attack_counter);
                 let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
                 entity.state = EntityState::Attack(anim_id);
+                audio_player.play_sound();
             }
 
             if entity.inputs.deflect() {

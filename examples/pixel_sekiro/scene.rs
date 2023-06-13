@@ -6,7 +6,7 @@ use gl_lib::typedef::*;
 use crate::PlayerAssets;
 use gl_lib::collision2d::polygon::{PolygonTransform, ComplexPolygon};
 use crate::ai;
-
+use crate::audio_player::AudioPlayer;
 
 
 pub struct Scene<'a: 'b, 'b> {
@@ -17,11 +17,14 @@ pub struct Scene<'a: 'b, 'b> {
     pub assets: &'a SheetAssets,
     pub show_col_boxes: bool,
     pub hits: usize,
+    audio_player: AudioPlayer
 }
 
 pub fn new<'a: 'b, 'b>(player_assets: &'a PlayerAssets,
                        animation_player: &'b mut SheetAnimationPlayer<'a>,
-                       assets: &'a SheetAssets) -> Scene<'a, 'b> {
+                       assets: &'a SheetAssets,
+                       audio_player: AudioPlayer) -> Scene<'a, 'b> {
+
     let scale = 4.0;
     Scene {
         player :Entity {
@@ -38,7 +41,8 @@ pub fn new<'a: 'b, 'b>(player_assets: &'a PlayerAssets,
         player_assets,
         assets,
         show_col_boxes: true,
-        hits: 0
+        hits: 0,
+        audio_player
     }
 }
 
@@ -66,12 +70,13 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
         let roll_speed = 150.0;
 
         inputs::handle_inputs(ui, &mut self.player.inputs);
-        update_entity(&mut self.player, scale, self.assets, self.animation_player, roll_speed, dt);
+        self.audio_player.update(dt);
+        update_entity(&mut self.player, scale, self.assets, self.animation_player, roll_speed, &mut self.audio_player, dt);
 
         if let Some(ref mut enemy) = self.enemy {
             // run ai to update inputs
             ai::skeleton_logic(enemy);
-            update_entity(enemy, scale, self.assets, self.animation_player, roll_speed, dt);
+            update_entity(enemy, scale, self.assets, self.animation_player, roll_speed, &mut self.audio_player, dt);
         }
 
         // update flip  -- maybe do in normal match statement

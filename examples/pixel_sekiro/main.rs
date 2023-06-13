@@ -17,6 +17,9 @@ use entity::*;
 mod ai;
 mod scene;
 
+mod audio_player;
+
+
 // generate assets struct
 sheet_assets!{Assets "examples/2d_animation_player/assets/"}
 
@@ -26,8 +29,9 @@ fn main() -> Result<(), failure::Error> {
     let sdl = sdl_setup.sdl;
     let viewport = sdl_setup.viewport;
     let gl = &sdl_setup.gl;
-
+    let audio_subsystem = sdl.audio().unwrap();
     let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
+
     let mut ui = Ui::new(drawer_2d);
 
     // Set background color to white
@@ -52,7 +56,8 @@ fn main() -> Result<(), failure::Error> {
 
     let assets = load_folder(&gl, &"examples/2d_animation_player/assets/");
 
-    let mut scene = scene::new(&player_assets, &mut animation_player, &assets);
+    let audio_player = audio_player::AudioPlayer::new(audio_subsystem);
+    let mut scene = scene::new(&player_assets, &mut animation_player, &assets, audio_player);
 
 
     let mut time_scale = 1.0;
