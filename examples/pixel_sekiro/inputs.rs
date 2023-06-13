@@ -11,6 +11,7 @@ pub struct Inputs {
     pub right: bool,
     // TODO: make this better
     attack: Option<Instant>,
+    deflect: Option<Instant>,
     pub space: bool
 }
 
@@ -22,6 +23,22 @@ impl Inputs {
             return true;
         }
         false
+    }
+
+    pub fn set_attack(&mut self) {
+        self.attack = Some(Instant::now());
+    }
+
+    pub fn deflect(&mut self) -> bool {
+        if let Some(_) = self.deflect {
+            self.deflect = None;
+            return true;
+        }
+        false
+    }
+
+    pub fn set_deflect(&mut self) {
+        self.deflect = Some(Instant::now());
     }
 }
 
@@ -67,8 +84,14 @@ pub fn handle_inputs(ui: &mut Ui, inputs: &mut Inputs) {
                 inputs.left = false;
             },
 
-            MouseButtonUp {..} => {
-                inputs.attack = Some(Instant::now());
+            MouseButtonUp {mouse_btn, ..} => {
+                if *mouse_btn == sdl2::mouse::MouseButton::Left {
+                    inputs.attack = Some(Instant::now());
+                }
+                if *mouse_btn == sdl2::mouse::MouseButton::Right {
+                    inputs.deflect = Some(Instant::now());
+
+                }
             }
             _ => {}
         }

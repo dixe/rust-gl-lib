@@ -14,6 +14,7 @@ mod inputs;
 mod entity;
 use entity::*;
 
+mod ai;
 mod scene;
 
 // generate assets struct
@@ -86,10 +87,6 @@ fn main() -> Result<(), failure::Error> {
         ui.checkbox(&mut scene.show_col_boxes);
 
 
-        ui.newline();
-        ui.label("Roll speed");
-        ui.slider(&mut roll_speed,  0.0, 300.0);
-        ui.small_text(&format!("{:?}", roll_speed));
 
         if ui.button("Add skeleton") {
             scene.add_enemy("skeleton", pos2.v2());

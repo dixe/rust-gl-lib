@@ -5,6 +5,9 @@ use gl_lib::animations::sheet_animation::{Start, SheetAnimation, Sprite, SheetAn
 use gl_lib::typedef::*;
 use crate::PlayerAssets;
 use gl_lib::collision2d::polygon::{PolygonTransform, ComplexPolygon};
+use crate::ai;
+
+
 
 pub struct Scene<'a: 'b, 'b> {
     pub player: Entity,
@@ -13,10 +16,8 @@ pub struct Scene<'a: 'b, 'b> {
     pub animation_player: &'b mut SheetAnimationPlayer<'a>,
     pub assets: &'a SheetAssets,
     pub show_col_boxes: bool,
-    pub hits: usize
+    pub hits: usize,
 }
-
-
 
 pub fn new<'a: 'b, 'b>(player_assets: &'a PlayerAssets,
                        animation_player: &'b mut SheetAnimationPlayer<'a>,
@@ -61,16 +62,15 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
 
     pub fn update(&mut self, ui: &mut Ui, dt: f32) {
 
-        inputs::handle_inputs(ui, &mut self.player.inputs);
-
-        // TODO: Update enemy inpus
-
         let scale = 4.0;
         let roll_speed = 150.0;
 
+        inputs::handle_inputs(ui, &mut self.player.inputs);
         update_entity(&mut self.player, scale, self.assets, self.animation_player, roll_speed, dt);
 
         if let Some(ref mut enemy) = self.enemy {
+            // run ai to update inputs
+            ai::skeleton_logic(enemy);
             update_entity(enemy, scale, self.assets, self.animation_player, roll_speed, dt);
         }
 
@@ -84,6 +84,7 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
         }
 
 
+        // resolve collisions
         self.collisions(ui);
     }
 
@@ -97,89 +98,200 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
 
     fn collisions(&mut self, ui: &mut Ui,) {
 
-        if let Some(enemy) = &self.enemy {
-            if self.hit(ui, &self.player, &enemy) {
-                self.hits += 1;
-                println!("player hit enemy");
+        if let Some(ref mut enemy) = &mut self.enemy {
+
+
+            // check player deflect
+
+            if deflect(&self.animation_player, ui, &self.player, &enemy, self.show_col_boxes) {
+                println!("player DEFLECT enemy");
+                let scale = 4.0;
+                deflected(enemy, scale, &self.assets, self.animation_player);
+                // update deflected to be in recover, so the attack cannot hit
+
+
+            } else if deflect(&self.animation_player, ui, &enemy, &self.player, self.show_col_boxes){
+                // update deflected to be in recover, so the attack cannot hit
             }
 
-            if self.hit(ui, &enemy, &self.player) {
+            if hit(&self.animation_player, ui, &self.player, &enemy, self.show_col_boxes) {
+                self.hits += 1;
+
+            }
+
+            if hit(&self.animation_player, ui, &enemy, &self.player, self.show_col_boxes) {
                 println!("enemy hit player");
             }
         }
     }
 
-    fn hit(&self, ui: &mut Ui, attacker: &Entity, target: &Entity) -> bool {
-        let ct = CollisionTest {
-                animation_player: &self.animation_player,
-                attacker: attacker.state.animation_id(),
-                target: target.state.animation_id(),
-                target_pos: target.pos,
-                attack_pos: attacker.pos
-        };
 
-        ui.drawer2D.z = 2.0;
-        let res = collide_draw(ui, &ct, self.show_col_boxes);
-        ui.drawer2D.z = 0.0;
 
-        res
+}
 
-    }
+
+fn deflect(animation_player: &SheetAnimationPlayer, ui: &mut Ui, deflector: &Entity, attacker: &Entity, show_col_boxes: bool) -> bool {
+    let ct = CollisionTest {
+        animation_player: animation_player,
+        actor_1: deflector.state.animation_id(),
+        actor_1_pos: deflector.pos,
+        actor_1_name: &"deflect",
+        actor_2: attacker.state.animation_id(),
+        actor_2_pos: attacker.pos,
+        actor_2_name: &"attack",
+    };
+
+    ui.drawer2D.z = 2.0;
+    let res = collide_draw(ui, &ct, show_col_boxes);
+    ui.drawer2D.z = 0.0;
+
+    res
 }
 
 
 
-struct CollisionTest<'a> {
+fn hit(animation_player: &SheetAnimationPlayer, ui: &mut Ui, attacker: &Entity, target: &Entity, show_col_boxes: bool) -> bool {
+
+    let ct = CollisionTest {
+        animation_player: animation_player,
+        actor_1: target.state.animation_id(),
+        actor_1_pos: target.pos,
+        actor_1_name: &"body",
+        actor_2: attacker.state.animation_id(),
+        actor_2_pos: attacker.pos,
+        actor_2_name: &"attack",
+    };
+
+    ui.drawer2D.z = 2.0;
+    let res = collide_draw(ui, &ct, show_col_boxes);
+    ui.drawer2D.z = 0.0;
+
+    res
+
+}
+
+
+
+struct CollisionTest<'a, 'b> {
     animation_player: &'a SheetAnimationPlayer<'a>,
-    attacker: AnimationId,
-    target: AnimationId,
-    target_pos: V2,
-    attack_pos: V2
+    actor_1: AnimationId,
+    actor_1_pos: V2,
+    actor_1_name: &'b str,
+    actor_2: AnimationId,
+    actor_2_pos: V2,
+    actor_2_name: &'b str,
 }
+
 
 fn collide_draw(ui: &mut Ui, ct: &CollisionTest, draw: bool) -> bool {
 
     let mut res = false;
-    if let Some((target, target_scale, target_flip_y)) = ct.animation_player.get_polygon(ct.target, "body") {
+    if let Some((actor_1, actor_1_scale, actor_1_flip_y)) = ct.animation_player.get_polygon(ct.actor_1, ct.actor_1_name) {
 
-        let mut target_transform = PolygonTransform::default();
-        target_transform.scale = target_scale;
-        target_transform.translation = ct.target_pos;
-        target_transform.flip_y = target_flip_y;
+        let mut actor_1_transform = PolygonTransform::default();
+        actor_1_transform.scale = actor_1_scale;
+        actor_1_transform.translation = ct.actor_1_pos;
+        actor_1_transform.flip_y = actor_1_flip_y;
 
         if draw {
-            ui.view_polygon(&target.polygon, &target_transform);
+            ui.view_polygon(&actor_1.polygon, &actor_1_transform);
         }
 
-        if let Some((attack, attack_scale, attack_flip_y)) = ct.animation_player.get_polygon(ct.attacker, "attack") {
+        if let Some((attack, actor_2_scale, actor_2_flip_y)) = ct.animation_player.get_polygon(ct.actor_2, ct.actor_2_name) {
 
-            let frame = ct.animation_player.frame(ct.attacker);
+            let frame = ct.animation_player.frame(ct.actor_2);
             if let Some(f) = frame {
                 if f == 3 {
                     let dbug = 2;
                 }
             }
 
-            let mut attack_transform = PolygonTransform::default();
-            attack_transform.scale = attack_scale;
-            attack_transform.translation = ct.attack_pos;
-            attack_transform.flip_y = attack_flip_y;
+            let mut actor_2_transform = PolygonTransform::default();
+            actor_2_transform.scale = actor_2_scale;
+            actor_2_transform.translation = ct.actor_2_pos;
+            actor_2_transform.flip_y = actor_2_flip_y;
 
-            res = attack.collide_draw(&mut ui.drawer2D, &attack_transform.mat3(), target, &target_transform.mat3());
+            res = attack.collide_draw(&mut ui.drawer2D, &actor_2_transform.mat3(), actor_1, &actor_1_transform.mat3());
 
             if let Some(f) = frame {
                 if !res && f == 3 {
-                    let f2 = ct.animation_player.frame(ct.target);
-                    let dbug = 2;
+                    let f2 = ct.animation_player.frame(ct.actor_1);
+                    let debug = 2;
                     println!("{:?}", f2);
                 }
             }
 
             if draw {
-                ui.view_polygon(&attack.polygon, &attack_transform);
+                ui.view_polygon(&attack.polygon, &actor_2_transform);
             }
         }
     }
 
     res
 }
+
+
+fn skeleton_logic(entity: &mut Entity, ) {
+    let attack_r = rand::random::<f32>();
+
+    if attack_r > 0.9 {
+        entity.inputs.set_attack();
+    }
+}
+
+
+
+/*
+
+fn collide_draw<T: CollisionTest>(ui: &mut Ui, test: &CollisionTest, draw: bool) -> bool {
+
+let mut res = false;
+
+
+
+if let Some(passive)(passive_polygon, passive_anim_id, passive_scale, passive_flip_y)) = ct.passive_info() {      //ct.animation_player.get_polygon(ct.actor_1, "body") {{
+
+let mut passive_transform = PolygonTransform::default();
+passive_transform.scale = passive.scale;
+passive_transform.translation = passive.pos;
+passive_transform.flip_y = passive.flip_y;
+
+if draw {
+ui.view_polygon(&passive.polygon, &passive_transform);
+        }
+
+        if let Some((active, active_scale, active_flip_y)) = ct.passive_polygon() { // ct.animation_player.get_polygon(ct.attacker, "attack") {
+
+            let frame = ct.animation_player.frame(ct.active);
+            if let Some(f) = frame {
+                if f == 3 {
+                    let dbug = 2;
+                }
+            }
+
+            let mut active_transform = PolygonTransform::default();
+            active_transform.scale = active_scale;
+            active_transform.translation = ct.active_pos;
+            active_transform.flip_y = active_flip_y;
+
+            res = active.collide_draw(&mut ui.drawer2D, &active_transform.mat3(), passive, &passive_transform.mat3());
+
+            if let Some(f) = frame {
+                if !res && f == 3 {
+                    let f2 = ct.animation_player.frame(ct.passive);
+                    let dbug = 2;
+                    println!("{:?}", f2);
+                }
+            }
+
+            if draw {
+                ui.view_polygon(&active.polygon, &active_transform);
+            }
+        }
+    }
+
+    res
+}
+
+
+*/

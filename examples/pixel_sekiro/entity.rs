@@ -10,6 +10,7 @@ pub enum EntityState {
     Attack(AnimationId),
     Roll(AnimationId),
     Recover(AnimationId),
+    Deflect(AnimationId),
 }
 
 pub trait Asset {
@@ -20,13 +21,17 @@ pub trait Asset {
     fn attack_recover(&self,  asset_name: &str, counter: usize) -> &SheetAnimation;
 
     fn idle(&self, asset_name: &str) -> &SheetAnimation;
+
+    fn deflect(&self, asset_name: &str) -> &SheetAnimation;
 }
 
 impl Asset for SheetAssets {
     fn attack(&self, asset_name: &str, counter: usize) -> &SheetAnimation {
-
         self.get(asset_name).unwrap().get("attack_1").unwrap()
+    }
 
+    fn deflect(&self, asset_name: &str) -> &SheetAnimation {
+        self.get(asset_name).unwrap().get("deflect").unwrap()
     }
 
     fn attack_recover(&self,  asset_name: &str, counter: usize) -> &SheetAnimation {
@@ -60,11 +65,29 @@ impl EntityState {
             Self::Recover(id) => *id,
             Self::Attack(id)=> *id,
             Self::Roll(id)=> *id,
+            Self::Deflect(id)=> *id,
         }
     }
 }
 
 
+pub fn deflected<'a: 'b, 'b>(
+    entity: &mut Entity,
+    scale: f32,
+    assets: &'a SheetAssets,
+    animation_player: &'b mut SheetAnimationPlayer<'a>) {
+
+    // remove current animation
+    animation_player.remove(entity.state.animation_id());
+
+    let flip_y = entity.flip_y < 0.0;
+
+    let sheet = &assets.idle(&entity.asset_name);
+    let anim_id = animation_player.start(Start {sheet, scale, repeat: true, flip_y});
+
+    entity.state = EntityState::Idle(anim_id);
+
+}
 // tell compiler that lifetime 'a (PlayerAssets) is atleast as long as 'b (AnimationPlayer)
 pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
                                  scale: f32,
@@ -96,6 +119,14 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
                 entity.state = EntityState::Attack(anim_id);
             }
 
+            if entity.inputs.deflect() {
+                entity.vel.x = 0.0;
+                animation_player.remove(id);
+                let sheet = &assets.deflect(&entity.asset_name);
+                let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
+                entity.state = EntityState::Deflect(anim_id);
+            }
+
             if entity.inputs.space {
                 entity.vel.x = roll_speed;
                 entity.vel.x *= entity.flip_y;
@@ -117,9 +148,7 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
             }
         },
         EntityState::Attack(id) => {
-
             if animation_player.expired(id) {
-
                 if entity.attack_counter > 0 && entity.inputs.attack() {
                     entity.attack_counter = (entity.attack_counter + 1) % 2;
                     let sheet = &assets.attack(&entity.asset_name, entity.attack_counter);
@@ -133,6 +162,14 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
                     entity.attack_counter = 0;
                     entity.state = EntityState::Recover(anim_id);
                 }
+            }
+        },
+        EntityState::Deflect(id) => {
+            if animation_player.expired(id) {
+                // TODO: Next state, could be run or attack, and not idle
+                let sheet = &assets.idle(&entity.asset_name);
+                let anim_id = animation_player.start(Start {sheet, scale, repeat: true, flip_y});
+                entity.state = EntityState::Idle(anim_id);
             }
         },
         EntityState::Roll(id) => {
