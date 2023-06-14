@@ -12,7 +12,6 @@ use crate::audio_player::AudioPlayer;
 pub struct Scene<'a: 'b, 'b> {
     pub player: Entity,
     pub enemy: Option<Entity>,
-    pub player_assets: &'a PlayerAssets,
     pub animation_player: &'b mut SheetAnimationPlayer<'a>,
     pub assets: &'a SheetAssets,
     pub show_col_boxes: bool,
@@ -21,25 +20,23 @@ pub struct Scene<'a: 'b, 'b> {
     next_entity_id: EntityId
 }
 
-pub fn new<'a: 'b, 'b>(player_assets: &'a PlayerAssets,
-                       animation_player: &'b mut SheetAnimationPlayer<'a>,
+pub fn new<'a: 'b, 'b>(animation_player: &'b mut SheetAnimationPlayer<'a>,
                        assets: &'a SheetAssets,
                        audio_player: AudioPlayer) -> Scene<'a, 'b> {
 
     let scale = 4.0;
-
-
     let id = 1;
+    let player_idle = assets.get("player").unwrap().get("idle").unwrap();
+
     Scene {
         player : Entity::new(
             id,
-            EntityState::Idle(animation_player.start(Start {sheet: &player_assets.idle, scale, repeat: true, flip_y: false})),
+            EntityState::Idle(animation_player.start(Start {sheet: player_idle, scale, repeat: true, flip_y: false})),
             V2::new(400.0, 600.0),
             "player".to_string(),
             1.0),
         enemy: None,
         animation_player,
-        player_assets,
         assets,
         show_col_boxes: true,
         hits: 0,

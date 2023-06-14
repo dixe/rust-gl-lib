@@ -79,7 +79,8 @@ impl Entity {
             flip_y,
             asset_name,
             hit_map: Default::default(),
-            current_attack_id: 0
+            current_attack_id: 0,
+            deflected: false
         }
     }
 

@@ -19,10 +19,6 @@ mod scene;
 
 mod audio_player;
 
-
-// generate assets struct
-sheet_assets!{Assets "examples/2d_animation_player/assets/"}
-
 fn main() -> Result<(), failure::Error> {
     let sdl_setup = helpers::setup_sdl()?;
     let window = sdl_setup.window;
@@ -41,12 +37,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let player_assets = PlayerAssets::load_all(&gl, "examples/2d_animation_player/assets/");
-
-    //let skeleton_assets = SkeletonAssets::load_all(&gl, "examples/2d_animation_player/assets/");
-
     let mut animation_player = SheetAnimationPlayer::new();
-
 
     let mut pos2 = V2i::new(500, 600);
 
@@ -57,7 +48,7 @@ fn main() -> Result<(), failure::Error> {
     let assets = load_folder(&gl, &"examples/2d_animation_player/assets/");
 
     let audio_player = audio_player::AudioPlayer::new(audio_subsystem);
-    let mut scene = scene::new(&player_assets, &mut animation_player, &assets, audio_player);
+    let mut scene = scene::new(&mut animation_player, &assets, audio_player);
 
 
     let mut time_scale = 1.0;
