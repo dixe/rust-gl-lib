@@ -178,7 +178,7 @@
    { "name": "arms", "opacity": 255, "blendMode": "normal" },
    { "name": "body", "opacity": 255, "blendMode": "normal" },
    { "name": "solo arm", "opacity": 255, "blendMode": "normal" },
-   { "name": "head", "opacity": 255, "blendMode": "normal" }
+   { "name": "head", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 4, "data": "deflect" }, { "frame": 5, "data": "deflect" }, { "frame": 6, "data": "deflect" }] }
   ],
   "slices": [
   ]

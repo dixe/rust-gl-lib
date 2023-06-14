@@ -3,6 +3,7 @@ use gl_lib::typedef::*;
 use crate::PlayerAssets;
 use crate::inputs::Inputs;
 use crate::audio_player::AudioPlayer;
+use std::collections::HashMap;
 
 
 pub enum EntityState {
@@ -12,6 +13,10 @@ pub enum EntityState {
     Recover(AnimationId),
     Deflect(AnimationId),
 }
+
+pub type EntityId = usize;
+pub type AttackId = usize;
+
 
 pub trait Asset {
     fn attack(&self, asset_name: &str, counter: usize) -> &SheetAnimation;
@@ -49,16 +54,45 @@ impl Asset for SheetAssets {
 
 
 pub struct Entity {
+    pub id: EntityId,
+    pub current_attack_id: AttackId,
     pub state: EntityState,
     pub attack_counter: usize,
     pub pos: V2,
     pub vel: V2,
     pub inputs: Inputs,
     pub flip_y: f32,
-    pub asset_name: String
+    pub asset_name: String,
+    pub hit_map: HashMap::<EntityId, AttackId>,
+    pub deflected: bool // if we deflected this frame
+}
+
+impl Entity {
+    pub fn new(id: EntityId, state: EntityState, pos: V2, asset_name: String, flip_y: f32) -> Self {
+        Self {
+            id,
+            state,
+            attack_counter: 0,
+            pos,
+            vel: V2::identity(),
+            inputs: Inputs::default(),
+            flip_y,
+            asset_name,
+            hit_map: Default::default(),
+            current_attack_id: 0
+        }
+    }
+
+    pub fn new_attack(&mut self, anim_id: AnimationId) {
+        self.current_attack_id += 1;
+        self.attack_counter = (self.attack_counter + 1 ) % 2;
+        self.vel.x = 0.0;
+        self.state = EntityState::Attack(anim_id);
+    }
 }
 
 impl EntityState {
+
     pub fn animation_id(&self) -> AnimationId {
         match self {
             Self::Idle(id) => *id,
@@ -97,6 +131,10 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
                                  audio_player: &mut AudioPlayer,
                                  dt: f32) {
     let flip_y = entity.flip_y < 0.0;
+
+    // reset deflected
+    entity.deflected = false;
+
     match entity.state {
         EntityState::Idle(id) => {
             entity.vel.x = 0.0;
@@ -110,18 +148,15 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
                 entity.flip_y = 1.0;
             }
 
-
             if entity.inputs.attack() {
-                entity.attack_counter = (entity.attack_counter + 1 ) % 2;
-                entity.vel.x = 0.0;
                 animation_player.remove(id);
                 let sheet = &assets.attack(&entity.asset_name, entity.attack_counter);
                 let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
-                entity.state = EntityState::Attack(anim_id);
-                audio_player.play_sound();
+                entity.new_attack(anim_id);
             }
 
             if entity.inputs.deflect() {
+                entity.deflected = true;
                 entity.vel.x = 0.0;
                 animation_player.remove(id);
                 let sheet = &assets.deflect(&entity.asset_name);
@@ -152,10 +187,11 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
         EntityState::Attack(id) => {
             if animation_player.expired(id) {
                 if entity.attack_counter > 0 && entity.inputs.attack() {
-                    entity.attack_counter = (entity.attack_counter + 1) % 2;
+
                     let sheet = &assets.attack(&entity.asset_name, entity.attack_counter);
                     let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
-                    entity.state = EntityState::Attack(anim_id);
+                    entity.new_attack(anim_id);
+
                 } else {
 
                     let sheet = &assets.attack_recover(&entity.asset_name, entity.attack_counter);

@@ -17,7 +17,8 @@ pub struct Scene<'a: 'b, 'b> {
     pub assets: &'a SheetAssets,
     pub show_col_boxes: bool,
     pub hits: usize,
-    audio_player: AudioPlayer
+    audio_player: AudioPlayer,
+    next_entity_id: EntityId
 }
 
 pub fn new<'a: 'b, 'b>(player_assets: &'a PlayerAssets,
@@ -26,23 +27,24 @@ pub fn new<'a: 'b, 'b>(player_assets: &'a PlayerAssets,
                        audio_player: AudioPlayer) -> Scene<'a, 'b> {
 
     let scale = 4.0;
+
+
+    let id = 1;
     Scene {
-        player :Entity {
-            state: EntityState::Idle(animation_player.start(Start {sheet: &player_assets.idle, scale, repeat: true, flip_y: false})),
-            attack_counter: 0,
-            pos: V2::new(400.0, 600.0),
-            vel: V2::identity(),
-            inputs: inputs::Inputs::default(),
-            flip_y: 1.0,
-            asset_name: "player".to_string()
-        },
+        player : Entity::new(
+            id,
+            EntityState::Idle(animation_player.start(Start {sheet: &player_assets.idle, scale, repeat: true, flip_y: false})),
+            V2::new(400.0, 600.0),
+            "player".to_string(),
+            1.0),
         enemy: None,
         animation_player,
         player_assets,
         assets,
         show_col_boxes: true,
         hits: 0,
-        audio_player
+        audio_player,
+        next_entity_id: 2 // player is 1
     }
 }
 
@@ -52,15 +54,14 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
     pub fn add_enemy(&mut self, name: &str, pos: V2) {
         let scale = 4.0;
         let idle = self.assets.get(name).unwrap().get("idle").unwrap();
-        self.enemy = Some(Entity {
-            state: EntityState::Idle(self.animation_player.start(Start {sheet: idle, scale, repeat: true, flip_y: true})),
-            attack_counter: 0,
+        let id = self.next_entity_id;
+        self.next_entity_id += 1;
+        self.enemy = Some(Entity::new(
+            id,
+            EntityState::Idle(self.animation_player.start(Start {sheet: idle, scale, repeat: true, flip_y: true})),
             pos,
-            vel: V2::identity(),
-            inputs: inputs::Inputs::default(),
-            flip_y: -1.0,
-            asset_name: name.to_string()
-        });
+            name.to_string(),
+            -1.0))
     }
 
 
@@ -70,7 +71,6 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
         let roll_speed = 150.0;
 
         inputs::handle_inputs(ui, &mut self.player.inputs);
-        self.audio_player.update(dt);
         update_entity(&mut self.player, scale, self.assets, self.animation_player, roll_speed, &mut self.audio_player, dt);
 
         if let Some(ref mut enemy) = self.enemy {
@@ -89,6 +89,10 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
         }
 
 
+        // resolve deflections and update animations accordingly
+
+
+
         // resolve collisions
         self.collisions(ui);
     }
@@ -101,13 +105,27 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
     }
 
 
+    fn deflections(&mut self) {
+        if let Some(ref mut enemy) = &mut self.enemy {
+            // resolve for player
+
+
+            if self.player.deflected {
+                // TODO: check if in range of any enemies and facing them, i.e can deflect any
+                // for now assume true
+
+
+
+            }
+
+
+        }
+    }
+
     fn collisions(&mut self, ui: &mut Ui,) {
 
         if let Some(ref mut enemy) = &mut self.enemy {
-
-
             // check player deflect
-
             if deflect(&self.animation_player, ui, &self.player, &enemy, self.show_col_boxes) {
                 println!("player DEFLECT enemy");
                 let scale = 4.0;
@@ -119,19 +137,17 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
                 // update deflected to be in recover, so the attack cannot hit
             }
 
-            if hit(&self.animation_player, ui, &self.player, &enemy, self.show_col_boxes) {
+            if hit(&self.animation_player, ui, &self.player, enemy, self.show_col_boxes) {
+                println!("Player hit enemy {:?}", self.player.current_attack_id);
                 self.hits += 1;
 
             }
 
-            if hit(&self.animation_player, ui, &enemy, &self.player, self.show_col_boxes) {
-                println!("enemy hit player");
+            if hit(&self.animation_player, ui, &enemy, &mut self.player, self.show_col_boxes) {
+                println!("enemy hit player {:?}", enemy.current_attack_id);
             }
         }
     }
-
-
-
 }
 
 
@@ -155,7 +171,7 @@ fn deflect(animation_player: &SheetAnimationPlayer, ui: &mut Ui, deflector: &Ent
 
 
 
-fn hit(animation_player: &SheetAnimationPlayer, ui: &mut Ui, attacker: &Entity, target: &Entity, show_col_boxes: bool) -> bool {
+fn hit(animation_player: &SheetAnimationPlayer, ui: &mut Ui, attacker: &Entity, target: &mut Entity, show_col_boxes: bool) -> bool {
 
     let ct = CollisionTest {
         animation_player: animation_player,
@@ -168,8 +184,25 @@ fn hit(animation_player: &SheetAnimationPlayer, ui: &mut Ui, attacker: &Entity, 
     };
 
     ui.drawer2D.z = 2.0;
-    let res = collide_draw(ui, &ct, show_col_boxes);
+    let mut res = collide_draw(ui, &ct, show_col_boxes);
     ui.drawer2D.z = 0.0;
+
+    if res {
+        if let Some(last_hit_id) = target.hit_map.get(&attacker.id) {
+            // if current hit has been registered, don't allow it to be again
+            res = *last_hit_id != attacker.current_attack_id;
+        }
+    }
+
+    // update target hit map to register hit
+    if res {
+        if !target.hit_map.contains_key(&attacker.id) {
+            target.hit_map.insert(attacker.id, attacker.current_attack_id);
+        } else {
+            let hit_id = target.hit_map.get_mut(&attacker.id).unwrap();
+            *hit_id = attacker.current_attack_id;
+        }
+    }
 
     res
 
@@ -218,13 +251,6 @@ fn collide_draw(ui: &mut Ui, ct: &CollisionTest, draw: bool) -> bool {
 
             res = attack.collide_draw(&mut ui.drawer2D, &actor_2_transform.mat3(), actor_1, &actor_1_transform.mat3());
 
-            if let Some(f) = frame {
-                if !res && f == 3 {
-                    let f2 = ct.animation_player.frame(ct.actor_1);
-                    let debug = 2;
-                    println!("{:?}", f2);
-                }
-            }
 
             if draw {
                 ui.view_polygon(&attack.polygon, &actor_2_transform);

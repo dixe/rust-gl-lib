@@ -17,6 +17,13 @@ pub struct Inputs {
 
 
 impl Inputs {
+    pub fn read_attack(&self) -> bool {
+        if let Some(_) = self.attack {
+            return true;
+        }
+        false
+    }
+
     pub fn attack(&mut self) -> bool {
         if let Some(_) = self.attack {
             self.attack = None;
