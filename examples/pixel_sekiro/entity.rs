@@ -1,10 +1,9 @@
 use gl_lib::animations::sheet_animation::{Start, SheetAnimation, Sprite, SheetAnimationPlayer, SheetAssets, AnimationId};
 use gl_lib::typedef::*;
-use crate::PlayerAssets;
 use crate::inputs::Inputs;
 use crate::audio_player::AudioPlayer;
 use std::collections::HashMap;
-
+use crate::scene::FrameData;
 
 pub enum EntityState {
     Idle(AnimationId),
@@ -19,38 +18,65 @@ pub type AttackId = usize;
 
 
 pub trait Asset {
-    fn attack(&self, asset_name: &str, counter: usize) -> &SheetAnimation;
+    fn attack(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData>;
 
-    fn roll(&self, asset_name: &str) -> &SheetAnimation;
+    fn roll(&self, asset_name: &str) -> &SheetAnimation<FrameData>;
 
-    fn attack_recover(&self,  asset_name: &str, counter: usize) -> &SheetAnimation;
+    fn attack_recover(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData>;
 
-    fn idle(&self, asset_name: &str) -> &SheetAnimation;
+    fn idle(&self, asset_name: &str) -> &SheetAnimation<FrameData>;
 
-    fn deflect(&self, asset_name: &str) -> &SheetAnimation;
+    fn deflect(&self, asset_name: &str) -> &SheetAnimation<FrameData>;
+
+    fn deflected(&self, asset_name: &str, counter: usize) -> &SheetAnimation<FrameData>;
+
+    fn load_combo_asset(&self, asset_name: &str, format_str: &str, counter: usize) -> &SheetAnimation<FrameData>;
 }
 
-impl Asset for SheetAssets {
-    fn attack(&self, asset_name: &str, counter: usize) -> &SheetAnimation {
-        self.get(asset_name).unwrap().get("attack_1").unwrap()
+impl Asset for SheetAssets<FrameData> {
+
+    fn attack(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData> {
+        self.load_combo_asset(&combo.asset_name, combo.attack_format, counter)
     }
 
-    fn deflect(&self, asset_name: &str) -> &SheetAnimation {
+    fn deflected(&self, asset_name: &str, counter: usize) -> &SheetAnimation<FrameData> {
+        self.get(asset_name).unwrap().get("attack_1_deflected").unwrap()
+    }
+
+    fn deflect(&self, asset_name: &str) -> &SheetAnimation<FrameData> {
         self.get(asset_name).unwrap().get("deflect").unwrap()
     }
 
-    fn attack_recover(&self,  asset_name: &str, counter: usize) -> &SheetAnimation {
-        self.get(asset_name).unwrap().get("attack_1_recover").unwrap()
+    fn attack_recover(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData> {
+        self.load_combo_asset(&combo.asset_name, combo.recover_format, counter)
     }
 
-    fn roll(&self, asset_name: &str) -> &SheetAnimation {
+    fn roll(&self, asset_name: &str) -> &SheetAnimation<FrameData> {
         self.get(asset_name).unwrap().get("roll").unwrap()
     }
 
-    fn idle(&self, asset_name: &str) -> &SheetAnimation {
+    fn idle(&self, asset_name: &str) -> &SheetAnimation<FrameData> {
         self.get(asset_name).unwrap().get("idle").unwrap()
     }
+
+    fn load_combo_asset(&self, asset_name: &str, format_str: &str, counter: usize) -> &SheetAnimation<FrameData> {
+        let mut asset_str = format_str.to_owned();
+        asset_str = asset_str.replace("{}", &format!("{}",counter));
+        println!("{}-{:?}", asset_name, asset_str);
+        self.get(asset_name).unwrap().get(&asset_str).unwrap()
+    }
 }
+
+
+pub struct Combo {
+    pub attacks: usize,
+    pub asset_name: String,
+    pub attack_format: &'static str,
+    pub recover_format: &'static str,
+    pub deflected_format: &'static str
+}
+
+
 
 
 pub struct Entity {
@@ -64,11 +90,13 @@ pub struct Entity {
     pub flip_y: f32,
     pub asset_name: String,
     pub hit_map: HashMap::<EntityId, AttackId>,
-    pub deflected: bool // if we deflected this frame
+    pub deflected: bool, // if we deflected this frame
+    pub combo: Combo
 }
 
 impl Entity {
     pub fn new(id: EntityId, state: EntityState, pos: V2, asset_name: String, flip_y: f32) -> Self {
+        let combo_asset_name = asset_name.clone();
         Self {
             id,
             state,
@@ -80,7 +108,14 @@ impl Entity {
             asset_name,
             hit_map: Default::default(),
             current_attack_id: 0,
-            deflected: false
+            deflected: false,
+            combo: Combo {
+                attacks: 1,
+                asset_name: combo_asset_name,
+                attack_format: "attack_{}",
+                recover_format: "attack_{}_recover",
+                deflected_format: "attack_{}_deflected",
+            }
         }
     }
 
@@ -106,28 +141,48 @@ impl EntityState {
 }
 
 
+pub fn entity_attack<'a: 'b, 'b>( entity: &mut Entity,
+                                  assets: &'a SheetAssets<FrameData>,
+                                  animation_player: &'b mut SheetAnimationPlayer<'a, FrameData>) {
+
+    // update attack id so enemies on hit knows to take damage
+    entity.current_attack_id += 1;
+    entity.attack_counter += 1 % (1 + entity.combo.attacks);
+    entity.vel.x = 0.0;
+
+    animation_player.remove(entity.state.animation_id());
+    let sheet = &assets.attack(&entity.combo, entity.attack_counter);
+    let scale = 4.0;
+    let flip_y = entity.flip_y < 0.0;
+    let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
+    entity.state = EntityState::Attack(anim_id);
+
+}
+
+
 pub fn deflected<'a: 'b, 'b>(
     entity: &mut Entity,
     scale: f32,
-    assets: &'a SheetAssets,
-    animation_player: &'b mut SheetAnimationPlayer<'a>) {
+    assets: &'a SheetAssets<FrameData>,
+    animation_player: &'b mut SheetAnimationPlayer<'a, FrameData>) {
 
     // remove current animation
     animation_player.remove(entity.state.animation_id());
 
+    entity.attack_counter = 0;
     let flip_y = entity.flip_y < 0.0;
 
-    let sheet = &assets.idle(&entity.asset_name);
-    let anim_id = animation_player.start(Start {sheet, scale, repeat: true, flip_y});
+    let sheet = &assets.deflected(&entity.asset_name, entity.attack_counter);
+    let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
 
-    entity.state = EntityState::Idle(anim_id);
+    entity.state = EntityState::Recover(anim_id);
 
 }
-// tell compiler that lifetime 'a (PlayerAssets) is atleast as long as 'b (AnimationPlayer)
+// tell compiler that lifetime 'a (Assets) is atleast as long as 'b (AnimationPlayer)
 pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
                                  scale: f32,
-                                 assets: &'a SheetAssets,
-                                 animation_player: &'b mut SheetAnimationPlayer<'a>,
+                                 assets: &'a SheetAssets<FrameData>,
+                                 animation_player: &'b mut SheetAnimationPlayer<'a, FrameData>,
                                  roll_speed: f32,
                                  audio_player: &mut AudioPlayer,
                                  dt: f32) {
@@ -150,10 +205,7 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
             }
 
             if entity.inputs.attack() {
-                animation_player.remove(id);
-                let sheet = &assets.attack(&entity.asset_name, entity.attack_counter);
-                let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
-                entity.new_attack(anim_id);
+                entity_attack(entity, assets, animation_player);
             }
 
             if entity.inputs.deflect() {
@@ -187,15 +239,11 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
         },
         EntityState::Attack(id) => {
             if animation_player.expired(id) {
-                if entity.attack_counter > 0 && entity.inputs.attack() {
-
-                    let sheet = &assets.attack(&entity.asset_name, entity.attack_counter);
-                    let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
-                    entity.new_attack(anim_id);
-
+                if entity.attack_counter < entity.combo.attacks && entity.inputs.attack() {
+                    entity_attack(entity, assets, animation_player);
                 } else {
 
-                    let sheet = &assets.attack_recover(&entity.asset_name, entity.attack_counter);
+                    let sheet = &assets.attack_recover(&entity.combo, entity.attack_counter);
                     let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
 
                     entity.attack_counter = 0;

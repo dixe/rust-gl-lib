@@ -19,6 +19,9 @@ mod scene;
 
 mod audio_player;
 
+
+
+
 fn main() -> Result<(), failure::Error> {
     let sdl_setup = helpers::setup_sdl()?;
     let window = sdl_setup.window;
@@ -45,11 +48,14 @@ fn main() -> Result<(), failure::Error> {
 
     let scale = 4.0;
 
-    let assets = load_folder(&gl, &"examples/2d_animation_player/assets/");
+    let assets = load_folder(&gl, &"examples/2d_animation_player/assets/", scene::frame_data_mapper);
+
+    //println!("{:#?}", assets);
 
     let audio_player = audio_player::AudioPlayer::new(audio_subsystem);
     let mut scene = scene::new(&mut animation_player, &assets, audio_player);
 
+    scene.player.combo.attacks = 2;
 
     let mut time_scale = 1.0;
     let mut poly_name = "body".to_string();

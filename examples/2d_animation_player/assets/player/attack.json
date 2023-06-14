@@ -149,6 +149,7 @@
    { "name": "attack_2_recover", "from": 11, "to": 14, "direction": "forward" }
   ],
   "layers": [
+   { "name": "Base", "opacity": 255, "blendMode": "normal" },
    { "name": "Back Leg", "opacity": 255, "blendMode": "normal" },
    { "name": "Back Arm", "opacity": 255, "blendMode": "normal" },
    { "name": "Torso", "opacity": 255, "blendMode": "normal" },

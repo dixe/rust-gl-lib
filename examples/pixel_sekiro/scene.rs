@@ -3,25 +3,37 @@ use gl_lib::imode_gui::ui::*;
 use crate::{inputs::{self}, entity::*};
 use gl_lib::animations::sheet_animation::{Start, SheetAnimation, Sprite, SheetAnimationPlayer, AnimationId, SheetAssets};
 use gl_lib::typedef::*;
-use crate::PlayerAssets;
 use gl_lib::collision2d::polygon::{PolygonTransform, ComplexPolygon};
 use crate::ai;
 use crate::audio_player::AudioPlayer;
+
+#[derive(Clone, Copy, Debug)]
+pub struct FrameData {
+    pub deflect: bool
+}
+
+pub fn frame_data_mapper(input: &str) -> FrameData {
+    let deflect = input == "deflect";
+    FrameData {
+        deflect
+    }
+}
 
 
 pub struct Scene<'a: 'b, 'b> {
     pub player: Entity,
     pub enemy: Option<Entity>,
-    pub animation_player: &'b mut SheetAnimationPlayer<'a>,
-    pub assets: &'a SheetAssets,
+    pub animation_player: &'b mut SheetAnimationPlayer<'a, FrameData>,
+    pub assets: &'a SheetAssets<FrameData>,
     pub show_col_boxes: bool,
     pub hits: usize,
     audio_player: AudioPlayer,
-    next_entity_id: EntityId
+    next_entity_id: EntityId,
+    scale: f32
 }
 
-pub fn new<'a: 'b, 'b>(animation_player: &'b mut SheetAnimationPlayer<'a>,
-                       assets: &'a SheetAssets,
+pub fn new<'a: 'b, 'b>(animation_player: &'b mut SheetAnimationPlayer<'a, FrameData>,
+                       assets: &'a SheetAssets<FrameData>,
                        audio_player: AudioPlayer) -> Scene<'a, 'b> {
 
     let scale = 4.0;
@@ -41,7 +53,8 @@ pub fn new<'a: 'b, 'b>(animation_player: &'b mut SheetAnimationPlayer<'a>,
         show_col_boxes: true,
         hits: 0,
         audio_player,
-        next_entity_id: 2 // player is 1
+        next_entity_id: 2, // player is 1
+        scale
     }
 }
 
@@ -49,13 +62,12 @@ pub fn new<'a: 'b, 'b>(animation_player: &'b mut SheetAnimationPlayer<'a>,
 impl<'a: 'b, 'b> Scene<'a, 'b> {
 
     pub fn add_enemy(&mut self, name: &str, pos: V2) {
-        let scale = 4.0;
         let idle = self.assets.get(name).unwrap().get("idle").unwrap();
         let id = self.next_entity_id;
         self.next_entity_id += 1;
         self.enemy = Some(Entity::new(
             id,
-            EntityState::Idle(self.animation_player.start(Start {sheet: idle, scale, repeat: true, flip_y: true})),
+            EntityState::Idle(self.animation_player.start(Start {sheet: idle, scale: self.scale, repeat: true, flip_y: true})),
             pos,
             name.to_string(),
             -1.0))
@@ -64,16 +76,15 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
 
     pub fn update(&mut self, ui: &mut Ui, dt: f32) {
 
-        let scale = 4.0;
         let roll_speed = 150.0;
 
         inputs::handle_inputs(ui, &mut self.player.inputs);
-        update_entity(&mut self.player, scale, self.assets, self.animation_player, roll_speed, &mut self.audio_player, dt);
+        update_entity(&mut self.player, self.scale, self.assets, self.animation_player, roll_speed, &mut self.audio_player, dt);
 
         if let Some(ref mut enemy) = self.enemy {
             // run ai to update inputs
             ai::skeleton_logic(enemy);
-            update_entity(enemy, scale, self.assets, self.animation_player, roll_speed, &mut self.audio_player, dt);
+            update_entity(enemy, self.scale, self.assets, self.animation_player, roll_speed, &mut self.audio_player, dt);
         }
 
         // update flip  -- maybe do in normal match statement
@@ -87,7 +98,7 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
 
 
         // resolve deflections and update animations accordingly
-
+        self.resolve_deflect();
 
 
         // resolve collisions
@@ -102,26 +113,26 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
     }
 
 
-    fn deflections(&mut self) {
+    fn resolve_deflect(&mut self) {
         if let Some(ref mut enemy) = &mut self.enemy {
             // resolve for player
-
 
             if self.player.deflected {
                 // TODO: check if in range of any enemies and facing them, i.e can deflect any
                 // for now assume true
-
-
-
+                if let Some(&enemy_framedata) = self.animation_player.get_framedata(enemy.state.animation_id()) {
+                    if enemy_framedata.deflect {
+                        deflected(enemy, self.scale, &self.assets, self.animation_player);
+                    }
+                }
             }
-
-
         }
     }
 
     fn collisions(&mut self, ui: &mut Ui,) {
 
         if let Some(ref mut enemy) = &mut self.enemy {
+            /*
             // check player deflect
             if deflect(&self.animation_player, ui, &self.player, &enemy, self.show_col_boxes) {
                 println!("player DEFLECT enemy");
@@ -134,6 +145,8 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
                 // update deflected to be in recover, so the attack cannot hit
             }
 
+
+*/
             if hit(&self.animation_player, ui, &self.player, enemy, self.show_col_boxes) {
                 println!("Player hit enemy {:?}", self.player.current_attack_id);
                 self.hits += 1;
@@ -148,7 +161,7 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
 }
 
 
-fn deflect(animation_player: &SheetAnimationPlayer, ui: &mut Ui, deflector: &Entity, attacker: &Entity, show_col_boxes: bool) -> bool {
+fn deflect(animation_player: &SheetAnimationPlayer<FrameData>, ui: &mut Ui, deflector: &Entity, attacker: &Entity, show_col_boxes: bool) -> bool {
     let ct = CollisionTest {
         animation_player: animation_player,
         actor_1: deflector.state.animation_id(),
@@ -168,7 +181,7 @@ fn deflect(animation_player: &SheetAnimationPlayer, ui: &mut Ui, deflector: &Ent
 
 
 
-fn hit(animation_player: &SheetAnimationPlayer, ui: &mut Ui, attacker: &Entity, target: &mut Entity, show_col_boxes: bool) -> bool {
+fn hit(animation_player: &SheetAnimationPlayer<FrameData>, ui: &mut Ui, attacker: &Entity, target: &mut Entity, show_col_boxes: bool) -> bool {
 
     let ct = CollisionTest {
         animation_player: animation_player,
@@ -208,7 +221,7 @@ fn hit(animation_player: &SheetAnimationPlayer, ui: &mut Ui, attacker: &Entity, 
 
 
 struct CollisionTest<'a, 'b> {
-    animation_player: &'a SheetAnimationPlayer<'a>,
+    animation_player: &'a SheetAnimationPlayer<'a, FrameData>,
     actor_1: AnimationId,
     actor_1_pos: V2,
     actor_1_name: &'b str,
@@ -280,7 +293,8 @@ let mut res = false;
 if let Some(passive)(passive_polygon, passive_anim_id, passive_scale, passive_flip_y)) = ct.passive_info() {      //ct.animation_player.get_polygon(ct.actor_1, "body") {{
 
 let mut passive_transform = PolygonTransform::default();
-passive_transform.scale = passive.scale;
+passive_transform.scale = passive.scale;1
+
 passive_transform.translation = passive.pos;
 passive_transform.flip_y = passive.flip_y;
 
