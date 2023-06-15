@@ -213,7 +213,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 300
+    "duration": 100
    },
    {
     "filename": "Skeleton Attack 24.ase",
@@ -222,7 +222,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 150
+    "duration": 100
    },
    {
     "filename": "Skeleton Attack 25.ase",
@@ -240,7 +240,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 300
+    "duration": 150
    },
    {
     "filename": "Skeleton Attack 27.ase",
@@ -249,7 +249,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 150
+    "duration": 100
    },
    {
     "filename": "Skeleton Attack 28.ase",
@@ -258,7 +258,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 100
+    "duration": 400
    },
    {
     "filename": "Skeleton Attack 29.ase",
@@ -267,7 +267,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 100
+    "duration": 300
    },
    {
     "filename": "Skeleton Attack 30.ase",
@@ -276,7 +276,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 100
+    "duration": 150
    },
    {
     "filename": "Skeleton Attack 31.ase",
@@ -312,6 +312,33 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 35.ase",
+    "frame": { "x": 2450, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 36.ase",
+    "frame": { "x": 2520, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 37.ase",
+    "frame": { "x": 2590, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
     "duration": 150
    }
  ],
@@ -320,22 +347,23 @@
   "version": "1.2.40-x64",
   "image": "Skeleton Attack.png",
   "format": "RGBA8888",
-  "size": { "w": 2450, "h": 37 },
+  "size": { "w": 2660, "h": 37 },
   "scale": "1",
   "frameTags": [
    { "name": "attack_1", "from": 0, "to": 8, "direction": "forward" },
    { "name": "attack_1_recover", "from": 9, "to": 17, "direction": "forward" },
    { "name": "attack_1_deflected", "from": 19, "to": 20, "direction": "forward" },
-   { "name": "stab_1", "from": 22, "to": 25, "direction": "forward" },
-   { "name": "stab_2", "from": 26, "to": 28, "direction": "forward" },
-   { "name": "stab_2_recover", "from": 29, "to": 32, "direction": "forward" },
-   { "name": "stab_2_deflected", "from": 33, "to": 34, "direction": "forward" }
+   { "name": "stab_1", "from": 22, "to": 27, "direction": "forward" },
+   { "name": "stab_1_deflected", "from": 28, "to": 28, "direction": "forward" },
+   { "name": "stab_2", "from": 29, "to": 31, "direction": "forward" },
+   { "name": "stab_2_recover", "from": 32, "to": 35, "direction": "forward" },
+   { "name": "stab_2_deflected", "from": 36, "to": 37, "direction": "forward" }
   ],
   "layers": [
-   { "name": "Layer 1", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 23, "data": "deflect" }, { "frame": 24, "data": "deflect" }, { "frame": 26, "data": "deflect_interupt" }] },
+   { "name": "Layer 1", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 23, "data": "deflect" }, { "frame": 24, "data": "deflect" }, { "frame": 25, "data": "deflect" }, { "frame": 29, "data": "deflect_interupt" }] },
    { "name": "legs", "opacity": 255, "blendMode": "normal" },
    { "name": "body", "opacity": 255, "blendMode": "normal" },
-   { "name": "head", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 0, "data": "TEST" }, { "frame": 4, "data": "deflect_interupt" }, { "frame": 5, "data": "deflect_interupt" }, { "frame": 6, "data": "deflect_interupt" }, { "frame": 18, "data": "deflect" }, { "frame": 20, "data": "deflect" }] },
+   { "name": "head", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 4, "data": "deflect_interupt" }, { "frame": 5, "data": "deflect_interupt" }, { "frame": 6, "data": "deflect_interupt" }, { "frame": 18, "data": "deflect" }, { "frame": 20, "data": "deflect" }] },
    { "name": "arms", "opacity": 255, "blendMode": "normal" },
    { "name": "solo arm", "opacity": 255, "blendMode": "normal" }
   ],

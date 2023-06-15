@@ -160,7 +160,9 @@ pub fn deflected<'a: 'b, 'b>(
     entity: &mut Entity,
     scale: f32,
     assets: &'a SheetAssets<FrameData>,
-    animation_player: &'b mut SheetAnimationPlayer<'a, FrameData>) {
+    animation_player: &'b mut SheetAnimationPlayer<'a, FrameData>,
+    interupt: bool
+) {
 
     // remove current animation
     animation_player.remove(entity.state.animation_id());
@@ -171,7 +173,10 @@ pub fn deflected<'a: 'b, 'b>(
     let sheet = &assets.deflected(&entity.combos[entity.active_combo], entity.attack_counter);
     let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
 
-    entity.attack_counter = 0;
+    if interupt {
+        entity.attack_counter = 0;
+    }
+
     entity.state = EntityState::Recover(anim_id);
 
 }

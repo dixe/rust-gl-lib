@@ -40,17 +40,15 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let mut animation_player = SheetAnimationPlayer::new();
-
     let mut pos2 = V2i::new(500, 600);
 
     let mut playing = true;
 
     let scale = 4.0;
 
-    let assets = load_folder(&gl, &"examples/2d_animation_player/assets/", scene::frame_data_mapper);
 
-    //println!("{:#?}", assets);
+    let mut animation_player = SheetAnimationPlayer::new();
+    let assets = load_folder(&gl, &"examples/2d_animation_player/assets/", scene::frame_data_mapper);
 
     let audio_player = audio_player::AudioPlayer::new(audio_subsystem);
     let mut scene = scene::new(&mut animation_player, &assets, audio_player);
@@ -100,6 +98,10 @@ fn main() -> Result<(), failure::Error> {
                 enemy.active_combo = (enemy.active_combo + 1) % 2;
             }
         }
+        if ui.button("Reload") {
+            //let audio_player = scene.destroy();
+            //scene = load(audio_player);
+        }
 
         ui.drawer2D.z = 1.0;
         ui.drag_point(&mut pos2, 10.0);
@@ -114,7 +116,6 @@ fn main() -> Result<(), failure::Error> {
         window.gl_swap_window();
     }
 }
-
 
 
 

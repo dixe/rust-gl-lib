@@ -163,13 +163,12 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
             if self.player.deflected {
                 // TODO: check if in range of any enemies and facing them, i.e can deflect any
                 // for now assume true
-                println!("{:?}",self.animation_player.get_framedata(enemy.state.animation_id()));
+
+                //println!("{:?}",self.animation_player.get_framedata(enemy.state.animation_id()));
+
                 if let Some(&enemy_framedata) = self.animation_player.get_framedata(enemy.state.animation_id()) {
-                    if enemy_framedata.deflect {
-                        println!("DELFECTE TO NOT COUNT HIT continue combo");
-                        // TODO: play deflect sound, maybe first when would have hit?
-                    } else if enemy_framedata.deflect_interupt {
-                        deflected(enemy, self.scale, &self.assets, self.animation_player);
+                    if enemy_framedata.deflect || enemy_framedata.deflect_interupt {
+                        deflected(enemy, self.scale, &self.assets, self.animation_player, enemy_framedata.deflect_interupt);
                     }
                 }
             }
@@ -195,16 +194,16 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
 
 */
             if hit(&self.animation_player, ui, &self.player, enemy, self.show_col_boxes) {
-                println!("Player hit enemy {:?}", self.player.current_attack_id);
                 self.hits += 1;
 
             }
 
             if hit(&self.animation_player, ui, &enemy, &mut self.player, self.show_col_boxes) {
-                println!("enemy hit player {:?}", enemy.current_attack_id);
+
             }
         }
     }
+
 }
 
 

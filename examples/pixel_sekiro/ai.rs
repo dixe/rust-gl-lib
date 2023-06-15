@@ -21,6 +21,12 @@ pub fn skeleton_logic(entity: &mut Entity, ) {
                 entity.inputs.set_attack();
             }
         },
+        EntityState::Recover(_) => {
+            // if recovering and in combo, we want to finish combo
+            if entity.attack_counter > 0 && entity.attack_counter <= entity.combos[entity.active_combo].attacks {
+                entity.inputs.set_attack();
+            }
+        },
         _ => {}
     }
 
