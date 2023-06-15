@@ -258,7 +258,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 400
+    "duration": 200
    },
    {
     "filename": "Skeleton Attack 29.ase",
