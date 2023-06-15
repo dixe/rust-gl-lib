@@ -33,7 +33,7 @@ fn load(path: &str, frame: usize, name: &str) -> Polygon {
 
     let json = std::fs::read_to_string(path).unwrap();
     let ps: HashMap::<usize, HashMap::<String, Polygon>> = serde_json::from_str(&json).unwrap();
-    let mut polygon = ps.get(&frame).unwrap().get(name).unwrap().clone();
+    let polygon = ps.get(&frame).unwrap().get(name).unwrap().clone();
 
 
     polygon

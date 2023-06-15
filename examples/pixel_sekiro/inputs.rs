@@ -1,7 +1,6 @@
 use sdl2::event;
 use std::time::{
-    Instant,
-    Duration
+    Instant
 };
 use gl_lib::imode_gui::ui::*;
 

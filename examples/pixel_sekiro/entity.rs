@@ -1,4 +1,4 @@
-use gl_lib::animations::sheet_animation::{Start, SheetAnimation, Sprite, SheetAnimationPlayer, SheetAssets, AnimationId};
+use gl_lib::animations::sheet_animation::{Start, SheetAnimation, SheetAnimationPlayer, SheetAssets, AnimationId};
 use gl_lib::typedef::*;
 use crate::inputs::Inputs;
 use crate::audio_player::AudioPlayer;
@@ -97,7 +97,7 @@ pub struct Entity {
 
 impl Entity {
     pub fn new(id: EntityId, state: EntityState, pos: V2, asset_name: String, flip_y: f32, combos: Vec::<Combo>) -> Self {
-        let combo_asset_name = asset_name.clone();
+        let _combo_asset_name = asset_name.clone();
         Self {
             id,
             state,
@@ -186,7 +186,7 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
                                  assets: &'a SheetAssets<FrameData>,
                                  animation_player: &'b mut SheetAnimationPlayer<'a, FrameData>,
                                  roll_speed: f32,
-                                 audio_player: &mut AudioPlayer,
+                                 _audio_player: &mut AudioPlayer,
                                  dt: f32) {
     let flip_y = entity.flip_y < 0.0;
 

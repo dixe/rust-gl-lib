@@ -39,7 +39,7 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
     let path : String = "examples/2d_animation_player/assets/".to_string();
-    let mut assets = load_folder(&gl, &path);
+    let mut assets = load_folder(&gl, &path, |s| s.to_string());
 
     let mut state = State::Selecting;
 
@@ -77,7 +77,7 @@ fn main() -> Result<(), failure::Error> {
 
                 ui.newline();
                 if ui.button("Reload") {
-                    assets = load_folder(&gl, &path);
+                    assets = load_folder(&gl, &path, |s| s.to_string());
                 }
 
             },
@@ -247,7 +247,7 @@ fn save(edit: &Edit, frame: usize) {
 }
 
 
-fn create_sheet_edit<P: AsRef<Path> + std::fmt::Debug>(path: &P, name: &str, sheet: &SheetAnimation) -> SheetEdit {
+fn create_sheet_edit<P: AsRef<Path> + std::fmt::Debug>(path: &P, name: &str, sheet: &SheetAnimation<String>) -> SheetEdit {
 
     let mut frames : Vec::<FrameEdit> = vec![];
     let polygons = sheet_animation::load_sheet_collision_polygons(&path, name);

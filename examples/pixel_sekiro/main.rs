@@ -1,18 +1,18 @@
-use gl_lib::{gl, helpers, na};
-use gl_lib_proc::sheet_assets;
+use gl_lib::{gl, helpers};
+
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use gl_lib::imode_gui::Pos;
-use gl_lib::general_animation::{Animation, Animatable, Frame};
-use gl_lib::animations::sheet_animation::{load_folder, Start, SheetAnimation, Sprite, SheetAnimationPlayer, AnimationId};
+
+
+use gl_lib::animations::sheet_animation::{load_folder, SheetAnimationPlayer};
 use gl_lib::typedef::*;
-use gl_lib::collision2d::polygon::{PolygonTransform, ComplexPolygon};
+
 use gl_lib::math::AsV2;
 
 mod inputs;
 
 mod entity;
-use entity::*;
+
 
 mod ai;
 mod scene;
@@ -44,7 +44,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut playing = true;
 
-    let scale = 4.0;
+    let _scale = 4.0;
 
 
     let mut animation_player = SheetAnimationPlayer::new();
@@ -57,7 +57,7 @@ fn main() -> Result<(), failure::Error> {
     scene.add_enemy("skeleton", pos2.v2());
 
     let mut time_scale = 1.0;
-    let mut poly_name = "body".to_string();
+    let _poly_name = "body".to_string();
 
 
     loop {

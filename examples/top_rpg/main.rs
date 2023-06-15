@@ -30,11 +30,11 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let mut size = na::Vector2::<f32>::new(32.0, 32.0);
+    let _size = na::Vector2::<f32>::new(32.0, 32.0);
 
-    let mut assets = load_assets(&mut ui);
+    let assets = load_assets(&mut ui);
 
-    let mut player = Player {
+    let player = Player {
         pos: V2::new(400.0, 300.0)
     };
 
@@ -128,7 +128,7 @@ fn edit_frame(ui: &mut Ui, frame: &mut Frame<VertexData>, offset: V2, sprite: &S
 }
 
 
-fn edit_vertex_data(ui: &mut Ui, data: &mut VertexData, offset: V2, sprite: &Sprite, frame_idx: usize) {
+fn edit_vertex_data(ui: &mut Ui, data: &mut VertexData, offset: V2, sprite: &Sprite, _frame_idx: usize) {
 
     let center = V2::new(sprite.w as f32 / 2.0, sprite.h as f32 / 2.0) * data.scale;
 

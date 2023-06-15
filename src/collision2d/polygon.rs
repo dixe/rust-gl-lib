@@ -151,7 +151,7 @@ pub fn calculate_subdivision(polygon: &mut Polygon) -> Vec::<SubPolygon> {
         }
     }
 
-    let dir = direction(&polygon);
+    let _dir = direction(&polygon);
 
     let mut input_sub_p = SubPolygon {
         polygon,
@@ -337,7 +337,7 @@ fn first_wide(sub_p: &SubPolygon) -> Option<usize> {
 
 pub fn direction(polygon: &Polygon) -> Dir {
 
-    let mut num_wide = 0;
+    let _num_wide = 0;
 
     // assume right, and calc interier and exterier angle.
     // Interier should be smaller, so if not, then we are left

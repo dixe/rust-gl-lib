@@ -1,11 +1,11 @@
 use crate::buffer;
 use crate::gl;
-use crate::shader::BaseShader;
-use nalgebra as na;
-use na::vector;
 
 
-use failure;
+
+
+
+
 
 
 pub struct SpriteSheetSquare {

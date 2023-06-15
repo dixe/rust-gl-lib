@@ -5,7 +5,7 @@ use crate::texture::{self, TextureId};
 use crate::general_animation::{Animation, Animatable, Frame};
 use crate::{gl, na};
 use crate::imode_gui::drawer2d::{Drawer2D, SheetSubSprite};
-use crate::imode_gui::ui::Ui;
+
 use crate::math::numeric::Numeric;
 use std::collections::HashMap;
 use crate::math::{AsV2, AsV2i};
@@ -310,7 +310,7 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug, FrameDataT>(gl: &gl::Gl, j
 
     let sheet_anim : SheetArrayAnimation = serde_json::from_str(&anim_json)?;
 
-    let size = na::Vector2::new(sheet_anim.meta.size.w as f32, (sheet_anim.meta.size.h /2) as f32);
+    let _size = na::Vector2::new(sheet_anim.meta.size.w as f32, (sheet_anim.meta.size.h /2) as f32);
 
     let mut base_path = PathBuf::new();
 
@@ -327,7 +327,7 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug, FrameDataT>(gl: &gl::Gl, j
 
     img.pre_multiply_alpha();
 
-    let aspect = img.height() as f32 / img.width() as f32;
+    let _aspect = img.height() as f32 / img.width() as f32;
     let texture_id = texture::gen_texture_rgba_nearest(gl, &img);
 
     let mut frames = vec![];
@@ -432,7 +432,7 @@ impl SheetCollisionPolygon {
 
 
     pub fn collide(&self, transform: &na::Matrix3::<f32>, other: &SheetCollisionPolygon, transform_other: &na::Matrix3::<f32>) -> bool {
-        let mut res = false;
+        let _res = false;
         for indices_1 in &self.sub_divisions {
             let sub_p_1 = ComplexPolygon {
                 polygon: &self.polygon,
@@ -459,7 +459,7 @@ impl SheetCollisionPolygon {
 
 
     pub fn collide_draw(&self, drawer2d: &mut Drawer2D, transform: &na::Matrix3::<f32>, other: &SheetCollisionPolygon, transform_other: &na::Matrix3::<f32>) -> bool {
-        let mut res = false;
+        let _res = false;
 
         for indices_1 in &self.sub_divisions {
             let sub_p_1 = ComplexPolygon {
@@ -499,7 +499,7 @@ pub type SheetAssets<FrameDataT>= std::collections::HashMap::<String, std::colle
 pub fn load_folder<P: AsRef<Path> + std::fmt::Debug, FrameDataT>(gl: &gl::Gl, path: &P, data_map: fn(&str) -> FrameDataT) -> SheetAssets<FrameDataT> {
 
     let mut id = 0;
-    let dir = match std::fs::read_dir(&path) {
+    let _dir = match std::fs::read_dir(&path) {
         Ok(d) => d,
         Err(err) => {
             println!("Path was '{:?}'", &path);
@@ -516,7 +516,7 @@ pub fn load_folder<P: AsRef<Path> + std::fmt::Debug, FrameDataT>(gl: &gl::Gl, pa
             let file_name = entry.file_name().to_str().unwrap();
             let file_name_no_ending = file_name.split(".").next().unwrap().to_string();
             if file_name.ends_with(".json") {
-                let json_names = match load_by_name(gl, &entry.path(), &file_name_no_ending, &mut id, data_map) {
+                let _json_names = match load_by_name(gl, &entry.path(), &file_name_no_ending, &mut id, data_map) {
                     Ok(mut sheet_anims) => {
                         let mut pb = std::path::PathBuf::new();
                         pb.push(entry.path());
@@ -532,7 +532,7 @@ pub fn load_folder<P: AsRef<Path> + std::fmt::Debug, FrameDataT>(gl: &gl::Gl, pa
 
                         }
                     },
-                    Err(e) => {
+                    Err(_e) => {
 
                     }
                 };

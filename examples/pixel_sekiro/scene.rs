@@ -1,9 +1,9 @@
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use crate::{inputs::{self}, entity::*};
-use gl_lib::animations::sheet_animation::{Start, SheetAnimation, Sprite, SheetAnimationPlayer, AnimationId, SheetAssets};
+use gl_lib::animations::sheet_animation::{Start, SheetAnimationPlayer, AnimationId, SheetAssets};
 use gl_lib::typedef::*;
-use gl_lib::collision2d::polygon::{PolygonTransform, ComplexPolygon};
+use gl_lib::collision2d::polygon::{PolygonTransform};
 use crate::ai;
 use crate::audio_player::AudioPlayer;
 
@@ -14,7 +14,7 @@ pub struct FrameData {
 }
 
 pub fn frame_data_mapper(input: &str) -> FrameData {
-    let tags = input.split(" ");
+    let _tags = input.split(" ");
 
     let deflect = input == "deflect";
     let deflect_interupt = input == "deflect_interupt";
@@ -296,7 +296,7 @@ fn collide_draw(ui: &mut Ui, ct: &CollisionTest, draw: bool) -> bool {
             let frame = ct.animation_player.frame(ct.actor_2);
             if let Some(f) = frame {
                 if f == 3 {
-                    let dbug = 2;
+                    let _dbug = 2;
                 }
             }
 
