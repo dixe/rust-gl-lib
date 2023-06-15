@@ -1,10 +1,10 @@
-use gl_lib::{gl, na, helpers, color::Color};
+use gl_lib::{gl, na, helpers};
 use gl_lib::imode_gui::drawer2d::{*};
 use gl_lib::imode_gui::ui::*;
-use sdl2::event;
-use std::collections::HashSet;
-use gl_lib::collision2d::gjk;
-use gl_lib::collision2d::polygon::{self, Polygon, ComplexPolygon, PolygonTransform};
+
+
+
+use gl_lib::collision2d::polygon::{Polygon, PolygonTransform};
 use core::ops::Mul;
 
 
@@ -31,7 +31,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let mut polygon = Polygon {
+    let polygon = Polygon {
         vertices: vec![V2::new(32.0, 0.0),
                        V2::new(0.0, 32.0),
                        V2::new(32.0, 32.0),
@@ -108,6 +108,7 @@ fn interpolated(ui: &mut Ui, polygon: &Polygon, t_start: &PolygonTransform, t_en
         translation: lerp(t_start.translation, t_end.translation, t),
         rotation: lerp(t_start.rotation, t_end.rotation, t),
         scale: lerp(t_start.scale, t_end.scale, t),
+        flip_y: false
     };
 
 
@@ -134,11 +135,11 @@ fn ease_out_bounce(x: f32) -> f32 {
     let n1 = 7.5625;
     let d1 = 2.75;
 
-    if (x < 1.0 / d1) {
+    if x < 1.0 / d1 {
         return n1 * x * x;
-    } else if (x < 2.0 / d1) {
+    } else if x < 2.0 / d1 {
         return n1 * (x - 1.5 / d1) * x + 0.75;
-    } else if (x < 2.5 / d1) {
+    } else if x < 2.5 / d1 {
         return n1 * (x - 2.25 / d1) * x + 0.9375;
     } else {
         return n1 * (x - 2.625 / d1) * x + 0.984375;
@@ -181,10 +182,10 @@ fn transform_ui(ui: &mut Ui, transform: &mut PolygonTransform) {
 
 fn handle_inputs(ui: &mut Ui) {
 
-    use event::Event::*;
-    use sdl2::keyboard::Keycode;
+    
+    
 
-    for e in &ui.frame_events {
+    for _e in &ui.frame_events {
 
     }
 }

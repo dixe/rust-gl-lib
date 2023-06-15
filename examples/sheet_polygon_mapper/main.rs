@@ -1,11 +1,11 @@
-use gl_lib::{gl, na, helpers};
+use gl_lib::{gl, helpers};
 use gl_lib::imode_gui::drawer2d::{*};
 use gl_lib::imode_gui::ui::*;
 use gl_lib::imode_gui::widgets::PolygonOptions;
 use gl_lib::collision2d::polygon::{Polygon, Dir, self};
 use gl_lib::texture::TextureId;
 use gl_lib::typedef::*;
-use gl_lib_proc::sheet_assets;
+
 use gl_lib::animations::sheet_animation::{self, SheetCollisionPolygons, Sprite, SheetAnimation, load_folder};
 use std::path::{Path, PathBuf};
 use gl_lib::math::*;
@@ -103,7 +103,7 @@ fn main() -> Result<(), failure::Error> {
                 ui.newline();
                 if ui.button("Save") {
                     match serde_json::to_string(&edit.sheet.frames[edit.frame].polygons) {
-                        Ok(json) => {
+                        Ok(_json) => {
 
                             save(edit, edit.frame);
                         },
@@ -341,7 +341,7 @@ fn img_edit(ui: &mut Ui, edit: &mut FrameEdit, poly_name: &str, sheet_size: V2, 
     output_offset.y += 30;
 
 
-    let sprite = SheetSubSprite {
+    let _sprite = SheetSubSprite {
         sheet_size: sheet_size,
         pixel_l: edit.sprite.x,
         pixel_r: edit.sprite.x + edit.sprite.w,

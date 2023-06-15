@@ -1,11 +1,11 @@
-use gl_lib::{self, gl, helpers, na};
-use gl_lib_proc::sheet_assets;
-use gl_lib::imode_gui::*;
-use gl_lib::imode_gui::drawer2d::*;
+fn main() {
+    todo!("Fix sheet_assets! macro to include <FrameDataT>");
+}
 
 // generate assets struct
-sheet_assets!{Assets "examples/2d_animation_player/assets/"}
+//sheet_assets!{Assets "examples/2d_animation_player/assets/"}
 
+/*
 fn main() -> Result<(), failure::Error> {
     let sdl_setup = helpers::setup_sdl()?;
     let window = sdl_setup.window;
@@ -31,3 +31,4 @@ fn main() -> Result<(), failure::Error> {
 
     Ok(())
 }
+*/

@@ -1,14 +1,14 @@
-use gl_lib::{gl, helpers, na};
-use gl_lib_proc::sheet_assets;
+use gl_lib::{gl, helpers};
+
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use gl_lib::imode_gui::Pos;
-use gl_lib::general_animation::{Animation, Animatable, Frame};
-use gl_lib::animations::sheet_animation::{Start, SheetAnimation, Sprite, SheetAnimationPlayer, AnimationId, load_folder};
+
+
+use gl_lib::animations::sheet_animation::{Start, SheetAnimationPlayer, load_folder};
 use gl_lib::typedef::*;
-use gl_lib::collision2d::polygon::{PolygonTransform, ComplexPolygon};
+use gl_lib::collision2d::polygon::{PolygonTransform};
 use gl_lib::math::AsV2;
-use sdl2::event;
+
 use itertools::Itertools;
 
 
@@ -38,7 +38,7 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
     let path = "examples/2d_animation_player/assets/";
-    let assets = load_folder(&gl, &path);
+    let assets = load_folder(&gl, &path, |s| s.to_string());
 
 
     //let path = "examples/2d_animation_player/assets/player/";
@@ -57,7 +57,7 @@ fn main() -> Result<(), failure::Error> {
     let mut flip_y = false;
 
     let mut time_scale = 1.0;
-    let mut hits = 0;
+    let _hits = 0;
 
     let mut cur_anim = assets.get("player").unwrap().get("idle").unwrap();
 
@@ -76,7 +76,7 @@ fn main() -> Result<(), failure::Error> {
 
         for (folder_name, map) in assets.iter().sorted_by_key(|x| x.0) {
             ui.label(folder_name);
-            for (name, asset) in map {
+            for (_name, asset) in map {
                 if ui.button(&asset.name) {
                     player.remove(anim_id);
                     cur_anim = &asset;
@@ -132,7 +132,7 @@ fn main() -> Result<(), failure::Error> {
 
         if show_col_pol {
             if let Some(keys) = player.get_polygon_map(anim_id) {
-                for (name, p) in keys {
+                for (_name, p) in keys {
                     let mut transform = PolygonTransform::default();
                     transform.scale = scale;
                     transform.translation = pos.v2();

@@ -1,7 +1,7 @@
 use gl_lib::{gl, helpers, na};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use gl_lib::imode_gui::Pos;
+
 
 
 
