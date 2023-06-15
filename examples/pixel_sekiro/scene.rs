@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use crate::{inputs::{self}, entity::*};
@@ -148,10 +150,10 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
         self.collisions(ui);
     }
 
-    pub fn draw(&self, drawer2D: &mut Drawer2D) {
-        self.animation_player.draw(drawer2D, self.player.pos, self.player.state.animation_id());
+    pub fn draw(&self, drawer_2d: &mut Drawer2D) {
+        self.animation_player.draw(drawer_2d, self.player.pos, self.player.state.animation_id());
         if let Some(enemy) = &self.enemy {
-            self.animation_player.draw(drawer2D, enemy.pos, enemy.state.animation_id());
+            self.animation_player.draw(drawer_2d, enemy.pos, enemy.state.animation_id());
         }
     }
 

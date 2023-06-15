@@ -1,7 +1,5 @@
-use crate::{math, na};
+use crate::{math};
 use serde::{Serialize, Deserialize};
-
-type V2 = na::Vector2::<f32>;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct Animation<T: Animatable> {

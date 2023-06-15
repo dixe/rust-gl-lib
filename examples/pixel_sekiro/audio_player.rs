@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::collections::HashMap;
 use sdl2::audio::{AudioSpecDesired, AudioCallback, AudioDevice, AudioSpecWAV, AudioCVT, AudioFormat};
 

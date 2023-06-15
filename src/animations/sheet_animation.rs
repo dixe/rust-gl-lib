@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use walkdir::WalkDir;
 use std::path::{Path, PathBuf};
 use failure;
@@ -235,7 +236,7 @@ impl<'a, FrameDataT> SheetAnimationPlayer<'a, FrameDataT> {
         !self.animations.contains_key(&id)
     }
 
-    pub fn draw<T : Numeric + std::fmt::Debug>(&self, drawer2D: &mut Drawer2D, pos: na::Vector2::<T>, anim_id: AnimationId) {
+    pub fn draw<T : Numeric + std::fmt::Debug>(&self, drawer_2d: &mut Drawer2D, pos: na::Vector2::<T>, anim_id: AnimationId) {
         if let Some(anim) = self.animations.get(&anim_id) {
 
 
@@ -252,7 +253,7 @@ impl<'a, FrameDataT> SheetAnimationPlayer<'a, FrameDataT> {
 
 
             let p = pos.v2i();
-            drawer2D.render_sprite_sheet_frame(anim.sheet.texture_id, p.x, p.y, size, &sprite);
+            drawer_2d.render_sprite_sheet_frame(anim.sheet.texture_id, p.x, p.y, size, &sprite);
         }
     }
 }

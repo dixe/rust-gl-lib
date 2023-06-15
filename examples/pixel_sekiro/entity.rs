@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use gl_lib::animations::sheet_animation::{Start, SheetAnimation, SheetAnimationPlayer, SheetAssets, AnimationId};
 use gl_lib::typedef::*;
 use crate::inputs::Inputs;
