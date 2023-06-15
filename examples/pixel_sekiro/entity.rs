@@ -26,9 +26,9 @@ pub trait Asset {
 
     fn idle(&self, asset_name: &str) -> &SheetAnimation<FrameData>;
 
-    fn deflect(&self, asset_name: &str) -> &SheetAnimation<FrameData>;
+    fn deflected(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData>;
 
-    fn deflected(&self, asset_name: &str, counter: usize) -> &SheetAnimation<FrameData>;
+    fn deflect(&self, asset_name: &str) -> &SheetAnimation<FrameData>;
 
     fn load_combo_asset(&self, asset_name: &str, format_str: &str, counter: usize) -> &SheetAnimation<FrameData>;
 }
@@ -39,8 +39,8 @@ impl Asset for SheetAssets<FrameData> {
         self.load_combo_asset(&combo.asset_name, combo.attack_format, counter)
     }
 
-    fn deflected(&self, asset_name: &str, counter: usize) -> &SheetAnimation<FrameData> {
-        self.get(asset_name).unwrap().get("attack_1_deflected").unwrap()
+    fn deflected(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData> {
+        self.load_combo_asset(&combo.asset_name, combo.deflected_format, counter)
     }
 
     fn deflect(&self, asset_name: &str) -> &SheetAnimation<FrameData> {
@@ -91,11 +91,12 @@ pub struct Entity {
     pub asset_name: String,
     pub hit_map: HashMap::<EntityId, AttackId>,
     pub deflected: bool, // if we deflected this frame
-    pub combo: Combo
+    pub combos: Vec::<Combo>,
+    pub active_combo: usize
 }
 
 impl Entity {
-    pub fn new(id: EntityId, state: EntityState, pos: V2, asset_name: String, flip_y: f32) -> Self {
+    pub fn new(id: EntityId, state: EntityState, pos: V2, asset_name: String, flip_y: f32, combos: Vec::<Combo>) -> Self {
         let combo_asset_name = asset_name.clone();
         Self {
             id,
@@ -109,13 +110,8 @@ impl Entity {
             hit_map: Default::default(),
             current_attack_id: 0,
             deflected: false,
-            combo: Combo {
-                attacks: 1,
-                asset_name: combo_asset_name,
-                attack_format: "attack_{}",
-                recover_format: "attack_{}_recover",
-                deflected_format: "attack_{}_deflected",
-            }
+            combos,
+            active_combo: 0
         }
     }
 
@@ -147,11 +143,11 @@ pub fn entity_attack<'a: 'b, 'b>( entity: &mut Entity,
 
     // update attack id so enemies on hit knows to take damage
     entity.current_attack_id += 1;
-    entity.attack_counter += 1 % (1 + entity.combo.attacks);
+    entity.attack_counter += 1 % (1 + entity.combos[entity.active_combo].attacks);
     entity.vel.x = 0.0;
 
     animation_player.remove(entity.state.animation_id());
-    let sheet = &assets.attack(&entity.combo, entity.attack_counter);
+    let sheet = &assets.attack(&entity.combos[entity.active_combo], entity.attack_counter);
     let scale = 4.0;
     let flip_y = entity.flip_y < 0.0;
     let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
@@ -169,12 +165,13 @@ pub fn deflected<'a: 'b, 'b>(
     // remove current animation
     animation_player.remove(entity.state.animation_id());
 
-    entity.attack_counter = 0;
+
     let flip_y = entity.flip_y < 0.0;
 
-    let sheet = &assets.deflected(&entity.asset_name, entity.attack_counter);
+    let sheet = &assets.deflected(&entity.combos[entity.active_combo], entity.attack_counter);
     let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
 
+    entity.attack_counter = 0;
     entity.state = EntityState::Recover(anim_id);
 
 }
@@ -239,11 +236,14 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
         },
         EntityState::Attack(id) => {
             if animation_player.expired(id) {
-                if entity.attack_counter < entity.combo.attacks && entity.inputs.attack() {
+
+                //println!("{:?}", (entity.attack_counter,entity.combos[entity.active_combo].attacks, entity.inputs.read_attack()));
+
+                if entity.attack_counter < entity.combos[entity.active_combo].attacks && entity.inputs.attack() {
                     entity_attack(entity, assets, animation_player);
                 } else {
 
-                    let sheet = &assets.attack_recover(&entity.combo, entity.attack_counter);
+                    let sheet = &assets.attack_recover(&entity.combos[entity.active_combo], entity.attack_counter);
                     let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
 
                     entity.attack_counter = 0;

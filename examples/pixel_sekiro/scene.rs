@@ -9,13 +9,19 @@ use crate::audio_player::AudioPlayer;
 
 #[derive(Clone, Copy, Debug)]
 pub struct FrameData {
-    pub deflect: bool
+    pub deflect: bool, // can register deflect
+    pub deflect_interupt: bool // can register deflect, and will interrupt, so new animation is
 }
 
 pub fn frame_data_mapper(input: &str) -> FrameData {
+    let tags = input.split(" ");
+
     let deflect = input == "deflect";
+    let deflect_interupt = input == "deflect_interupt";
     FrameData {
-        deflect
+        deflect,
+        deflect_interupt
+
     }
 }
 
@@ -40,13 +46,26 @@ pub fn new<'a: 'b, 'b>(animation_player: &'b mut SheetAnimationPlayer<'a, FrameD
     let id = 1;
     let player_idle = assets.get("player").unwrap().get("idle").unwrap();
 
+
+    // player attack combos
+    let combos = vec![
+        Combo {
+            attacks: 2,
+            asset_name: "player".to_string(),
+            attack_format: "attack_{}",
+            recover_format: "attack_{}_recover",
+            deflected_format: "attack_{}_deflected",
+        }];
+
+
     Scene {
         player : Entity::new(
             id,
             EntityState::Idle(animation_player.start(Start {sheet: player_idle, scale, repeat: true, flip_y: false})),
             V2::new(400.0, 600.0),
             "player".to_string(),
-            1.0),
+            1.0,
+            combos),
         enemy: None,
         animation_player,
         assets,
@@ -65,12 +84,36 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
         let idle = self.assets.get(name).unwrap().get("idle").unwrap();
         let id = self.next_entity_id;
         self.next_entity_id += 1;
-        self.enemy = Some(Entity::new(
+
+        let combos = vec![
+            Combo {
+                attacks: 1,
+                asset_name: name.to_string(),
+                attack_format: "attack_{}",
+                recover_format: "attack_{}_recover",
+                deflected_format: "attack_{}_deflected",
+            },
+
+            Combo {
+                attacks: 2,
+                asset_name: name.to_string(),
+                attack_format: "stab_{}",
+                recover_format: "stab_{}_recover",
+                deflected_format: "stab_{}_deflected",
+            },
+        ];
+
+        let mut e = Entity::new(
             id,
             EntityState::Idle(self.animation_player.start(Start {sheet: idle, scale: self.scale, repeat: true, flip_y: true})),
             pos,
             name.to_string(),
-            -1.0))
+            -1.0,
+            combos);
+
+        e.active_combo = 1;
+
+        self.enemy = Some(e);
     }
 
 
@@ -120,8 +163,12 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
             if self.player.deflected {
                 // TODO: check if in range of any enemies and facing them, i.e can deflect any
                 // for now assume true
+                println!("{:?}",self.animation_player.get_framedata(enemy.state.animation_id()));
                 if let Some(&enemy_framedata) = self.animation_player.get_framedata(enemy.state.animation_id()) {
                     if enemy_framedata.deflect {
+                        println!("DELFECTE TO NOT COUNT HIT continue combo");
+                        // TODO: play deflect sound, maybe first when would have hit?
+                    } else if enemy_framedata.deflect_interupt {
                         deflected(enemy, self.scale, &self.assets, self.animation_player);
                     }
                 }

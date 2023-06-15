@@ -55,7 +55,8 @@ fn main() -> Result<(), failure::Error> {
     let audio_player = audio_player::AudioPlayer::new(audio_subsystem);
     let mut scene = scene::new(&mut animation_player, &assets, audio_player);
 
-    scene.player.combo.attacks = 2;
+
+    scene.add_enemy("skeleton", pos2.v2());
 
     let mut time_scale = 1.0;
     let mut poly_name = "body".to_string();
@@ -91,7 +92,13 @@ fn main() -> Result<(), failure::Error> {
 
 
         if ui.button("Add skeleton") {
-            scene.add_enemy("skeleton", pos2.v2());
+             scene.add_enemy("skeleton", pos2.v2());
+        }
+
+        if let Some(ref mut enemy) = scene.enemy {
+            if ui.button("Switch attack enemy") {
+                enemy.active_combo = (enemy.active_combo + 1) % 2;
+            }
         }
 
         ui.drawer2D.z = 1.0;
