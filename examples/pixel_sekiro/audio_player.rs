@@ -8,34 +8,63 @@ use sdl2::audio::{AudioSpecDesired, AudioCallback, AudioDevice, AudioSpecWAV, Au
 struct WavFile {
     buffer: Vec::<u8>,
     pos: usize,
-    master_volume: f32,
+    volume: f32,
     done: bool
 }
 
-impl AudioCallback for WavFile {
+
+struct Mixer {
+    files: Vec::<WavFile>,
+    master_volume: f32
+}
+
+impl Mixer {
+    pub fn add(&mut self, sound: &Sound) {
+        if self.files.len() == 0 {
+            self.files.push(
+                WavFile {
+                    done: false,
+                    buffer: vec![],
+                    pos: 0,
+                    volume: 0.25
+                });
+        }
+
+        self.files[0].buffer = sound.buffer.clone();
+        self.files[0].pos = 0;
+        self.files[0].done = false;
+    }
+
+    pub fn clear(&mut self) {
+        self.files.clear();
+    }
+}
+
+impl AudioCallback for Mixer {
     type Channel = u8;
 
     fn callback(&mut self, out: &mut [u8]) {
+
         for x in out.iter_mut() {
-            if self.buffer.len() == 0 {
-                *x = 128;
-                continue;
+            let mut sample_f32 = 0.0;
+            for file in &mut self.files {
+                let pre_scale = *file.buffer.get(file.pos).unwrap_or(&128);
+                let scaled_signed_float = (pre_scale as f32 - 128.0) * file.volume;
+                sample_f32 += scaled_signed_float;
+                file.pos += 1;
+
+                file.done = file.pos >= file.buffer.len();
             }
 
-            let pre_scale = *self.buffer.get(self.pos).unwrap_or(&128);
-            let scaled_signed_float = (pre_scale as f32 - 128.0) * self.master_volume;
-            let scaled = (scaled_signed_float + 128.0) as u8;
-            *x = scaled;
-            self.pos += 1;
-
-            self.done = self.pos >= self.buffer.len();
+            sample_f32 *= self.master_volume;
+            *x = (sample_f32 + 128.0) as u8;
         }
     }
 }
 
 struct Channel {
     spec: AudioSpecDesired,
-    device: AudioDevice<WavFile>,
+    device: AudioDevice<Mixer>,
 }
 
 pub struct AudioPlayer {
@@ -54,9 +83,17 @@ struct Sound {
 
 impl AudioPlayer {
 
-    pub fn new(audio_subsystem: sdl2::AudioSubsystem) -> Self {
+    pub fn clear(&mut self) {
+        self.sounds.clear();
+        {
+            let mut mixer = self.channel.device.lock();
+            mixer.clear();
+        }
+    }
 
-        let wav_raw_file = AudioSpecWAV::load_wav(&"examples/pixel_sekiro/assets/audio/test.wav").expect("Could not load test WAV file");
+    pub fn add_sound(&mut self, name: &str, path: &str) {
+
+        let wav_raw_file = AudioSpecWAV::load_wav(path).expect("Could not load test WAV file");
 
         let cvt = AudioCVT::new(
             wav_raw_file.format,
@@ -69,11 +106,15 @@ impl AudioPlayer {
 
         let data = cvt.convert(wav_raw_file.buffer().to_vec());
 
-        let mut sounds = HashMap::<String, Sound>::default();
-
-        sounds.insert("attack".to_string(), Sound {
+        self.sounds.insert(name.to_string(), Sound {
             buffer: data
         });
+
+    }
+
+
+    pub fn new(audio_subsystem: sdl2::AudioSubsystem) -> Self {
+        let mut sounds = HashMap::<String, Sound>::default();
 
         let samples = 128;
         let desired_spec = AudioSpecDesired {
@@ -83,10 +124,8 @@ impl AudioPlayer {
         };
 
         let device = audio_subsystem.open_playback(None, &desired_spec, |_spec| {
-            WavFile {
-                done: false,
-                buffer: vec![],
-                pos: 0,
+            Mixer {
+                files: vec![],
                 master_volume: 0.25
             }
         }).unwrap();
@@ -105,17 +144,13 @@ impl AudioPlayer {
             desired_spec,
             sounds
         }
-
     }
 
     pub fn play_sound(&mut self) {
         // mutate channel data
         {
-            let mut cb = self.channel.device.lock();
-            cb.buffer = self.sounds.get("attack").unwrap().buffer.clone();
-            cb.pos = 0;
-            cb.done = false;
-            println!("start s");
+            let mut mixer = self.channel.device.lock();
+            mixer.add(self.sounds.get("deflect").unwrap())
         }
 
     }

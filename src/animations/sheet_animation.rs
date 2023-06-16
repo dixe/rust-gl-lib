@@ -277,15 +277,15 @@ pub fn load_sheet_collision_polygons<P: AsRef<Path> + std::fmt::Debug>(path: &P,
             match serde_json::from_str(&json) {
                 Ok(data) => data,
                 Err(err) => {
-                    println!("Collision polyogn path '{:?}'", &p);
-                    println!("Jsonfile in the wrong format. Creating default(empty) frame polygons\n{:?}", err);
+                    //println!("Collision polyogn path '{:?}'", &p);
+                    //println!("Jsonfile in the wrong format. Creating default(empty) frame polygons\n{:?}", err);
                     Default::default()
                 }
             }
         },
         Err(err) => {
-            println!("Collision polyogn path '{:?}'", &p);
-            println!("Error loading json file. Creating default(empty) frame polygons\n{:?}", err);
+            //println!("Collision polyogn path '{:?}'", &p);
+            //println!("Error loading json file. Creating default(empty) frame polygons\n{:?}", err);
             Default::default()
         }
     }

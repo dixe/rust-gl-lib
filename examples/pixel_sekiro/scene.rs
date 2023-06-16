@@ -171,6 +171,7 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
                 if let Some(&enemy_framedata) = self.animation_player.get_framedata(enemy.state.animation_id()) {
                     if enemy_framedata.deflect || enemy_framedata.deflect_interupt {
                         deflected(enemy, self.scale, &self.assets, self.animation_player, enemy_framedata.deflect_interupt);
+                        self.audio_player.play_sound();
                     }
                 }
             }
@@ -205,6 +206,12 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
             }
         }
     }
+
+    pub fn destroy(self) -> AudioPlayer {
+        self.audio_player
+    }
+
+
 
 }
 
