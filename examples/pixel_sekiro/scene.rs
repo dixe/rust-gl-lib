@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use crate::{inputs::{self}, entity::{self, Entity, EntityState, Combo, EntityId, update_entity}};
+use crate::{inputs::{self}, entity::{self, Entity, EntityState, Combo, EntityId, update_entity, Deflection}};
 use gl_lib::animations::sheet_animation::{Start, SheetAnimationPlayer, AnimationId, SheetAssets};
 use gl_lib::typedef::*;
 use gl_lib::collision2d::polygon::{PolygonTransform};
@@ -165,8 +165,8 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
 
                 if let Some(&enemy_framedata) = self.animation_player.get_framedata(enemy.state.animation_id()) {
                     if enemy_framedata.deflect || enemy_framedata.deflect_interupt {
-                        entity::deflected(enemy, self.scale, &self.assets, self.animation_player, enemy_framedata.deflect_interupt);
-                        self.audio_player.play_sound();
+                        let def = if enemy_framedata.deflect_interupt { Deflection::Interupt} else {Deflection::Regular };
+                        enemy.state.set_deflected(def)
                     }
                 }
             }

@@ -405,7 +405,7 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug, FrameDataT: std::fmt::Debu
             }
         }
 
-        println!("{file_name} - {:?} - {:#?}", &tag.name, frame_data);
+        //println!("{file_name} - {:?} - {:#?}", &tag.name, frame_data);
         let anim = SheetAnimation {
             texture_id,
             name: tag.name.clone(),
