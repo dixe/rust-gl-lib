@@ -63,7 +63,7 @@ impl Asset for SheetAssets<FrameData> {
     fn load_combo_asset(&self, asset_name: &str, format_str: &str, counter: usize) -> &SheetAnimation<FrameData> {
         let mut asset_str = format_str.to_owned();
         asset_str = asset_str.replace("{}", &format!("{}",counter));
-        println!("{}-{:?}", asset_name, asset_str);
+        //println!("\n{}-{:?}", asset_name, asset_str);
         self.get(asset_name).unwrap().get(&asset_str).unwrap()
     }
 }
@@ -76,8 +76,6 @@ pub struct Combo {
     pub recover_format: &'static str,
     pub deflected_format: &'static str
 }
-
-
 
 
 pub struct Entity {

@@ -1,8 +1,7 @@
 #![allow(dead_code)]
-
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use crate::{inputs::{self}, entity::*};
+use crate::{inputs::{self}, entity::{self, Entity, EntityState, Combo, EntityId, update_entity}};
 use gl_lib::animations::sheet_animation::{Start, SheetAnimationPlayer, AnimationId, SheetAssets};
 use gl_lib::typedef::*;
 use gl_lib::collision2d::polygon::{PolygonTransform};
@@ -16,14 +15,11 @@ pub struct FrameData {
 }
 
 pub fn frame_data_mapper(input: &str) -> FrameData {
-    let _tags = input.split(" ");
-
     let deflect = input == "deflect";
     let deflect_interupt = input == "deflect_interupt";
     FrameData {
         deflect,
         deflect_interupt
-
     }
 }
 
@@ -168,9 +164,14 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
 
                 //println!("{:?}",self.animation_player.get_framedata(enemy.state.animation_id()));
 
+                let data = self.animation_player.get_framedata(enemy.state.animation_id());
+                let frame = self.animation_player.frame(enemy.state.animation_id());
+
+                println!("{:?}", (data, frame));
+
                 if let Some(&enemy_framedata) = self.animation_player.get_framedata(enemy.state.animation_id()) {
                     if enemy_framedata.deflect || enemy_framedata.deflect_interupt {
-                        deflected(enemy, self.scale, &self.assets, self.animation_player, enemy_framedata.deflect_interupt);
+                        entity::deflected(enemy, self.scale, &self.assets, self.animation_player, enemy_framedata.deflect_interupt);
                         self.audio_player.play_sound();
                     }
                 }

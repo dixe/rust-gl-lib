@@ -12,12 +12,6 @@ use gl_lib::math::*;
 use std::collections::HashMap;
 use itertools::Itertools;
 
-/*
-// generate assets struct
-sheet_assets!{Assets "examples/2d_animation_player/assets/"}
-*/
-
-
 fn main() -> Result<(), failure::Error> {
 
     let sdl_setup = helpers::setup_sdl()?;
@@ -38,7 +32,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let path : String = "examples/2d_animation_player/assets/".to_string();
+    let path : String = "examples/pixel_sekiro/assets/".to_string();
     let mut assets = load_folder(&gl, &path, |s| s.to_string());
 
     let mut state = State::Selecting;
@@ -62,7 +56,7 @@ fn main() -> Result<(), failure::Error> {
                     let mut p = PathBuf::new();
                     p.push(&path);
                     p.push(folder_name);
-                    for (name, asset) in map {
+                    for (name, asset) in map.iter().sorted_by_key(|x| x.0) {
                         if ui.button(name) {
                             state = State::Edit(Edit {
                                 sheet: create_sheet_edit(&p, name, asset),
@@ -84,8 +78,13 @@ fn main() -> Result<(), failure::Error> {
             State::Edit(ref mut edit) => {
 
                 for i in 0..edit.sheet.frames.len() {
-                    if ui.button(&format!("Edit frame {i}")) {
-                        edit.frame = i;
+                    if edit.frame == i {
+                        ui.body_text(&format!("Edit frame {i}"));
+                    }
+                    else {
+                        if ui.button(&format!("Edit frame {i}")) {
+                            edit.frame = i;
+                        }
                     }
                 }
 
@@ -101,22 +100,11 @@ fn main() -> Result<(), failure::Error> {
                 }
 
                 ui.newline();
-                if ui.button("Save") {
-                    match serde_json::to_string(&edit.sheet.frames[edit.frame].polygons) {
-                        Ok(_json) => {
 
-                            save(edit, edit.frame);
-                        },
-                        Err(err) => {
-                            println!("Fail to save\n{:?}", err);
-                        }
-                    }
-                }
-
-                if ui.button("Save All") {
+                if ui.button("Save All Frames") {
                     clean(&mut edit.sheet);
                     right_align(&mut edit.sheet);
-                    save_all(&path, &edit);
+                    save_all_frames(&path, &edit);
 
                 }
 
@@ -167,6 +155,9 @@ fn main() -> Result<(), failure::Error> {
                     println!("{:?}", p.direction());
                 }
 
+                ui.newline();
+                ui.body_text("Frame data: ");
+                ui.textbox(&mut edit.sheet.frames[edit.frame].user_data);
 
 
                 img_edit(&mut ui, &mut edit.sheet.frames[edit.frame], &edit.name, edit.sheet.size, edit.sheet.texture_id);
@@ -210,13 +201,14 @@ fn clean(sheet: &mut SheetEdit) {
 }
 
 
-fn save_all<P: AsRef<Path>>(p: &P, edit: &Edit) {
+fn save_all_frames<P: AsRef<Path>>(p: &P, edit: &Edit) {
 
     let mut path = PathBuf::new();
     path.push(p);
     path.push(&edit.folder);
     path.push(&format!("{}_polygons.json", &edit.sheet.name));
 
+    println!("{:?}", &path);
     let mut data = SheetCollisionPolygons::default();
 
     for i in 0..edit.sheet.frames.len() {
@@ -226,19 +218,6 @@ fn save_all<P: AsRef<Path>>(p: &P, edit: &Edit) {
     match serde_json::to_string(&data) {
         Ok(json) => {
             std::fs::write(path, json);
-        },
-        Err(err) => {
-            println!("Fail to save\n{:?}", err);
-        }
-    }
-}
-
-
-
-fn save(edit: &Edit, frame: usize) {
-    match serde_json::to_string(&edit.sheet.frames[frame].polygons) {
-        Ok(json) => {
-            std::fs::write(&format!("examples/2d_animation_player/assets/{}_{}.json", &edit.sheet.name, frame), json);
         },
         Err(err) => {
             println!("Fail to save\n{:?}", err);
@@ -266,7 +245,8 @@ fn create_sheet_edit<P: AsRef<Path> + std::fmt::Debug>(path: &P, name: &str, she
             polygons: map.clone(),
             anchor: V2i::new(400, 600),
             options: Default::default(),
-            sprite: frame.data
+            sprite: frame.data,
+            user_data: sheet.frame_data.get(&f).map(|s| s.to_string()).unwrap_or_default()
         });
 
     }
@@ -305,7 +285,8 @@ struct FrameEdit {
     polygons: HashMap::<String, Polygon>,
     anchor: V2i,
     options: PolygonOptions,
-    sprite: Sprite
+    sprite: Sprite,
+    user_data: String
 }
 
 

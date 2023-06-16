@@ -37,7 +37,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let path = "examples/2d_animation_player/assets/";
+    let path = "examples/pixel_sekiro/assets/";
     let assets = load_folder(&gl, &path, |s| s.to_string());
 
 

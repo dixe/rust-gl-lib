@@ -305,7 +305,7 @@ struct ActiveAnimation<'a, FrameDataT> {
 }
 
 
-pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug, FrameDataT>(gl: &gl::Gl, json_path: &P, file_name: &str, id: &mut usize, data_map: fn(&str) -> FrameDataT) -> Result<Vec::<SheetAnimation<FrameDataT>>, failure::Error> {
+pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug, FrameDataT: std::fmt::Debug >(gl: &gl::Gl, json_path: &P, file_name: &str, id: &mut usize, data_map: fn(&str) -> FrameDataT) -> Result<Vec::<SheetAnimation<FrameDataT>>, failure::Error> {
 
     let anim_json = std::fs::read_to_string(json_path)?;
 
@@ -405,6 +405,7 @@ pub fn load_by_name<P: AsRef<Path> + std::fmt::Debug, FrameDataT>(gl: &gl::Gl, j
             }
         }
 
+        println!("{file_name} - {:?} - {:#?}", &tag.name, frame_data);
         let anim = SheetAnimation {
             texture_id,
             name: tag.name.clone(),
@@ -497,7 +498,7 @@ impl SheetCollisionPolygon {
 pub type SheetAssets<FrameDataT>= std::collections::HashMap::<String, std::collections::HashMap::<String, SheetAnimation<FrameDataT>>>;
 
 
-pub fn load_folder<P: AsRef<Path> + std::fmt::Debug, FrameDataT>(gl: &gl::Gl, path: &P, data_map: fn(&str) -> FrameDataT) -> SheetAssets<FrameDataT> {
+pub fn load_folder<P: AsRef<Path> + std::fmt::Debug, FrameDataT: std::fmt::Debug>(gl: &gl::Gl, path: &P, data_map: fn(&str) -> FrameDataT) -> SheetAssets<FrameDataT> {
 
     let mut id = 0;
     let _dir = match std::fs::read_dir(&path) {

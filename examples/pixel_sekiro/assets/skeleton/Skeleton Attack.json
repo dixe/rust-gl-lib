@@ -249,7 +249,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 100
+    "duration": 150
    },
    {
     "filename": "Skeleton Attack 28.ase",
@@ -294,7 +294,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 150
+    "duration": 100
    },
    {
     "filename": "Skeleton Attack 33.ase",
@@ -303,7 +303,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 100
+    "duration": 150
    },
    {
     "filename": "Skeleton Attack 34.ase",
@@ -357,6 +357,24 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 40.ase",
+    "frame": { "x": 2800, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 100
+   },
+   {
+    "filename": "Skeleton Attack 41.ase",
+    "frame": { "x": 2870, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
     "duration": 150
    }
  ],
@@ -365,23 +383,23 @@
   "version": "1.2.40-x64",
   "image": "Skeleton Attack.png",
   "format": "RGBA8888",
-  "size": { "w": 2800, "h": 37 },
+  "size": { "w": 2940, "h": 37 },
   "scale": "1",
   "frameTags": [
    { "name": "attack_1", "from": 0, "to": 8, "direction": "forward" },
    { "name": "attack_1_recover", "from": 9, "to": 17, "direction": "forward" },
    { "name": "attack_1_deflected", "from": 19, "to": 20, "direction": "forward" },
-   { "name": "stab_1", "from": 22, "to": 27, "direction": "forward" },
-   { "name": "stab_1_deflected", "from": 28, "to": 28, "direction": "forward" },
-   { "name": "stab_2", "from": 29, "to": 33, "direction": "forward" },
-   { "name": "stab_2_recover", "from": 34, "to": 37, "direction": "forward" },
-   { "name": "stab_2_deflected", "from": 38, "to": 39, "direction": "forward" }
+   { "name": "stab_1", "from": 22, "to": 28, "direction": "forward" },
+   { "name": "stab_1_deflected", "from": 29, "to": 29, "direction": "forward" },
+   { "name": "stab_2", "from": 30, "to": 34, "direction": "forward" },
+   { "name": "stab_2_recover", "from": 35, "to": 38, "direction": "forward" },
+   { "name": "stab_2_deflected", "from": 39, "to": 41, "direction": "forward" }
   ],
   "layers": [
-   { "name": "Layer 1", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 23, "data": "deflect" }, { "frame": 24, "data": "deflect" }, { "frame": 25, "data": "deflect" }, { "frame": 29, "data": "deflect_interupt" }, { "frame": 30, "data": "deflect_interupt" }, { "frame": 31, "data": "deflect_interupt" }] },
+   { "name": "Layer 1", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 23, "data": "deflect" }, { "frame": 24, "data": "deflect" }, { "frame": 25, "data": "deflect" }, { "frame": 26, "data": "deflect" }, { "frame": 30, "data": "deflect_interupt" }, { "frame": 31, "data": "deflect_interupt" }, { "frame": 32, "data": "deflect_interupt" }] },
    { "name": "legs", "opacity": 255, "blendMode": "normal" },
    { "name": "body", "opacity": 255, "blendMode": "normal" },
-   { "name": "head", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 4, "data": "deflect_interupt" }, { "frame": 5, "data": "deflect_interupt" }, { "frame": 6, "data": "deflect_interupt" }, { "frame": 18, "data": "deflect" }, { "frame": 20, "data": "deflect" }] },
+   { "name": "head", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 4, "data": "deflect_interupt" }, { "frame": 5, "data": "deflect_interupt" }, { "frame": 6, "data": "deflect_interupt" }, { "frame": 18, "data": "deflect" }] },
    { "name": "arms", "opacity": 255, "blendMode": "normal" },
    { "name": "solo arm", "opacity": 255, "blendMode": "normal" }
   ],

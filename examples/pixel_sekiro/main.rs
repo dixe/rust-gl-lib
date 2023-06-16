@@ -45,7 +45,8 @@ pub fn load_and_run(gl: &gl::Gl,
 
     let mut pos2 = V2i::new(500, 600);
     let mut animation_player = SheetAnimationPlayer::new();
-    let assets = load_folder(gl, &"examples/2d_animation_player/assets/", scene::frame_data_mapper);
+    let assets = load_folder(gl, &"examples/pixel_sekiro/assets/", scene::frame_data_mapper);
+
 
     audio_player.clear();
     audio_player.add_sound("deflect", &"examples/pixel_sekiro/assets/audio/deflect_1.wav");
