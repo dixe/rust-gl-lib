@@ -144,6 +144,9 @@ impl<'a, FrameDataT> SheetAnimationPlayer<'a, FrameDataT> {
         }
     }
 
+    pub fn active_animations(&self) -> usize {
+        self.animations.len()
+    }
 
     pub fn get_polygon_map(&self, anim_id: AnimationId) -> Option::<&std::collections::hash_map::HashMap<std::string::String, SheetCollisionPolygon>> {
         if let Some(active) = self.animations.get(&anim_id) {
@@ -168,7 +171,6 @@ impl<'a, FrameDataT> SheetAnimationPlayer<'a, FrameDataT> {
 
         None
     }
-
 
     pub fn frame(&self, anim_id: AnimationId) -> Option<usize> {
 

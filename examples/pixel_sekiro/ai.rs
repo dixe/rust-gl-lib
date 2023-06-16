@@ -6,18 +6,19 @@ pub fn skeleton_logic(entity: &mut Entity, ) {
 
     match entity.state {
         EntityState::Idle(_) => {
-            if attack_r > 0.9 {
-                //entity.active_combo = (entity.active_combo + 1) % 2;
+
+            // wait atleast 2 sec between attacks
+            if attack_r > 0.9 && entity.last_attack_time.elapsed().as_millis() > 2000 {
+                entity.inputs.set_attack();
             }
-            else if attack_r > 0.8 {
+        },
+        EntityState::AttackDeflected(_, _) => {
+            if entity.has_next_combo_attack() {
                 entity.inputs.set_attack();
             }
         },
         EntityState::AttackDamage(_) => {
-
-            //println!("{:?}", (entity.combos[entity.active_combo].attacks, entity.attack_counter));
-            // always try to finish a combo
-            if entity.attack_counter <= entity.combos[entity.active_combo].attacks {
+            if entity.has_next_combo_attack() {
                 entity.inputs.set_attack();
             }
         },

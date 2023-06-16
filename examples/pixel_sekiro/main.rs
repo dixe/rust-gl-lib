@@ -53,10 +53,7 @@ pub fn load_and_run(gl: &gl::Gl,
 
     let mut scene = scene::new(&mut animation_player, &assets, audio_player);
 
-
     scene.add_enemy("skeleton", pos2.v2());
-
-
 
     let mut playing = true;
     let mut time_scale = 1.0;
@@ -114,6 +111,10 @@ pub fn load_and_run(gl: &gl::Gl,
 
         // draw animation frame at locations
         scene.draw(&mut ui.drawer2D);
+
+        if scene.animation_player.active_animations() != 2 {
+            let a = 2;
+        }
 
         window.gl_swap_window();
     }

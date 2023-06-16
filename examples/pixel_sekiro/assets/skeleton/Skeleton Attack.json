@@ -312,7 +312,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 150
+    "duration": 100
    },
    {
     "filename": "Skeleton Attack 35.ase",
@@ -321,7 +321,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 100
+    "duration": 150
    },
    {
     "filename": "Skeleton Attack 36.ase",
@@ -375,11 +375,29 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
     "sourceSize": { "w": 70, "h": 37 },
-    "duration": 100
+    "duration": 150
    },
    {
     "filename": "Skeleton Attack 42.ase",
     "frame": { "x": 2940, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 150
+   },
+   {
+    "filename": "Skeleton Attack 43.ase",
+    "frame": { "x": 3010, "y": 0, "w": 70, "h": 37 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
+    "sourceSize": { "w": 70, "h": 37 },
+    "duration": 150
+   },
+   {
+    "filename": "Skeleton Attack 44.ase",
+    "frame": { "x": 3080, "y": 0, "w": 70, "h": 37 },
     "rotated": false,
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 37 },
@@ -392,7 +410,7 @@
   "version": "1.2.40-x64",
   "image": "Skeleton Attack.png",
   "format": "RGBA8888",
-  "size": { "w": 3010, "h": 37 },
+  "size": { "w": 3150, "h": 37 },
   "scale": "1",
   "frameTags": [
    { "name": "attack_1_windup", "from": 0, "to": 6, "direction": "forward" },
@@ -401,14 +419,14 @@
    { "name": "attack_1_deflected", "from": 19, "to": 20, "direction": "forward" },
    { "name": "stab_1_windup", "from": 22, "to": 26, "direction": "forward" },
    { "name": "stab_1_damage", "from": 27, "to": 28, "direction": "forward" },
-   { "name": "stab_1_deflected", "from": 29, "to": 29, "direction": "forward" },
-   { "name": "stab_2_windup", "from": 30, "to": 33, "direction": "forward" },
-   { "name": "stab_2_damage", "from": 34, "to": 35, "direction": "forward" },
-   { "name": "stab_2_recover", "from": 36, "to": 39, "direction": "forward" },
-   { "name": "stab_2_deflected", "from": 40, "to": 42, "direction": "forward" }
+   { "name": "stab_1_deflected", "from": 29, "to": 30, "direction": "forward" },
+   { "name": "stab_2_windup", "from": 31, "to": 34, "direction": "forward" },
+   { "name": "stab_2_damage", "from": 35, "to": 36, "direction": "forward" },
+   { "name": "stab_2_recover", "from": 37, "to": 40, "direction": "forward" },
+   { "name": "stab_2_deflected", "from": 42, "to": 44, "direction": "forward" }
   ],
   "layers": [
-   { "name": "Layer 1", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 23, "data": "deflect" }, { "frame": 24, "data": "deflect" }, { "frame": 25, "data": "deflect" }, { "frame": 26, "data": "deflect" }, { "frame": 30, "data": "deflect_interupt" }, { "frame": 31, "data": "deflect_interupt" }, { "frame": 32, "data": "deflect_interupt" }, { "frame": 33, "data": "deflect_interupt" }] },
+   { "name": "Layer 1", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 23, "data": "deflect" }, { "frame": 24, "data": "deflect" }, { "frame": 25, "data": "deflect" }, { "frame": 26, "data": "deflect" }, { "frame": 31, "data": "deflect_interupt" }, { "frame": 32, "data": "deflect_interupt" }, { "frame": 33, "data": "deflect_interupt" }, { "frame": 34, "data": "deflect_interupt" }] },
    { "name": "legs", "opacity": 255, "blendMode": "normal" },
    { "name": "body", "opacity": 255, "blendMode": "normal" },
    { "name": "head", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 4, "data": "deflect_interupt" }, { "frame": 5, "data": "deflect_interupt" }, { "frame": 6, "data": "deflect_interupt" }, { "frame": 18, "data": "deflect" }] },

@@ -5,6 +5,8 @@ use crate::inputs::Inputs;
 use crate::audio_player::AudioPlayer;
 use std::collections::HashMap;
 use crate::scene::FrameData;
+use std::time::Instant;
+
 
 pub enum EntityState {
     Idle(AnimationId),
@@ -118,7 +120,8 @@ pub struct Entity {
     pub hit_map: HashMap::<EntityId, AttackId>,
     pub deflected: bool, // if we deflected this frame
     pub combos: Vec::<Combo>,
-    pub active_combo: usize
+    pub active_combo: usize,
+    pub last_attack_time: Instant
 }
 
 impl Entity {
@@ -137,12 +140,13 @@ impl Entity {
             current_attack_id: 0,
             deflected: false,
             combos,
-            active_combo: 0
+            active_combo: 0,
+            last_attack_time: Instant::now()
         }
     }
 
 
-    pub fn has_next_combo_attack(&mut self) -> bool {
+    pub fn has_next_combo_attack(&self) -> bool {
         self.attack_counter < self.combos[self.active_combo].attacks
     }
 }
@@ -179,7 +183,7 @@ pub fn entity_idle<'a: 'b, 'b>( entity: &mut Entity,
     let sheet = &assets.idle(&entity.asset_name);
     let scale = 4.0;
     let flip_y = entity.flip_y < 0.0;
-    let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
+    let anim_id = animation_player.start(Start {sheet, scale, repeat: true, flip_y});
     entity.state = EntityState::Idle(anim_id);
 }
 
@@ -191,6 +195,8 @@ pub fn entity_attack<'a: 'b, 'b>( entity: &mut Entity,
     entity.current_attack_id += 1;
     entity.attack_counter += 1 % (1 + entity.combos[entity.active_combo].attacks);
     entity.vel.x = 0.0;
+
+    entity.last_attack_time = Instant::now();
 
     animation_player.remove(entity.state.animation_id());
     let sheet = &assets.attack_windup(&entity.combos[entity.active_combo], entity.attack_counter);
@@ -285,14 +291,15 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
             if animation_player.expired(id) {
                 damage_finished(entity, assets, animation_player);
             }
-
         },
         EntityState::AttackDeflected(id, interupt) => {
-            if !interupt && entity.has_next_combo_attack() {
-                entity_attack(entity, assets, animation_player);
-            } else {
-                entity.attack_counter = 0;
-                entity_idle(entity, assets, animation_player);
+            if animation_player.expired(id) {
+                if !interupt && entity.has_next_combo_attack() && entity.inputs.attack() {
+                    entity_attack(entity, assets, animation_player);
+                } else {
+                    entity.attack_counter = 0;
+                    entity_idle(entity, assets, animation_player);
+                }
             }
         },
         EntityState::Deflect(id) => {
