@@ -8,7 +8,8 @@ use crate::scene::FrameData;
 
 pub enum EntityState {
     Idle(AnimationId),
-    Attack(AnimationId),
+    AttackWindup(AnimationId),
+    AttackDamage(AnimationId),
     Roll(AnimationId),
     Recover(AnimationId),
     Deflect(AnimationId),
@@ -19,7 +20,9 @@ pub type AttackId = usize;
 
 
 pub trait Asset {
-    fn attack(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData>;
+    fn attack_windup(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData>;
+
+    fn attack_damage(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData>;
 
     fn roll(&self, asset_name: &str) -> &SheetAnimation<FrameData>;
 
@@ -31,17 +34,21 @@ pub trait Asset {
 
     fn deflect(&self, asset_name: &str) -> &SheetAnimation<FrameData>;
 
-    fn load_combo_asset(&self, asset_name: &str, format_str: &str, counter: usize) -> &SheetAnimation<FrameData>;
+    fn load_combo_asset(&self, combo: &Combo, format_str: &str, counter: usize) -> &SheetAnimation<FrameData>;
 }
 
 impl Asset for SheetAssets<FrameData> {
 
-    fn attack(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData> {
-        self.load_combo_asset(&combo.asset_name, combo.attack_format, counter)
+    fn attack_windup(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData> {
+        self.load_combo_asset(combo, "windup", counter)
+    }
+
+    fn attack_damage(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData> {
+        self.load_combo_asset(combo, "damage", counter)
     }
 
     fn deflected(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData> {
-        self.load_combo_asset(&combo.asset_name, combo.deflected_format, counter)
+        self.load_combo_asset(combo, "deflected", counter)
     }
 
     fn deflect(&self, asset_name: &str) -> &SheetAnimation<FrameData> {
@@ -49,7 +56,7 @@ impl Asset for SheetAssets<FrameData> {
     }
 
     fn attack_recover(&self, combo: &Combo, counter: usize) -> &SheetAnimation<FrameData> {
-        self.load_combo_asset(&combo.asset_name, combo.recover_format, counter)
+        self.load_combo_asset(combo, "recover", counter)
     }
 
     fn roll(&self, asset_name: &str) -> &SheetAnimation<FrameData> {
@@ -60,11 +67,12 @@ impl Asset for SheetAssets<FrameData> {
         self.get(asset_name).unwrap().get("idle").unwrap()
     }
 
-    fn load_combo_asset(&self, asset_name: &str, format_str: &str, counter: usize) -> &SheetAnimation<FrameData> {
-        let mut asset_str = format_str.to_owned();
-        asset_str = asset_str.replace("{}", &format!("{}",counter));
-        //println!("\n{}-{:?}", asset_name, asset_str);
-        self.get(asset_name).unwrap().get(&asset_str).unwrap()
+    fn load_combo_asset(&self, combo: &Combo, format_str: &str, counter: usize) -> &SheetAnimation<FrameData> {
+        // create a string like "attack_1_windup,
+        let asset_str = format!("{}_{counter}_{format_str}", &combo.combo_name);
+
+
+        self.get(&combo.asset_name).unwrap().get(&asset_str).unwrap()
     }
 }
 
@@ -72,9 +80,7 @@ impl Asset for SheetAssets<FrameData> {
 pub struct Combo {
     pub attacks: usize,
     pub asset_name: String,
-    pub attack_format: &'static str,
-    pub recover_format: &'static str,
-    pub deflected_format: &'static str
+    pub combo_name: String,
 }
 
 
@@ -114,12 +120,6 @@ impl Entity {
         }
     }
 
-    pub fn new_attack(&mut self, anim_id: AnimationId) {
-        self.current_attack_id += 1;
-        self.attack_counter = (self.attack_counter + 1 ) % 2;
-        self.vel.x = 0.0;
-        self.state = EntityState::Attack(anim_id);
-    }
 }
 
 impl EntityState {
@@ -128,7 +128,8 @@ impl EntityState {
         match self {
             Self::Idle(id) => *id,
             Self::Recover(id) => *id,
-            Self::Attack(id)=> *id,
+            Self::AttackWindup(id)=> *id,
+            Self::AttackDamage(id)=> *id,
             Self::Roll(id)=> *id,
             Self::Deflect(id)=> *id,
         }
@@ -146,11 +147,11 @@ pub fn entity_attack<'a: 'b, 'b>( entity: &mut Entity,
     entity.vel.x = 0.0;
 
     animation_player.remove(entity.state.animation_id());
-    let sheet = &assets.attack(&entity.combos[entity.active_combo], entity.attack_counter);
+    let sheet = &assets.attack_windup(&entity.combos[entity.active_combo], entity.attack_counter);
     let scale = 4.0;
     let flip_y = entity.flip_y < 0.0;
     let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
-    entity.state = EntityState::Attack(anim_id);
+    entity.state = EntityState::AttackWindup(anim_id);
 
 }
 
@@ -238,22 +239,19 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
                 entity.inputs.attack();
             }
         },
-        EntityState::Attack(id) => {
+        EntityState::AttackWindup(id) => {
             if animation_player.expired(id) {
-
-                //println!("{:?}", (entity.attack_counter,entity.combos[entity.active_combo].attacks, entity.inputs.read_attack()));
-
-                if entity.attack_counter < entity.combos[entity.active_combo].attacks && entity.inputs.attack() {
-                    entity_attack(entity, assets, animation_player);
-                } else {
-
-                    let sheet = &assets.attack_recover(&entity.combos[entity.active_combo], entity.attack_counter);
-                    let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
-
-                    entity.attack_counter = 0;
-                    entity.state = EntityState::Recover(anim_id);
-                }
+                // if deflected then play deflected animation, if deflected interupt play interupt, otherwise play damagex
+                let sheet = &assets.attack_damage(&entity.combos[entity.active_combo], entity.attack_counter);
+                let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
+                entity.state = EntityState::AttackDamage(anim_id);
             }
+        },
+        EntityState::AttackDamage(id) => {
+            if animation_player.expired(id) {
+                damage_finished(entity, assets, animation_player);
+            }
+
         },
         EntityState::Deflect(id) => {
             if animation_player.expired(id) {
@@ -274,4 +272,22 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
 
     // update pos by vel
     entity.pos += entity.vel * dt;
+}
+
+pub fn damage_finished<'a: 'b, 'b>( entity: &mut Entity,
+                                    assets: &'a SheetAssets<FrameData>,
+                                    animation_player: &'b mut SheetAnimationPlayer<'a, FrameData>) {
+    if entity.attack_counter < entity.combos[entity.active_combo].attacks && entity.inputs.attack() {
+        entity_attack(entity, assets, animation_player);
+    } else {
+
+        let scale = 4.0;
+        let flip_y = entity.flip_y < 0.0;
+        let sheet = &assets.attack_recover(&entity.combos[entity.active_combo], entity.attack_counter);
+        let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
+
+        entity.attack_counter = 0;
+        entity.state = EntityState::Recover(anim_id);
+    }
+
 }

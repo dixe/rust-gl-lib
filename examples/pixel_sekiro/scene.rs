@@ -50,9 +50,7 @@ pub fn new<'a: 'b, 'b>(animation_player: &'b mut SheetAnimationPlayer<'a, FrameD
         Combo {
             attacks: 2,
             asset_name: "player".to_string(),
-            attack_format: "attack_{}",
-            recover_format: "attack_{}_recover",
-            deflected_format: "attack_{}_deflected",
+            combo_name: "attack".to_string(),
         }];
 
 
@@ -87,17 +85,13 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
             Combo {
                 attacks: 1,
                 asset_name: name.to_string(),
-                attack_format: "attack_{}",
-                recover_format: "attack_{}_recover",
-                deflected_format: "attack_{}_deflected",
+                combo_name: "attack".to_string(),
             },
 
             Combo {
                 attacks: 2,
                 asset_name: name.to_string(),
-                attack_format: "stab_{}",
-                recover_format: "stab_{}_recover",
-                deflected_format: "stab_{}_deflected",
+                combo_name: "stab".to_string(),
             },
         ];
 

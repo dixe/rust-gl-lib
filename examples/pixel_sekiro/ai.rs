@@ -13,7 +13,7 @@ pub fn skeleton_logic(entity: &mut Entity, ) {
                 entity.inputs.set_attack();
             }
         },
-        EntityState::Attack(_) => {
+        EntityState::AttackDamage(_) => {
 
             //println!("{:?}", (entity.combos[entity.active_combo].attacks, entity.attack_counter));
             // always try to finish a combo
