@@ -1,12 +1,12 @@
 #![allow(dead_code)]
-
+use std::sync::Arc;
 use std::collections::HashMap;
 use sdl2::audio::{AudioSpecDesired, AudioCallback, AudioDevice, AudioSpecWAV, AudioCVT, AudioFormat};
 
 
 #[derive(Clone)]
 struct WavFile {
-    buffer: Vec::<u8>,
+    buffer: Arc<[u8]>, // arc<[T]> Clone is O(1), so cheap do clone, and remove wavFile from mixer vec
     pos: usize,
     volume: f32,
     done: bool
@@ -24,7 +24,7 @@ impl Mixer {
             self.files.push(
                 WavFile {
                     done: false,
-                    buffer: vec![],
+                    buffer: sound.buffer.clone(),
                     pos: 0,
                     volume: 0.25
                 });
@@ -76,7 +76,7 @@ pub struct AudioPlayer {
 }
 
 struct Sound {
-    buffer: Vec::<u8>
+    buffer: Arc<[u8]>
 }
 
 
@@ -107,7 +107,7 @@ impl AudioPlayer {
         let data = cvt.convert(wav_raw_file.buffer().to_vec());
 
         self.sounds.insert(name.to_string(), Sound {
-            buffer: data
+            buffer: data.into()
         });
 
     }

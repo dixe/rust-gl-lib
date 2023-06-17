@@ -426,7 +426,7 @@
    { "name": "stab_2_deflected", "from": 42, "to": 44, "direction": "forward" }
   ],
   "layers": [
-   { "name": "Layer 1", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 23, "data": "deflect" }, { "frame": 24, "data": "deflect" }, { "frame": 25, "data": "deflect" }, { "frame": 26, "data": "deflect" }, { "frame": 31, "data": "deflect_interupt" }, { "frame": 32, "data": "deflect_interupt" }, { "frame": 33, "data": "deflect_interupt" }, { "frame": 34, "data": "deflect_interupt" }] },
+   { "name": "Layer 1", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 25, "data": "deflect" }, { "frame": 26, "data": "deflect" }, { "frame": 31, "data": "deflect_interupt" }, { "frame": 32, "data": "deflect_interupt" }, { "frame": 33, "data": "deflect_interupt" }, { "frame": 34, "data": "deflect_interupt" }] },
    { "name": "legs", "opacity": 255, "blendMode": "normal" },
    { "name": "body", "opacity": 255, "blendMode": "normal" },
    { "name": "head", "opacity": 255, "blendMode": "normal", "cels": [{ "frame": 4, "data": "deflect_interupt" }, { "frame": 5, "data": "deflect_interupt" }, { "frame": 6, "data": "deflect_interupt" }, { "frame": 18, "data": "deflect" }] },

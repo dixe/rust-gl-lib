@@ -158,13 +158,11 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
 
                 //println!("{:?}",self.animation_player.get_framedata(enemy.state.animation_id()));
 
-                let data = self.animation_player.get_framedata(enemy.state.animation_id());
-                let frame = self.animation_player.frame(enemy.state.animation_id());
-
-                println!("{:?}", (data, frame));
+                let frame = self.animation_player.frame(enemy.state.animation_id()).unwrap();
 
                 if let Some(&enemy_framedata) = self.animation_player.get_framedata(enemy.state.animation_id()) {
                     if enemy_framedata.deflect || enemy_framedata.deflect_interupt {
+                        println!("Registed deflect at frame {}", frame);
                         let def = if enemy_framedata.deflect_interupt { Deflection::Interupt} else {Deflection::Regular };
                         enemy.state.set_deflected(def)
                     }
@@ -176,28 +174,13 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
     fn collisions(&mut self, ui: &mut Ui,) {
 
         if let Some(ref mut enemy) = &mut self.enemy {
-            /*
-            // check player deflect
-            if deflect(&self.animation_player, ui, &self.player, &enemy, self.show_col_boxes) {
-                println!("player DEFLECT enemy");
-                let scale = 4.0;
-                deflected(enemy, scale, &self.assets, self.animation_player);
-                // update deflected to be in recover, so the attack cannot hit
-
-
-            } else if deflect(&self.animation_player, ui, &enemy, &self.player, self.show_col_boxes){
-                // update deflected to be in recover, so the attack cannot hit
-            }
-
-
-*/
             if hit(&self.animation_player, ui, &self.player, enemy, self.show_col_boxes) {
                 self.hits += 1;
-
             }
 
             if hit(&self.animation_player, ui, &enemy, &mut self.player, self.show_col_boxes) {
-
+                println!("Player hit");
+                entity::entity_hurt(&mut self.player, &self.assets, &mut self.animation_player);
             }
         }
     }
@@ -205,9 +188,6 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
     pub fn destroy(self) -> AudioPlayer {
         self.audio_player
     }
-
-
-
 }
 
 

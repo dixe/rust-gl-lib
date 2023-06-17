@@ -65,6 +65,15 @@ pub fn handle_inputs(ui: &mut Ui, inputs: &mut Inputs) {
         }
     }
 
+
+    if let Some(inst) = inputs.deflect {
+        let dur = inst.elapsed();
+        if dur.as_millis() > 100 {
+            inputs.deflect = None
+        }
+    }
+
+
     for e in &ui.frame_events {
         match e {
             KeyDown { keycode: Some(D), ..} => {

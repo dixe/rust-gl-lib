@@ -118,46 +118,4 @@ pub fn load_and_run(gl: &gl::Gl,
 
         window.gl_swap_window();
     }
-
 }
-
-
-
-
-
-
-/*
-struct EntityCollidable<'a> {
-    entity_id: usize,
-    team_id: usize,
-    collision_polygon : ComplexPolygon<'a>,
-    transform: na::Matrix3::<f32> // homogeneous 3d matrixt for transforming V2 in 2d
-}
-
-/// Find weapon/spell collision with hittable part of target
-fn find_collision(attacks: &[EntityCollidable], targets: &[EntityCollidable]) {
-
-    for attack in attacks {
-        for target in targets {
-            if attack.team_id != target.team_id {
-                if collision(attack.collision_polygon, attack.transform,
-                             target.collision_polygon, target.transform) {
-
-                    //add collision to output
-                }
-            }
-        }
-    }
-}
-
-/// Method 1
-/// store polygons on animaiton_sheet, each frame has a hashmap<string, polygon>, get_polygon takes animation_id, and a polygon_name,
-///returns Option<&Polygon>
-fn get_attack_polygon(animation_id: usize, player: &SheetAnimationPlayer) {
-    // animaiton_sheet_player know which frame and wich animation
-    let attack_polygon = player.get_polygon(animation_id, "attack");
-
-    let body_polygon = player.get_polygon(animation_id, "body");
-
-}
-*/

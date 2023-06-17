@@ -16,6 +16,7 @@ pub enum EntityState {
     Roll(AnimationId),
     Recover(AnimationId),
     Deflect(AnimationId),
+    Hurt(AnimationId),
 }
 
 #[derive(Eq, PartialEq, Clone, Copy, Debug)]
@@ -53,6 +54,8 @@ pub trait Asset {
 
     fn roll(&self, asset_name: &str) -> &SheetAnimation<FrameData>;
 
+    fn hurt(&self, asset_name: &str) -> &SheetAnimation<FrameData>;
+
     fn idle(&self, asset_name: &str) -> &SheetAnimation<FrameData>;
 
     fn deflect(&self, asset_name: &str) -> &SheetAnimation<FrameData>;
@@ -84,6 +87,10 @@ impl Asset for SheetAssets<FrameData> {
 
     fn roll(&self, asset_name: &str) -> &SheetAnimation<FrameData> {
         self.get(asset_name).unwrap().get("roll").unwrap()
+    }
+
+    fn hurt(&self, asset_name: &str) -> &SheetAnimation<FrameData> {
+        self.get(asset_name).unwrap().get("hurt").unwrap()
     }
 
     fn idle(&self, asset_name: &str) -> &SheetAnimation<FrameData> {
@@ -149,6 +156,10 @@ impl Entity {
     pub fn has_next_combo_attack(&self) -> bool {
         self.attack_counter < self.combos[self.active_combo].attacks
     }
+
+    pub fn reset_combo(&mut self) {
+        self.attack_counter = 0;
+    }
 }
 
 impl EntityState {
@@ -162,6 +173,7 @@ impl EntityState {
             Self::AttackDeflected(id, _)=> *id,
             Self::Roll(id)=> *id,
             Self::Deflect(id)=> *id,
+            Self::Hurt(id)=> *id,
         }
     }
 
@@ -186,6 +198,25 @@ pub fn entity_idle<'a: 'b, 'b>( entity: &mut Entity,
     let anim_id = animation_player.start(Start {sheet, scale, repeat: true, flip_y});
     entity.state = EntityState::Idle(anim_id);
 }
+
+pub fn entity_hurt<'a: 'b, 'b>( entity: &mut Entity,
+                                  assets: &'a SheetAssets<FrameData>,
+                                  animation_player: &'b mut SheetAnimationPlayer<'a, FrameData>) {
+    animation_player.remove(entity.state.animation_id());
+    let sheet = &assets.hurt(&entity.asset_name);
+    let scale = 4.0;
+    let flip_y = entity.flip_y < 0.0;
+    let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
+    entity.state = EntityState::Hurt(anim_id);
+    entity.reset_combo();
+    // clear attack buffer
+    entity.inputs.attack();
+    // clear deflect buffer
+    entity.inputs.deflect();
+
+}
+
+
 
 pub fn entity_attack<'a: 'b, 'b>( entity: &mut Entity,
                                   assets: &'a SheetAssets<FrameData>,
@@ -297,7 +328,7 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
                 if !interupt && entity.has_next_combo_attack() && entity.inputs.attack() {
                     entity_attack(entity, assets, animation_player);
                 } else {
-                    entity.attack_counter = 0;
+                    entity.reset_combo();
                     entity_idle(entity, assets, animation_player);
                 }
             }
@@ -316,7 +347,15 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
                 let anim_id = animation_player.start(Start {sheet, scale, repeat: true, flip_y});
                 entity.state = EntityState::Idle(anim_id);
             }
+        },
+        EntityState::Hurt(id) => {
+            if animation_player.expired(id) {
+                let sheet = &assets.idle(&entity.asset_name);
+                let anim_id = animation_player.start(Start {sheet, scale, repeat: true, flip_y});
+                entity.state = EntityState::Idle(anim_id);
+            }
         }
+
     }
 
     // update pos by vel
@@ -326,7 +365,7 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
 pub fn damage_finished<'a: 'b, 'b>( entity: &mut Entity,
                                     assets: &'a SheetAssets<FrameData>,
                                     animation_player: &'b mut SheetAnimationPlayer<'a, FrameData>) {
-    if entity.has_next_combo_attack() {
+    if entity.has_next_combo_attack() && entity.inputs.attack() {
         entity_attack(entity, assets, animation_player);
     } else {
 
@@ -335,7 +374,7 @@ pub fn damage_finished<'a: 'b, 'b>( entity: &mut Entity,
         let sheet = &assets.attack_recover(&entity.combos[entity.active_combo], entity.attack_counter);
         let anim_id = animation_player.start(Start {sheet, scale, repeat: false, flip_y});
 
-        entity.attack_counter = 0;
+        entity.reset_combo();
         entity.state = EntityState::Recover(anim_id);
     }
 
