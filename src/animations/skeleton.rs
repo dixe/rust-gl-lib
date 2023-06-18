@@ -133,7 +133,6 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
     let mut skins : Skins = Default::default();
     // Map mesh names to skin names and nodes to skin id
     for node in gltf.nodes() {
-
         if let Some(mesh) = node.mesh() {
             if let Some(skin) = node.skin() {
                 let mesh_name = mesh.name().unwrap().to_string();
@@ -155,7 +154,7 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
         let mut joints_data = std::collections::HashMap::new();
 
         // fill the array with joints data
-        let mut hip_index = 0;
+        let mut hip_index = None;
         for node in skin.joints() {
 
             let index = node.index();
@@ -171,7 +170,7 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
             };
 
             if node.name().unwrap() == "hip" {
-                hip_index = index;
+                hip_index = Some(index);
             }
 
 
@@ -194,15 +193,16 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
         };
 
         let mut index_map = std::collections::HashMap::<u16,usize>::new();
-        load_joints(&mut skeleton, &joints_data, hip_index, 255, &mut index_map);
+        if let Some(hi) = hip_index {
+            load_joints(&mut skeleton, &joints_data, hi, 255, &mut index_map);
+        } else {
+            panic!("Could not find any bones with name hip. Atm we assume the root is named hip");
+        }
 
         if !index_map.contains_key(&0) {
             index_map.insert(0, 0);
         }
 
-        let mut walk_target = joints_data[&23].2.translation;
-        walk_target.x += 1.0;
-        walk_target.z += 0.0;
 
         //TODO: remove this hardcoded, and find a way to do it more generally
 

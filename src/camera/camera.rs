@@ -132,6 +132,8 @@ impl Camera {
 
 
         self.right = self.front.cross(&self.world_up).normalize();
+
+        self.up = self.right.cross(&self.front).normalize();
     }
 
     /// Given a screen x,y return the ray shooting fom camera.pos(origin), throught that pixel, into the world.

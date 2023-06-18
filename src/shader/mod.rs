@@ -8,7 +8,7 @@ pub mod rounded_rect_shader;
 pub mod circle_shader;
 pub mod circle_outline_shader;
 pub mod texture_shader;
-
+pub mod mesh_shader;
 pub use self::shader::*;
 use self::program::*;
 

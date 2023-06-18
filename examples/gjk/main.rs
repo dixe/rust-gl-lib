@@ -8,7 +8,7 @@ use gl_lib::collision2d::polygon::{self, Polygon, ComplexPolygon, PolygonTransfo
 use std::collections::HashMap;
 use gl_lib::imode_gui::widgets::PolygonOptions;
 
-
+use std::rc::Rc;
 type V2 = na::Vector2::<f32>;
 type V3 = na::Vector3::<f32>;
 
@@ -32,7 +32,7 @@ fn new_poly() -> Poly {
 fn load(path: &str, frame: usize, name: &str) -> Polygon {
 
     let json = std::fs::read_to_string(path).unwrap();
-    let ps: HashMap::<usize, HashMap::<String, Polygon>> = serde_json::from_str(&json).unwrap();
+    let ps: HashMap::<usize, HashMap::<Rc<str>, Polygon>> = serde_json::from_str(&json).unwrap();
     let polygon = ps.get(&frame).unwrap().get(name).unwrap().clone();
 
 
@@ -76,8 +76,8 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-    p2.polygon = load("examples/2d_animation_player/assets/player/attack_1_polygons.json", 2, "attack");
-    p2.polygon = load("examples/2d_animation_player/assets/player/attack_1_polygons.json", 3, "attack");
+    p2.polygon = load("examples/pixel_sekiro/assets/player/attack_1_polygons.json", 2, "attack");
+    p2.polygon = load("examples/pixel_sekiro/assets/player/attack_1_polygons.json", 3, "body");
 
 
 
@@ -90,7 +90,7 @@ fn main() -> Result<(), failure::Error> {
 
 
     let mut state = State {
-        polygons: vec![ p1,  ],
+        polygons: vec![ p1, p2 ],
         polygon_mode: PolygonMode::Object(Some(0)),
         mode: Mode::NewPoint,
         options,

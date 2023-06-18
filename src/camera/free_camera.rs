@@ -19,7 +19,7 @@ pub struct Controller {
 
 impl Controller {
 
-    pub fn update_events(&mut self, event: Event) {
+    pub fn update_events(&mut self, event: &Event) {
         // update state based on event
 
 
@@ -39,8 +39,9 @@ impl Controller {
             },
             Event::MouseMotion{mousestate, xrel, yrel, .. } => {
                 if mousestate.right() {
-                    self.mouse_movement.xrel = xrel as f32;
-                    self.mouse_movement.yrel = yrel as f32;
+                    //println!("{:?}", (xrel, yrel));
+                    self.mouse_movement.xrel = *xrel as f32;
+                    self.mouse_movement.yrel = *yrel as f32;
                 }
             },
             _ => {}
@@ -50,10 +51,13 @@ impl Controller {
 
     pub fn update_camera(&mut self, camera: &mut Camera, dt: f32){
 
+        //println!("Font: {:.2?}", camera.front);
+
         // do the actual update
         let mut pos = camera.pos();
         let dir = self.movement;
 
+        //println!("Dir: {:.2?}", dir);
         let dt_speed = dt * self.speed;
 
         pos += camera.front * dir.x * dt_speed;

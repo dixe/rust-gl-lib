@@ -1,7 +1,7 @@
 use gl_lib::{gl, helpers};
-
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
+use gl_lib::audio::audio_player;
 use gl_lib::animations::sheet_animation::{load_folder, SheetAnimationPlayer};
 use gl_lib::typedef::*;
 use gl_lib::math::AsV2;
@@ -10,7 +10,6 @@ mod entity;
 mod ai;
 mod scene;
 
-mod audio_player;
 
 fn main() -> Result<(), failure::Error> {
     let sdl_setup = helpers::setup_sdl()?;
