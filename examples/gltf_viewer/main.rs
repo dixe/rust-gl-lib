@@ -32,11 +32,19 @@ fn main() -> Result<(), failure::Error> {
     let glp_path = "E:/repos/Game-in-rust/blender_models/Animation_test.glb";
     //let glp_path = "E:/repos/Game-in-rust/blender_models/enemy1.glb";
 
-    let gltf_meshes = gltf_mesh::meshes_from_gltf(glp_path)?;
+    let gltf_data = gltf_mesh::meshes_from_gltf(glp_path)?;
 
     let shader = mesh_shader::MeshShader::new(&gl)?;
 
-    let enemy_mesh  = gltf_meshes.get_mesh(&gl, "Cube").unwrap();
+    let mesh_name = "Cube";
+    let mesh = gltf_data.meshes.get_mesh(&gl, &mesh_name).unwrap();
+
+    let skin_id = gltf_data.skins.mesh_to_skin.get(mesh_name).unwrap();
+
+    let skeleton = gltf_data.skins.skeletons.get(&skin_id).unwrap();
+
+    let mut bones = skeleton.create_bones();
+
 
 
     let mut camera = camera::Camera::new(viewport.w as f32, viewport.h as f32);
@@ -58,9 +66,7 @@ fn main() -> Result<(), failure::Error> {
     loop {
         // Basic clear gl stuff and get events to UI
         unsafe {
-
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-
         }
 
         ui.consume_events(&mut event_pump);
@@ -72,7 +78,7 @@ fn main() -> Result<(), failure::Error> {
         }
         ui.checkbox(&mut update);
 
-        pos.z = t.sin() * 10.0;
+        pos.z = t.sin() * 3.0;
         for event in &ui.frame_events {
             controller.update_events(event);
         }
@@ -80,10 +86,9 @@ fn main() -> Result<(), failure::Error> {
 
         shader.shader.set_used();
 
-        println!("{:.2?}", pos);
         let trans = Translation3::from(pos);
         let model = trans.to_homogeneous() * Mat4::identity();
-        println!("{:?}", model);
+
         let uniforms = mesh_shader::Uniforms {
             light_pos: V3::new(0.0, 100.0, 100.0),
             projection: camera.projection(),
@@ -94,7 +99,7 @@ fn main() -> Result<(), failure::Error> {
 
 
         shader.set_uniforms(uniforms);
-        enemy_mesh.render(&gl);
+        mesh.render(&gl);
 
         window.gl_swap_window();
     }

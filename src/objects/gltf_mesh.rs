@@ -1,18 +1,24 @@
 use crate::na;
 use crate::gl;
 use crate::objects::mesh::Mesh;
-use crate::animations::skeleton::{load_skins};
+use crate::animations::skeleton::{load_skins, SkinId, Skins};
 use std::collections::HashMap;
 
 
-pub fn meshes_from_gltf(file_path: &str) -> Result<GltfMeshes, failure::Error> {
+
+pub struct GltfData {
+    pub meshes: GltfMeshes,
+    pub skins: Skins,
+    pub animations: HashMap::<SkinId, HashMap<String, Vec<KeyFrame>>>,
+}
+
+
+pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
 
 
     let (gltf, buffers, _) = gltf::import(file_path)?;
 
     let skins = load_skins(&gltf)?;
-
-    //panic!("");
 
 
     let mut inter_joint_index: Vec::<u16> = Vec::new();
@@ -43,16 +49,115 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfMeshes, failure::Error> {
                 else {
                     &empty
                 };
-                println!("{:?}\n\n", index_map);
+
                 res.meshes.insert(mesh_name, load_gltf_mesh_data(&m, &buffers, &index_map, &inter_joint_index)?);
             },
             _ => {}
         };
     }
 
+
+    let mut animations = HashMap::<SkinId, HashMap<String, Vec<KeyFrame>>>::new();
+
+    for ani in gltf.animations() {
+        let name = match ani.name() {
+            Some(n) => n.to_string(),
+            _ => continue
+        };
+
+        println!("{:#?}", name);
+
+
+        let mut frames : Vec::<KeyFrame> = vec![];
+        let mut skin_id : Option<SkinId> = None;
+
+        let mut joints_indexes: std::collections::HashMap::<String, usize> = std::collections::HashMap::new();
+
+
+        let mut base_key_frame = None;
+
+        for channel in ani.channels() {
+            let reader = channel.reader(|buffer| Some(&buffers[buffer.index()]));
+
+            let target = &channel.target();
+            // set skin_id by first bone.
+            if skin_id.is_none() {
+                skin_id = skins.node_index_to_skin.get(&target.node().index()).copied();
+
+                let skeleton = skins.skeletons.get(&skin_id.unwrap()).unwrap();
+                for i in 0..skeleton.joints.len() {
+                    joints_indexes.insert(skeleton.joints[i].name.clone(), i);
+                }
+
+                base_key_frame = Some(KeyFrame {
+                    joints: skeleton.joints.iter().map(|joint| {
+                        Transformation {
+                            translation: joint.translation,
+                            rotation: joint.rotation
+                        }
+                    }).collect()
+                });
+            }
+
+
+            let joints_index = match joints_indexes.get(target.node().name().unwrap()) {
+                Some(i) => *i,
+                _ => {
+                    println!("Skipping joint {:#?}", target.node().name().unwrap());
+                    continue;
+                }
+            };
+            let mut frame_count = 0;
+            if let Some(read_outputs) = reader.read_outputs() {
+                match read_outputs {
+                    gltf::animation::util::ReadOutputs::Translations(ts) => {
+                        if frames.len() < ts.len() {
+                            for _ in 0.. (ts.len() - frames.len()) {
+                                frames.push(base_key_frame.clone().expect("Should have set skin_id and this set base_key_frame from skeleton"));
+                            }
+                        }
+                        let mut i = 0;
+                        for t in ts {
+                            frames[i].joints[joints_index].translation = na::Vector3::new(t[0], t[1], t[2]);
+                            i += 1;
+                        }
+                    },
+                    gltf::animation::util::ReadOutputs::Rotations(rs) => {
+                        let mut i = 0;
+                        for r in rs.into_f32() {
+
+                            let q = na::Quaternion::from(na::Vector4::new(r[0], r[1], r[2], r[3]));
+
+                            frames[i].joints[joints_index].rotation = na::UnitQuaternion::from_quaternion(q);
+                            i += 1 ;
+                        }
+                    },
+                    gltf::animation::util::ReadOutputs::Scales(ss) => {
+                        for s in ss {
+                            let diff = f32::abs(3.0 - (s[0] + s[1] + s[2]));
+                            if diff > 0.01 {
+                                panic!("Scale was more that 0.01 it might be important\n scale was {}", diff)
+                            }
+                        }
+                    },
+                    gltf::animation::util::ReadOutputs::MorphTargetWeights(mtws) => {
+                        println!("Got MorphTargetWeights: {:#?}", mtws);
+                    }
+                }
+            }
+        }
+
+        let s_id = skin_id.expect("No skin id found for {name}");
+        if !animations.contains_key(&s_id) {
+            animations.insert(s_id, Default::default());
+        }
+        let map : &mut HashMap::<String, Vec::<KeyFrame>> = animations.get_mut(&s_id).unwrap();
+        map.insert(name.clone(), frames);
+    }
+
     println!("Meshes loaded {:#?}", res.meshes.keys());
 
-    Ok(res)
+    Ok(GltfData { meshes:res, skins, animations})
 
 }
 
@@ -500,4 +605,17 @@ pub struct VertexWeights {
     // maybe keep the actual vertex index instead of having it just as the index in the vec this is stored in
     joints: [usize; 2],
     weights: [f32; 2],
+}
+
+
+
+#[derive(Debug, Clone)]
+pub struct KeyFrame {
+    pub joints: Vec<Transformation>,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Transformation {
+    pub translation: na::Vector3::<f32>,
+    pub rotation: na::UnitQuaternion::<f32>,
 }
