@@ -109,12 +109,12 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
                 }
             };
 
-            let mut frame_count = 0;
             if let Some(inputs) = reader.read_inputs() {
 
                 if frames.len() == 0 {
                     for input in inputs {
                         let mut f = base_key_frame.clone().expect("Should have set skin_id and this set base_key_frame from skeleton");
+
                         f.start_sec = input;
                         frames.push(f);
                     }
