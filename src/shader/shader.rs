@@ -195,6 +195,20 @@ pub trait Shader  {
         }
     }
 
+    fn set_slice_mat4(&self, gl: &gl::Gl, name: &str, data: &[na::Matrix4<f32>]) {
+        let name_str = std::ffi::CString::new(name).unwrap();
+        let len: i32 = data.len() as i32;
+
+        unsafe {
+            let loc = gl.GetUniformLocation(
+                self.program_id(),
+                name_str.as_ptr() as *mut gl::types::GLchar,
+            );
+
+            gl.UniformMatrix4fv(loc, len, gl::FALSE, data.as_ptr() as *const f32);
+        }
+    }
+
 }
 
 

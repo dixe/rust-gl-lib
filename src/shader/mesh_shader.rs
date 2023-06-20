@@ -31,17 +31,19 @@ impl MeshShader {
         self.shader.set_mat4(&self.gl, "projection", uni.projection);
         self.shader.set_mat4(&self.gl, "view", uni.view);
         self.shader.set_mat4(&self.gl, "model", uni.model);
+        self.shader.set_slice_mat4(&self.gl, "uBones", uni.bones);
     }
 }
 
 #[derive(Clone, Debug, Copy)]
-pub struct Uniforms {
+pub struct Uniforms<'a> {
     pub light_pos: V3,
     //pub light_color: Color, TODO: this should be uniform, for now hard coded to 1.0, 1.0, 1.0
     pub projection: Mat4,
     pub view_pos: V3, // should be camera pos
     pub view: Mat4,
     pub model: Mat4,
+    pub bones: &'a [na::Matrix4<f32>],
 }
 
 

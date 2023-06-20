@@ -9,7 +9,7 @@ use std::collections::HashMap;
 pub struct GltfData {
     pub meshes: GltfMeshes,
     pub skins: Skins,
-    pub animations: HashMap::<SkinId, HashMap<String, Vec<KeyFrame>>>,
+    pub animations: HashMap::<SkinId, HashMap<String, Animation>>,
 }
 
 
@@ -57,7 +57,7 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
     }
 
 
-    let mut animations = HashMap::<SkinId, HashMap<String, Vec<KeyFrame>>>::new();
+    let mut animations = HashMap::<SkinId, HashMap<String, Animation>>::new();
 
     for ani in gltf.animations() {
         let name = match ani.name() {
@@ -65,7 +65,7 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
             _ => continue
         };
 
-        println!("{:#?}", name);
+        println!("\n{:#?}", name);
 
 
         let mut frames : Vec::<KeyFrame> = vec![];
@@ -90,6 +90,7 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
                 }
 
                 base_key_frame = Some(KeyFrame {
+                    start_sec: 0.0,
                     joints: skeleton.joints.iter().map(|joint| {
                         Transformation {
                             translation: joint.translation,
@@ -107,15 +108,30 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
                     continue;
                 }
             };
+
             let mut frame_count = 0;
+            if let Some(inputs) = reader.read_inputs() {
+
+                if frames.len() == 0 {
+                    for input in inputs {
+                        let mut f = base_key_frame.clone().expect("Should have set skin_id and this set base_key_frame from skeleton");
+                        f.start_sec = input;
+                        frames.push(f);
+                    }
+                } else {
+                    let mut i = 0;
+                    for input in inputs {
+                        assert_eq!(input, frames[i].start_sec);
+                        i += 1;
+                    }
+                }
+            }
+
+
             if let Some(read_outputs) = reader.read_outputs() {
                 match read_outputs {
                     gltf::animation::util::ReadOutputs::Translations(ts) => {
-                        if frames.len() < ts.len() {
-                            for _ in 0.. (ts.len() - frames.len()) {
-                                frames.push(base_key_frame.clone().expect("Should have set skin_id and this set base_key_frame from skeleton"));
-                            }
-                        }
+                        assert_eq!(frames.len(),  ts.len());
                         let mut i = 0;
                         for t in ts {
                             frames[i].joints[joints_index].translation = na::Vector3::new(t[0], t[1], t[2]);
@@ -151,8 +167,9 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
         if !animations.contains_key(&s_id) {
             animations.insert(s_id, Default::default());
         }
-        let map : &mut HashMap::<String, Vec::<KeyFrame>> = animations.get_mut(&s_id).unwrap();
-        map.insert(name.clone(), frames);
+        let map : &mut HashMap::<String, Animation> = animations.get_mut(&s_id).unwrap();
+        let total_secs = (frames.len() + 1) as f32;
+        map.insert(name.clone(), Animation {frames, total_secs } ) ;
     }
 
     println!("Meshes loaded {:#?}", res.meshes.keys());
@@ -609,9 +626,25 @@ pub struct VertexWeights {
 
 
 
+pub struct Animation {
+    pub total_secs: f32,
+    pub frames: Vec::<KeyFrame>
+}
+
 #[derive(Debug, Clone)]
 pub struct KeyFrame {
+    pub start_sec: f32,
     pub joints: Vec<Transformation>,
+}
+
+impl KeyFrame {
+    pub fn interpolate(&self, other: &KeyFrame, t: f32, output: &mut KeyFrame) {
+
+        for i in 0..self.joints.len() {
+            output.joints[i].translation = self.joints[i].translation.lerp(&other.joints[i].translation, t);
+
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
