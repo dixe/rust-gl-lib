@@ -76,6 +76,8 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
 
         let mut base_key_frame = None;
 
+        let mut total_secs = 0.0;
+
         for channel in ani.channels() {
             let reader = channel.reader(|buffer| Some(&buffers[buffer.index()]));
 
@@ -91,6 +93,7 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
 
                 base_key_frame = Some(KeyFrame {
                     start_sec: 0.0,
+                    length_sec: 0.0,
                     joints: skeleton.joints.iter().map(|joint| {
                         Transformation {
                             translation: joint.translation,
@@ -109,14 +112,27 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
                 }
             };
 
+
             if let Some(inputs) = reader.read_inputs() {
 
                 if frames.len() == 0 {
+                    let mut i = 0;
+                    let mut last_start = 0.0;
                     for input in inputs {
+                        println!("{:?}", input);
                         let mut f = base_key_frame.clone().expect("Should have set skin_id and this set base_key_frame from skeleton");
-
                         f.start_sec = input;
                         frames.push(f);
+
+                        // update frame duration, last frame has duration of 0.0
+                        if i > 0 {
+                            frames[i-1].length_sec = input - last_start;
+                        }
+
+                        last_start = input;
+                        i += 1;
+                        // total seconds is start of last keyframe, which has length 0 sec
+                        total_secs = input;
                     }
                 } else {
                     let mut i = 0;
@@ -167,8 +183,9 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
         if !animations.contains_key(&s_id) {
             animations.insert(s_id, Default::default());
         }
+
         let map : &mut HashMap::<String, Animation> = animations.get_mut(&s_id).unwrap();
-        let total_secs = (frames.len() + 1) as f32;
+
         map.insert(name.clone(), Animation {frames, total_secs } ) ;
     }
 
@@ -625,29 +642,37 @@ pub struct VertexWeights {
 }
 
 
-
+#[derive(Debug, Clone)]
 pub struct Animation {
     pub total_secs: f32,
     pub frames: Vec::<KeyFrame>
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct KeyFrame {
     pub start_sec: f32,
+    pub length_sec: f32,
     pub joints: Vec<Transformation>,
 }
 
 impl KeyFrame {
     pub fn interpolate(&self, other: &KeyFrame, t: f32, output: &mut KeyFrame) {
 
+
         for i in 0..self.joints.len() {
+            println!("{:?}", (t,i));
             output.joints[i].translation = self.joints[i].translation.lerp(&other.joints[i].translation, t);
+            output.joints[i].rotation = self.joints[i].rotation.slerp(&other.joints[i].rotation, t);
 
         }
     }
+
+    pub fn end_time(&self) -> f32 {
+        self.start_sec + self.length_sec
+    }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Default, Clone)]
 pub struct Transformation {
     pub translation: na::Vector3::<f32>,
     pub rotation: na::UnitQuaternion::<f32>,

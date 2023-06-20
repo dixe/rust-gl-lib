@@ -112,7 +112,7 @@ pub fn load_and_run(gl: &gl::Gl,
         scene.draw(&mut ui.drawer2D);
 
         if scene.animation_player.active_animations() != 2 {
-            let a = 2;
+            let _a = 2;
         }
 
         window.gl_swap_window();

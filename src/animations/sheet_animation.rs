@@ -6,7 +6,6 @@ use crate::texture::{self, TextureId};
 use crate::general_animation::{Animation, Animatable, Frame};
 use crate::{gl, na};
 use crate::imode_gui::drawer2d::{Drawer2D, SheetSubSprite};
-
 use crate::math::numeric::Numeric;
 use std::collections::HashMap;
 use crate::math::{AsV2, AsV2i};
@@ -278,22 +277,20 @@ pub fn load_sheet_collision_polygons<P: AsRef<Path> + std::fmt::Debug>(path: &P,
         Ok(json) => {
             match serde_json::from_str(&json) {
                 Ok(data) => data,
-                Err(err) => {
+                Err(_err) => {
                     //println!("Collision polyogn path '{:?}'", &p);
                     //println!("Jsonfile in the wrong format. Creating default(empty) frame polygons\n{:?}", err);
                     Default::default()
                 }
             }
         },
-        Err(err) => {
+        Err(_err) => {
             //println!("Collision polyogn path '{:?}'", &p);
             //println!("Error loading json file. Creating default(empty) frame polygons\n{:?}", err);
             Default::default()
         }
     }
 }
-
-
 
 
 struct ActiveAnimation<'a, FrameDataT> {

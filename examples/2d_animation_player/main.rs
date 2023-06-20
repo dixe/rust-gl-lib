@@ -142,9 +142,7 @@ fn main() -> Result<(), failure::Error> {
 
                 }
             }
-
         }
-
 
         window.gl_swap_window();
     }

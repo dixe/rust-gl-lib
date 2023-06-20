@@ -114,7 +114,7 @@ impl AudioPlayer {
 
 
     pub fn new(audio_subsystem: sdl2::AudioSubsystem) -> Self {
-        let mut sounds = HashMap::<String, Sound>::default();
+        let sounds = HashMap::<String, Sound>::default();
 
         let samples = 128;
         let desired_spec = AudioSpecDesired {
