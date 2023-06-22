@@ -16,6 +16,7 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+
 mat4 boneTransform() {
 
   if(int(BoneIndices.x) < 0)
@@ -40,24 +41,19 @@ void main()
   // simple version with just extrude along normal, normal has to be smoothshading normal
   // should be calculated when loading gltf and set as a new vec3 vertex attribute
 
+  //gl_Position = projection * view * model * bt * vec4(Position + Normal * 0.2, 1.0);
 
-  gl_Position = projection * view * model * bt * vec4(Position + Normal * 0.2, 1.0);
 
-
-  /*
+  // Complex version where we transform to clip space, so we can give a uniform length
   // calc clip_space position of vertex
-  vec4 clip_pos = projection * view * model * bt * vec4(Position * 0.2, 1.0);
+  vec4 clip_pos = projection * view * model * bt * vec4(Position, 1.0);
 
 
   // calc clipspace normal
-  mat4 vp = view * projection;
-  vec3 norm = mat3(transpose(inverse(model * bt))) * vec4(Normal, 1.0).xyz;
-  //vec3 norm = mat3(model) * mat3(bt) * Normal;
-  vec3 clip_normal = mat3(vp) * norm;
+  vec3 clip_normal = mat3(projection * view) * mat3(transpose(inverse(model * bt))) * Normal;
+  clip_pos = vec4(clip_pos.xyz/clip_pos.w, 1.0);
+  float pixel_width = 10.0;
+  clip_pos.xy += (normalize(clip_normal.xy) / vec2(1200, 800)) * pixel_width * 2.0 * clip_pos.w;
 
-  //clip_pos.xy += (normalize(clip_normal.xy) / vec2(1200, 800)) * 100.0 * clip_pos.w * 2.0;
   gl_Position = clip_pos;
-  */
-
-
 }

@@ -35,7 +35,7 @@ fn main() -> Result<(), failure::Error> {
 
     let gltf_data = gltf_mesh::meshes_from_gltf(glp_path)?;
 
-    let shader = mesh_shader::MeshShader::new(&gl)?;
+    let mut shader = mesh_shader::MeshShader::new(&gl)?;
 
     let mesh_name = "Cube";
     let mesh = gltf_data.meshes.get_mesh(&gl, &mesh_name).unwrap();
@@ -103,6 +103,7 @@ fn main() -> Result<(), failure::Error> {
 
         if ui.button("Reload") {
             reload_stencil_shader(&mut stencil_shader);
+            reload_mesh_shader(&mut shader);
         }
 
         for skin_id in gltf_data.animations.keys() {
@@ -156,6 +157,28 @@ fn reload_stencil_shader(shader: &mut mesh_shader::MeshShader) {
 }
 
 
+fn reload_mesh_shader(shader: &mut mesh_shader::MeshShader) {
+    let vert_shader_path = std::path::Path::new("E:/repos/rust-gl-lib/assets/shaders/objects/mesh_shader.vert");
+    let vert_source = std::fs::read_to_string(vert_shader_path.clone())
+        .expect(&format!("Could not reader vert shader file at: {:?}", vert_shader_path));
+
+
+    let frag_shader_path = std::path::Path::new("E:/repos/rust-gl-lib/assets/shaders/objects/mesh_shader.frag");
+    let frag_source = std::fs::read_to_string(frag_shader_path.clone())
+        .expect(&format!("Could not reader frag shader file at: {:?}", frag_shader_path));
+
+    match shader::BaseShader::new(shader.shader.gl(), &vert_source, &frag_source) {
+        Ok(s) => {
+            println!("Reloaded");
+            shader.shader = s;
+        },
+        Err(e) => {
+            println!("{:?}",e);
+        }
+    }
+}
+
+
 pub fn draw(gl: &gl::Gl,camera: &Camera, bones: &Bones, shader: &mesh_shader::MeshShader, stencil_shader: &mesh_shader::MeshShader, mesh: &Mesh, s: f32) {
 
     // first render as normal, to fill stencil buffer
@@ -183,6 +206,7 @@ pub fn draw(gl: &gl::Gl,camera: &Camera, bones: &Bones, shader: &mesh_shader::Me
         view_pos: camera.pos(),
         bones: &bones
     };
+
     shader.set_uniforms(uniforms);
     mesh.render(gl);
 
@@ -193,10 +217,11 @@ pub fn draw(gl: &gl::Gl,camera: &Camera, bones: &Bones, shader: &mesh_shader::Me
         gl.Disable(gl::DEPTH_TEST);
     }
 
+
     // DRAW MESH AGAIN WITH NEW SHADER, AND AND SCALED UP A LITTLE NIT
 
     stencil_shader.shader.set_used();
-
+/*
     let pos = V3::new(0.0, 0.0, 0.0);
     let trans = Translation3::from(pos);
     let mut scale = Mat4::identity();
@@ -206,6 +231,7 @@ pub fn draw(gl: &gl::Gl,camera: &Camera, bones: &Bones, shader: &mesh_shader::Me
 
     let model_mat = trans.to_homogeneous() * scale;
 
+
     let uniforms = mesh_shader::Uniforms {
         light_pos: V3::new(0.0, 100.0, 100.0),
         projection: camera.projection(),
@@ -214,6 +240,7 @@ pub fn draw(gl: &gl::Gl,camera: &Camera, bones: &Bones, shader: &mesh_shader::Me
         view_pos: camera.pos(),
         bones: &bones
     };
+    */
     stencil_shader.set_uniforms(uniforms);
 
     mesh.render(gl);

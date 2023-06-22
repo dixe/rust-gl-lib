@@ -7,7 +7,7 @@ layout (location = 3) in vec2 BoneIndices;
 layout (location = 4) in vec2 TexCord;
 
 out VS_OUTPUT {
-   flat vec3 Normal;
+  flat vec3 Normal;
    vec3 FragPos;
    flat vec3 Color;
 } OUT;
@@ -42,13 +42,15 @@ void main()
 {
     mat4 bt = boneTransform();
 
-    OUT.FragPos = vec3(model * bt * vec4(Position, 1.0));
+    vec4 pos = model * bt * vec4(Position, 1.0);
 
-    // This is called normal matrix, maybe do on cpu( the transpose and invere part)
+    OUT.FragPos = vec3(pos);
+
+    // This is called normal matrix, maybe do on cpu(the transpose and invere part)
     // and send it in as a uniform
-    OUT.Normal = mat3(transpose(inverse(model * bt))) * vec4(Normal, 1.0).xyz;
+    OUT.Normal = mat3(transpose(inverse(model * bt))) * Normal;
 
-    int b = 16;
+    int b = 1;
 
     OUT.Color = vec3(1.0,1.0,1.0);
 
@@ -61,5 +63,5 @@ void main()
 
     OUT.Color = vec3(0.9, 0.7, 0.2);
 
-    gl_Position =  projection * view * model  * bt * vec4(Position, 1.0);
+    gl_Position =  projection * view * pos;
 }

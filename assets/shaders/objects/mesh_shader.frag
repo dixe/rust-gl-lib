@@ -42,5 +42,5 @@ void main()
 
 
   Color = vec4( (ambient + diffuse + specular) * col, 1.0f);
-  //Color = vec4(1.0);
+  //Color = vec4(IN.Normal, 1.0);
 }
