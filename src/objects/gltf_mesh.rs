@@ -203,6 +203,8 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
 
     let mut normal_data = Vec::new();
 
+    let mut smooth_normal_data : Vec::<[f32; 3]> = Vec::new();
+
     let mut tex_data = Vec::new();
 
     let mut indices_data = Vec::new();
@@ -276,6 +278,36 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
 
     }
 
+
+    // find all vertceis at same point, sum normals and normalize, to get smoothshadeNormal
+    let mut smooth = HashMap::<Key, na::Vector3::<f32>>::default();
+
+    for p in &pos_data {
+        let k : Key = p.into();
+        if !smooth.contains_key(&k) {
+            smooth.insert(k, na::Vector3::<f32>::new(0.0, 0.0, 0.0));
+        }
+    }
+
+    // summ all normals for each pos
+    for i in 0..normal_data.len() {
+        let k = pos_data[i].into();
+
+        if let Some(n) = smooth.get_mut(&k) {
+            let new : na::Vector3::<f32> = *n  + na::Vector3::new(normal_data[i][0], normal_data[i][1], normal_data[i][2]);
+            *n = new;
+        }
+    }
+
+    // summ all normals for each pos
+    for i in 0..normal_data.len() {
+        let k = pos_data[i].into();
+        let n = smooth.get(&k).unwrap().normalize();
+        let sm = [n.x, n.y, n.z];
+        smooth_normal_data.push(sm);
+        println!("{:.?}", (sm, normal_data[i]));
+    }
+
     let vertex_weights = reduce_to_2_joints(&joints_data, &weights_data);
 
 
@@ -283,6 +315,7 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
         name,
         pos_data,
         normal_data,
+        smooth_normal_data,
         indices_data,
         tex_data,
         vertex_weights,
@@ -350,6 +383,7 @@ pub struct GltfMesh {
     pub name: String,
     pub pos_data: Vec<na::Vector3::<f32>>,
     pub normal_data: Vec<[f32; 3]>,
+    pub smooth_normal_data: Vec<[f32; 3]>,
     pub indices_data: Vec<u32>,
     pub tex_data: Vec<[f32; 2]>,
     pub vertex_weights: Vec<VertexWeights>,
@@ -400,6 +434,7 @@ impl GltfMesh {
             gl,
             &self.pos_data,
             &self.normal_data,
+            &self.smooth_normal_data,
             &self.indices_data,
             &self.tex_data,
             &mut mesh,
@@ -410,6 +445,34 @@ impl GltfMesh {
     }
 }
 
+
+#[derive(PartialEq, Clone, Eq, Hash, Copy)]
+struct Key {
+    x: u32,
+    y: u32,
+    z: u32
+}
+
+impl std::convert::From<&na::Vector3::<f32>> for Key {
+    fn from(v : &na::Vector3::<f32>) -> Self {
+        Self {
+            x: v.x.to_bits(),
+            y: v.y.to_bits(),
+            z: v.z.to_bits(),
+        }
+    }
+}
+
+
+impl std::convert::From<na::Vector3::<f32>> for Key {
+    fn from(v : na::Vector3::<f32>) -> Self {
+        Self {
+            x: v.x.to_bits(),
+            y: v.y.to_bits(),
+            z: v.z.to_bits(),
+        }
+    }
+}
 
 
 pub struct GltfMeshes {
@@ -480,6 +543,7 @@ fn bind_mesh_data(
     gl: &gl::Gl,
     pos_data: &Vec<na::Vector3::<f32>>,
     norm_data: &Vec<[f32; 3]>,
+    smooth_norm_data: &Vec<[f32; 3]>,
     ebo_data: &Vec<u32>,
     tex_data: &Vec<[f32; 2]>,
     mesh: &mut Mesh,
@@ -532,10 +596,16 @@ fn bind_mesh_data(
         // TEXTURE INFO
         vertex_data.push(tex_data[i][0]);
         vertex_data.push(tex_data[i][1]);
+
+        // SMOOTH NORMALS, FX FOR STENCIL OUTLINE
+        vertex_data.push(smooth_norm_data[i][0]);
+        vertex_data.push(smooth_norm_data[i][1]);
+        vertex_data.push(smooth_norm_data[i][2]);
     }
 
 
-    let stride = ((3 + 3 + 2 + 2 + 2) * std::mem::size_of::<f32>()) as gl::types::GLint;
+
+    let stride = ((3 + 3 + 2 + 2 + 2 + 3) * std::mem::size_of::<f32>()) as gl::types::GLint;
     unsafe {
         // 1
         mesh.vao.bind();
@@ -613,6 +683,18 @@ fn bind_mesh_data(
         );
 
         gl.EnableVertexAttribArray(4);
+
+        // normals
+        gl.VertexAttribPointer(
+            5,
+            3,
+            gl::FLOAT,
+            gl::FALSE,
+            stride,
+            (12 * std::mem::size_of::<f32>()) as *const gl::types::GLvoid,
+        );
+
+        gl.EnableVertexAttribArray(5);
 
 
     }

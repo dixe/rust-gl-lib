@@ -9,6 +9,7 @@ layout (location = 1) in vec3 Normal;
 layout (location = 2) in vec2 BoneWeights;
 layout (location = 3) in vec2 BoneIndices;
 layout (location = 4) in vec2 TexCord;
+layout (location = 5) in vec3 SmoothNormal;
 
 uniform mat4 uBones[32];
 
@@ -50,7 +51,7 @@ void main()
 
 
   // calc clipspace normal
-  vec3 clip_normal = mat3(projection * view) * mat3(transpose(inverse(model * bt))) * Normal;
+  vec3 clip_normal = mat3(projection * view) * mat3(transpose(inverse(model * bt))) * SmoothNormal;
   clip_pos = vec4(clip_pos.xyz/clip_pos.w, 1.0);
   float pixel_width = 10.0;
   clip_pos.xy += (normalize(clip_normal.xy) / vec2(1200, 800)) * pixel_width * 2.0 * clip_pos.w;
