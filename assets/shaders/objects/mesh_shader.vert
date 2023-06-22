@@ -44,15 +44,9 @@ void main()
 
     OUT.FragPos = vec3(model * bt * vec4(Position, 1.0));
 
-    //OUT.FragPos = vec3(model * vec4(Position, 1.0));
-
     // This is called normal matrix, maybe do on cpu( the transpose and invere part)
     // and send it in as a uniform
-
     OUT.Normal = mat3(transpose(inverse(model * bt))) * vec4(Normal, 1.0).xyz;
-
-    //OUT.Normal = mat3(transpose(inverse(model))) * vec4(Normal, 1.0).xyz;
-
 
     int b = 16;
 
@@ -68,7 +62,4 @@ void main()
     OUT.Color = vec3(0.9, 0.7, 0.2);
 
     gl_Position =  projection * view * model  * bt * vec4(Position, 1.0);
-    //gl_Position =  projection * view * model  * vec4(Position, 1.0);
-
-
 }

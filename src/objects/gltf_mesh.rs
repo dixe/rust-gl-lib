@@ -119,7 +119,7 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
                     let mut i = 0;
                     let mut last_start = 0.0;
                     for input in inputs {
-                        println!("{:?}", input);
+
                         let mut f = base_key_frame.clone().expect("Should have set skin_id and this set base_key_frame from skeleton");
                         f.start_sec = input;
                         frames.push(f);
@@ -227,6 +227,7 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
 
         if let Some(iter) = reader.read_normals() {
             for norm in iter {
+                //println!("{:?}", norm);
                 normal_data.push(norm);
             }
         }
@@ -356,6 +357,7 @@ pub struct GltfMesh {
 
 impl GltfMesh {
     pub fn triangles(&self) -> Vec::<Triangle> {
+        panic!("");
         let mut res = Vec::new();
         for i in (0..self.indices_data.len()).step_by(3) {
             let v0_i = self.indices_data[i];
@@ -502,7 +504,6 @@ fn bind_mesh_data(
         vertex_data.push(norm_data[i][0]);
         vertex_data.push(norm_data[i][1]);
         vertex_data.push(norm_data[i][2]);
-
 
         match skinning_data {
 
@@ -657,10 +658,7 @@ pub struct KeyFrame {
 
 impl KeyFrame {
     pub fn interpolate(&self, other: &KeyFrame, t: f32, output: &mut KeyFrame) {
-
-
         for i in 0..self.joints.len() {
-            println!("{:?}", (t,i));
             output.joints[i].translation = self.joints[i].translation.lerp(&other.joints[i].translation, t);
             output.joints[i].rotation = self.joints[i].rotation.slerp(&other.joints[i].rotation, t);
 

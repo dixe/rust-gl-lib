@@ -49,7 +49,10 @@ impl BaseShader {
         };
 
         return -1;
+    }
 
+    pub fn gl(&self) -> &gl::Gl {
+        &self.program.gl
 
     }
 

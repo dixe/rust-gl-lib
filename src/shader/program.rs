@@ -6,7 +6,7 @@ use crate::gl;
 
 #[derive(Clone)]
 pub struct Program {
-    gl: gl::Gl,
+    pub gl: gl::Gl,
     id: gl::types::GLuint,
 }
 
