@@ -9,6 +9,7 @@ use gl_lib::typedef::*;
 use gl_lib::objects::{mesh::Mesh, cube};
 use gl_lib::camera::{self, free_camera, Camera};
 use gl_lib::na::{Scale3, Translation3};
+use gl_lib::{buffer, texture};
 
 
 fn main() -> Result<(), failure::Error> {
@@ -20,7 +21,8 @@ fn main() -> Result<(), failure::Error> {
     let _audio_subsystem = sdl.audio().unwrap();
     let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
 
-    println!("{:?}", viewport);
+
+    println!("gl={:?}", std::mem::size_of::<gl::Gl>());
     let mut ui = Ui::new(drawer_2d);
 
     // Set background color to white
@@ -49,17 +51,12 @@ fn main() -> Result<(), failure::Error> {
     let mut camera = camera::Camera::new(viewport.w as f32, viewport.h as f32);
 
     let mut controller = free_camera::Controller::default();
-
-
+    controller.speed = 5.0;
 
 
     camera.move_to(V3::new(8.4, 4.3, 5.0));
     let mut la = V3::new(5.0, 3.1, 5.0);
     camera.look_at(la);
-
-    unsafe {
-        gl.Enable(gl::DEPTH_TEST);
-    }
 
     let mut player = AnimationPlayer::new();
 
@@ -70,11 +67,17 @@ fn main() -> Result<(), failure::Error> {
 
     let mut s = 1.0;
     let mut animation : Option<&Animation> = None;
+
+    // frame buffer to render to
+    let fbo = buffer::FrameBuffer::new(&gl, &viewport);
+
+    if !fbo.complete() {
+        panic!("fbo not complete");
+    }
+
     loop {
         // Basic clear gl stuff and get events to UI
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
+
 
         ui.consume_events(&mut event_pump);
 
@@ -116,7 +119,7 @@ fn main() -> Result<(), failure::Error> {
         player.update_skeleton(anim_id, &mut skeleton);
         skeleton.set_all_bones_from_skeleton(&mut bones);
 
-        draw(&gl, &camera, &bones, &shader, &mesh, s);
+        draw(&gl, &mut ui.drawer2D, &fbo, &camera, &bones, &shader, &mesh, s);
 
 
         window.gl_swap_window();
@@ -145,13 +148,19 @@ fn reload_mesh_shader(shader: &mut mesh_shader::MeshShader) {
 }
 
 
-pub fn draw(gl: &gl::Gl,camera: &Camera, bones: &Bones, shader: &mesh_shader::MeshShader, mesh: &Mesh, s: f32) {
+pub fn draw(gl: &gl::Gl, drawer2d: &mut Drawer2D, fbo: &buffer::FrameBuffer, camera: &Camera, bones: &Bones, shader: &mesh_shader::MeshShader, mesh: &Mesh, s: f32) {
 
+    fbo.bind();
+    unsafe {
+        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
+        gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT); // stencil not used so no need for clearing
+        gl.Enable(gl::DEPTH_TEST);
+    }
 
     // DRAW MESH
     shader.shader.set_used();
 
-    let pos = V3::new(0.0, 0.0, 0.0);
+    let pos = V3::new(-10.0, -10.0, 0.0);
     let trans = Translation3::from(pos);
     let model_mat = trans.to_homogeneous();
 
@@ -166,4 +175,17 @@ pub fn draw(gl: &gl::Gl,camera: &Camera, bones: &Bones, shader: &mesh_shader::Me
 
     shader.set_uniforms(uniforms);
     mesh.render(gl);
+
+    fbo.unbind();
+
+    // pass 2, render fbo color texture
+    unsafe {
+        gl.Disable(gl::DEPTH_TEST);
+        gl.ClearColor(0.5, 0.5, 0.1 , 1.0);
+        gl.Clear(gl::COLOR_BUFFER_BIT); // stencil not used so no need for clearing
+
+    }
+
+    drawer2d.render_img(fbo.color_tex, 0, 0, V2::new(1200.0, 800.0));
+
 }

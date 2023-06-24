@@ -305,7 +305,6 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
         let n = smooth.get(&k).unwrap().normalize();
         let sm = [n.x, n.y, n.z];
         smooth_normal_data.push(sm);
-        println!("{:.?}", (sm, normal_data[i]));
     }
 
     let vertex_weights = reduce_to_2_joints(&joints_data, &weights_data);

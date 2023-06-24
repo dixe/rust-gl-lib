@@ -106,6 +106,51 @@ pub fn gen_texture_depth(gl: &gl::Gl, width: i32, height: i32) -> TextureId {
 }
 
 
+
+pub fn gen_texture_framebuffer(gl: &gl::Gl, viewport: &gl::viewport::Viewport) -> TextureId {
+
+    let mut id: gl::types::GLuint = 0;
+
+    unsafe {
+        gl.GenTextures(1, &mut id);
+
+        gl.BindTexture(gl::TEXTURE_2D, id);
+
+        gl.TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as i32, viewport.w, viewport.h, 0, gl::RGBA , gl::UNSIGNED_BYTE, 0 as *const gl::types::GLvoid);
+
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+
+        gl.BindTexture(gl::TEXTURE_2D, 0);
+    }
+
+    id
+}
+
+
+pub fn gen_texture_depth_and_stencil(gl: &gl::Gl, viewport: &gl::viewport::Viewport) -> TextureId {
+
+    let mut id: gl::types::GLuint = 0;
+
+    unsafe {
+        gl.GenTextures(1, &mut id);
+
+        gl.BindTexture(gl::TEXTURE_2D, id);
+
+        gl.TexImage2D(
+             gl::TEXTURE_2D, 0, gl::DEPTH24_STENCIL8 as i32, viewport.w, viewport.h, 0,
+            gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8, 0 as *const gl::types::GLvoid);
+
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+
+        gl.BindTexture(gl::TEXTURE_2D, 0);
+    }
+
+    id
+}
+
+
 /// Wrapper of BindTexture
 pub fn set_texture(gl: &gl::Gl, texture_id: TextureId) {
 

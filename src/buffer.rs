@@ -1,5 +1,5 @@
 use crate::gl;
-
+use crate::texture;
 pub struct Buffer<B> where B: BufferType {
     gl: gl::Gl,
     vbo: gl::types::GLuint,
@@ -7,13 +7,95 @@ pub struct Buffer<B> where B: BufferType {
 }
 
 
+pub struct FrameBuffer {
+    gl: gl::Gl,
+    fbo: gl::types::GLuint,
+    pub color_tex: texture::TextureId,
+    pub depth_stencil_tex: texture::TextureId,
+}
+
+impl FrameBuffer {
+    /// create a framebuffer with color in color_tex and depth+stencil in depth_stencil_tex
+    /// could also use render buffer for depth and stencil if we don't want to sample directly from depth_stencil_tex any way
+    /// for now use texture so we can debug render it OPTIMIZATION
+    pub fn new(gl: &gl::Gl, viewport: &gl::viewport::Viewport) -> Self {
+        let mut fbo: gl::types::GLuint = 0;
+
+        // gen a texture to render to and a depth/stencil buffer
+        let color_tex = texture::gen_texture_framebuffer(&gl, viewport);
+        let depth_stencil_tex = texture::gen_texture_depth_and_stencil(&gl, viewport);
+
+
+        unsafe {
+            // gen framebuffer
+            gl.GenFramebuffers(1, &mut fbo);
+
+            // bind it
+            gl.BindFramebuffer(gl::FRAMEBUFFER, fbo);
+
+            gl.FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, color_tex, 0);
+            gl.FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::TEXTURE_2D, depth_stencil_tex, 0);
+
+
+            let status = gl.CheckNamedFramebufferStatus(fbo, gl::FRAMEBUFFER);
+            if status != gl::FRAMEBUFFER_COMPLETE {
+                panic!("Failed to create frame buffer {:?}", (status, gl::FRAMEBUFFER_COMPLETE));
+            }
+            gl.BindFramebuffer(gl::FRAMEBUFFER, 0);
+        }
+
+        FrameBuffer
+        {
+            gl: gl.clone(),
+            fbo,
+            color_tex,
+            depth_stencil_tex
+        }
+    }
+
+
+    pub fn complete(&self) -> bool {
+        unsafe {
+            let status = self.gl.CheckFramebufferStatus(gl::FRAMEBUFFER);
+            println!("{:?}", (status, gl::FRAMEBUFFER_COMPLETE));
+            status == gl::FRAMEBUFFER_COMPLETE
+        }
+    }
+
+    /// bind FRAME BUFFER FOR BOTH READ AND WRITE
+    pub fn bind(&self) {
+        unsafe {
+            self.gl.BindFramebuffer(gl::FRAMEBUFFER, self.fbo);
+            self.gl.Viewport(0, 0, 1200, 800);
+        }
+    }
+
+    pub fn unbind(&self) {
+        unsafe {
+            self.gl.BindFramebuffer(gl::FRAMEBUFFER, 0);
+        }
+    }
+}
+
+
+impl Drop for FrameBuffer {
+    fn drop(&mut self) {
+        unsafe {
+            self.gl.DeleteFramebuffers(1, &mut self.fbo);
+        }
+    }
+}
+pub struct BufferTypeFrame;
+impl BufferType for BufferTypeFrame {
+    const BUFFER_TYPE: gl::types::GLuint = gl::FRAMEBUFFER;
+}
+
 pub struct BufferTypeArray;
 impl BufferType for BufferTypeArray {
     const BUFFER_TYPE: gl::types::GLuint = gl::ARRAY_BUFFER;
 }
 
 pub struct BufferTypeElementArray;
-
 impl BufferType for BufferTypeElementArray {
     const BUFFER_TYPE: gl::types::GLuint = gl::ELEMENT_ARRAY_BUFFER;
 }
@@ -119,8 +201,6 @@ pub struct VertexArray {
     gl: gl::Gl,
     vao: gl::types::GLuint,
 }
-
-
 
 impl VertexArray {
     pub fn new(gl: &gl::Gl) -> VertexArray {
