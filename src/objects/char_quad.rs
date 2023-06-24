@@ -33,7 +33,6 @@ impl From<&image::RgbaImage> for ImageInfo {
 }
 
 
-
 impl CharQuad {
 
     pub fn new(gl: &gl::Gl) -> CharQuad {
@@ -95,7 +94,6 @@ impl CharQuad {
         let t_bottom = 0.0;
 
 
-
         // quad coords in middle for now
         let x_l = -0.5;
         let x_r = 0.5;
@@ -149,18 +147,6 @@ impl CharQuad {
     }
 
     pub fn update_char_pixels(&mut self, buffer_index: usize, x: f32, y: f32, scale: f32, &chr: &font::PageChar, image_info: ImageInfo) {
-
-        /*
-        // Texture coords same as screenspace coords, since it is texture space
-        let t_left = chr.x  / image_info.width;
-        let t_right = (chr.x + chr.width)  / image_info.width;
-        let t_top = chr.y  / image_info.height;
-        // We subtract chr.height, since the texture is loaded and flipped.
-        let t_bottom = (chr.y + chr.height) / image_info.height;
-
-
-
-*/
         let t_left = chr.x  / image_info.width;
         let t_right = (chr.x + chr.width)  / image_info.width;
         let t_top = (chr.y)  / image_info.height;
@@ -222,82 +208,7 @@ impl CharQuad {
         self.buffer[start_index + 21 ] = y_b as f32;
         self.buffer[start_index + 22 ] = t_left as f32;
         self.buffer[start_index + 23 ] = t_bottom as f32;
-
-
     }
-
-
-
-    pub fn update_char(&mut self, buffer_index: usize, x: f32, y: f32, scale_x: f32, scale_y: f32, &chr: &font::PageChar, image_info: ImageInfo) {
-
-        // Texture coords
-/*
-        let t_left = chr.x  / image_info.width;
-        let t_right = (chr.x + chr.width)  / image_info.width;
-        let t_top = chr.y   / image_info.height;
-        // We subtract chr.height, since the texture is loaded and flipped.
-        let t_bottom = chr.y + chr.height / image_info.height;
-
-*/
-
-        let t_left = 0.0;
-        let t_right = 1.0;
-        let t_top = 1.0;
-        // We subtract chr.height, since the texture is loaded and flipped.
-        let t_bottom = 0.0;
-
-
-
-        // quad coords
-        let x_l = x + chr.x_offset * scale_x;
-        let x_r = x + chr.width  * scale_x + chr.x_offset * scale_x;
-        let y_t = y + chr.y_offset * scale_y;
-        let y_b = y + chr.height  * scale_y  + chr.y_offset * scale_y;
-
-        let start_index = buffer_index * ELEMENTS * STRIDE;
-
-        // TRIANGLE 0
-        // RIGHT TOP
-        self.buffer[start_index] = x_r;
-        self.buffer[start_index + 1 ] = y_t;
-        self.buffer[start_index + 2 ] = t_right;
-        self.buffer[start_index + 3 ] = t_top;
-
-        // LEFT TOP
-        self.buffer[start_index + 4] = x_l;
-        self.buffer[start_index + 5 ] = y_t;
-        self.buffer[start_index + 6 ] = t_left;
-        self.buffer[start_index + 7 ] = t_top;
-
-        // RIGHT BOTTOM
-        self.buffer[start_index + 8] = x_r;
-        self.buffer[start_index + 9 ] = y_b;
-        self.buffer[start_index + 10 ] = t_right;
-        self.buffer[start_index + 11 ] = t_bottom;
-
-
-        // TRIANGLE 1
-        // RIGHT BOTTOM
-        self.buffer[start_index + 12] = x_r;
-        self.buffer[start_index + 13] = y_b;
-        self.buffer[start_index + 14 ] = t_right;
-        self.buffer[start_index + 15 ] = t_bottom;
-
-        // LEFT TOP
-        self.buffer[start_index + 16 ] = x_l;
-        self.buffer[start_index + 17 ] = y_t;
-        self.buffer[start_index + 18 ] = t_left;
-        self.buffer[start_index + 19 ] = t_top;
-
-
-        // LEFT BOTTOM
-        self.buffer[start_index + 20 ] = x_l;
-        self.buffer[start_index + 21 ] = y_b;
-        self.buffer[start_index + 22 ] = t_left;
-        self.buffer[start_index + 23 ] = t_bottom;
-
-    }
-
 
 
     pub fn render(&self, gl: &gl::Gl, chars: usize) {
