@@ -9,7 +9,7 @@ use gl_lib::typedef::*;
 use gl_lib::objects::{mesh::Mesh, cubemap::Cubemap};
 use gl_lib::camera::{self, free_camera, Camera};
 use gl_lib::na::{Scale3, Translation3};
-use gl_lib::{buffer, texture, cubemap};
+use gl_lib::{buffer, texture};
 use gl_lib::shader::Shader;
 
 fn main() -> Result<(), failure::Error> {
@@ -161,7 +161,6 @@ pub fn post_process(drawer2d: &mut Drawer2D, fbo: &buffer::FrameBuffer, post_p_s
         drawer2d.gl.Clear(gl::COLOR_BUFFER_BIT); // stencil not used so no need for clearing
     }
 
-
     post_p_shader.shader.set_used();
     post_p_shader.shader.set_f32(&drawer2d.gl, "time", time);
     drawer2d.render_img_custom_shader(fbo.color_tex, 0, 0, V2::new(1200.0, 800.0), post_p_shader);
@@ -172,13 +171,6 @@ pub fn draw(gl: &gl::Gl, fbo: &buffer::FrameBuffer, camera: &Camera,
             cubemap: &Cubemap, cubemap_shader: &BaseShader) {
 
     fbo.bind_and_clear();
-
-    // DRAW SKYBOX
-    cubemap_shader.set_used();
-    // could use nalgebra glm to remove translation part on cpu, and not have gpu multiply ect.
-    cubemap_shader.set_mat4(gl, "projection", camera.projection());
-    cubemap_shader.set_mat4(gl, "view", camera.view());
-    cubemap.render(gl);
 
 
     // DRAW MESH
@@ -199,6 +191,15 @@ pub fn draw(gl: &gl::Gl, fbo: &buffer::FrameBuffer, camera: &Camera,
 
     shader.set_uniforms(uniforms);
     mesh.render(gl);
+
+
+    // DRAW SKYBOX
+    cubemap_shader.set_used();
+    // could use nalgebra glm to remove translation part on cpu, and not have gpu multiply ect.
+    cubemap_shader.set_mat4(gl, "projection", camera.projection());
+    cubemap_shader.set_mat4(gl, "view", camera.view());
+    cubemap.render(gl);
+
 
     fbo.unbind();
 

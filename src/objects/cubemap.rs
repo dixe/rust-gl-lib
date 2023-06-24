@@ -115,15 +115,13 @@ impl Cubemap {
 
     pub fn render(&self, gl: &gl::Gl) {
         texture::set_texture(gl, self.texture_id);
-
         unsafe {
-            gl.DepthMask(gl::FALSE);
+            // REQUIRED OTHER WISE WE GET A LOT OF FLICKERING
+            gl.DepthFunc(gl::LEQUAL)
         }
-
         self.mesh.render(gl);
-
         unsafe {
-            gl.DepthMask(gl::TRUE);
+            gl.DepthFunc(gl::LESS)
         }
     }
 }

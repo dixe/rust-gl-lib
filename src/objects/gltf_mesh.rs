@@ -3,20 +3,21 @@ use crate::gl;
 use crate::objects::mesh::Mesh;
 use crate::animations::skeleton::{load_skins, SkinId, Skins};
 use std::collections::HashMap;
-
+use image::{self, buffer::ConvertBuffer};
 
 
 pub struct GltfData {
     pub meshes: GltfMeshes,
     pub skins: Skins,
     pub animations: HashMap::<SkinId, HashMap<String, Animation>>,
+    pub images: Vec::<image::RgbaImage>
 }
 
 
 pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
 
 
-    let (gltf, buffers, _) = gltf::import(file_path)?;
+    let (gltf, buffers, images) = gltf::import(file_path)?;
 
     let skins = load_skins(&gltf)?;
 
@@ -33,6 +34,28 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
     let mut res = GltfMeshes {
         meshes: std::collections::HashMap::new()
     };
+
+    let mut loaded_images =  vec![];
+
+    for data in &images {
+        let w = data.width;
+        let h = data.height;
+
+        let img = match data.format {
+            gltf::image::Format::R8G8B8A8 => {
+                image::RgbaImage::from_raw(w, h, data.pixels.clone()).unwrap()
+            },
+            gltf::image::Format::R8G8B8 => {
+                image::RgbImage::from_raw(w, h, data.pixels.clone()).unwrap().convert()
+            },
+
+            _ => {
+                panic!("Unsupported image type {:?}", data.format);
+            }
+        };
+
+        loaded_images.push(img);
+    }
 
 
     for node in gltf.nodes() {
@@ -55,6 +78,45 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
             _ => {}
         };
     }
+
+    let mut name_to_idx = HashMap::<String, usize>::default();
+
+    let mut i = 0;
+    for img in gltf.images() {
+        name_to_idx.insert(img.name().unwrap().to_string(), i);
+        i += 1;
+    }
+
+
+    println!("{:?}", images.len());
+    for tex in gltf.textures() {
+        let img = tex.source();
+        println!("{:?}", img.name());
+
+        // use name to idx for index into image vector
+        match img.source() {
+            gltf::image::Source::View { view, mime_type } => {
+
+                println!("Img name {:?}", img.name());
+                let buffer = view.buffer();
+                match buffer.source() {
+                    gltf::buffer::Source::Bin => {
+                        println!("View BIN {:?}", (mime_type, buffer.index(), buffer.name()));
+                    },
+                    gltf::buffer::Source::Uri(s) => {
+                        println!("Uri is {:?}", s);
+                    }
+                }
+            },
+            gltf::image::Source::Uri { uri, mime_type } => {
+                println!("Uri {:?}", (uri, mime_type));
+            },
+
+        }
+
+    }
+
+
 
 
     let mut animations = HashMap::<SkinId, HashMap<String, Animation>>::new();
@@ -86,21 +148,23 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
             if skin_id.is_none() {
                 skin_id = skins.node_index_to_skin.get(&target.node().index()).copied();
 
-                let skeleton = skins.skeletons.get(&skin_id.unwrap()).unwrap();
-                for i in 0..skeleton.joints.len() {
-                    joints_indexes.insert(skeleton.joints[i].name.clone(), i);
-                }
+                if let Some(sid) = skin_id {
+                    let skeleton = skins.skeletons.get(&sid).unwrap();
+                    for i in 0..skeleton.joints.len() {
+                        joints_indexes.insert(skeleton.joints[i].name.clone(), i);
+                    }
 
-                base_key_frame = Some(KeyFrame {
-                    start_sec: 0.0,
-                    length_sec: 0.0,
-                    joints: skeleton.joints.iter().map(|joint| {
-                        Transformation {
-                            translation: joint.translation,
-                            rotation: joint.rotation
-                        }
-                    }).collect()
-                });
+                    base_key_frame = Some(KeyFrame {
+                        start_sec: 0.0,
+                        length_sec: 0.0,
+                        joints: skeleton.joints.iter().map(|joint| {
+                            Transformation {
+                                translation: joint.translation,
+                                rotation: joint.rotation
+                            }
+                        }).collect()
+                    });
+                }
             }
 
 
@@ -179,19 +243,21 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
             }
         }
 
-        let s_id = skin_id.expect("No skin id found for {name}");
-        if !animations.contains_key(&s_id) {
-            animations.insert(s_id, Default::default());
+
+        if let Some(s_id) = skin_id {
+            if !animations.contains_key(&s_id) {
+                animations.insert(s_id, Default::default());
+            }
+
+            let map : &mut HashMap::<String, Animation> = animations.get_mut(&s_id).unwrap();
+
+            map.insert(name.clone(), Animation {frames, total_secs } ) ;
         }
-
-        let map : &mut HashMap::<String, Animation> = animations.get_mut(&s_id).unwrap();
-
-        map.insert(name.clone(), Animation {frames, total_secs } ) ;
     }
 
     println!("Meshes loaded {:#?}", res.meshes.keys());
 
-    Ok(GltfData { meshes:res, skins, animations})
+    Ok(GltfData { meshes:res, skins, animations, images: loaded_images})
 
 }
 
