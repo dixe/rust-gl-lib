@@ -60,9 +60,7 @@ impl FntFont {
 
         let mut page: Page = lines.collect::<Vec<&str>>().join("\n").parse()?;
 
-        //image = imageops::flip_vertical(&image);
-
-        // image is flipped so also flip chars
+        // texture has 0,0 at lower left, font file has 0,0 at upper left, so inverse the y to match uv coordinates
         for c in &mut page.chars {
             c.y = image.height() as f32 - c.y;
         }

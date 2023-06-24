@@ -4,7 +4,7 @@ use gl_lib::imode_gui::ui::*;
 use gl_lib::animations::skeleton::{Bones, Skeleton};
 use gl_lib::animations::gltf_animation::{Start, AnimationPlayer};
 use gl_lib::objects::gltf_mesh::{self, KeyFrame, Animation};
-use gl_lib::shader::{self, mesh_shader};
+use gl_lib::shader::{self, mesh_shader, BaseShader, texture_shader};
 use gl_lib::typedef::*;
 use gl_lib::objects::{mesh::Mesh, cube};
 use gl_lib::camera::{self, free_camera, Camera};
@@ -38,6 +38,7 @@ fn main() -> Result<(), failure::Error> {
     let gltf_data = gltf_mesh::meshes_from_gltf(glp_path)?;
 
     let mut shader = mesh_shader::MeshShader::new(&gl)?;
+    let mut post_process_shader = texture_shader::TextureShader::new(&gl)?;
 
     let mesh_name = "Cube";
     let mesh = gltf_data.meshes.get_mesh(&gl, &mesh_name).unwrap();
@@ -99,7 +100,8 @@ fn main() -> Result<(), failure::Error> {
         }
 
         if ui.button("Reload") {
-            reload_mesh_shader(&mut shader);
+            reload_shader("mesh_shader", &gl, &mut shader.shader);
+            reload_shader("postprocess", &gl, &mut post_process_shader.shader);
         }
 
         for skin_id in gltf_data.animations.keys() {
@@ -127,7 +129,7 @@ fn main() -> Result<(), failure::Error> {
 
         ui_fbo.unbind();
 
-        draw(&gl, &mut ui.drawer2D, &mesh_fbo, &camera, &bones, &shader, &mesh, s);
+        draw(&gl, &mut ui.drawer2D, &mesh_fbo, &camera, &bones, &shader, &mesh, &post_process_shader, s);
 
         // render ui on top of frame buffer
         ui.drawer2D.render_img(ui_fbo.color_tex, 0, 0, V2::new(1200.0, 800.0));
@@ -138,20 +140,24 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-fn reload_mesh_shader(shader: &mut mesh_shader::MeshShader) {
-    let vert_shader_path = std::path::Path::new("E:/repos/rust-gl-lib/assets/shaders/objects/mesh_shader.vert");
+
+
+fn reload_shader(name: &str, gl: &gl::Gl, shader: &mut BaseShader) {
+    let vp = format!("E:/repos/rust-gl-lib/assets/shaders/objects/{name}.vert");
+    let fp = format!("E:/repos/rust-gl-lib/assets/shaders/objects/{name}.frag");
+    let vert_shader_path = std::path::Path::new(&vp);
     let vert_source = std::fs::read_to_string(vert_shader_path.clone())
         .expect(&format!("Could not reader vert shader file at: {:?}", vert_shader_path));
 
 
-    let frag_shader_path = std::path::Path::new("E:/repos/rust-gl-lib/assets/shaders/objects/mesh_shader.frag");
+    let frag_shader_path = std::path::Path::new(&fp);
     let frag_source = std::fs::read_to_string(frag_shader_path.clone())
         .expect(&format!("Could not reader frag shader file at: {:?}", frag_shader_path));
 
-    match shader::BaseShader::new(shader.shader.gl(), &vert_source, &frag_source) {
+    match shader::BaseShader::new(gl, &vert_source, &frag_source) {
         Ok(s) => {
-            println!("Reloaded");
-            shader.shader = s;
+            println!("Reloaded {name}");
+            *shader = s;
         },
         Err(e) => {
             println!("{:?}",e);
@@ -160,7 +166,7 @@ fn reload_mesh_shader(shader: &mut mesh_shader::MeshShader) {
 }
 
 
-pub fn draw(gl: &gl::Gl, drawer2d: &mut Drawer2D, fbo: &buffer::FrameBuffer, camera: &Camera, bones: &Bones, shader: &mesh_shader::MeshShader, mesh: &Mesh, s: f32) {
+pub fn draw(gl: &gl::Gl, drawer2d: &mut Drawer2D, fbo: &buffer::FrameBuffer, camera: &Camera, bones: &Bones, shader: &mesh_shader::MeshShader, mesh: &Mesh, post_p_shader: &texture_shader::TextureShader, s: f32) {
 
     fbo.bind();
     unsafe {
@@ -198,6 +204,6 @@ pub fn draw(gl: &gl::Gl, drawer2d: &mut Drawer2D, fbo: &buffer::FrameBuffer, cam
 
     }
 
-    drawer2d.render_img(fbo.color_tex, 0, 0, V2::new(1200.0, 800.0));
+    drawer2d.render_img_custom_shader(fbo.color_tex, 0, 0, V2::new(1200.0, 800.0), post_p_shader);
 
 }

@@ -11,5 +11,5 @@ void main()
 {
   vec4 col = texture2D(text_map, IN.TexCoords);
   // assume premultiplied in texture
-  FragColor = col;
+  FragColor = col * 0.1;;
 }

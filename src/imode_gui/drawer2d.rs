@@ -355,6 +355,25 @@ impl Drawer2D {
     }
 
 
+    /// render the texture_id_id, at x,y with size using the cusom shader
+    pub fn render_img_custom_shader(&mut self, texture_id: TextureId, x: i32, y: i32, size: na::Vector2::<f32>, shader: &TextureShader) {
+
+        shader.shader.set_used();
+
+        let geom = Geom {
+            x,
+            y,
+            w: size.x,
+            h: size.y
+        };
+
+        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+        shader.setup(ts::Uniforms { texture_id, transform });
+
+        self.texture_square.render(&self.gl);
+    }
+
+
     pub fn render_sprite_sheet_frame<T>(&mut self, texture_id: TextureId, x: i32, y: i32, size: na::Vector2::<T>, sprite: &SheetSubSprite)
         where T: Numeric + std::fmt::Debug {
 
