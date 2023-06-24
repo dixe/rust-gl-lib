@@ -30,3 +30,5 @@ pub mod texture_quad;
 pub mod gltf_mesh;
 
 pub mod sprite_sheet;
+
+pub mod cubemap;

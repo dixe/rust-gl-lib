@@ -4,13 +4,13 @@ use gl_lib::imode_gui::ui::*;
 use gl_lib::animations::skeleton::{Bones, Skeleton};
 use gl_lib::animations::gltf_animation::{Start, AnimationPlayer};
 use gl_lib::objects::gltf_mesh::{self, KeyFrame, Animation};
-use gl_lib::shader::{self, mesh_shader, BaseShader, texture_shader, reload_object_shader};
+use gl_lib::shader::{self, mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
 use gl_lib::typedef::*;
-use gl_lib::objects::{mesh::Mesh, cube};
+use gl_lib::objects::{mesh::Mesh, cubemap::Cubemap};
 use gl_lib::camera::{self, free_camera, Camera};
 use gl_lib::na::{Scale3, Translation3};
-use gl_lib::{buffer, texture};
- use gl_lib::shader::Shader;
+use gl_lib::{buffer, texture, cubemap};
+use gl_lib::shader::Shader;
 
 fn main() -> Result<(), failure::Error> {
     let sdl_setup = helpers::setup_sdl()?;
@@ -80,6 +80,10 @@ fn main() -> Result<(), failure::Error> {
     ui_fbo.b = 0.0;
     ui_fbo.a = 0.0;
 
+
+    let mut cubemap_shader = load_object_shader("cubemap", gl).unwrap();
+    let cubemap = Cubemap::new(gl, &"assets/cubemap/skybox/");
+
     loop {
 
         // Setup to use Ui fbo so all ui is drawn to its own frame buffer
@@ -102,6 +106,7 @@ fn main() -> Result<(), failure::Error> {
         if ui.button("Reload") {
             reload_object_shader("mesh_shader", &gl, &mut shader.shader);
             reload_object_shader("postprocess", &gl, &mut post_process_shader.shader);
+            reload_object_shader("cubemap", &gl, &mut cubemap_shader);
         }
 
         for skin_id in gltf_data.animations.keys() {
@@ -112,6 +117,7 @@ fn main() -> Result<(), failure::Error> {
                 }
             }
         }
+
 
         time += dt;
         if ui.button("Reset") {
@@ -132,7 +138,7 @@ fn main() -> Result<(), failure::Error> {
 
 
         // draw mesh to its own mesh_fbo
-        draw(&gl, &mesh_fbo, &camera, &bones, &shader, &mesh);
+        draw(&gl, &mesh_fbo, &camera, &bones, &shader, &mesh, &cubemap, &cubemap_shader);
 
         // post process step and render mesh_fbo color texture to screen
         post_process(&mut ui.drawer2D, &mesh_fbo, &post_process_shader, time);
@@ -161,9 +167,19 @@ pub fn post_process(drawer2d: &mut Drawer2D, fbo: &buffer::FrameBuffer, post_p_s
     drawer2d.render_img_custom_shader(fbo.color_tex, 0, 0, V2::new(1200.0, 800.0), post_p_shader);
 }
 
-pub fn draw(gl: &gl::Gl, fbo: &buffer::FrameBuffer, camera: &Camera, bones: &Bones, shader: &mesh_shader::MeshShader, mesh: &Mesh) {
+pub fn draw(gl: &gl::Gl, fbo: &buffer::FrameBuffer, camera: &Camera,
+            bones: &Bones, shader: &mesh_shader::MeshShader, mesh: &Mesh,
+            cubemap: &Cubemap, cubemap_shader: &BaseShader) {
 
     fbo.bind_and_clear();
+
+    // DRAW SKYBOX
+    cubemap_shader.set_used();
+    // could use nalgebra glm to remove translation part on cpu, and not have gpu multiply ect.
+    cubemap_shader.set_mat4(gl, "projection", camera.projection());
+    cubemap_shader.set_mat4(gl, "view", camera.view());
+    cubemap.render(gl);
+
 
     // DRAW MESH
     shader.shader.set_used();

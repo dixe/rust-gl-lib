@@ -53,6 +53,42 @@ pub fn gen_texture_rgba(gl: &gl::Gl, image: &image::RgbaImage) -> TextureId {
     id
 }
 
+
+
+/// Generate cubemap texture assumes inputs images are in order [right, left, top, bottom, back, front]
+/// Return the texture id (u32)
+pub fn gen_texture_cube_map(gl: &gl::Gl, images: &[image::RgbImage]) -> TextureId {
+
+    assert_eq!(6, images.len());
+    let mut id: gl::types::GLuint = 0;
+    unsafe {
+        gl.GenTextures(1, &mut id);
+
+        gl.BindTexture(gl::TEXTURE_CUBE_MAP, id);
+
+        for i in 0..images.len() {
+            let img = image::DynamicImage::ImageRgb8(images[i].clone()).flipv().into_rgb();
+            gl.TexImage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + i as u32,
+                          0, // level
+                          gl::RGB as i32, // internal format when stored on gpu
+                          img.width()as i32,
+                          img.height() as i32,
+                          0, // border must be 0
+                          gl::RGB as u32, // image pixel format
+                          gl::UNSIGNED_BYTE,
+                          img.as_ptr() as *const gl::types::GLvoid);
+        }
+
+        gl.TexParameteri(gl::TEXTURE_CUBE_MAP, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+        gl.TexParameteri(gl::TEXTURE_CUBE_MAP, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+        gl.TexParameteri(gl::TEXTURE_CUBE_MAP, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as i32);
+        gl.TexParameteri(gl::TEXTURE_CUBE_MAP, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as i32);
+        gl.TexParameteri(gl::TEXTURE_CUBE_MAP, gl::TEXTURE_WRAP_R, gl::CLAMP_TO_EDGE as i32);
+    }
+
+    id
+}
+
 /// Generate an RGBA texture using GL_CLAMP_TO_BORDER and GL_NEAREST
 /// Return the texture id (u32)
 pub fn gen_texture_rgba_nearest(gl: &gl::Gl, image: &image::RgbaImage) -> TextureId {
@@ -149,6 +185,8 @@ pub fn gen_texture_depth_and_stencil(gl: &gl::Gl, viewport: &gl::viewport::Viewp
 
     id
 }
+
+
 
 
 /// Wrapper of BindTexture
