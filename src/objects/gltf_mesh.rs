@@ -88,16 +88,12 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
     }
 
 
-    println!("{:?}", images.len());
     for tex in gltf.textures() {
         let img = tex.source();
-        println!("{:?}", img.name());
 
         // use name to idx for index into image vector
         match img.source() {
             gltf::image::Source::View { view, mime_type } => {
-
-                println!("Img name {:?}", img.name());
                 let buffer = view.buffer();
                 match buffer.source() {
                     gltf::buffer::Source::Bin => {
@@ -281,8 +277,13 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
 
     let set = 0;
 
+    let mut texture = None;
 
     for primitive in mesh.primitives() {
+
+        let mat = primitive.material();
+
+        texture = mat.index();
 
         let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
 
@@ -318,7 +319,6 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
                 weights_data.push(w);
             }
         }
-
 
         if let Some(reader) = reader.read_joints(set) {
             let mut c = 0;
@@ -384,6 +384,7 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
         indices_data,
         tex_data,
         vertex_weights,
+        texture
     })
 }
 
@@ -452,6 +453,7 @@ pub struct GltfMesh {
     pub indices_data: Vec<u32>,
     pub tex_data: Vec<[f32; 2]>,
     pub vertex_weights: Vec<VertexWeights>,
+    pub texture: Option<usize>, // index in to GltfData images
 }
 
 impl GltfMesh {
