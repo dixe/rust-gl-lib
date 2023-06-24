@@ -69,15 +69,20 @@ fn main() -> Result<(), failure::Error> {
     let mut animation : Option<&Animation> = None;
 
     // frame buffer to render to
-    let fbo = buffer::FrameBuffer::new(&gl, &viewport);
+    let mesh_fbo = buffer::FrameBuffer::new(&gl, &viewport);
 
-    if !fbo.complete() {
-        panic!("fbo not complete");
-    }
-
+    let ui_fbo = buffer::FrameBuffer::new(&gl, &viewport);
+    ui_fbo.bind();
     loop {
-        // Basic clear gl stuff and get events to UI
 
+        // Setup to use Ui fbo so all ui is drawn to its own frame buffer
+
+        ui_fbo.bind();
+        unsafe {
+            gl.ClearColor(0.0, 0.0, 0.0, 0.0);
+            gl.Clear(gl::COLOR_BUFFER_BIT);
+            gl.Disable(gl::DEPTH_TEST);
+        }
 
         ui.consume_events(&mut event_pump);
 
@@ -119,12 +124,19 @@ fn main() -> Result<(), failure::Error> {
         player.update_skeleton(anim_id, &mut skeleton);
         skeleton.set_all_bones_from_skeleton(&mut bones);
 
-        draw(&gl, &mut ui.drawer2D, &fbo, &camera, &bones, &shader, &mesh, s);
 
+        ui_fbo.unbind();
 
+        draw(&gl, &mut ui.drawer2D, &mesh_fbo, &camera, &bones, &shader, &mesh, s);
+
+        // render ui on top of frame buffer
+
+        ui.drawer2D.render_img(ui_fbo.color_tex, 0, 0, V2::new(1200.0, 800.0));
         window.gl_swap_window();
     }
 }
+
+
 
 fn reload_mesh_shader(shader: &mut mesh_shader::MeshShader) {
     let vert_shader_path = std::path::Path::new("E:/repos/rust-gl-lib/assets/shaders/objects/mesh_shader.vert");
