@@ -10,7 +10,7 @@ use gl_lib::objects::{mesh::Mesh, cube};
 use gl_lib::camera::{self, free_camera, Camera};
 use gl_lib::na::{Scale3, Translation3};
 use gl_lib::{buffer, texture};
-
+ use gl_lib::shader::Shader;
 
 fn main() -> Result<(), failure::Error> {
     let sdl_setup = helpers::setup_sdl()?;
@@ -65,9 +65,8 @@ fn main() -> Result<(), failure::Error> {
     let mut anim_id = 0;
     let mut playing = true;
 
-    let mut t : f32 = 0.0;
+    let mut time : f32 = 0.0;
 
-    let mut s = 1.0;
     let mut animation : Option<&Animation> = None;
 
     // frame buffer to render to
@@ -114,9 +113,8 @@ fn main() -> Result<(), failure::Error> {
             }
         }
 
-        ui.slider(&mut s, 0.0, 1.5);
         if ui.button("Reset") {
-            s = 1.0;
+            time = 0.0;
         }
         // update aimaiton player, and bones
         if playing {
@@ -127,15 +125,20 @@ fn main() -> Result<(), failure::Error> {
         player.update_skeleton(anim_id, &mut skeleton);
         skeleton.set_all_bones_from_skeleton(&mut bones);
 
-
         ui_fbo.unbind();
 
-        draw(&gl, &mut ui.drawer2D, &mesh_fbo, &camera, &bones, &shader, &mesh, &post_process_shader, s);
+
+        draw(&gl, &mesh_fbo, &camera, &bones, &shader, &mesh);
+        post_process(&mut ui.drawer2D, &mesh_fbo, &post_process_shader, time);
+
+
 
         // render ui on top of frame buffer
         ui.drawer2D.render_img(ui_fbo.color_tex, 0, 0, V2::new(1200.0, 800.0));
 
         window.gl_swap_window();
+
+        time += dt;
     }
 }
 
@@ -167,7 +170,22 @@ fn reload_shader(name: &str, gl: &gl::Gl, shader: &mut BaseShader) {
 }
 
 
-pub fn draw(gl: &gl::Gl, drawer2d: &mut Drawer2D, fbo: &buffer::FrameBuffer, camera: &Camera, bones: &Bones, shader: &mesh_shader::MeshShader, mesh: &Mesh, post_p_shader: &texture_shader::TextureShader, s: f32) {
+pub fn post_process(drawer2d: &mut Drawer2D, fbo: &buffer::FrameBuffer, post_p_shader: &texture_shader::TextureShader, time: f32) {
+
+    // pass 2, render fbo color texture
+    unsafe {
+        drawer2d.gl.Disable(gl::DEPTH_TEST);
+        drawer2d.gl.ClearColor(0.0, 0.0, 0.0, 0.0);
+        drawer2d.gl.Clear(gl::COLOR_BUFFER_BIT); // stencil not used so no need for clearing
+    }
+
+
+    post_p_shader.shader.set_used();
+    post_p_shader.shader.set_f32(&drawer2d.gl, "time", time);
+    drawer2d.render_img_custom_shader(fbo.color_tex, 0, 0, V2::new(1200.0, 800.0), post_p_shader);
+}
+
+pub fn draw(gl: &gl::Gl, fbo: &buffer::FrameBuffer, camera: &Camera, bones: &Bones, shader: &mesh_shader::MeshShader, mesh: &Mesh) {
 
     fbo.bind();
     unsafe {
@@ -197,14 +215,5 @@ pub fn draw(gl: &gl::Gl, drawer2d: &mut Drawer2D, fbo: &buffer::FrameBuffer, cam
 
     fbo.unbind();
 
-    // pass 2, render fbo color texture
-    unsafe {
-        gl.Disable(gl::DEPTH_TEST);
-        gl.ClearColor(0.0, 0.0, 0.0, 0.0);
-        gl.Clear(gl::COLOR_BUFFER_BIT); // stencil not used so no need for clearing
-
-    }
-
-    drawer2d.render_img_custom_shader(fbo.color_tex, 0, 0, V2::new(1200.0, 800.0), post_p_shader);
 
 }
