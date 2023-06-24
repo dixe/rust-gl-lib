@@ -27,7 +27,7 @@ fn main() -> Result<(), failure::Error> {
 
     // Set background color to white
     unsafe {
-        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
+        gl.ClearColor(0.0, 0.0, 0.0, 0.0);
     }
 
     let mut event_pump = sdl.event_pump().unwrap();
@@ -39,6 +39,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut shader = mesh_shader::MeshShader::new(&gl)?;
     let mut post_process_shader = texture_shader::TextureShader::new(&gl)?;
+    reload_shader("postprocess", &gl, &mut post_process_shader.shader);
 
     let mesh_name = "Cube";
     let mesh = gltf_data.meshes.get_mesh(&gl, &mesh_name).unwrap();
@@ -199,7 +200,7 @@ pub fn draw(gl: &gl::Gl, drawer2d: &mut Drawer2D, fbo: &buffer::FrameBuffer, cam
     // pass 2, render fbo color texture
     unsafe {
         gl.Disable(gl::DEPTH_TEST);
-        gl.ClearColor(0.5, 0.5, 0.1 , 1.0);
+        gl.ClearColor(0.0, 0.0, 0.0, 0.0);
         gl.Clear(gl::COLOR_BUFFER_BIT); // stencil not used so no need for clearing
 
     }

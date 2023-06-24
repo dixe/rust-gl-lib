@@ -2,14 +2,63 @@
 out vec4 FragColor;
 
 uniform sampler2D text_map;
-
+const float offset = 1.0 / 300.0;
 in VS_OUTPUT {
   vec2 TexCoords;
 } IN;
 
+float gray(vec3 c) {
+  return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+
+}
+
 void main()
 {
-  vec4 col = texture2D(text_map, IN.TexCoords);
-  // assume premultiplied in texture
-  FragColor = col * 0.1;;
+
+
+
+    vec2 offsets[9] = vec2[](
+        vec2(-offset,  offset), // top-left
+        vec2( 0.0f,    offset), // top-center
+        vec2( offset,  offset), // top-right
+        vec2(-offset,  0.0f),   // center-left
+        vec2( 0.0f,    0.0f),   // center-center
+        vec2( offset,  0.0f),   // center-right
+        vec2(-offset, -offset), // bottom-left
+        vec2( 0.0f,   -offset), // bottom-center
+        vec2( offset, -offset)  // bottom-right
+    );
+
+
+    float kernel[9] = float[](
+        1, 1, 1,
+        1,  -8, 1,
+        1, 1, 1
+    );
+
+    float sampleTex[9];
+    for(int i = 0; i < 9; i++)
+    {
+      // grayscale
+      float c = gray(vec3(texture(text_map, IN.TexCoords.st + offsets[i])));
+      sampleTex[i] = c;
+    }
+
+    vec3 col = vec3(0.0);
+    for(int i = 0; i < 9; i++) {
+      col += sampleTex[i] * kernel[i];
+      }
+
+    float r = col.r;
+
+    col = vec3(1.0);
+
+    if(r >= 0.1) {
+      FragColor = vec4(1.0 - col, 1.0) + texture(text_map, IN.TexCoords) * 0.1;
+    } else {
+      FragColor = texture(text_map, IN.TexCoords);
+    }
+
+
+
 }
