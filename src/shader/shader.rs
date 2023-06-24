@@ -158,7 +158,6 @@ pub trait Shader  {
                 self.program_id(),
                 proj_str.as_ptr() as *mut gl::types::GLchar);
 
-
             gl.Uniform4f(proj_loc, data.x, data.y, data.z, data.w);
         }
     }
