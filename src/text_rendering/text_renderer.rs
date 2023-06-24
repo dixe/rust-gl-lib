@@ -111,7 +111,7 @@ fn render_text_quads_pixel(char_quad: &mut objects::char_quad::CharQuad, gl: &gl
         char_quad.update_char_pixels(i, info.x, info.y, draw_info.input_scale, &info.chr, draw_info.font.image().into());
 
 
-        //self.char_quad.render_full_texture(i);
+        //char_quad.render_full_texture(i);
 
         i += 1;
 

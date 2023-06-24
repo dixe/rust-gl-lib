@@ -1,7 +1,7 @@
 //! Functions to generat and set textures
-
 use crate::gl;
 use image;
+
 
 
 /// Wrapper of u32 as texture id
@@ -9,10 +9,10 @@ pub type TextureId = u32;
 
 /// Generate an RGB texture using GL_CLAMP_TO_BORDER and GL_LINEAR
 /// Return the texture id (u32)
-pub fn gen_texture_rgb(gl: &gl::Gl, img: &image::RgbImage) -> TextureId {
+pub fn gen_texture_rgb(gl: &gl::Gl, image: &image::RgbImage) -> TextureId {
 
     let mut id: gl::types::GLuint = 0;
-
+    let img = image::DynamicImage::ImageRgb8(image.clone()).flipv().into_rgb();
     unsafe {
         gl.GenTextures(1, &mut id);
 
@@ -32,10 +32,10 @@ pub fn gen_texture_rgb(gl: &gl::Gl, img: &image::RgbImage) -> TextureId {
 
 /// Generate an RGBA texture using GL_CLAMP_TO_BORDER and GL_LINEAR
 /// Return the texture id (u32)
-pub fn gen_texture_rgba(gl: &gl::Gl, img: &image::RgbaImage) -> TextureId {
+pub fn gen_texture_rgba(gl: &gl::Gl, image: &image::RgbaImage) -> TextureId {
 
     let mut id: gl::types::GLuint = 0;
-
+    let img = image::DynamicImage::ImageRgba8(image.clone()).flipv().into_rgba();
     unsafe {
         gl.GenTextures(1, &mut id);
 
@@ -55,10 +55,10 @@ pub fn gen_texture_rgba(gl: &gl::Gl, img: &image::RgbaImage) -> TextureId {
 
 /// Generate an RGBA texture using GL_CLAMP_TO_BORDER and GL_NEAREST
 /// Return the texture id (u32)
-pub fn gen_texture_rgba_nearest(gl: &gl::Gl, img: &image::RgbaImage) -> TextureId {
+pub fn gen_texture_rgba_nearest(gl: &gl::Gl, image: &image::RgbaImage) -> TextureId {
 
     let mut id: gl::types::GLuint = 0;
-
+    let img = image::DynamicImage::ImageRgba8(image.clone()).flipv().into_rgba();
     unsafe {
         gl.GenTextures(1, &mut id);
 

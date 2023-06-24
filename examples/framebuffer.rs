@@ -130,8 +130,8 @@ fn main() -> Result<(), failure::Error> {
         draw(&gl, &mut ui.drawer2D, &mesh_fbo, &camera, &bones, &shader, &mesh, s);
 
         // render ui on top of frame buffer
-
         ui.drawer2D.render_img(ui_fbo.color_tex, 0, 0, V2::new(1200.0, 800.0));
+
         window.gl_swap_window();
     }
 }

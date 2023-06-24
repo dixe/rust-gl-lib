@@ -29,6 +29,7 @@ impl FontCache {
 
     pub fn default(&mut self, pixel_size: i32) -> &Font {
         let name = self.default.name().to_owned();
+
         self.get_or_default(pixel_size, &name)
     }
 

@@ -9,7 +9,7 @@ use super::*;
 
 #[derive(Debug, Clone)]
 pub struct MsdfFont {
-    pub image: image::RgbaImage,
+    pub image: image::RgbaImage, // TODO: only store height and width, and not full image, for each font
     pub info: FontInfo,
     pub chars: Vec::<PageChar>,
     pub line_height: f32,
@@ -49,7 +49,6 @@ impl MsdfFont {
         let json = std::fs::read_to_string(jp).unwrap();
         let img = std::fs::read(ip).unwrap();
 
-
         let loaded_img = image::load_from_memory(&img).unwrap();
 
         let image = loaded_img.into_rgba8();
@@ -82,7 +81,7 @@ impl MsdfFont {
 
         for g in &info.glyphs {
 
-            let mut pc = PageChar {
+            let mut chr = PageChar {
                 id: g.unicode,
                 height: 0.0,
                 width: 0.0,
@@ -101,22 +100,25 @@ impl MsdfFont {
                 let h = atlas.top - atlas.bottom;
                 let w = atlas.right - atlas.left;
 
-
-                pc.height = h;
-                pc.width = w;
-                pc.x = atlas.left;
-                pc.y = atlas.top;
-                pc.x_advance = info.atlas.size * g.advance;
-                pc.x_offset = 0.0;
-                pc.y_advance = 0.0;
-                pc.y_offset = info.atlas.size - h - (h * plane_b.bottom);
+                chr.height = h;
+                chr.width = w;
+                chr.x = atlas.left;
+                chr.y = atlas.top;
+                chr.x_advance = info.atlas.size * g.advance;
+                chr.x_offset = 0.0;
+                chr.y_advance = 0.0;
+                // default with y_offset = 0 , then the top of every char is aligned.
+                // so take size, which is like square around char, fx 32
+                // first subtract height, this will align everything by the bottom of the char, fx bottom of 'p' is at the same level
+                // as as 'a'
+                // to push fx 'p' down and subtract h * plane_b.bottom);
+                chr.y_offset = info.atlas.size - h - (h * plane_b.bottom);
             }
 
-            chars.push(pc);
+            chars.push(chr);
         }
 
 
-        image = imageops::flip_vertical(&image);
         let pixel_size = info.atlas.size;
         let font = MsdfFont {
             image,

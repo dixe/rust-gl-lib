@@ -60,7 +60,7 @@ impl FntFont {
 
         let mut page: Page = lines.collect::<Vec<&str>>().join("\n").parse()?;
 
-        image = imageops::flip_vertical(&image);
+        //image = imageops::flip_vertical(&image);
 
         // image is flipped so also flip chars
         for c in &mut page.chars {

@@ -149,13 +149,25 @@ impl CharQuad {
     }
 
     pub fn update_char_pixels(&mut self, buffer_index: usize, x: f32, y: f32, scale: f32, &chr: &font::PageChar, image_info: ImageInfo) {
+
+        /*
         // Texture coords same as screenspace coords, since it is texture space
         let t_left = chr.x  / image_info.width;
         let t_right = (chr.x + chr.width)  / image_info.width;
         let t_top = chr.y  / image_info.height;
         // We subtract chr.height, since the texture is loaded and flipped.
-        let t_bottom = (chr.y  - chr.height) / image_info.height;
+        let t_bottom = (chr.y + chr.height) / image_info.height;
 
+
+
+*/
+        let t_left = chr.x  / image_info.width;
+        let t_right = (chr.x + chr.width)  / image_info.width;
+        let t_top = (chr.y)  / image_info.height;
+        // 0.0 is bottom left, to chr.y = top, and bottom is then top - height => chr.y - chr.height
+        let t_bottom = (chr.y - chr.height)  / image_info.height;
+
+        //println!("{:?}",(t_top, t_bottom));
         let x_w = chr.width * scale;
         let x_o = chr.x_offset * scale;
 
@@ -169,11 +181,6 @@ impl CharQuad {
         let y_t = y + y_o;
         let y_b = y + y_h + y_o;
 
-        if chr.id == 102 {
-            //println!("{:?}",(chr.id, x_r, x_l, x_r - x_l, y_b - y_t));
-
-            //println!("{:?}",(t_left, t_right, t_top, t_bottom));
-        }
         let start_index = buffer_index * ELEMENTS * STRIDE;
 
         // TRIANGLE 0
@@ -224,20 +231,29 @@ impl CharQuad {
     pub fn update_char(&mut self, buffer_index: usize, x: f32, y: f32, scale_x: f32, scale_y: f32, &chr: &font::PageChar, image_info: ImageInfo) {
 
         // Texture coords
-
+/*
         let t_left = chr.x  / image_info.width;
         let t_right = (chr.x + chr.width)  / image_info.width;
-        let t_top = chr.y  / image_info.height;
+        let t_top = chr.y   / image_info.height;
         // We subtract chr.height, since the texture is loaded and flipped.
-        let t_bottom = (chr.y  - chr.height) / image_info.height;
+        let t_bottom = chr.y + chr.height / image_info.height;
+
+*/
+
+        let t_left = 0.0;
+        let t_right = 1.0;
+        let t_top = 1.0;
+        // We subtract chr.height, since the texture is loaded and flipped.
+        let t_bottom = 0.0;
+
+
 
         // quad coords
         let x_l = x + chr.x_offset * scale_x;
         let x_r = x + chr.width  * scale_x + chr.x_offset * scale_x;
-        let y_t = y - chr.y_offset * scale_y;
-        let y_b = y - chr.height  * scale_y  - chr.y_offset * scale_y;
+        let y_t = y + chr.y_offset * scale_y;
+        let y_b = y + chr.height  * scale_y  + chr.y_offset * scale_y;
 
-        println!("{:?}",(x_l, x_r, y_t, y_b));
         let start_index = buffer_index * ELEMENTS * STRIDE;
 
         // TRIANGLE 0
