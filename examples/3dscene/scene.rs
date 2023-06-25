@@ -57,7 +57,21 @@ struct SceneMesh {
 }
 
 
-pub struct Scene<UserData> {
+pub type PostProcessUniformSet<T> = fn(&gl::Gl, &mut BaseShader, &T);
+
+fn default_uniform_set<T>(_ :&gl::Gl, _: &mut BaseShader, _ : &T) {
+
+}
+
+pub struct Fbos<UserPostprocesData> {
+    pub mesh_fbo: buffer::FrameBuffer,
+    pub ui_fbo: buffer::FrameBuffer,
+    pub post_process_shader: texture_shader::TextureShader,
+    pub post_process_uniform_set: PostProcessUniformSet<UserPostprocesData>,
+    pub post_process_data: UserPostprocesData
+}
+
+pub struct Scene<UserData, UserPostProcessData> {
     pub user_data: UserData,
     pub ui: Ui,
     pub gl: gl::Gl,
@@ -70,8 +84,9 @@ pub struct Scene<UserData> {
     pub cubemap : Option::<Cubemap>,
     pub cubemap_shader: BaseShader,
 
+    cubemap_imgs: Option::<Arc::<Mutex::<Option<Vec::<image::RgbImage>>>>>,
+
     pub mesh_shader: mesh_shader::MeshShader,
-    pub post_process_shader: Option<texture_shader::TextureShader>,
 
     // multiple entities can use the same mesh
     pub meshes: HashMap::<Rc::<str>, MeshIndex>, // name to mesh, pt mesh names are uniquie
@@ -91,6 +106,8 @@ pub struct Scene<UserData> {
 
     default_bones: Bones,
 
+    pub fbos: Option::<Fbos<UserPostProcessData>>
+
 }
 
 
@@ -100,8 +117,8 @@ pub struct SceneEntity {
     pub skeleton_id: Option::<SkeletonIndex>, // Is indirectly a duplicated data, since meshindex points to Scene mesh, which has skel_id. But lets keep it as a convinience
 }
 
-impl<UserData> Scene<UserData> {
-    pub fn new(user_data: UserData, gl: gl::Gl, viewport: gl::viewport::Viewport) -> Result<Scene< UserData>, failure::Error> {
+impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
+    pub fn new(user_data: UserData, gl: gl::Gl, viewport: gl::viewport::Viewport) -> Result<Scene<UserData, UserPostProcessData>, failure::Error> {
 
         let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
         let ui = Ui::new(drawer_2d);
@@ -126,7 +143,6 @@ impl<UserData> Scene<UserData> {
             camera: camera::Camera::new(viewport.w as f32, viewport.h as f32),
             free_controller: free_camera::Controller::default(),
             mesh_shader,
-            post_process_shader: None,
             cubemap_shader,
             player,
             cubemap: None,
@@ -137,7 +153,9 @@ impl<UserData> Scene<UserData> {
             animations: Default::default(),
             animation_ids: Default::default(),
             bones: Default::default(),
-            default_bones
+            cubemap_imgs: None,
+            default_bones,
+            fbos: None
         })
     }
 
@@ -201,52 +219,55 @@ impl<UserData> Scene<UserData> {
         }
     }
 
+    pub fn use_fbos(&mut self, data: UserPostProcessData, fun: Option<PostProcessUniformSet<UserPostProcessData>>) {
+
+        // frame buffer to render to
+        let mesh_fbo = buffer::FrameBuffer::new(&self.gl, &self.ui.drawer2D.viewport);
+
+        let mut ui_fbo = buffer::FrameBuffer::new(&self.gl, &self.ui.drawer2D.viewport);
+
+        // all has to be 0, since opengl works with premultiplied alphas, so if a is 0, all others have to be 0
+        ui_fbo.r = 0.0;
+        ui_fbo.g = 0.0;
+        ui_fbo.b = 0.0;
+        ui_fbo.a = 0.0;
+
+
+        let mut post_process_shader = texture_shader::TextureShader::new(&self.gl).unwrap();
+
+        reload_object_shader("postprocess", &self.gl, &mut post_process_shader.shader);
+
+        self.fbos = Some(Fbos {
+            mesh_fbo,
+            ui_fbo,
+            post_process_shader,
+            post_process_uniform_set: fun.unwrap_or(default_uniform_set),
+            post_process_data: data
+        });
+    }
+
     pub fn set_skybox<P: AsRef<Path> + std::fmt::Debug>(&mut self, path: &P) {
 
-        self.cubemap = Some(cubemap::Cubemap::from_path(&self.gl, path));
+        //START load
+        let cm = Arc::new(Mutex::new(None));
+        self.cubemap_imgs = Some(cm.clone());
 
-        //TODO: do lazy/multiuthreaded loading of sky box
-
-        /*
-
-//START
-    let mut cubemap_imgs: Arc::<Mutex::<Option<Vec::<image::RgbImage>>>> = Arc::new(Mutex::new(None));
-
-    // start thread to load cubemap
-    let cm = cubemap_imgs.clone();
-    thread::spawn(move || {
-
-        let imgs = cubemap::load_cubemap_images(&"assets/cubemap/skybox/");
-        {
-            let mut mutex_cm = cm.lock().unwrap();
-            *mutex_cm = Some(imgs);
-        }
-
-    });
-         */
-
-        /*
-
-        // WAIT FOR LOAD AND SET
-        // also a scene thing, maybe in update if cubemap i set
-        if cubemap.is_none() {
-            let mut lock = cubemap_imgs.try_lock();
-            if let Ok(ref mut mutex_imgs) = lock {
-                if let Some(ref imgs) = **mutex_imgs {
-                    cubemap = Some(Cubemap::from_images(gl, &imgs));
-                    // TODO:  maybe some cleanup of images and img vec, so we don't keep it in ram
-                }
-                **mutex_imgs = None
-
-            } else {
-                println!("try_lock failed");
+        thread::spawn(move || {
+            let imgs = cubemap::load_cubemap_images(&"assets/cubemap/skybox/");
+            {
+                let mut mutex_cm = cm.lock().unwrap();
+                *mutex_cm = Some(imgs);
             }
-        }
-*/
+        });
+
 
     }
 
     pub fn frame_start(&mut self, event_pump: &mut sdl2::EventPump)  {
+
+        if let Some(ref mut fbos) = self.fbos {
+            fbos.ui_fbo.bind_and_clear();
+        }
 
         unsafe {
             self.gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -260,8 +281,24 @@ impl<UserData> Scene<UserData> {
             self.free_controller.update_events(event);
         }
 
-
         self.free_controller.update_camera(&mut self.camera, dt);
+
+
+        // WAIT FOR LOAD AND SET OF CUBEMAP
+        // also a scene thing, maybe in update if cubemap i set
+        if let Some(ref mut cmi) = self.cubemap_imgs {
+            if self.cubemap.is_none() {
+                let mut lock = cmi.try_lock();
+                if let Ok(ref mut mutex_imgs) = lock {
+                    if let Some(ref imgs) = **mutex_imgs {
+                        self.cubemap = Some(Cubemap::from_images(&self.gl, &imgs));
+                    }
+                    **mutex_imgs = None
+                }
+            } else {
+                self.cubemap_imgs = None;
+            }
+        }
     }
 
     pub fn update_animations(&mut self) {
@@ -283,9 +320,48 @@ impl<UserData> Scene<UserData> {
         }
     }
 
-
-    /// Default rendering using fbo, cubemap ect if enabled and avaialbe in scene
     pub fn render(&mut self) {
+
+        if let Some(ref mut fbos) = self.fbos {
+            fbos.ui_fbo.unbind();
+
+            fbos.mesh_fbo.bind_and_clear();
+
+
+            render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
+                         &self.entities, &self.cubemap, &self.cubemap_shader);
+
+            fbos.mesh_fbo.unbind();
+
+
+            // pass 2, render fbo color texture
+            // TODO: maybe add this to unbind?? since unbind is a frame buffer bind or screen buffer.
+            unsafe {
+                self.gl.Disable(gl::DEPTH_TEST);
+                self.gl.ClearColor(0.0, 0.0, 0.0, 0.0);
+                self.gl.Clear(gl::COLOR_BUFFER_BIT); // stencil not used so no need for clearing
+            }
+
+            let w = self.ui.drawer2D.viewport.w as f32;
+            let h = self.ui.drawer2D.viewport.h as f32;
+
+            let size =  V2::new(w, h);
+
+            fbos.post_process_shader.shader.set_used();
+            (fbos.post_process_uniform_set)(&self.gl, &mut fbos.post_process_shader.shader, &fbos.post_process_data);
+            self.ui.drawer2D.render_img_custom_shader(fbos.mesh_fbo.color_tex, 0, 0, size, &fbos.post_process_shader);
+
+            // Draw ui on top at last
+            self.ui.drawer2D.render_img(fbos.ui_fbo.color_tex, 0, 0, size);
+
+        } else {
+            render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
+                         &self.entities, &self.cubemap, &self.cubemap_shader);
+        }
+    }
+
+/*
+    fn render_scene(&mut self) {
 
         // DRAW MESHES
         self.mesh_shader.shader.set_used();
@@ -308,7 +384,18 @@ impl<UserData> Scene<UserData> {
 
             self.mesh_data[entity.mesh_id].mesh.render(&self.gl);
         }
+
+        if let Some(ref cubemap) = self.cubemap {
+            // DRAW SKYBOX
+            self.cubemap_shader.set_used();
+
+            // could use nalgebra glm to remove translation part on cpu, and not have gpu multiply ect.
+            self.cubemap_shader.set_mat4(&self.gl, "projection", self.camera.projection());
+            self.cubemap_shader.set_mat4(&self.gl, "view", self.camera.view());
+            cubemap.render(&self.gl);
+        }
     }
+*/
 
     pub fn dt(&self) -> f32 {
         self.ui.dt()
@@ -330,4 +417,47 @@ pub fn play_animation(anim: Rc::<Animation>, repeat: bool, entity_id: &EntityId,
     anim_ids.insert(*entity_id, id);
 
 
+}
+
+
+fn render_scene(gl: &gl::Gl, camera: &Camera,
+                mesh_shader: &mesh_shader::MeshShader,
+                mesh_data: &Vec::<SceneMesh>,
+                bones: &HashMap::<EntityId, Bones>,
+                default_bones: &Bones,
+                entities: &DataMap::<SceneEntity>,
+                cubemap_opt: &Option<Cubemap>,
+                cubemap_shader: &BaseShader) {
+
+    // DRAW MESHES
+    mesh_shader.shader.set_used();
+    for (key, entity) in &entities.data {
+        let pos = V3::new(-10.0, -10.0, 0.0);
+        let trans = Translation3::from(pos);
+        let model_mat = trans.to_homogeneous();
+
+
+        let uniforms = mesh_shader::Uniforms {
+            light_pos: V3::new(0.0, 100.0, 100.0),
+            projection: camera.projection(),
+            model: model_mat,
+            view: camera.view(),
+            view_pos: camera.pos(),
+            bones: bones.get(key).unwrap_or(default_bones)
+        };
+
+        mesh_shader.set_uniforms(uniforms);
+
+        mesh_data[entity.mesh_id].mesh.render(gl);
+    }
+
+    if let Some(ref cubemap) = cubemap_opt {
+        // DRAW SKYBOX
+        cubemap_shader.set_used();
+
+        // could use nalgebra glm to remove translation part on cpu, and not have gpu multiply ect.
+        cubemap_shader.set_mat4(gl, "projection", camera.projection());
+        cubemap_shader.set_mat4(gl, "view", camera.view());
+        cubemap.render(gl);
+    }
 }

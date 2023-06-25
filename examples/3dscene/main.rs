@@ -15,6 +15,14 @@ use gl_lib::objects::{mesh::Mesh, cubemap::{self, Cubemap}};
 
 mod scene;
 
+pub struct PostPData {
+    time: f32
+}
+
+fn post_process_uniform_set(gl: &gl::Gl, shader: &mut BaseShader, data : &PostPData) {
+    shader.set_f32(gl, "time", data.time);
+}
+
 fn main() -> Result<(), failure::Error> {
 
     let sdl_setup = helpers::setup_sdl()?;
@@ -25,31 +33,12 @@ fn main() -> Result<(), failure::Error> {
     let _audio_subsystem = sdl.audio().unwrap();
 
     let mut scene = scene::Scene::new((), gl.clone(), viewport)?;
-
     let mut event_pump = sdl.event_pump().unwrap();
+
     scene.load_all_meshes("E:/repos/Game-in-rust/blender_models/Animation_test.glb");
 
     // map to mesh, skeleton, bones
     let player_id = scene.create_entity("Cube");
-
-
-    let mut shader = mesh_shader::MeshShader::new(&gl)?;
-    let mut post_process_shader = texture_shader::TextureShader::new(&gl)?;
-    reload_object_shader("postprocess", &gl, &mut post_process_shader.shader);
-/*
-    let mesh_name = "Cube";
-    let mesh = gltf_data.meshes.get_mesh(&gl, &mesh_name).unwrap();
-
-    let skin_id = gltf_data.skins.mesh_to_skin.get(mesh_name).unwrap();
-
-    let mut skeleton: Skeleton = gltf_data.skins.skeletons.get(&skin_id).unwrap().clone();
-
-    let mut bones = skeleton.create_bones();
-
-    let mut camera = camera::Camera::new(viewport.w as f32, viewport.h as f32);
-
-    let mut controller = free_camera::Controller::default();
-     */
 
     let mut look_at = V3::new(5.0, 3.1, 5.0);
     scene.free_controller.speed = 5.0;
@@ -58,31 +47,15 @@ fn main() -> Result<(), failure::Error> {
 
     scene.camera.look_at(look_at);
 
-
-    let mut player = AnimationPlayer::new();
-    let mut anim_id = 0;
     let mut playing = true;
 
-    let mut time : f32 = 0.0;
+    scene.set_skybox(&"assets/cubemap/skybox/");
 
-    let mut animation : Option<&Animation> = None;
+    let ppd = PostPData {
+        time : 0.0
+    };
 
-    // frame buffer to render to
-    let mesh_fbo = buffer::FrameBuffer::new(&gl, &viewport);
-
-    let mut ui_fbo = buffer::FrameBuffer::new(&gl, &viewport);
-
-    // all has to be 0, since opengl works with premultiplied alphas, so if a is 0, all others have to be 0
-    ui_fbo.r = 0.0;
-    ui_fbo.g = 0.0;
-    ui_fbo.b = 0.0;
-    ui_fbo.a = 0.0;
-
-
-    let mut cubemap_shader = load_object_shader("cubemap", gl).unwrap();
-    let mut cubemap : Option::<Cubemap> = None;
-
-    //TODO: scene.set_skybox(&"assets/cubemap/skybox/");
+    scene.use_fbos(ppd, Some(post_process_uniform_set));
 
     loop {
 
@@ -97,74 +70,40 @@ fn main() -> Result<(), failure::Error> {
         }
 
         if scene.ui.button("Reload") {
-            reload_object_shader("mesh_shader", &gl, &mut shader.shader);
-            reload_object_shader("postprocess", &gl, &mut post_process_shader.shader);
-            reload_object_shader("cubemap", &gl, &mut cubemap_shader);
+            reload_object_shader("mesh_shader", &gl, &mut scene.mesh_shader.shader);
+            if let Some(ref mut fbos) = scene.fbos {
+                reload_object_shader("postprocess", &gl, &mut fbos.post_process_shader.shader);
+            }
+            reload_object_shader("cubemap", &gl, &mut scene.cubemap_shader);
         }
 
 
-        //let names = scene.animations_for(&player_id).unwrap().collect();
+
         // change animation of entity
-
         let player_skel = scene.get_entity(&player_id).unwrap().skeleton_id.unwrap();
-
         let animations = scene.animations.get(&player_skel).unwrap();
         for (name, anim) in animations {
             if scene.ui.button(name) {
                 scene::play_animation(anim.clone(), true, &player_id, &mut scene.player, &mut scene.animation_ids);
-
-                /*
-                scene.animations.play(fanimations.get(name).unwrap().clone(), true, &mut scene.player,)
-                scene.player.start(Start {anim: , repeat: true});
-                 */
-
-                //scene.play_animation(player_id, name, true);
             }
         }
 
 
-        /*
-        // hmm, should call into scene since its the owner/manager of this gltf data
-        for skin_id in gltf_data.animations.keys() {
-            for (name, anim) in gltf_data.animations.get(skin_id).unwrap() {
-                if scene.ui.button(name) {
-
-                    scene.change_animation(player_id,
-
-                    player.remove(anim_id);
-                    anim_id = player.start(Start {anim: &anim, repeat: true});
-                }
+        if let Some(ref mut fbos) = scene.fbos {
+            fbos.post_process_data.time += dt;
+            if scene.ui.button("Reset") {
+                fbos.post_process_data.time = 0.0;
             }
+
         }
-         */
-
-
-        time += dt;
-        if scene.ui.button("Reset") {
-            time = 0.0;
-        }
-
 
         // update aimaiton player, and bones
         if playing {
-            player.update(dt);
+            scene.update_animations();
         }
 
-        // update skeleton and bones from animation, if animation done, nothing is updated
-
-        // also scene stuff
-        scene.update_animations();
-        /*
-{
-
-        player.update_skeleton(anim_id, &mut skeleton);
-        skeleton.set_all_bones_from_skeleton(&mut bones);
-
-}
-         */
-
-
         scene.render();
+
             /*
 {
         ui_fbo.unbind();
@@ -185,6 +124,7 @@ fn main() -> Result<(), failure::Error> {
         window.gl_swap_window();
     }
 }
+
 
 /*
 pub fn post_process(drawer2d: &mut Drawer2D, fbo: &buffer::FrameBuffer, post_p_shader: &texture_shader::TextureShader, time: f32) {

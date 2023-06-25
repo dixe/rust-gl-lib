@@ -120,5 +120,4 @@ void main()
   //FragColor = Swirl(IN.TexCoords.st, time);
   FragColor = ShockWave();
   //outline();
-
 }
