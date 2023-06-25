@@ -6,11 +6,13 @@ use gl_lib::animations::gltf_animation::{Start, AnimationPlayer};
 use gl_lib::objects::gltf_mesh::{self, KeyFrame, Animation};
 use gl_lib::shader::{self, mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
 use gl_lib::typedef::*;
-use gl_lib::objects::{mesh::Mesh, cubemap::Cubemap};
+use gl_lib::objects::{mesh::Mesh, cubemap::{self, Cubemap}};
 use gl_lib::camera::{self, free_camera, Camera};
 use gl_lib::na::{Scale3, Translation3};
 use gl_lib::{buffer, texture};
 use gl_lib::shader::Shader;
+use std::{thread, sync::{Arc, Mutex}};
+
 
 fn main() -> Result<(), failure::Error> {
     let sdl_setup = helpers::setup_sdl()?;
@@ -82,7 +84,22 @@ fn main() -> Result<(), failure::Error> {
 
 
     let mut cubemap_shader = load_object_shader("cubemap", gl).unwrap();
-    let cubemap = Cubemap::new(gl, &"assets/cubemap/skybox/");
+    let mut cubemap : Option::<Cubemap> = None;
+
+    let mut cubemap_imgs : Arc::<Mutex::<Option<Vec::<image::RgbImage>>>> = Arc::new(Mutex::new(None));
+
+    // start thread to load cubemap
+    let cm = cubemap_imgs.clone();
+    thread::spawn(move || {
+
+        let imgs = cubemap::load_cubemap_images(&"assets/cubemap/skybox/");
+        {
+            let mut mutex_cm = cm.lock().unwrap();
+            *mutex_cm = Some(imgs);
+        }
+
+    });
+
 
     loop {
 
@@ -115,6 +132,20 @@ fn main() -> Result<(), failure::Error> {
                     player.remove(anim_id);
                     anim_id = player.start(Start {anim: &anim, repeat: true});
                 }
+            }
+        }
+
+        if cubemap.is_none() {
+            let mut lock = cubemap_imgs.try_lock();
+            if let Ok(ref mut mutex_imgs) = lock {
+                if let Some(ref imgs) = **mutex_imgs {
+                    cubemap = Some(Cubemap::from_images(gl, &imgs));
+                    // TODO:  maybe some cleanup of images and img vec, so we don't keep it in ram
+                }
+                **mutex_imgs = None
+
+            } else {
+                println!("try_lock failed");
             }
         }
 
@@ -168,7 +199,7 @@ pub fn post_process(drawer2d: &mut Drawer2D, fbo: &buffer::FrameBuffer, post_p_s
 
 pub fn draw(gl: &gl::Gl, fbo: &buffer::FrameBuffer, camera: &Camera,
             bones: &Bones, shader: &mesh_shader::MeshShader, mesh: &Mesh,
-            cubemap: &Cubemap, cubemap_shader: &BaseShader) {
+            cubemap_opt: &Option<Cubemap>, cubemap_shader: &BaseShader) {
 
     fbo.bind_and_clear();
 
@@ -192,14 +223,15 @@ pub fn draw(gl: &gl::Gl, fbo: &buffer::FrameBuffer, camera: &Camera,
     shader.set_uniforms(uniforms);
     mesh.render(gl);
 
+    if let Some(cubemap) = cubemap_opt {
 
-    // DRAW SKYBOX
-    cubemap_shader.set_used();
-    // could use nalgebra glm to remove translation part on cpu, and not have gpu multiply ect.
-    cubemap_shader.set_mat4(gl, "projection", camera.projection());
-    cubemap_shader.set_mat4(gl, "view", camera.view());
-    cubemap.render(gl);
-
+        // DRAW SKYBOX
+        cubemap_shader.set_used();
+        // could use nalgebra glm to remove translation part on cpu, and not have gpu multiply ect.
+        cubemap_shader.set_mat4(gl, "projection", camera.projection());
+        cubemap_shader.set_mat4(gl, "view", camera.view());
+        cubemap.render(gl);
+    }
 
     fbo.unbind();
 

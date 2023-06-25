@@ -4,7 +4,7 @@ use crate::{texture, gl};
 use crate::objects::mesh::Mesh;
 use image;
 use image::imageops;
-
+use std::time::Instant;
 
 pub struct Cubemap {
     pub mesh: Mesh,
@@ -14,8 +14,8 @@ pub struct Cubemap {
 
 impl Cubemap {
 
-    pub fn new<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P) -> Cubemap {
 
+    pub fn from_images(gl: &gl::Gl, images: &[image::RgbImage]) -> Cubemap {
         let vertices : Vec::<f32> = vec![
             -1.0,  1.0, -1.0,
             -1.0, -1.0, -1.0,
@@ -105,12 +105,16 @@ impl Cubemap {
             elements: indices.len() as i32
         };
 
-        let texture_id = load_cubemap_texture(gl, path);
+        let texture_id = texture::gen_texture_cube_map(gl, images);
         Self {
             mesh,
             texture_id
         }
+    }
 
+    pub fn from_path<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P) -> Cubemap {
+        let images = load_cubemap_images(path);
+        Cubemap::from_images(gl, &images)
     }
 
     pub fn render(&self, gl: &gl::Gl) {
@@ -128,11 +132,10 @@ impl Cubemap {
 
 
 
-fn load_cubemap_texture<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P) -> texture::TextureId {
+pub fn load_cubemap_images<P: AsRef<Path> + std::fmt::Debug>(path: &P) -> Vec::<image::RgbImage> {
 
     let mut p = PathBuf::new();
     p.push(path);
-
 
     let mut imgs = vec![];
     println!("Load imgs");
@@ -142,6 +145,7 @@ fn load_cubemap_texture<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P)
 
         let mut img = image::open(&p).unwrap();
 
+        img = img.flipv();
         if n == "top.jpg" || n == "bottom.jpg" {
             img = img.flipv().fliph();
         }
@@ -149,11 +153,20 @@ fn load_cubemap_texture<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P)
         imgs.push(img.into_rgb8());
         p.pop();
     }
+    imgs
+}
 
-    println!("Gen textures");
+fn load_cubemap_texture<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P) -> texture::TextureId {
+
+    let now = Instant::now();
+    let imgs = load_cubemap_images(path);
+
+    println!("Loaded cubemap images in {}\nGen textures", now.elapsed().as_secs());
+    let now = Instant::now();
     let id = texture::gen_texture_cube_map(gl, &imgs);
 
-    println!("DONE textures");
+    let el = now.elapsed().as_secs();
+    println!("DONE textures in {}" , el);
 
     id
 }

@@ -67,7 +67,7 @@ pub fn gen_texture_cube_map(gl: &gl::Gl, images: &[image::RgbImage]) -> TextureI
         gl.BindTexture(gl::TEXTURE_CUBE_MAP, id);
 
         for i in 0..images.len() {
-            let img = image::DynamicImage::ImageRgb8(images[i].clone()).flipv().into_rgb();
+            let img = &images[i];
             gl.TexImage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X + i as u32,
                           0, // level
                           gl::RGB as i32, // internal format when stored on gpu
