@@ -13,7 +13,6 @@ pub struct FrameBuffer {
     pub color_tex: texture::TextureId,
     pub depth_stencil_tex: texture::TextureId,
     pub depth_test: bool,
-    pub clear_bits : u32,
     // clear color r,g,b,a
     pub r: f32,
     pub g: f32,
@@ -58,7 +57,6 @@ impl FrameBuffer {
             color_tex,
             depth_stencil_tex,
             depth_test: true,
-            clear_bits: gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT,// default clear color and depth
             // clear color r,g,b,a
             r: 0.9,
             g: 0.9,
@@ -77,11 +75,11 @@ impl FrameBuffer {
     }
 
     /// bind FRAME BUFFER FOR BOTH READ AND WRITE
-    pub fn bind_and_clear(&self) {
+    pub fn bind_and_clear(&self, clear_bits: u32) {
         unsafe {
             self.gl.BindFramebuffer(gl::FRAMEBUFFER, self.fbo);
             self.gl.ClearColor(self.r, self.g, self.b, self.a);
-            self.gl.Clear(self.clear_bits);
+            self.gl.Clear(clear_bits);
             if self.depth_test {
                 self.gl.Enable(gl::DEPTH_TEST);
             } else {

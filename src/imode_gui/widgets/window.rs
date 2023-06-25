@@ -1,6 +1,5 @@
 use super::*;
 
-
 pub struct WindowRes {
     pub closed: bool,
     //expanded: bool,
@@ -39,9 +38,7 @@ impl Ui{
         // windows can use 0, since they are the "base", this makes it so we always get the same id
         let id = Id {widget_id: 0, window_id: win_id };
 
-
         self.current_window.push(win_id);
-
 
         // update window pos when active, i.e. we are dragging
         if self.is_active(id) {
@@ -119,6 +116,9 @@ impl Ui{
 
             let window_h = window.base_container_context.height.size() + self.style.spacing.y;
 
+            let z = self.drawer2D.z;
+
+            self.drawer2D.z = 1.0;
             // Background
             self.drawer2D.rounded_rect_color(anchor.x,
                                              anchor.y,
@@ -126,6 +126,7 @@ impl Ui{
                                              window_h,
                                              bg_color);
 
+            self.drawer2D.z = 1.2;
             // window Top Bar
             self.drawer2D.rounded_rect_color(anchor.x,
                                              anchor.y - window.top_bar_size.y,
@@ -133,6 +134,7 @@ impl Ui{
                                              window.top_bar_size.y,
                                              color);
 
+            self.drawer2D.z = 1.4;
             self.drawer2D.render_text(title, anchor.x + self.style.spacing.x, anchor.y - window.top_bar_size.y + self.style.spacing.y, 13);
 
             // window border
@@ -168,6 +170,9 @@ impl Ui{
                 ContainerSize::Fixed(h) => ContainerSize::Fixed(h),
                 ContainerSize::MatchContent(_) => ContainerSize::MatchContent(0)
             };
+
+
+            self.drawer2D.z = z;
         }
 
     }

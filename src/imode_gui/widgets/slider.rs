@@ -54,7 +54,6 @@ impl Ui {
         }
 
         // Draw
-
         let min_f64 = min.to_f64();
         let max_f64 = max.to_f64();
         let item_f64 = item.to_f64();

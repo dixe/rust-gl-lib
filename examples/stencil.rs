@@ -180,7 +180,6 @@ fn reload_mesh_shader(shader: &mut mesh_shader::MeshShader) {
 
 
 pub fn draw(gl: &gl::Gl,camera: &Camera, bones: &Bones, shader: &mesh_shader::MeshShader, stencil_shader: &mesh_shader::MeshShader, mesh: &Mesh, _s: f32) {
-
     // first render as normal, to fill stencil buffer
 
     // PASS 1
@@ -221,26 +220,7 @@ pub fn draw(gl: &gl::Gl,camera: &Camera, bones: &Bones, shader: &mesh_shader::Me
     // DRAW MESH AGAIN WITH NEW SHADER, AND AND SCALED UP A LITTLE NIT
 
     stencil_shader.shader.set_used();
-/*
-    let pos = V3::new(0.0, 0.0, 0.0);
-    let trans = Translation3::from(pos);
-    let mut scale = Mat4::identity();
-    scale[0] = s;
-    scale[5] = s;
-    scale[10] = s;
 
-    let model_mat = trans.to_homogeneous() * scale;
-
-
-    let uniforms = mesh_shader::Uniforms {
-        light_pos: V3::new(0.0, 100.0, 100.0),
-        projection: camera.projection(),
-        model: model_mat,
-        view: camera.view(),
-        view_pos: camera.pos(),
-        bones: &bones
-    };
-    */
     stencil_shader.set_uniforms(uniforms);
 
     mesh.render(gl);

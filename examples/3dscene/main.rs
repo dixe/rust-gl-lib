@@ -1,14 +1,5 @@
 use gl_lib::{gl, helpers};
-
-
-
-
-
 use gl_lib::shader::Shader;
-
-
-
-
 use gl_lib::shader::{BaseShader, reload_object_shader};
 use gl_lib::typedef::*;
 
@@ -32,27 +23,49 @@ fn main() -> Result<(), failure::Error> {
     let gl = &sdl_setup.gl;
     let _audio_subsystem = sdl.audio().unwrap();
 
-    let mut scene = scene::Scene::new((), gl.clone(), viewport)?;
-    scene.set_skybox(&"assets/cubemap/skybox/");
+    // disable v-sync
+    sdl_setup.video_subsystem.gl_set_swap_interval(0);
+
+    let mut scene = scene::Scene::<PostPData>::new(gl.clone(), viewport)?;
+    //scene.set_skybox("assets/cubemap/skybox/".to_string());
     scene.load_all_meshes("E:/repos/Game-in-rust/blender_models/Animation_test.glb");
+
+
+    let look_at = V3::new(5.0, 3.1, 5.0);
+    scene.camera.move_to(V3::new(8.4, 4.3, 5.0));
+    scene.camera.look_at(look_at);
+
+    scene.free_controller.speed = 5.0;
+    scene.free_controller.sens = 1.0;
+
+
+
 
     let mut event_pump = sdl.event_pump().unwrap();
 
     let player_id = scene.create_entity("Cube");
+    let player2_id = scene.create_entity("Cube");
 
-    let look_at = V3::new(5.0, 3.1, 5.0);
-    scene.free_controller.speed = 5.0;
-    scene.camera.move_to(V3::new(8.4, 4.3, 5.0));
-    scene.camera.look_at(look_at);
+
+    let p1 = scene.entity_mut(&player_id).unwrap();
+    p1.pos = V3::new(-10.0, -10.0, 0.0);
+
+    let p2 = scene.entity_mut(&player2_id).unwrap();
+    p2.pos = V3::new(-10.0, 10.0, 0.0);
+
 
     let mut playing = true;
 
-    let ppd = PostPData {
+    let post_process_data = PostPData {
         time : 0.0
     };
 
-    scene.use_fbos(ppd, Some(post_process_uniform_set));
 
+    scene.use_fbos(post_process_data, Some(post_process_uniform_set));
+
+    scene.use_stencil();
+
+    let mut show_options = false;
     loop {
 
         // set ui framebuffer, consume sdl events, increment dt ect.
@@ -70,11 +83,37 @@ fn main() -> Result<(), failure::Error> {
             if let Some(ref mut fbos) = scene.fbos {
                 reload_object_shader("postprocess", &gl, &mut fbos.post_process_shader.shader);
             }
+            if let Some(ref mut stencil) = scene.stencil_shader {
+                reload_object_shader("stencil", &gl, &mut stencil.shader);
+            }
             reload_object_shader("cubemap", &gl, &mut scene.cubemap_shader);
         }
 
+
+        if !show_options {
+            show_options = scene.ui.button("Options");
+        }
+
+        if show_options {
+
+            let ui = &mut scene.ui;
+
+            show_options = !ui.window_begin("Options").closed;
+
+            ui.body_text(&format!("fps: {}", 1.0/dt));
+            ui.newline();
+
+            ui.label("Sens");
+            ui.slider(&mut scene.free_controller.sens, 0.01, 2.0);
+
+            ui.label("Speed");
+            ui.slider(&mut scene.free_controller.speed, 0.01, 20.0);
+
+            ui.window_end("Options");
+        }
+
         // change animation of entity
-        let player_skel = scene.get_entity(&player_id).unwrap().skeleton_id.unwrap();
+        let player_skel = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
         let animations = scene.animations.get(&player_skel).unwrap();
         for (name, anim) in animations {
             if scene.ui.button(name) {

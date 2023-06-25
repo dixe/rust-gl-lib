@@ -44,6 +44,9 @@ impl<T> DataMap<T> {
     pub fn get(&self, id: &usize) -> Option<&T> {
         self.data.get(&id)
     }
+    pub fn get_mut(&mut self, id: &usize) -> Option<&mut T> {
+        self.data.get_mut(&id)
+    }
 }
 
 pub type EntityId = usize;
@@ -71,8 +74,8 @@ pub struct Fbos<UserPostprocesData> {
     pub post_process_data: UserPostprocesData
 }
 
-pub struct Scene<UserData, UserPostProcessData> {
-    pub user_data: UserData,
+
+pub struct Scene<UserPostProcessData> {
     pub ui: Ui,
     pub gl: gl::Gl,
 
@@ -83,6 +86,8 @@ pub struct Scene<UserData, UserPostProcessData> {
 
     pub cubemap : Option::<Cubemap>,
     pub cubemap_shader: BaseShader,
+
+    pub clear_buffer_bits: u32,
 
     cubemap_imgs: Option::<Arc::<Mutex::<Option<Vec::<image::RgbImage>>>>>,
 
@@ -106,7 +111,9 @@ pub struct Scene<UserData, UserPostProcessData> {
 
     default_bones: Bones,
 
-    pub fbos: Option::<Fbos<UserPostProcessData>>
+    pub fbos: Option::<Fbos<UserPostProcessData>>,
+
+    pub stencil_shader: Option<mesh_shader::MeshShader>
 
 }
 
@@ -114,11 +121,12 @@ pub struct Scene<UserData, UserPostProcessData> {
 #[derive(Default)]
 pub struct SceneEntity {
     pub mesh_id: MeshIndex,
+    pub pos: V3,
     pub skeleton_id: Option::<SkeletonIndex>, // Is indirectly a duplicated data, since meshindex points to Scene mesh, which has skel_id. But lets keep it as a convinience
 }
 
-impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
-    pub fn new(user_data: UserData, gl: gl::Gl, viewport: gl::viewport::Viewport) -> Result<Scene<UserData, UserPostProcessData>, failure::Error> {
+impl< UserPostProcessData> Scene<UserPostProcessData> {
+    pub fn new(gl: gl::Gl, viewport: gl::viewport::Viewport) -> Result<Scene<UserPostProcessData>, failure::Error> {
 
         let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
         let ui = Ui::new(drawer_2d);
@@ -138,7 +146,6 @@ impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
 
         Ok(Self {
             gl,
-            user_data,
             ui,
             camera: camera::Camera::new(viewport.w as f32, viewport.h as f32),
             free_controller: free_camera::Controller::default(),
@@ -155,12 +162,19 @@ impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
             bones: Default::default(),
             cubemap_imgs: None,
             default_bones,
-            fbos: None
+            fbos: None,
+            stencil_shader: None,
+            clear_buffer_bits: gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT
+
         })
     }
 
-    pub fn get_entity(&self, id: &EntityId) -> Option<&SceneEntity> {
+    pub fn entity(&self, id: &EntityId) -> Option<&SceneEntity> {
         self.entities.get(id)
+    }
+
+    pub fn entity_mut(&mut self, id: &EntityId) -> Option<&mut SceneEntity> {
+        self.entities.get_mut(id)
     }
 
     pub fn create_entity(&mut self, mesh_name: &str) -> EntityId {
@@ -169,6 +183,7 @@ impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
         let skeleton_id = self.mesh_data[mesh_id].skeleton;
         let entity = SceneEntity {
             mesh_id,
+            pos: V3::identity(),
             skeleton_id: self.mesh_data[mesh_id].skeleton
         };
 
@@ -219,6 +234,23 @@ impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
         }
     }
 
+    pub fn use_stencil(&mut self) {
+        let mut mesh_shader = mesh_shader::MeshShader::new(&self.gl).unwrap();
+        mesh_shader.shader = load_object_shader("stencil", &self.gl).unwrap();
+
+        self.stencil_shader = Some(mesh_shader);
+        self.clear_buffer_bits |= gl::STENCIL_BUFFER_BIT;
+
+        unsafe {
+            self.gl.Enable(gl::STENCIL_TEST);
+            self.gl.StencilFunc(gl::NOTEQUAL, 1, 0xFF);
+            self.gl.StencilOp(gl::KEEP, gl::KEEP, gl::REPLACE);
+        }
+
+    }
+
+
+
     pub fn use_fbos(&mut self, data: UserPostProcessData, fun: Option<PostProcessUniformSet<UserPostProcessData>>) {
 
         // frame buffer to render to
@@ -246,14 +278,14 @@ impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
         });
     }
 
-    pub fn set_skybox<P: AsRef<Path> + std::fmt::Debug>(&mut self, _path: &P) {
+    pub fn set_skybox(&mut self, path: String) {
 
         //START load
         let cm = Arc::new(Mutex::new(None));
         self.cubemap_imgs = Some(cm.clone());
 
         thread::spawn(move || {
-            let imgs = cubemap::load_cubemap_images(&"assets/cubemap/skybox/");
+            let imgs = cubemap::load_cubemap_images(&path);
             {
                 let mut mutex_cm = cm.lock().unwrap();
                 *mutex_cm = Some(imgs);
@@ -266,11 +298,11 @@ impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
     pub fn frame_start(&mut self, event_pump: &mut sdl2::EventPump)  {
 
         if let Some(ref mut fbos) = self.fbos {
-            fbos.ui_fbo.bind_and_clear();
-        }
-
-        unsafe {
-            self.gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+            fbos.ui_fbo.bind_and_clear(self.clear_buffer_bits);
+        } else {
+            unsafe {
+                self.gl.Clear(self.clear_buffer_bits);
+            }
         }
 
         let dt = self.dt();
@@ -325,21 +357,21 @@ impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
         if let Some(ref mut fbos) = self.fbos {
             fbos.ui_fbo.unbind();
 
-            fbos.mesh_fbo.bind_and_clear();
+            fbos.mesh_fbo.bind_and_clear(self.clear_buffer_bits);
 
 
             render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
-                         &self.entities, &self.cubemap, &self.cubemap_shader);
+                         &self.entities, &self.cubemap, &self.cubemap_shader, &self.stencil_shader);
 
             fbos.mesh_fbo.unbind();
 
 
-            // pass 2, render fbo color texture
+            // Post process 2, render fbo color texture
             // TODO: maybe add this to unbind?? since unbind is a frame buffer bind or screen buffer.
             unsafe {
                 self.gl.Disable(gl::DEPTH_TEST);
                 self.gl.ClearColor(0.0, 0.0, 0.0, 0.0);
-                self.gl.Clear(gl::COLOR_BUFFER_BIT); // stencil not used so no need for clearing
+                self.gl.Clear(gl::COLOR_BUFFER_BIT);
             }
 
             let w = self.ui.drawer2D.viewport.w as f32;
@@ -356,46 +388,10 @@ impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
 
         } else {
             render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
-                         &self.entities, &self.cubemap, &self.cubemap_shader);
+                         &self.entities, &self.cubemap, &self.cubemap_shader, &self.stencil_shader);
         }
     }
 
-/*
-    fn render_scene(&mut self) {
-
-        // DRAW MESHES
-        self.mesh_shader.shader.set_used();
-        for (key, entity) in &self.entities.data {
-            let pos = V3::new(-10.0, -10.0, 0.0);
-            let trans = Translation3::from(pos);
-            let model_mat = trans.to_homogeneous();
-
-
-            let uniforms = mesh_shader::Uniforms {
-                light_pos: V3::new(0.0, 100.0, 100.0),
-                projection: self.camera.projection(),
-                model: model_mat,
-                view: self.camera.view(),
-                view_pos: self.camera.pos(),
-                bones: self.bones.get(key).unwrap_or(&self.default_bones)
-            };
-
-            self.mesh_shader.set_uniforms(uniforms);
-
-            self.mesh_data[entity.mesh_id].mesh.render(&self.gl);
-        }
-
-        if let Some(ref cubemap) = self.cubemap {
-            // DRAW SKYBOX
-            self.cubemap_shader.set_used();
-
-            // could use nalgebra glm to remove translation part on cpu, and not have gpu multiply ect.
-            self.cubemap_shader.set_mat4(&self.gl, "projection", self.camera.projection());
-            self.cubemap_shader.set_mat4(&self.gl, "view", self.camera.view());
-            cubemap.render(&self.gl);
-        }
-    }
-*/
 
     pub fn dt(&self) -> f32 {
         self.ui.dt()
@@ -404,7 +400,7 @@ impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
 }
 
 
-pub fn play_animation(anim: Rc::<Animation>, _repeat: bool, entity_id: &EntityId, player: &mut AnimationPlayer, anim_ids: &mut HashMap::<EntityId, AnimationId>) {
+pub fn play_animation(anim: Rc::<Animation>, repeat: bool, entity_id: &EntityId, player: &mut AnimationPlayer, anim_ids: &mut HashMap::<EntityId, AnimationId>) {
 
     if let Some(anim_id) = anim_ids.get(entity_id) {
         player.remove(*anim_id);
@@ -412,7 +408,7 @@ pub fn play_animation(anim: Rc::<Animation>, _repeat: bool, entity_id: &EntityId
 
     // get old animation id
     // TODO: let
-    let id = player.start(Start {anim, repeat: true});
+    let id = player.start(Start {anim, repeat});
 
     anim_ids.insert(*entity_id, id);
 
@@ -420,6 +416,8 @@ pub fn play_animation(anim: Rc::<Animation>, _repeat: bool, entity_id: &EntityId
 }
 
 
+// Can not be &scene, since then using fbo is not good, and we want a function,
+// since we want to call it from mutiple places
 fn render_scene(gl: &gl::Gl, camera: &Camera,
                 mesh_shader: &mesh_shader::MeshShader,
                 mesh_data: &Vec::<SceneMesh>,
@@ -427,29 +425,68 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
                 default_bones: &Bones,
                 entities: &DataMap::<SceneEntity>,
                 cubemap_opt: &Option<Cubemap>,
-                cubemap_shader: &BaseShader) {
+                cubemap_shader: &BaseShader,
+                stencil_shader: &Option<mesh_shader::MeshShader>) {
+
+    let pos = V3::new(0.0, 0.0, 0.0);
+    let trans = Translation3::from(pos);
+    let model_mat = trans.to_homogeneous();
+
+    let mut uniforms = mesh_shader::Uniforms {
+        light_pos: V3::new(0.0, 100.0, 100.0),
+        projection: camera.projection(),
+        model: model_mat,
+        view: camera.view(),
+        view_pos: camera.pos(),
+        bones: default_bones
+    };
+
+
+    if stencil_shader.is_some() {
+        unsafe {
+            gl.StencilFunc(gl::ALWAYS, 1, 0xFF);
+            gl.StencilMask(0xFF);
+            gl.Enable(gl::DEPTH_TEST);
+        }
+    }
 
     // DRAW MESHES
     mesh_shader.shader.set_used();
     for (key, entity) in &entities.data {
-        let pos = V3::new(-10.0, -10.0, 0.0);
-        let trans = Translation3::from(pos);
-        let model_mat = trans.to_homogeneous();
 
+        let trans = Translation3::from(entity.pos);
+        uniforms.model = trans.to_homogeneous();
 
-        let uniforms = mesh_shader::Uniforms {
-            light_pos: V3::new(0.0, 100.0, 100.0),
-            projection: camera.projection(),
-            model: model_mat,
-            view: camera.view(),
-            view_pos: camera.pos(),
-            bones: bones.get(key).unwrap_or(default_bones)
-        };
+        uniforms.bones = bones.get(key).unwrap_or(default_bones);
 
         mesh_shader.set_uniforms(uniforms);
-
         mesh_data[entity.mesh_id].mesh.render(gl);
+
+        if let Some(ref stencil) = stencil_shader {
+            unsafe {
+                gl.StencilFunc(gl::NOTEQUAL, 1, 0xFF);
+                gl.StencilMask(0x00);
+                gl.Disable(gl::DEPTH_TEST);
+            }
+
+            stencil.shader.set_used();
+            stencil.set_uniforms(uniforms);
+            mesh_data[entity.mesh_id].mesh.render(gl);
+
+            unsafe {
+                gl.StencilFunc(gl::ALWAYS, 1, 0xFF);
+                gl.StencilMask(0xFF);
+                gl.Enable(gl::DEPTH_TEST);
+
+                // this make stencil shader individual for each mesh.
+                // without this fx outline will be like last image in https://learnopengl.com/Advanced-OpenGL/Stencil-testing
+                // seems we want it in a per mesh basis.
+                // can also be changes to this is a field on scene and can be set to 0, ie. not clearing
+                gl.Clear(gl::STENCIL_BUFFER_BIT);
+            }
+        }
     }
+
 
     if let Some(ref cubemap) = cubemap_opt {
         // DRAW SKYBOX

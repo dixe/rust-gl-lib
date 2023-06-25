@@ -31,7 +31,6 @@ mat4 boneTransform() {
        + BoneWeights.y * uBones[int(BoneIndices.y)];
 
   return ret;
-
 }
 
 
@@ -47,12 +46,12 @@ void main()
 
   // Complex version where we transform to clip space, so we can give a uniform length
   // calc clip_space position of vertex
-  vec4 clip_pos = projection * view * model * bt * vec4(Position, 1.0);
 
+  vec4 clip_pos = projection * view * model * bt * vec4(Position, 1.0);
 
   // calc clipspace normal
   vec3 clip_normal = mat3(projection * view) * mat3(transpose(inverse(model * bt))) * SmoothNormal;
-  clip_pos = vec4(clip_pos.xyz/clip_pos.w, 1.0);
+
   float pixel_width = 10.0;
   clip_pos.xy += (normalize(clip_normal.xy) / vec2(1200, 800)) * pixel_width * 2.0 * clip_pos.w;
 

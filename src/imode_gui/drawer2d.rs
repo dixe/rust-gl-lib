@@ -323,8 +323,6 @@ impl Drawer2D {
         render_text(&self.gl, &mut self.tr, text, x, y, &self.viewport, pixel_size, font);
     }
 
-
-
     /// Render at x,y with given font name, or default font
     pub fn render_text_from_font_name(&mut self, text: &str, x: i32, y: i32, pixel_size: i32, font_name: &str) {
         let font = self.font_cache.get_or_default(pixel_size, font_name);
