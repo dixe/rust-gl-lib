@@ -3,12 +3,12 @@ use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::animations::skeleton::{Bones, Skeleton};
 use gl_lib::animations::gltf_animation::{Start, AnimationPlayer};
-use gl_lib::objects::gltf_mesh::{self, KeyFrame, Animation};
+use gl_lib::objects::gltf_mesh::{self, Animation};
 use gl_lib::shader::{self, mesh_shader};
 use gl_lib::typedef::*;
 use gl_lib::objects::{mesh::Mesh, cube};
 use gl_lib::camera::{self, free_camera, Camera};
-use gl_lib::na::{Scale3, Translation3};
+use gl_lib::na::{Translation3};
 
 
 fn main() -> Result<(), failure::Error> {
@@ -60,9 +60,9 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-    let cube = cube::Cube::new(&gl);
+    let _cube = cube::Cube::new(&gl);
     camera.move_to(V3::new(8.4, 4.3, 5.0));
-    let mut la = V3::new(5.0, 3.1, 5.0);
+    let la = V3::new(5.0, 3.1, 5.0);
     camera.look_at(la);
 
     unsafe {
@@ -77,10 +77,10 @@ fn main() -> Result<(), failure::Error> {
     let mut anim_id = 0;
     let mut playing = true;
 
-    let mut t : f32 = 0.0;
+    let _t : f32 = 0.0;
 
     let mut s = 1.0;
-    let mut animation : Option<&Animation> = None;
+    let _animation : Option<&Animation> = None;
     loop {
         // Basic clear gl stuff and get events to UI
         unsafe {
@@ -110,7 +110,7 @@ fn main() -> Result<(), failure::Error> {
             for (name, anim) in gltf_data.animations.get(skin_id).unwrap() {
                 if ui.button(name) {
                     player.remove(anim_id);
-                    anim_id = player.start(Start {anim: &anim, repeat: true});
+                    anim_id = player.start(Start {anim: anim.clone(), repeat: true});
                 }
             }
         }
@@ -179,7 +179,7 @@ fn reload_mesh_shader(shader: &mut mesh_shader::MeshShader) {
 }
 
 
-pub fn draw(gl: &gl::Gl,camera: &Camera, bones: &Bones, shader: &mesh_shader::MeshShader, stencil_shader: &mesh_shader::MeshShader, mesh: &Mesh, s: f32) {
+pub fn draw(gl: &gl::Gl,camera: &Camera, bones: &Bones, shader: &mesh_shader::MeshShader, stencil_shader: &mesh_shader::MeshShader, mesh: &Mesh, _s: f32) {
 
     // first render as normal, to fill stencil buffer
 

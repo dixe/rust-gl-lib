@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use serde::{Serialize, Deserialize};
 use serde_json::Result;
-use image::imageops;
+
 use crate::shader::{BaseShader};
 use crate::gl;
 use super::*;
@@ -57,7 +57,7 @@ impl MsdfFont {
 
     }
 
-    pub fn load_font(text: &str, mut image: image::RgbaImage) -> Result<MsdfFont> {
+    pub fn load_font(text: &str, image: image::RgbaImage) -> Result<MsdfFont> {
 
         let info : FontInfo = serde_json::from_str(text)?;
 

@@ -3,7 +3,7 @@ use crate::buffer;
 use crate::{texture, gl};
 use crate::objects::mesh::Mesh;
 use image;
-use image::imageops;
+
 use std::time::Instant;
 
 pub struct Cubemap {

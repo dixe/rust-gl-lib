@@ -3,16 +3,16 @@ use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::animations::skeleton::{Bones, Skeleton};
 use gl_lib::animations::gltf_animation::{Start, AnimationPlayer};
-use gl_lib::objects::gltf_mesh::{self, KeyFrame, Animation};
-use gl_lib::shader::{self, mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
+use gl_lib::objects::gltf_mesh::{self, Animation};
+use gl_lib::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
 use gl_lib::typedef::*;
 use gl_lib::objects::{mesh::Mesh, cubemap::{self, Cubemap}};
 use gl_lib::camera::{self, free_camera, Camera};
-use gl_lib::na::{Scale3, Translation3};
-use gl_lib::{buffer, texture};
+use gl_lib::na::{Translation3};
+use gl_lib::{buffer};
 use gl_lib::shader::Shader;
 use std::{thread, sync::{Arc, Mutex}};
-use std::rc::Rc;
+
 
 fn main() -> Result<(), failure::Error> {
     let sdl_setup = helpers::setup_sdl()?;
@@ -59,7 +59,7 @@ fn main() -> Result<(), failure::Error> {
 
 
     camera.move_to(V3::new(8.4, 4.3, 5.0));
-    let mut la = V3::new(5.0, 3.1, 5.0);
+    let la = V3::new(5.0, 3.1, 5.0);
     camera.look_at(la);
 
     let mut player = AnimationPlayer::new();
@@ -69,7 +69,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut time : f32 = 0.0;
 
-    let mut animation : Option<&Animation> = None;
+    let _animation : Option<&Animation> = None;
 
     // frame buffer to render to
     let mesh_fbo = buffer::FrameBuffer::new(&gl, &viewport);
@@ -86,7 +86,7 @@ fn main() -> Result<(), failure::Error> {
     let mut cubemap_shader = load_object_shader("cubemap", gl).unwrap();
     let mut cubemap : Option::<Cubemap> = None;
 
-    let mut cubemap_imgs : Arc::<Mutex::<Option<Vec::<image::RgbImage>>>> = Arc::new(Mutex::new(None));
+    let cubemap_imgs : Arc::<Mutex::<Option<Vec::<image::RgbImage>>>> = Arc::new(Mutex::new(None));
 
     // start thread to load cubemap
     let cm = cubemap_imgs.clone();

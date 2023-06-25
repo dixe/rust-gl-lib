@@ -16,8 +16,8 @@ fn main() -> Result<(), failure::Error> {
     let mut ui = Ui::new(drawer_2d);
 
     let mut event_pump = sdl.event_pump().unwrap();
-    let mut onoff = false;
-    let mut color = Color::Rgb(0,0,0);
+    let _onoff = false;
+    let color = Color::Rgb(0,0,0);
 
      // Set background color to white
     unsafe {
@@ -28,7 +28,7 @@ fn main() -> Result<(), failure::Error> {
     let mut show = false;
 
 
-    let mut input = "".to_string();
+    let _input = "".to_string();
     loop {
 
         let _c_vec = color.as_vec4();

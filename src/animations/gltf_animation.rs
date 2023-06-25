@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::objects::gltf_mesh::{KeyFrame, Animation};
-use crate::animations::{clamp01, skeleton::{self, Skeleton, Bones}};
+use crate::animations::{skeleton::{Skeleton}};
 use std::rc::Rc;
 
 pub type MeshName = String;
@@ -61,8 +61,8 @@ impl AnimationPlayer {
 
             if active.anim.total_secs > active.elapsed {
                 // set active.frame until we are at end, or current frame end after currently elapsed time
-                while(active.frame < (active.anim.frames.len() - 1) &&
-                      active.anim.frames[active.frame].end_time() < active.elapsed) {
+                while active.frame < (active.anim.frames.len() - 1) &&
+                      active.anim.frames[active.frame].end_time() < active.elapsed {
                     //println!("{:.2?}", (active.anim.frames[active.frame].end_time(), active.elapsed));
                     active.frame = usize::min(active.anim.frames.len() - 1 , active.frame  + 1);
                 }
@@ -94,7 +94,7 @@ impl AnimationPlayer {
 
         // make sure tmp keyframes always has enought joints
         if self.tmp_keyframe.joints.len() < start.anim.frames[0].joints.len() {
-            for i in 0..(start.anim.frames[0].joints.len() - self.tmp_keyframe.joints.len()) {
+            for _i in 0..(start.anim.frames[0].joints.len() - self.tmp_keyframe.joints.len()) {
                 self.tmp_keyframe.joints.push(Default::default());
             }
         }

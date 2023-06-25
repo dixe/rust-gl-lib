@@ -1,15 +1,15 @@
-use gl_lib::{gl, helpers};
+use gl_lib::{gl};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::animations::skeleton::{Bones, Skeleton};
 use gl_lib::animations::gltf_animation::{Start, AnimationPlayer, AnimationId};
-use gl_lib::objects::gltf_mesh::{self, KeyFrame, GltfData, Animation};
-use gl_lib::shader::{self, mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
+use gl_lib::objects::gltf_mesh::{self, Animation};
+use gl_lib::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
 use gl_lib::typedef::*;
 use gl_lib::objects::{mesh::Mesh, cubemap::{self, Cubemap}};
 use gl_lib::camera::{self, free_camera, Camera};
-use gl_lib::na::{Scale3, Translation3};
-use gl_lib::{buffer, texture};
+use gl_lib::na::{Translation3};
+use gl_lib::{buffer};
 use gl_lib::shader::Shader;
 use std::{thread, sync::{Arc, Mutex}};
 use std::rc::Rc;
@@ -127,7 +127,7 @@ impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
         let player = AnimationPlayer::new();
 
         let mut default_bones = vec![];
-        for i in 0..32 {
+        for _i in 0..32 {
             default_bones.push(Mat4::identity())
         }
 
@@ -246,7 +246,7 @@ impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
         });
     }
 
-    pub fn set_skybox<P: AsRef<Path> + std::fmt::Debug>(&mut self, path: &P) {
+    pub fn set_skybox<P: AsRef<Path> + std::fmt::Debug>(&mut self, _path: &P) {
 
         //START load
         let cm = Arc::new(Mutex::new(None));
@@ -404,7 +404,7 @@ impl<UserData, UserPostProcessData> Scene<UserData, UserPostProcessData> {
 }
 
 
-pub fn play_animation(anim: Rc::<Animation>, repeat: bool, entity_id: &EntityId, player: &mut AnimationPlayer, anim_ids: &mut HashMap::<EntityId, AnimationId>) {
+pub fn play_animation(anim: Rc::<Animation>, _repeat: bool, entity_id: &EntityId, player: &mut AnimationPlayer, anim_ids: &mut HashMap::<EntityId, AnimationId>) {
 
     if let Some(anim_id) = anim_ids.get(entity_id) {
         player.remove(*anim_id);

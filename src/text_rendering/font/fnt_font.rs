@@ -7,7 +7,7 @@ use std::str::{FromStr};
 use std::fmt;
 use itertools::Itertools;
 use image::io::Reader as ImageReader;
-use image::imageops;
+
 use super::*;
 use crate::gl;
 use crate::na;
@@ -48,7 +48,7 @@ impl FntFont {
     /// Fonts generated from steps here: <https://github.com/libgdx/libgdx/wiki/Distance-field-fonts>]
 
 
-    pub fn load_font(text: &str, mut image: image::RgbaImage) -> Result<FntFont, Box<dyn Error>> {
+    pub fn load_font(text: &str, image: image::RgbaImage) -> Result<FntFont, Box<dyn Error>> {
 
         let mut lines = text.lines();
 
