@@ -1,29 +1,30 @@
 use std::collections::HashMap;
 use crate::objects::gltf_mesh::{KeyFrame, Animation};
 use crate::animations::{clamp01, skeleton::{self, Skeleton, Bones}};
-
+use std::rc::Rc;
 
 pub type MeshName = String;
 pub type AnimationName = String;
 pub type AnimationId = usize;
 
 #[derive(Debug)]
-struct ActiveAnimation<'a> {
-    anim: &'a Animation,
+struct ActiveAnimation {
+    anim: Rc::<Animation>,
     repeat: bool,
     frame: usize,
     elapsed: f32,
 }
 
 
-pub struct Start<'a> {
-    pub anim: &'a Animation,
+pub struct Start {
+    pub anim: Rc::<Animation>,
     pub repeat: bool,
 }
 
 
-
 pub type Animations = HashMap::<String, Animation>;
+
+
 /*
 pub struct Animations {
     next_id: AnimationId,
@@ -34,14 +35,14 @@ pub struct Animations {
 */
 
 #[derive(Debug, Default)]
-pub struct AnimationPlayer<'a> {
-    animations: HashMap::<AnimationId, ActiveAnimation<'a>>,
+pub struct AnimationPlayer {
+    animations: HashMap::<AnimationId, ActiveAnimation>,
     next_id: AnimationId,
     clear_buffer: Vec::<AnimationId>,
     tmp_keyframe: KeyFrame
 }
 
-impl<'a> AnimationPlayer<'a> {
+impl AnimationPlayer {
 
     pub fn new() -> Self {
         Self::default()
@@ -88,7 +89,7 @@ impl<'a> AnimationPlayer<'a> {
     }
 
 
-    pub fn start(&mut self, start: Start<'a>) -> AnimationId {
+    pub fn start(&mut self, start: Start) -> AnimationId {
         let id = self.next_id;
 
         // make sure tmp keyframes always has enought joints

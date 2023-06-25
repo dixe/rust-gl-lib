@@ -4,12 +4,12 @@ use crate::objects::mesh::Mesh;
 use crate::animations::skeleton::{load_skins, SkinId, Skins};
 use std::collections::HashMap;
 use image::{self, buffer::ConvertBuffer};
-
+use std::rc::Rc;
 
 pub struct GltfData {
     pub meshes: GltfMeshes,
     pub skins: Skins,
-    pub animations: HashMap::<SkinId, HashMap<String, Animation>>,
+    pub animations: HashMap::<SkinId, HashMap<Rc::<str>, Rc::<Animation>>>,
     pub images: Vec::<image::RgbaImage>
 }
 
@@ -115,7 +115,7 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
 
 
 
-    let mut animations = HashMap::<SkinId, HashMap<String, Animation>>::new();
+    let mut animations = HashMap::<SkinId, HashMap<Rc::<str>, Rc::<Animation>>>::new();
 
     for ani in gltf.animations() {
         let name = match ani.name() {
@@ -130,7 +130,6 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
         let mut skin_id : Option<SkinId> = None;
 
         let mut joints_indexes: std::collections::HashMap::<String, usize> = std::collections::HashMap::new();
-
 
         let mut base_key_frame = None;
 
@@ -245,9 +244,9 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
                 animations.insert(s_id, Default::default());
             }
 
-            let map : &mut HashMap::<String, Animation> = animations.get_mut(&s_id).unwrap();
+            let map : &mut HashMap::<Rc::<str>, Rc::<Animation>> = animations.get_mut(&s_id).unwrap();
 
-            map.insert(name.clone(), Animation {frames, total_secs } ) ;
+            map.insert(Rc::from(name.clone()), Rc::from(Animation {frames, total_secs }));
         }
     }
 

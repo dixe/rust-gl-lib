@@ -12,7 +12,7 @@ use gl_lib::na::{Scale3, Translation3};
 use gl_lib::{buffer, texture};
 use gl_lib::shader::Shader;
 use std::{thread, sync::{Arc, Mutex}};
-
+use std::rc::Rc;
 
 fn main() -> Result<(), failure::Error> {
     let sdl_setup = helpers::setup_sdl()?;
@@ -130,7 +130,7 @@ fn main() -> Result<(), failure::Error> {
             for (name, anim) in gltf_data.animations.get(skin_id).unwrap() {
                 if ui.button(name) {
                     player.remove(anim_id);
-                    anim_id = player.start(Start {anim: &anim, repeat: true});
+                    anim_id = player.start(Start {anim: anim.clone(), repeat: true});
                 }
             }
         }

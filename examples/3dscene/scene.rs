@@ -2,7 +2,7 @@ use gl_lib::{gl, helpers};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::animations::skeleton::{Bones, Skeleton};
-use gl_lib::animations::gltf_animation::{Start, AnimationPlayer};
+use gl_lib::animations::gltf_animation::{Start, AnimationPlayer, AnimationId};
 use gl_lib::objects::gltf_mesh::{self, KeyFrame, GltfData, Animation};
 use gl_lib::shader::{self, mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
 use gl_lib::typedef::*;
@@ -57,7 +57,7 @@ struct SceneMesh {
 }
 
 
-pub struct Scene<'a, UserData> {
+pub struct Scene<UserData> {
     pub user_data: UserData,
     pub ui: Ui,
     pub gl: gl::Gl,
@@ -65,7 +65,7 @@ pub struct Scene<'a, UserData> {
     pub camera: camera::Camera,
     pub free_controller: free_camera::Controller,
 
-    pub player: AnimationPlayer<'a>,
+    pub player: AnimationPlayer,
 
     pub cubemap : Option::<Cubemap>,
     pub cubemap_shader: BaseShader,
@@ -81,12 +81,12 @@ pub struct Scene<'a, UserData> {
     pub skeletons: Vec::<Skeleton>,
 
     // animations is lined to skeleton, so have skeleton
-    pub animations: HashMap::<SkeletonIndex, HashMap::<Rc::<str>, Animation>>,
-
+    pub animations: HashMap::<SkeletonIndex, HashMap::<Rc::<str>, Rc<Animation>>>,
 
     // Each entity can have one set of bones
     pub bones: HashMap::<EntityId, Bones>,
 
+    pub animation_ids: HashMap::<EntityId, AnimationId>,
     entities: DataMap::<SceneEntity>,
 
     default_bones: Bones,
@@ -97,11 +97,11 @@ pub struct Scene<'a, UserData> {
 #[derive(Default)]
 pub struct SceneEntity {
     pub mesh_id: MeshIndex,
-    pub skeleton_id: Option::<SkeletonIndex>
+    pub skeleton_id: Option::<SkeletonIndex>, // Is indirectly a duplicated data, since meshindex points to Scene mesh, which has skel_id. But lets keep it as a convinience
 }
 
-impl<'a, UserData> Scene<'a ,UserData> {
-    pub fn new(user_data: UserData, gl: gl::Gl, viewport: gl::viewport::Viewport) -> Result<Scene<'a, UserData>, failure::Error> {
+impl<UserData> Scene<UserData> {
+    pub fn new(user_data: UserData, gl: gl::Gl, viewport: gl::viewport::Viewport) -> Result<Scene< UserData>, failure::Error> {
 
         let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
         let ui = Ui::new(drawer_2d);
@@ -116,6 +116,7 @@ impl<'a, UserData> Scene<'a ,UserData> {
 
         unsafe {
             gl.Enable(gl::DEPTH_TEST);
+            gl.ClearColor(0.9, 0.9, 0.9, 1.0);
         }
 
         Ok(Self {
@@ -134,19 +135,33 @@ impl<'a, UserData> Scene<'a ,UserData> {
             entities: Default::default(),
             skeletons: Default::default(),
             animations: Default::default(),
+            animation_ids: Default::default(),
             bones: Default::default(),
             default_bones
         })
     }
 
+    pub fn get_entity(&self, id: &EntityId) -> Option<&SceneEntity> {
+        self.entities.get(id)
+    }
+
     pub fn create_entity(&mut self, mesh_name: &str) -> EntityId {
 
+        let mesh_id = *self.meshes.get(mesh_name).unwrap();
+        let skeleton_id = self.mesh_data[mesh_id].skeleton;
         let entity = SceneEntity {
-            mesh_id: *self.meshes.get(mesh_name).unwrap(),
-            skeleton_id: None
+            mesh_id,
+            skeleton_id: self.mesh_data[mesh_id].skeleton
         };
 
-        self.entities.insert(entity)
+        let id = self.entities.insert(entity);
+
+        if let Some(s_id) = skeleton_id {
+            // set bones
+            self.bones.insert(id, self.skeletons[s_id].create_bones());
+        }
+
+        id
     }
 
     pub fn load_all_meshes(&mut self, path: &str) {
@@ -170,6 +185,19 @@ impl<'a, UserData> Scene<'a ,UserData> {
             });
 
             self.meshes.insert(Rc::from(name.to_string()), self.mesh_data.len() - 1);
+        }
+
+        for skin_id in gltf_data.animations.keys() {
+            let skel_id = skin_id_to_skel_idx.get(skin_id).unwrap();
+
+            if !self.animations.contains_key(skel_id) {
+                self.animations.insert(*skel_id, Default::default());
+            }
+
+            let map : &mut HashMap::<Rc::<str>, Rc<Animation>> = self.animations.get_mut(skel_id).unwrap();
+            for (name, anim) in gltf_data.animations.get(skin_id).unwrap() {
+                map.insert(name.clone(), anim.clone());
+            }
         }
     }
 
@@ -236,25 +264,28 @@ impl<'a, UserData> Scene<'a ,UserData> {
         self.free_controller.update_camera(&mut self.camera, dt);
     }
 
-    pub fn play_animation(&mut self, entity: EntityId, name: &str, repeat: bool) {
-        todo!();
-    }
-
-    pub fn animations_for(&self, entity: &EntityId) -> Option::<&[&str]> {
-        if let Some(skel) = self.entities.get(entity).and_then(|e| e.skeleton_id) {
-
-        }
-        None
-    }
-
     pub fn update_animations(&mut self) {
         let dt = self.dt();
         self.player.update(dt);
+
+
+        // update entities skeleton
+        for (entity_id, entity) in &self.entities.data {
+            if let Some(anim_id) = self.animation_ids.get(entity_id) {
+                if let Some(skel_id) = entity.skeleton_id {
+                    let skeleton = self.skeletons.get_mut(skel_id).unwrap();
+                    self.player.update_skeleton(*anim_id, skeleton);
+                    let bones = self.bones.get_mut(entity_id).unwrap();
+                    skeleton.set_all_bones_from_skeleton(bones);
+
+                }
+            }
+        }
     }
+
 
     /// Default rendering using fbo, cubemap ect if enabled and avaialbe in scene
     pub fn render(&mut self) {
-
 
         // DRAW MESHES
         self.mesh_shader.shader.set_used();
@@ -270,7 +301,7 @@ impl<'a, UserData> Scene<'a ,UserData> {
                 model: model_mat,
                 view: self.camera.view(),
                 view_pos: self.camera.pos(),
-                bones: &self.default_bones
+                bones: self.bones.get(key).unwrap_or(&self.default_bones)
             };
 
             self.mesh_shader.set_uniforms(uniforms);
@@ -282,4 +313,21 @@ impl<'a, UserData> Scene<'a ,UserData> {
     pub fn dt(&self) -> f32 {
         self.ui.dt()
     }
+
+}
+
+
+pub fn play_animation(anim: Rc::<Animation>, repeat: bool, entity_id: &EntityId, player: &mut AnimationPlayer, anim_ids: &mut HashMap::<EntityId, AnimationId>) {
+
+    if let Some(anim_id) = anim_ids.get(entity_id) {
+        player.remove(*anim_id);
+    }
+
+    // get old animation id
+    // TODO: let
+    let id = player.start(Start {anim, repeat: true});
+
+    anim_ids.insert(*entity_id, id);
+
+
 }

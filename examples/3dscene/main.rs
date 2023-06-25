@@ -13,8 +13,6 @@ use gl_lib::shader::{self, mesh_shader, BaseShader, texture_shader, reload_objec
 use gl_lib::typedef::*;
 use gl_lib::objects::{mesh::Mesh, cubemap::{self, Cubemap}};
 
-
-
 mod scene;
 
 fn main() -> Result<(), failure::Error> {
@@ -107,13 +105,23 @@ fn main() -> Result<(), failure::Error> {
 
         //let names = scene.animations_for(&player_id).unwrap().collect();
         // change animation of entity
-        /*
-        for name in scene.animations_for(&player_id).unwrap() {
+
+        let player_skel = scene.get_entity(&player_id).unwrap().skeleton_id.unwrap();
+
+        let animations = scene.animations.get(&player_skel).unwrap();
+        for (name, anim) in animations {
             if scene.ui.button(name) {
-                scene.play_animation(player_id, name, true);
+                scene::play_animation(anim.clone(), true, &player_id, &mut scene.player, &mut scene.animation_ids);
+
+                /*
+                scene.animations.play(fanimations.get(name).unwrap().clone(), true, &mut scene.player,)
+                scene.player.start(Start {anim: , repeat: true});
+                 */
+
+                //scene.play_animation(player_id, name, true);
             }
         }
-*/
+
 
         /*
         // hmm, should call into scene since its the owner/manager of this gltf data
