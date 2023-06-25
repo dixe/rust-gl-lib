@@ -457,7 +457,6 @@ pub struct GltfMesh {
 
 impl GltfMesh {
     pub fn triangles(&self) -> Vec::<Triangle> {
-        panic!("");
         let mut res = Vec::new();
         for i in (0..self.indices_data.len()).step_by(3) {
             let v0_i = self.indices_data[i];

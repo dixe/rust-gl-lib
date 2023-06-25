@@ -4,16 +4,12 @@ use crate::{texture, gl};
 use crate::objects::mesh::Mesh;
 use image;
 
-use std::time::Instant;
-
 pub struct Cubemap {
     pub mesh: Mesh,
     pub texture_id: texture::TextureId
 }
 
-
 impl Cubemap {
-
 
     pub fn from_images(gl: &gl::Gl, images: &[image::RgbImage]) -> Cubemap {
         let vertices : Vec::<f32> = vec![
@@ -154,19 +150,4 @@ pub fn load_cubemap_images<P: AsRef<Path> + std::fmt::Debug>(path: &P) -> Vec::<
         p.pop();
     }
     imgs
-}
-
-fn load_cubemap_texture<P: AsRef<Path> + std::fmt::Debug>(gl: &gl::Gl, path: &P) -> texture::TextureId {
-
-    let now = Instant::now();
-    let imgs = load_cubemap_images(path);
-
-    println!("Loaded cubemap images in {}\nGen textures", now.elapsed().as_secs());
-    let now = Instant::now();
-    let id = texture::gen_texture_cube_map(gl, &imgs);
-
-    let el = now.elapsed().as_secs();
-    println!("DONE textures in {}" , el);
-
-    id
 }
