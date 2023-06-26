@@ -30,6 +30,10 @@ impl Ui{
                 window.top_bar_size = Pos::new(0, 20);
                 window.base_container_context.anchor_pos = Pos::new(700, 100 + 20);
                 window.base_container_context.next_id.window_id = window_id;
+
+                // default window z level, larger is closer to screen, i.e op top
+                window.base_container_context.base_z = self.drawer2D.z;
+
                 self.windows.insert(window_id, window);
                 window_id
             }
@@ -118,23 +122,25 @@ impl Ui{
 
             let z = self.drawer2D.z;
 
-            self.drawer2D.z = 1.0;
+            // pull back when drawing window, just a bit
+            self.drawer2D.z = window.base_container_context.base_z - 0.1;
+
             // Background
             self.drawer2D.rounded_rect_color(anchor.x,
                                              anchor.y,
                                              window_w,
                                              window_h,
                                              bg_color);
-
-            self.drawer2D.z = 1.2;
             // window Top Bar
+
             self.drawer2D.rounded_rect_color(anchor.x,
                                              anchor.y - window.top_bar_size.y,
                                              window.top_bar_size.x,
                                              window.top_bar_size.y,
                                              color);
 
-            self.drawer2D.z = 1.4;
+
+
             self.drawer2D.render_text(title, anchor.x + self.style.spacing.x, anchor.y - window.top_bar_size.y + self.style.spacing.y, 13);
 
             // window border

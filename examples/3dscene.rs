@@ -2,9 +2,7 @@ use gl_lib::{gl, helpers};
 use gl_lib::shader::Shader;
 use gl_lib::shader::{BaseShader, reload_object_shader};
 use gl_lib::typedef::*;
-
-
-mod scene;
+use gl_lib::scene_3d as scene;
 
 pub struct PostPData {
     time: f32
@@ -27,25 +25,23 @@ fn main() -> Result<(), failure::Error> {
     sdl_setup.video_subsystem.gl_set_swap_interval(0);
 
     let mut scene = scene::Scene::<PostPData>::new(gl.clone(), viewport)?;
-    //scene.set_skybox("assets/cubemap/skybox/".to_string());
-    scene.load_all_meshes("E:/repos/Game-in-rust/blender_models/Animation_test.glb");
+    scene.set_skybox("assets/cubemap/skybox/".to_string());
+    scene.load_all_meshes("E:/repos/Game-in-rust/blender_models/player.glb", true);
 
 
     let look_at = V3::new(5.0, 3.1, 5.0);
     scene.camera.move_to(V3::new(8.4, 4.3, 5.0));
     scene.camera.look_at(look_at);
-
-    scene.free_controller.speed = 5.0;
-    scene.free_controller.sens = 1.0;
-
-
-
+    scene.free_controller.speed = 15.0;
+    scene.free_controller.sens = 1.5;
 
     let mut event_pump = sdl.event_pump().unwrap();
 
-    let player_id = scene.create_entity("Cube");
-    let player2_id = scene.create_entity("Cube");
+    let player_id = scene.create_entity("player");
+    let player2_id = scene.create_entity("player");
 
+
+    let world_id = scene.create_entity("world");
 
     let p1 = scene.entity_mut(&player_id).unwrap();
     p1.pos = V3::new(-10.0, -10.0, 0.0);
@@ -90,10 +86,6 @@ fn main() -> Result<(), failure::Error> {
         }
 
 
-        if !show_options {
-            show_options = scene.ui.button("Options");
-        }
-
         if show_options {
 
             let ui = &mut scene.ui;
@@ -109,6 +101,12 @@ fn main() -> Result<(), failure::Error> {
             ui.label("Speed");
             ui.slider(&mut scene.free_controller.speed, 0.01, 20.0);
 
+            ui.newline();
+            let p1 = scene.entities.get(&player_id).unwrap();
+            ui.body_text(&format!("pos: {:.2?}", p1.pos));
+
+            ui.newline();
+            ui.body_text(&format!("root pos: {:.2?}", p1.root_motion));
             ui.window_end("Options");
         }
 
@@ -117,18 +115,26 @@ fn main() -> Result<(), failure::Error> {
         let animations = scene.animations.get(&player_skel).unwrap();
         for (name, anim) in animations {
             if scene.ui.button(name) {
-                scene::play_animation(anim.clone(), true, &player_id, &mut scene.player, &mut scene.animation_ids);
+                scene::play_animation(anim.clone(), false, &player_id, &mut scene.player, &mut scene.animation_ids, &mut scene.entities);
             }
         }
 
         if let Some(ref mut fbos) = scene.fbos {
             fbos.post_process_data.time += dt;
             if scene.ui.button("Reset") {
+                let p1 = scene.entities.get_mut(&player_id).unwrap();
+                p1.pos = V3::new(-10.0, -10.0, 0.0);
                 fbos.post_process_data.time = 0.0;
             }
         }
 
-        // update aimaiton player, and bones
+        scene.ui.newline();
+
+        if !show_options {
+            show_options = scene.ui.button("Options");
+        }
+
+        // update aimaiton player, and bones, and root motion if any
         if playing {
             scene.update_animations();
         }

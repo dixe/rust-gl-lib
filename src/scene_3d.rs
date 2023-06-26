@@ -1,23 +1,23 @@
-use gl_lib::{gl};
-use gl_lib::imode_gui::drawer2d::*;
-use gl_lib::imode_gui::ui::*;
-use gl_lib::animations::skeleton::{Bones, Skeleton};
-use gl_lib::animations::gltf_animation::{Start, AnimationPlayer, AnimationId};
-use gl_lib::objects::gltf_mesh::{self, Animation};
-use gl_lib::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
-use gl_lib::typedef::*;
-use gl_lib::objects::{mesh::Mesh, cubemap::{self, Cubemap}};
-use gl_lib::camera::{self, free_camera, Camera};
-use gl_lib::na::{Translation3};
-use gl_lib::{buffer};
-use gl_lib::shader::Shader;
+use crate::{gl};
+use crate::imode_gui::drawer2d::*;
+use crate::imode_gui::ui::*;
+use crate::animations::skeleton::{Bones, Skeleton};
+use crate::animations::gltf_animation::{Start, AnimationPlayer, AnimationId};
+use crate::objects::gltf_mesh::{self, Animation};
+use crate::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
+use crate::typedef::*;
+use crate::objects::{mesh::Mesh, cubemap::{self, Cubemap}};
+use crate::camera::{self, free_camera, Camera};
+use crate::na::{Translation3};
+use crate::{buffer};
+use crate::shader::Shader;
 use std::{thread, sync::{Arc, Mutex}};
 use std::rc::Rc;
 use std::collections::HashMap;
 use std::path::Path;
 
 
-struct DataMap<T> {
+pub struct DataMap<T> {
     data: HashMap::<usize, T>,
     next_id: usize
 }
@@ -106,8 +106,8 @@ pub struct Scene<UserPostProcessData> {
     // Each entity can have one set of bones
     pub bones: HashMap::<EntityId, Bones>,
 
-    pub animation_ids: HashMap::<EntityId, AnimationId>,
-    entities: DataMap::<SceneEntity>,
+    pub animation_ids: HashMap::<EntityId, AnimationId>, // Kinda want to get rid of this, and maybe just use entityId as key to animaiton player. Maybe the player should just take an id in Start. This is already out of sync and make root motion buggy;
+    pub entities: DataMap::<SceneEntity>,
 
     default_bones: Bones,
 
@@ -122,6 +122,11 @@ pub struct Scene<UserPostProcessData> {
 pub struct SceneEntity {
     pub mesh_id: MeshIndex,
     pub pos: V3,
+    // having pos and root motion make everything easier, since we can just set this in animation update.
+    // if we tried to directly add it to pos, then we had to take dt into account, and also somehow make sure that we
+    // got every part of every frame, so when dt changes frame, we had to add the last part of old frame root motion
+    // ect. ect. this make it easier
+    pub root_motion: V3,
     pub skeleton_id: Option::<SkeletonIndex>, // Is indirectly a duplicated data, since meshindex points to Scene mesh, which has skel_id. But lets keep it as a convinience
 }
 
@@ -183,7 +188,8 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
         let skeleton_id = self.mesh_data[mesh_id].skeleton;
         let entity = SceneEntity {
             mesh_id,
-            pos: V3::identity(),
+            pos: V3::new(0.0, 0.0, 0.0),
+            root_motion: V3::new(0.0, 0.0, 0.0),
             skeleton_id: self.mesh_data[mesh_id].skeleton
         };
 
@@ -197,9 +203,10 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
         id
     }
 
-    pub fn load_all_meshes(&mut self, path: &str) {
+    pub fn load_all_meshes(&mut self, path: &str, root_motion: bool) {
 
-        let gltf_data = gltf_mesh::meshes_from_gltf(path).unwrap();
+        // defaults to not split animations into rotation/scale and motion into root motion
+        let gltf_data = gltf_mesh::meshes_from_gltf(path, root_motion).unwrap();
 
         let mut skin_id_to_skel_idx : HashMap::<usize, usize> = HashMap::default();
         for (skin_id, skeleton) in &gltf_data.skins.skeletons {
@@ -246,7 +253,6 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             self.gl.StencilFunc(gl::NOTEQUAL, 1, 0xFF);
             self.gl.StencilOp(gl::KEEP, gl::KEEP, gl::REPLACE);
         }
-
     }
 
 
@@ -337,17 +343,24 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
         let dt = self.dt();
         self.player.update(dt);
 
-
         // update entities skeleton
-        for (entity_id, entity) in &self.entities.data {
+        for (entity_id, entity) in &mut self.entities.data {
             if let Some(anim_id) = self.animation_ids.get(entity_id) {
                 if let Some(skel_id) = entity.skeleton_id {
+
                     let skeleton = self.skeletons.get_mut(skel_id).unwrap();
                     self.player.update_skeleton(*anim_id, skeleton);
                     let bones = self.bones.get_mut(entity_id).unwrap();
                     skeleton.set_all_bones_from_skeleton(bones);
-
                 }
+
+                // update root motion. Maybe have a flag on scene or something to disable this. Or have a sperate method
+                entity.root_motion = self.player.root_motion(anim_id);
+            } else {
+                // just make sure that we update entity pos with root motion now that animatio is done,
+                // a new on might start from 0 so we need to make the root motion an actual part of pos
+                entity.pos = entity.pos + entity.root_motion;
+                entity.root_motion = V3::new(0.0, 0.0, 0.0);
             }
         }
     }
@@ -400,19 +413,27 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 }
 
 
-pub fn play_animation(anim: Rc::<Animation>, repeat: bool, entity_id: &EntityId, player: &mut AnimationPlayer, anim_ids: &mut HashMap::<EntityId, AnimationId>) {
 
+
+
+pub fn stop_animation(entity_id: &EntityId, player: &mut AnimationPlayer, anim_ids: &mut HashMap::<EntityId, AnimationId>, entities: &mut DataMap::<SceneEntity>) {
     if let Some(anim_id) = anim_ids.get(entity_id) {
         player.remove(*anim_id);
+        // update entity pos to be pos + root_motion, since root motion will be reset to new anim
+        let e = entities.get_mut(entity_id).unwrap();
+        e.pos = e.pos + e.root_motion;
     }
+}
+
+pub fn play_animation(anim: Rc::<Animation>, repeat: bool, entity_id: &EntityId, player: &mut AnimationPlayer, anim_ids: &mut HashMap::<EntityId, AnimationId>, entities: &mut DataMap::<SceneEntity>) {
+
+    stop_animation(entity_id, player, anim_ids, entities);
 
     // get old animation id
     // TODO: let
     let id = player.start(Start {anim, repeat});
 
     anim_ids.insert(*entity_id, id);
-
-
 }
 
 
@@ -454,7 +475,8 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
     mesh_shader.shader.set_used();
     for (key, entity) in &entities.data {
 
-        let trans = Translation3::from(entity.pos);
+        let trans = Translation3::from(entity.pos + entity.root_motion);
+
         uniforms.model = trans.to_homogeneous();
 
         uniforms.bones = bones.get(key).unwrap_or(default_bones);
@@ -466,7 +488,6 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
             unsafe {
                 gl.StencilFunc(gl::NOTEQUAL, 1, 0xFF);
                 gl.StencilMask(0x00);
-                gl.Disable(gl::DEPTH_TEST);
             }
 
             stencil.shader.set_used();
@@ -476,8 +497,6 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
             unsafe {
                 gl.StencilFunc(gl::ALWAYS, 1, 0xFF);
                 gl.StencilMask(0xFF);
-                gl.Enable(gl::DEPTH_TEST);
-
                 // this make stencil shader individual for each mesh.
                 // without this fx outline will be like last image in https://learnopengl.com/Advanced-OpenGL/Stencil-testing
                 // seems we want it in a per mesh basis.

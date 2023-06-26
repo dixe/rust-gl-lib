@@ -14,8 +14,7 @@ pub struct GltfData {
 }
 
 
-pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
-
+pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, failure::Error> {
 
     let (gltf, buffers, images) = gltf::import(file_path)?;
 
@@ -246,8 +245,28 @@ pub fn meshes_from_gltf(file_path: &str) -> Result<GltfData, failure::Error> {
 
             let map : &mut HashMap::<Rc::<str>, Rc::<Animation>> = animations.get_mut(&s_id).unwrap();
 
-            map.insert(Rc::from(name.clone()), Rc::from(Animation {frames, total_secs }));
+
+            if root_motion {
+                // seperate root motion out of frames and into root_motion vec;
+
+                let base = frames[0].joints[0].translation;
+
+                // root motion
+                let mut rm = vec![];
+
+                // root motion will put hip bones at 0,0,0
+                for i in 0..frames.len() {
+                    // only remove translation from the root/hip bone
+                    rm.push(frames[i].joints[0].translation);
+                    frames[i].joints[0].translation = na::Vector3::<f32>::new(0.0, 0.0, 0.0);
+                }
+
+                map.insert(Rc::from(name.clone()), Rc::from(Animation {frames, total_secs, root_motion: Some(rm)}));
+            } else {
+                map.insert(Rc::from(name.clone()), Rc::from(Animation {frames, total_secs, root_motion: None }));
+            }
         }
+
     }
 
     println!("Meshes loaded {:#?}", res.meshes.keys());
@@ -793,7 +812,8 @@ pub struct VertexWeights {
 #[derive(Debug, Clone)]
 pub struct Animation {
     pub total_secs: f32,
-    pub frames: Vec::<KeyFrame>
+    pub frames: Vec::<KeyFrame>,
+    pub root_motion: Option::<Vec::<na::Vector3::<f32>>> // translation for each frame
 }
 
 #[derive(Debug, Default, Clone)]

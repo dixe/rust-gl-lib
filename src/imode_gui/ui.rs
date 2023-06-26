@@ -371,6 +371,7 @@ pub struct ContainerContext {
     pub draw_offset: Pos,
     pub max_y_offset: i32,
 
+    pub base_z: f32,
 
     pub width: ContainerSize,
     pub height: ContainerSize,

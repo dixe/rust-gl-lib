@@ -40,7 +40,7 @@ mat4 boneTransform() {
 
 void main()
 {
-    mat4 bt = boneTransform();
+  mat4 bt = boneTransform();
 
     vec4 pos = model * bt * vec4(Position, 1.0);
 

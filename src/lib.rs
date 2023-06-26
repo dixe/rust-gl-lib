@@ -25,7 +25,7 @@ pub mod color;
 pub mod deltatime;
 pub mod helpers;
 pub mod typedef;
-
+pub mod scene_3d;
 pub mod math;
 
 pub mod widget_gui;
