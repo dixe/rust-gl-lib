@@ -111,15 +111,18 @@ fn main() -> Result<(), failure::Error> {
             ui.body_text(&format!("root pos: {:.2?}", p1.root_motion));
 
             ui.newline();
-            ui.body_text(&format!("Light_pos x: {:.2?}", scene.light_pos.x));
+            ui.body_text(&format!("light_pos {:.2?}", scene.light_pos));
+
+            ui.newline();
+            ui.body_text("x:");
             ui.slider(&mut scene.light_pos.x, -30.0, 30.0 );
 
             ui.newline();
-            ui.body_text(&format!("Light_pos y: {:.2?}", scene.light_pos.y));
+            ui.body_text("y:");
             ui.slider(&mut scene.light_pos.y, -30.0, 30.0 );
 
             ui.newline();
-            ui.body_text(&format!("Light_pos z: {:.2?}", scene.light_pos.z));
+            ui.body_text("z:");
             ui.slider(&mut scene.light_pos.z, 1.0, 300.0 );
             ui.window_end("Options");
         }
