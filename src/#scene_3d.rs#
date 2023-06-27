@@ -463,7 +463,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                          &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
                          light_space_mat, self.light_pos);
         }
-            }
+    }
 
 
     pub fn dt(&self) -> f32 {

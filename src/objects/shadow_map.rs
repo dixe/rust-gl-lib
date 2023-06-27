@@ -87,8 +87,9 @@ impl ShadowMap {
             gl.Viewport(0, 0, width, height);
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             gl.Enable(gl::DEPTH_TEST);
-            gl.ActiveTexture(gl::TEXTURE1);
+            gl.ActiveTexture(gl::TEXTURE0);
             gl.BindTexture(gl::TEXTURE_2D, self.depth_map);
+
         }
 
     }

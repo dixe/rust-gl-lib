@@ -19,7 +19,7 @@ uniform mat4 uBones[32];
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-
+uniform sampler2D Texture;
 uniform mat4 lightSpaceMat;
 
 mat4 boneTransform() {

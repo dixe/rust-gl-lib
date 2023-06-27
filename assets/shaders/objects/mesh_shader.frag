@@ -24,7 +24,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
   // this can also eliminate the bias sicne that created notisable
   float angle = dot(normal, lightDir);
   if (angle < 0.0 ) {
-    return 1.0;
+    return 1.0; // should be 1
   }
 
   // get correct projection, when using perspective and ortho
@@ -37,14 +37,14 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
   // light outside light view frustum z far
   if(projCoords.z > 1.0)
   {
-    return 0.0;
+    return 0.0; // should be 0
   }
 
   float closestDepth = texture(shadowMap, projCoords.xy).r;
   float currentDepth = projCoords.z;
   float shadow = currentDepth  > closestDepth ? 1.0 : 0.0;
 
-  return closestDepth;
+  return shadow;
 }
 
 
@@ -77,6 +77,6 @@ void main()
   float shadow = ShadowCalculation(IN.FragPosLightSpace, norm, lightDir);
 
   Color = vec4((ambient + diffuse + specular) * col, 1.0f);
-  //Color = vec4((ambient + (1.0 - shadow) * diffuse + specular) * col, 1.0f);
+  Color = vec4((ambient + (1.0 - shadow) * (diffuse + specular)) * col, 1.0f);
   //Color = vec4(shadow, shadow, shadow, 1.0);
 }

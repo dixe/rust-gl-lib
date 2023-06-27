@@ -44,10 +44,10 @@ fn main() -> Result<(), failure::Error> {
     let world_id = scene.create_entity("world");
 
     let p1 = scene.entity_mut(&player_id).unwrap();
-    p1.pos = V3::new(-10.0, -10.0, 1.0);
+    p1.pos = V3::new(0.0, 00.0, 1.0);
 
     let p2 = scene.entity_mut(&player2_id).unwrap();
-    p2.pos = V3::new(-10.0, 10.0, 1.0);
+    p2.pos = V3::new(00.0, 2.0, 1.0);
 
 
     let mut playing = true;
@@ -109,6 +109,18 @@ fn main() -> Result<(), failure::Error> {
 
             ui.newline();
             ui.body_text(&format!("root pos: {:.2?}", p1.root_motion));
+
+            ui.newline();
+            ui.body_text(&format!("Light_pos x: {:.2?}", scene.light_pos.x));
+            ui.slider(&mut scene.light_pos.x, -30.0, 30.0 );
+
+            ui.newline();
+            ui.body_text(&format!("Light_pos y: {:.2?}", scene.light_pos.y));
+            ui.slider(&mut scene.light_pos.y, -30.0, 30.0 );
+
+            ui.newline();
+            ui.body_text(&format!("Light_pos z: {:.2?}", scene.light_pos.z));
+            ui.slider(&mut scene.light_pos.z, 1.0, 300.0 );
             ui.window_end("Options");
         }
 
@@ -125,7 +137,7 @@ fn main() -> Result<(), failure::Error> {
             fbos.post_process_data.time += dt;
             if scene.ui.button("Reset") {
                 let p1 = scene.entities.get_mut(&player_id).unwrap();
-                p1.pos = V3::new(-10.0, -10.0, 1.0);
+                p1.pos = V3::new(-10.0, 0.0, 1.0);
                 fbos.post_process_data.time = 0.0;
             }
         }
