@@ -2,11 +2,11 @@ use crate::{gl};
 use crate::imode_gui::drawer2d::*;
 use crate::imode_gui::ui::*;
 use crate::animations::skeleton::{Bones, Skeleton};
-use crate::animations::gltf_animation::{Start, AnimationPlayer, AnimationId};
+use crate::animations::gltf_animation::{Start, AnimationPlayer};
 use crate::objects::gltf_mesh::{self, Animation};
 use crate::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
 use crate::typedef::*;
-use crate::objects::{mesh::Mesh, cubemap::{self, Cubemap}};
+use crate::objects::{shadow_map::ShadowMap, mesh::Mesh, cubemap::{self, Cubemap}};
 use crate::camera::{self, free_camera, Camera};
 use crate::na::{Translation3};
 use crate::{buffer};
@@ -82,7 +82,7 @@ pub struct Scene<UserPostProcessData> {
     pub camera: camera::Camera,
     pub free_controller: free_camera::Controller,
 
-    pub player: AnimationPlayer,
+    pub player: AnimationPlayer<EntityId>,
 
     pub cubemap : Option::<Cubemap>,
     pub cubemap_shader: BaseShader,
@@ -106,14 +106,20 @@ pub struct Scene<UserPostProcessData> {
     // Each entity can have one set of bones
     pub bones: HashMap::<EntityId, Bones>,
 
-    pub animation_ids: HashMap::<EntityId, AnimationId>, // Kinda want to get rid of this, and maybe just use entityId as key to animaiton player. Maybe the player should just take an id in Start. This is already out of sync and make root motion buggy;
+    //pub animation_ids: HashMap::<EntityId, EntityId>, // Kinda want to get rid of this, and maybe just use entityId as key to animaiton player. Maybe the player should just take an id in Start. This is already out of sync and make root motion buggy;
     pub entities: DataMap::<SceneEntity>,
 
     default_bones: Bones,
 
     pub fbos: Option::<Fbos<UserPostProcessData>>,
 
-    pub stencil_shader: Option<mesh_shader::MeshShader>
+    pub stencil_shader: Option<mesh_shader::MeshShader>,
+
+    pub shadow_map: Option<ShadowMap>,
+
+    //render_meshes: Vec::<RenderMesh>
+
+
 
 }
 
@@ -137,7 +143,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
         let ui = Ui::new(drawer_2d);
         let mesh_shader = mesh_shader::MeshShader::new(&gl)?;
         let cubemap_shader = load_object_shader("cubemap", &gl).unwrap();
-        let player = AnimationPlayer::new();
+        let player = AnimationPlayer::<EntityId>::new();
 
         let mut default_bones = vec![];
         for _i in 0..32 {
@@ -151,6 +157,8 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
         Ok(Self {
             gl,
+            shadow_map: None,
+            //render_meshes: vec![],
             ui,
             camera: camera::Camera::new(viewport.w as f32, viewport.h as f32),
             free_controller: free_camera::Controller::default(),
@@ -163,7 +171,6 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             entities: Default::default(),
             skeletons: Default::default(),
             animations: Default::default(),
-            animation_ids: Default::default(),
             bones: Default::default(),
             cubemap_imgs: None,
             default_bones,
@@ -239,6 +246,10 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                 map.insert(name.clone(), anim.clone());
             }
         }
+    }
+
+    pub fn use_shadow_map(&mut self) {
+        self.shadow_map = Some(ShadowMap::new(&self.gl));
     }
 
     pub fn use_stencil(&mut self) {
@@ -345,36 +356,82 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
         // update entities skeleton
         for (entity_id, entity) in &mut self.entities.data {
-            if let Some(anim_id) = self.animation_ids.get(entity_id) {
+            if !self.player.expired(entity_id) {
                 if let Some(skel_id) = entity.skeleton_id {
 
                     let skeleton = self.skeletons.get_mut(skel_id).unwrap();
-                    self.player.update_skeleton(*anim_id, skeleton);
+                    self.player.update_skeleton(*entity_id, skeleton);
                     let bones = self.bones.get_mut(entity_id).unwrap();
                     skeleton.set_all_bones_from_skeleton(bones);
                 }
 
                 // update root motion. Maybe have a flag on scene or something to disable this. Or have a sperate method
-                entity.root_motion = self.player.root_motion(anim_id);
+                entity.root_motion = self.player.root_motion(entity_id);
             } else {
                 // just make sure that we update entity pos with root motion now that animatio is done,
                 // a new on might start from 0 so we need to make the root motion an actual part of pos
-                entity.pos = entity.pos + entity.root_motion;
+                entity.pos.x += entity.root_motion.x;
+                entity.pos.y += entity.root_motion.y;
                 entity.root_motion = V3::new(0.0, 0.0, 0.0);
             }
         }
     }
 
+
+
     pub fn render(&mut self) {
+
+        // setup render meshes data
+        let mut render_meshes = vec![];
+        for (key, entity) in &self.entities.data {
+
+            let trans = Translation3::from(entity.pos + entity.root_motion);
+
+            render_meshes.push(RenderMesh {
+                model_mat: trans.to_homogeneous(),
+                bones: self.bones.get(key).unwrap_or(&self.default_bones),
+                mesh: &self.mesh_data[entity.mesh_id].mesh,
+            });
+        }
+
+
+        let light_pos = V3::new(0.0, 10.0, 30.0);
+
+        let mut light_space_mat = Mat4::identity();
+        // RENDER TO SHADOW MAP
+        if let Some(sm) = &self.shadow_map {
+            sm.pre_render(&self.gl, light_pos);
+            light_space_mat = sm.light_space_mat(light_pos);
+
+            unsafe {
+                self.gl.Enable(gl::CULL_FACE);
+                self.gl.CullFace(gl::FRONT);
+            }
+            for rm in &render_meshes {
+                sm.shader.set_mat4(&self.gl, "model", rm.model_mat);
+                sm.shader.set_slice_mat4(&self.gl, "uBones", rm.bones);
+
+                rm.mesh.render(&self.gl);
+            }
+
+            unsafe {
+                self.gl.CullFace(gl::BACK);
+            }
+
+            // TODO: Work with non fixed viewport
+            sm.post_render(&self.gl, self.ui.drawer2D.viewport.w, self.ui.drawer2D.viewport.h);
+        }
+
+
 
         if let Some(ref mut fbos) = self.fbos {
             fbos.ui_fbo.unbind();
 
             fbos.mesh_fbo.bind_and_clear(self.clear_buffer_bits);
 
-
             render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
-                         &self.entities, &self.cubemap, &self.cubemap_shader, &self.stencil_shader);
+                         &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
+                         light_space_mat, light_pos);
 
             fbos.mesh_fbo.unbind();
 
@@ -401,9 +458,10 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
         } else {
             render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
-                         &self.entities, &self.cubemap, &self.cubemap_shader, &self.stencil_shader);
+                         &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
+                         light_space_mat, light_pos);
         }
-    }
+            }
 
 
     pub fn dt(&self) -> f32 {
@@ -414,28 +472,31 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
 
 
+pub fn stop_animation(entity_id: &EntityId, player: &mut AnimationPlayer::<EntityId>, entities: &mut DataMap::<SceneEntity>) {
 
-
-pub fn stop_animation(entity_id: &EntityId, player: &mut AnimationPlayer, anim_ids: &mut HashMap::<EntityId, AnimationId>, entities: &mut DataMap::<SceneEntity>) {
-    if let Some(anim_id) = anim_ids.get(entity_id) {
-        player.remove(*anim_id);
+    if !player.expired(entity_id) {
+        player.remove(*entity_id);
         // update entity pos to be pos + root_motion, since root motion will be reset to new anim
         let e = entities.get_mut(entity_id).unwrap();
-        e.pos = e.pos + e.root_motion;
+        // assume that root motion keeps up grounded
+        e.pos.x += e.root_motion.x;
+        e.pos.y += e.root_motion.y;
     }
 }
 
-pub fn play_animation(anim: Rc::<Animation>, repeat: bool, entity_id: &EntityId, player: &mut AnimationPlayer, anim_ids: &mut HashMap::<EntityId, AnimationId>, entities: &mut DataMap::<SceneEntity>) {
+pub fn play_animation(anim: Rc::<Animation>, repeat: bool, entity_id: &EntityId, player: &mut AnimationPlayer::<EntityId>, entities: &mut DataMap::<SceneEntity>) {
 
-    stop_animation(entity_id, player, anim_ids, entities);
+    stop_animation(entity_id, player, entities);
 
-    // get old animation id
-    // TODO: let
-    let id = player.start(Start {anim, repeat});
-
-    anim_ids.insert(*entity_id, id);
+    player.start(Start {anim, repeat, id: *entity_id});
 }
 
+
+pub struct RenderMesh<'a> {
+    pub model_mat: Mat4,
+    pub mesh: &'a Mesh,
+    pub bones: &'a Bones
+}
 
 // Can not be &scene, since then using fbo is not good, and we want a function,
 // since we want to call it from mutiple places
@@ -444,25 +505,27 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
                 mesh_data: &Vec::<SceneMesh>,
                 bones: &HashMap::<EntityId, Bones>,
                 default_bones: &Bones,
-                entities: &DataMap::<SceneEntity>,
                 cubemap_opt: &Option<Cubemap>,
                 cubemap_shader: &BaseShader,
-                stencil_shader: &Option<mesh_shader::MeshShader>) {
+                stencil_shader: &Option<mesh_shader::MeshShader>,
+                shadow_map: &Option<ShadowMap>,
+                render_meshes: &[RenderMesh],
+                light_space_mat: Mat4,
+                light_pos: V3) {
 
-    let pos = V3::new(0.0, 0.0, 0.0);
-    let trans = Translation3::from(pos);
-    let model_mat = trans.to_homogeneous();
 
     let mut uniforms = mesh_shader::Uniforms {
-        light_pos: V3::new(0.0, 100.0, 100.0),
+        light_pos,
         projection: camera.projection(),
-        model: model_mat,
+        model: Mat4::identity(),
         view: camera.view(),
         view_pos: camera.pos(),
-        bones: default_bones
+        bones: default_bones,
     };
 
 
+
+    // SETUP STENCIL
     if stencil_shader.is_some() {
         unsafe {
             gl.StencilFunc(gl::ALWAYS, 1, 0xFF);
@@ -471,19 +534,21 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
         }
     }
 
+
+
     // DRAW MESHES
     mesh_shader.shader.set_used();
-    for (key, entity) in &entities.data {
 
-        let trans = Translation3::from(entity.pos + entity.root_motion);
-
-        uniforms.model = trans.to_homogeneous();
-
-        uniforms.bones = bones.get(key).unwrap_or(default_bones);
+    for rm in render_meshes {
+        uniforms.model = rm.model_mat;
+        uniforms.bones = rm.bones;
 
         mesh_shader.set_uniforms(uniforms);
-        mesh_data[entity.mesh_id].mesh.render(gl);
+        mesh_shader.shader.set_mat4(gl,"lightSpaceMat", light_space_mat);
 
+        rm.mesh.render(gl);
+
+        // STENCIL RENDER PASS
         if let Some(ref stencil) = stencil_shader {
             unsafe {
                 gl.StencilFunc(gl::NOTEQUAL, 1, 0xFF);
@@ -492,7 +557,8 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
 
             stencil.shader.set_used();
             stencil.set_uniforms(uniforms);
-            mesh_data[entity.mesh_id].mesh.render(gl);
+
+            rm.mesh.render(gl);
 
             unsafe {
                 gl.StencilFunc(gl::ALWAYS, 1, 0xFF);
@@ -507,6 +573,7 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
     }
 
 
+    // SKYBOX RENDER
     if let Some(ref cubemap) = cubemap_opt {
         // DRAW SKYBOX
         cubemap_shader.set_used();

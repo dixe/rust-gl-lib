@@ -46,7 +46,7 @@ impl ShadowMap {
         unsafe {
             gl.Viewport(0, 0, 1024, 1024);
             gl.BindFramebuffer(gl::FRAMEBUFFER, self.depth_map_fbo);
-            gl.Clear(gl::DEPTH_BUFFER_BIT);
+            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
         self.shader.set_used();
@@ -86,7 +86,8 @@ impl ShadowMap {
             gl.BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl.Viewport(0, 0, width, height);
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-
+            gl.Enable(gl::DEPTH_TEST);
+            gl.ActiveTexture(gl::TEXTURE1);
             gl.BindTexture(gl::TEXTURE_2D, self.depth_map);
         }
 
@@ -101,13 +102,34 @@ impl ShadowMap {
 pub fn create_shader(gl: &gl::Gl) -> shader::BaseShader {
     let vert_source = r"#version 330 core
 layout (location = 0) in vec3 aPos;
+layout (location = 2) in vec2 BoneWeights;
+layout (location = 3) in vec2 BoneIndices;
 
 uniform mat4 light_space_mat;
 uniform mat4 model;
+uniform mat4 uBones[32];
+
+
+mat4 boneTransform() {
+
+  if(int(BoneIndices.x) < 0)
+  {
+    return mat4(1.0);
+  }
+  mat4 ret;
+
+  // Weight1 * Bone1 + Weight2 * Bone2
+  ret = BoneWeights.x * uBones[int(BoneIndices.x)]
+       + BoneWeights.y * uBones[int(BoneIndices.y)];
+
+  return ret;
+
+}
 
 void main()
 {
-    gl_Position = light_space_mat * model * vec4(aPos, 1.0);
+  mat4 bt = boneTransform();
+    gl_Position = light_space_mat * model * bt * vec4(aPos, 1.0);
 }";
 
     let frag_source = r"#version 330 core

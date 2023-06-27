@@ -6,7 +6,6 @@ use std::rc::Rc;
 
 pub type MeshName = String;
 pub type AnimationName = String;
-pub type AnimationId = usize;
 
 #[derive(Debug)]
 struct ActiveAnimation {
@@ -18,9 +17,10 @@ struct ActiveAnimation {
 }
 
 
-pub struct Start {
+pub struct Start<AnimationId> {
     pub anim: Rc::<Animation>,
     pub repeat: bool,
+    pub id: AnimationId,
 }
 
 
@@ -37,14 +37,13 @@ pub struct Animations {
 */
 
 #[derive(Debug, Default)]
-pub struct AnimationPlayer {
+pub struct AnimationPlayer<AnimationId> where AnimationId : Clone + Copy + Eq + std::hash::Hash + std::default::Default {
     animations: HashMap::<AnimationId, ActiveAnimation>,
-    next_id: AnimationId,
     clear_buffer: Vec::<AnimationId>,
     tmp_keyframe: KeyFrame
 }
 
-impl AnimationPlayer {
+impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> AnimationPlayer<AnimationId> {
 
     pub fn new() -> Self {
         Self::default()
@@ -106,9 +105,8 @@ impl AnimationPlayer {
     }
 
 
-    pub fn start(&mut self, start: Start) -> AnimationId {
-        let id = self.next_id;
-
+    pub fn start(&mut self, start: Start<AnimationId>) -> AnimationId {
+        let id = start.id;
         // make sure tmp keyframes always has enought joints
         if self.tmp_keyframe.joints.len() < start.anim.frames[0].joints.len() {
             for _i in 0..(start.anim.frames[0].joints.len() - self.tmp_keyframe.joints.len()) {
@@ -124,7 +122,6 @@ impl AnimationPlayer {
                                    elapsed: 0.0,
                                    root_motion: V3::new(0.0, 0.0, 0.0)
                                });
-        self.next_id += 1;
         id
     }
 

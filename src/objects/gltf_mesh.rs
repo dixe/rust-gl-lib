@@ -247,8 +247,8 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
 
 
             if root_motion {
-                // seperate root motion out of frames and into root_motion vec;
 
+                // seperate root motion out of frames and into root_motion vec;
                 let base = frames[0].joints[0].translation;
 
                 // root motion
@@ -257,7 +257,7 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
                 // root motion will put hip bones at 0,0,0
                 for i in 0..frames.len() {
                     // only remove translation from the root/hip bone
-                    rm.push(frames[i].joints[0].translation);
+                    rm.push(frames[i].joints[0].translation - base);
                     frames[i].joints[0].translation = na::Vector3::<f32>::new(0.0, 0.0, 0.0);
                 }
 

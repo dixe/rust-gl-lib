@@ -44,10 +44,10 @@ fn main() -> Result<(), failure::Error> {
     let world_id = scene.create_entity("world");
 
     let p1 = scene.entity_mut(&player_id).unwrap();
-    p1.pos = V3::new(-10.0, -10.0, 0.0);
+    p1.pos = V3::new(-10.0, -10.0, 1.0);
 
     let p2 = scene.entity_mut(&player2_id).unwrap();
-    p2.pos = V3::new(-10.0, 10.0, 0.0);
+    p2.pos = V3::new(-10.0, 10.0, 1.0);
 
 
     let mut playing = true;
@@ -59,7 +59,9 @@ fn main() -> Result<(), failure::Error> {
 
     scene.use_fbos(post_process_data, Some(post_process_uniform_set));
 
-    scene.use_stencil();
+    //scene.use_stencil();
+
+    scene.use_shadow_map();
 
     let mut show_options = false;
     loop {
@@ -115,7 +117,7 @@ fn main() -> Result<(), failure::Error> {
         let animations = scene.animations.get(&player_skel).unwrap();
         for (name, anim) in animations {
             if scene.ui.button(name) {
-                scene::play_animation(anim.clone(), false, &player_id, &mut scene.player, &mut scene.animation_ids, &mut scene.entities);
+                scene::play_animation(anim.clone(), false, &player_id, &mut scene.player, &mut scene.entities);
             }
         }
 
@@ -123,7 +125,7 @@ fn main() -> Result<(), failure::Error> {
             fbos.post_process_data.time += dt;
             if scene.ui.button("Reset") {
                 let p1 = scene.entities.get_mut(&player_id).unwrap();
-                p1.pos = V3::new(-10.0, -10.0, 0.0);
+                p1.pos = V3::new(-10.0, -10.0, 1.0);
                 fbos.post_process_data.time = 0.0;
             }
         }
