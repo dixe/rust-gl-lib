@@ -32,6 +32,8 @@ pub mod widget_gui;
 
 pub mod image;
 
+pub mod movement;
+
 pub mod sdl_gui;
 
 pub mod controller;

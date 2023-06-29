@@ -53,7 +53,14 @@ void main()
   vec3 clip_normal = mat3(projection * view) * mat3(transpose(inverse(model * bt))) * SmoothNormal;
 
   float pixel_width = 10.0;
-  clip_pos.xy += (normalize(clip_normal.xy) / vec2(1200, 800)) * pixel_width * 2.0 * clip_pos.w;
+  float ndc_width = 0.05;
+  // not really aspect, we we just set it to vec2(1200, 800); Then we always draw pixel_width wide outline.
+  // But it can look a little funny when obects are far aways and outline is thicker then the object is self
+  // currently it gives an outline that scales with depth, so when far away outline is thiner
+
+  vec2 aspect = vec2(1200.0/800.0, 1.0) * clip_pos.w * 1.0/ndc_width;
+  //vec2 aspect = vec2(1200, 800) * 1.0/pixel_width;
+  clip_pos.xy += normalize(clip_normal.xy) / aspect * 2.0 * clip_pos.w;
 
   gl_Position = clip_pos;
 }

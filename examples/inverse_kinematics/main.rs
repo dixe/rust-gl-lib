@@ -32,13 +32,12 @@ fn main() -> Result<(), failure::Error> {
     let look_at = V3::new(5.0, 3.1, 5.0);
     scene.camera.move_to(V3::new(8.4, 4.3, 5.0));
     scene.camera.look_at(look_at);
-    scene.inputs.speed = 15.0;
-    scene.inputs.sens = 0.70;
+    scene.free_controller.speed = 15.0;
+    scene.free_controller.sens = 1.5;
 
     let mut event_pump = sdl.event_pump().unwrap();
 
     let player_id = scene.create_entity("player");
-    scene.controlled_entity = Some(player_id);
     let player2_id = scene.create_entity("player");
 
 
@@ -57,11 +56,8 @@ fn main() -> Result<(), failure::Error> {
         time : 0.0
     };
 
-
     scene.use_fbos(post_process_data, Some(post_process_uniform_set));
-
     scene.use_stencil();
-
     scene.use_shadow_map();
 
     let mut show_options = false;
@@ -76,17 +72,6 @@ fn main() -> Result<(), failure::Error> {
         if scene.ui.button("Play/Pause") {
             playing = !playing;
         }
-
-        // OWN GAME LOGIC
-        if scene.ui.button("Change Camera") {
-            scene.change_camera();
-        }
-
-        let p1 = scene.entities.get(&player_id).unwrap();
-
-
-        scene.camera_follow(p1.pos + p1.root_motion);
-
 
         if scene.ui.button("Reload") {
             reload_object_shader("mesh_shader", &gl, &mut scene.mesh_shader.shader);
@@ -110,10 +95,10 @@ fn main() -> Result<(), failure::Error> {
             ui.newline();
 
             ui.label("Sens");
-            ui.slider(&mut scene.inputs.sens, 0.01, 1.0);
+            ui.slider(&mut scene.free_controller.sens, 0.01, 2.0);
 
             ui.label("Speed");
-            ui.slider(&mut scene.inputs.speed, 0.01, 20.0);
+            ui.slider(&mut scene.free_controller.speed, 0.01, 20.0);
 
             ui.newline();
             let p1 = scene.entities.get(&player_id).unwrap();

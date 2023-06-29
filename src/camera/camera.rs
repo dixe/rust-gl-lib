@@ -1,3 +1,4 @@
+use crate::typedef::*;
 use crate::na;
 use crate::gl::viewport::*;
 
@@ -78,13 +79,18 @@ impl Camera {
         // calc yaw and pitch, only works because we don't have roll.
         let diff = target - self.pos;
         let height = diff.z; // always height
-        let horizontal_len = (diff.x*diff.x + diff.y * diff.y).sqrt();
+        let horizontal_len = diff.xy().magnitude();
         self.pitch = (height / horizontal_len).atan();
 
+        // use 2d vectors since we only care about the pitch around Z axis. If we use 3d then
+        // z component interferes with the normalized size, and we get wrong results
+        let base = na::Vector2::new(1.0, 0.0); // base 0 degrees is this vec
 
-        let base = na::Vector3::new(1.0, 0.0, 0.0);
-        let new = diff.normalize();
-        self.yaw = new.y.signum() * base.dot(&new).acos();
+        let current = diff.xy().normalize();
+
+        self.yaw = current.y.signum() * base.dot(&current).acos();
+
+        //println!("look_at: {:.5?}", (target, self.pitch, self.yaw, current, base.dot(&new)));
 
         self.update_camera_vectors();
 

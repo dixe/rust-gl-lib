@@ -7,9 +7,9 @@ use crate::objects::gltf_mesh::{self, Animation};
 use crate::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
 use crate::typedef::*;
 use crate::objects::{shadow_map::ShadowMap, mesh::Mesh, cubemap::{self, Cubemap}};
-use crate::camera::{self, free_camera, Camera};
+use crate::camera::{self, free_camera, follow_camera, Camera};
 use crate::na::{Translation3};
-use crate::{buffer};
+use crate::{buffer, movement::Inputs};
 use crate::shader::Shader;
 use std::{thread, sync::{Arc, Mutex}};
 use std::rc::Rc;
@@ -74,13 +74,27 @@ pub struct Fbos<UserPostprocesData> {
     pub post_process_data: UserPostprocesData
 }
 
+pub enum SceneControllerSelected {
+    Free,
+    Follow
+}
+
 
 pub struct Scene<UserPostProcessData> {
     pub ui: Ui,
     pub gl: gl::Gl,
 
     pub camera: camera::Camera,
-    pub free_controller: free_camera::Controller,
+
+    pub inputs: Inputs,
+    pub follow_controller: follow_camera::Controller,
+
+    // if we use a follow cam and this is set the inputs will be used to control this entity
+    // works as a default 3d char controller.
+    // for own implementation keep this as none and just do in in user code
+    pub controlled_entity: Option<EntityId>,
+
+    pub selected: SceneControllerSelected,
     pub light_pos: V3,
 
     pub player: AnimationPlayer<EntityId>,
@@ -163,7 +177,9 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             ui,
             camera: camera::Camera::new(viewport.w as f32, viewport.h as f32),
             light_pos: V3::new(0.0, 10.0, 30.0),
-            free_controller: free_camera::Controller::default(),
+            inputs: Default::default(),
+            follow_controller: Default::default(),
+            selected: SceneControllerSelected::Free,
             mesh_shader,
             cubemap_shader,
             player,
@@ -178,7 +194,8 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             default_bones,
             fbos: None,
             stencil_shader: None,
-            clear_buffer_bits: gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT
+            clear_buffer_bits: gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT,
+            controlled_entity: None,
 
         })
     }
@@ -310,8 +327,18 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                 *mutex_cm = Some(imgs);
             }
         });
+    }
+
+    pub fn camera_follow(&mut self, pos: V3) {
+        self.follow_controller.update_camera_target(pos);
+    }
 
 
+    pub fn change_camera(&mut self) {
+        self.selected = match self.selected {
+            SceneControllerSelected::Free => SceneControllerSelected::Follow,
+            SceneControllerSelected::Follow => SceneControllerSelected::Free
+        }
     }
 
     pub fn frame_start(&mut self, event_pump: &mut sdl2::EventPump)  {
@@ -328,11 +355,48 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
         self.ui.consume_events(event_pump);
 
+        self.inputs.frame_start();
+
         for event in &self.ui.frame_events {
-            self.free_controller.update_events(event);
+            self.inputs.update_events(event);
         }
 
-        self.free_controller.update_camera(&mut self.camera, dt);
+        match self.selected {
+            SceneControllerSelected::Free => free_camera::update_camera(&mut self.camera, dt, &self.inputs),
+            SceneControllerSelected::Follow => {
+                if let Some(entity_id) = self.controlled_entity {
+                    let e = self.entities.get_mut(&entity_id).unwrap();
+
+                    // ignore z since we assume its a char controller that cannot fly
+                    e.pos.x += self.inputs.movement.x * self.inputs.speed * dt;
+                    e.pos.y -= self.inputs.movement.y * self.inputs.speed * dt;
+
+                    let base_sens = 3.0;
+
+                    // update desired camera pitch
+                    self.follow_controller.desired_pitch += self.inputs.mouse_movement.yrel * self.inputs.sens * self.inputs.inverse_y *  dt * base_sens;
+
+                    // update camera pos xy (yaw)
+                    let vec_xy = (self.camera.pos - e.pos).xy();
+                    let dist = vec_xy.magnitude();
+
+                    let mut dir = vec_xy.normalize();
+
+                    let mut tan = dir.yx();
+                    tan.y *= -1.0;
+                    tan = tan * self.inputs.mouse_movement.xrel * self.inputs.sens * dt * base_sens;
+                    dir = (dir + tan).normalize();
+
+                    self.camera.pos.x = e.pos.x + dir.x * dist;
+                    self.camera.pos.y = e.pos.y + dir.y * dist;
+
+
+                    // vec xychange
+                }
+
+                self.follow_controller.update_camera(&mut self.camera, dt);
+            }
+        }
 
 
         // WAIT FOR LOAD AND SET OF CUBEMAP
@@ -463,7 +527,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                          &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
                          light_space_mat, self.light_pos);
         }
-            }
+    }
 
 
     pub fn dt(&self) -> f32 {
