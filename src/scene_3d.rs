@@ -366,15 +366,35 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             SceneControllerSelected::Follow => {
                 if let Some(entity_id) = self.controlled_entity {
                     let e = self.entities.get_mut(&entity_id).unwrap();
-
-                    // ignore z since we assume its a char controller that cannot fly
-                    e.pos.x += self.inputs.movement.x * self.inputs.speed * dt;
-                    e.pos.y -= self.inputs.movement.y * self.inputs.speed * dt;
-
                     let base_sens = 3.0;
 
+
+
+                    // use entity .rotation/direction to apply forward (inputs.movement.x) and side movement.y
+                    // inputs are still camera relative, so forward should be in the direction of the camera, relative to
+                    // right should be camera right
+                    // all camera vectors should be with z = 0 since we can only move in xy plane
+                    let mut d = e.pos - self.camera.pos;
+                    d.z = 0.0;
+                    d = d.normalize();
+
+                    // tangent to direction
+                    let mut t = V3::new(d.y, -d.x, 0.0);
+
+                    let mut m = d * self.inputs.movement.x + t * self.inputs.movement.y;
+                    if m.magnitude() > 0.0 {
+                        m = m.normalize(); // check sekrio what happens when holding right or left
+                        // ignore z since we assume its a char controller that cannot fly
+                        e.pos += m * self.inputs.speed * dt;
+                    }
+                    //e.pos.x += d self.inputs.movement.x * self.inputs.speed * dt;
+                    //e.pos.y -= self.inputs.movement.y * self.inputs.speed * dt;
+
+
+
                     // update desired camera pitch
-                    self.follow_controller.desired_pitch += self.inputs.mouse_movement.yrel * self.inputs.sens * self.inputs.inverse_y *  dt * base_sens;
+                    //self.follow_controller.desired_pitch += self.inputs.mouse_movement.yrel * self.inputs.sens * self.inputs.inverse_y *  dt * base_sens;
+
 
                     // update camera pos xy (yaw)
                     let vec_xy = (self.camera.pos - e.pos).xy();
@@ -395,6 +415,8 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                 }
 
                 self.follow_controller.update_camera(&mut self.camera, dt);
+
+
             }
         }
 
