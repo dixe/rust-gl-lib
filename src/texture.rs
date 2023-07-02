@@ -12,7 +12,7 @@ pub type TextureId = u32;
 pub fn gen_texture_rgb(gl: &gl::Gl, image: &image::RgbImage) -> TextureId {
 
     let mut id: gl::types::GLuint = 0;
-    let img = image::DynamicImage::ImageRgb8(image.clone()).flipv().into_rgb8();
+    let img = image::DynamicImage::ImageRgb8(image.clone()).into_rgb8();
     unsafe {
         gl.GenTextures(1, &mut id);
 
@@ -35,6 +35,7 @@ pub fn gen_texture_rgb(gl: &gl::Gl, image: &image::RgbImage) -> TextureId {
 pub fn gen_texture_rgba(gl: &gl::Gl, image: &image::RgbaImage) -> TextureId {
 
     let mut id: gl::types::GLuint = 0;
+    // TODO: THis flip should happen before calling gen_texture
     let img = image::DynamicImage::ImageRgba8(image.clone()).flipv().into_rgba8();
     unsafe {
         gl.GenTextures(1, &mut id);
@@ -94,7 +95,7 @@ pub fn gen_texture_cube_map(gl: &gl::Gl, images: &[image::RgbImage]) -> TextureI
 pub fn gen_texture_rgba_nearest(gl: &gl::Gl, image: &image::RgbaImage) -> TextureId {
 
     let mut id: gl::types::GLuint = 0;
-    let img = image::DynamicImage::ImageRgba8(image.clone()).flipv().into_rgba8();
+    let img = image::DynamicImage::ImageRgba8(image.clone()).into_rgba8();
     unsafe {
         gl.GenTextures(1, &mut id);
 
@@ -188,6 +189,14 @@ pub fn gen_texture_depth_and_stencil(gl: &gl::Gl, viewport: &gl::viewport::Viewp
 
 
 
+
+/// Wrapper of ActiveTexture
+pub fn active_texture(gl: &gl::Gl, texture_offset: u32) {
+
+    unsafe {
+        gl.ActiveTexture(gl::TEXTURE0 + texture_offset);
+    }
+}
 
 /// Wrapper of BindTexture
 pub fn set_texture(gl: &gl::Gl, texture_id: TextureId) {

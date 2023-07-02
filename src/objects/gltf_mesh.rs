@@ -165,7 +165,7 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
             let joints_index = match joints_indexes.get(target.node().name().unwrap()) {
                 Some(i) => *i,
                 _ => {
-                    println!("Skipping joint {:#?}", target.node().name().unwrap());
+                    //println!("Skipping joint {:#?}", target.node().name().unwrap());
                     continue;
                 }
             };
@@ -271,7 +271,7 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
 
     println!("Meshes loaded {:#?}", res.meshes.keys());
 
-    Ok(GltfData { meshes:res, skins, animations, images: loaded_images})
+    Ok(GltfData { meshes:res, skins, animations, images: loaded_images}) //
 
 }
 

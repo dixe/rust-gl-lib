@@ -1,4 +1,4 @@
-#version 330 core
+#version 450 core
 out vec4 Color;
 
 in VS_OUTPUT {
@@ -12,9 +12,8 @@ in VS_OUTPUT {
 uniform vec3 lightColor;
 uniform vec3 lightPos;
 uniform vec3 viewPos;
-uniform sampler2D Texture;
-uniform sampler2D Texture2;
-uniform sampler2D shadowMap;
+layout(binding=0) uniform sampler2D Texture;
+layout(binding=1) uniform sampler2D shadowMap;
 
 
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
@@ -80,5 +79,6 @@ void main()
 
   Color = vec4((ambient + (1.0 - shadow) * (diffuse + specular)) * col, 1.0f);
 
+  //Color = vec4(IN.Color, 1.0);
   //Color = vec4(shadow, shadow, shadow, 1.0);
 }

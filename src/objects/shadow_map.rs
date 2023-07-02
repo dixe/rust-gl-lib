@@ -8,7 +8,8 @@ pub struct ShadowMap {
     pub depth_map: texture::TextureId,
     pub shader: shader::BaseShader,
     w: i32,
-    h: i32
+    h: i32,
+    pub texture_offset: u32
 }
 
 impl ShadowMap {
@@ -36,7 +37,8 @@ impl ShadowMap {
             depth_map,
             shader,
             w: 1024,
-            h: 1024
+            h: 1024,
+            texture_offset: 0
         }
     }
 
@@ -95,9 +97,8 @@ impl ShadowMap {
             gl.Viewport(0, 0, width, height);
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             gl.Enable(gl::DEPTH_TEST);
-            gl.ActiveTexture(gl::TEXTURE0);
+            gl.ActiveTexture(gl::TEXTURE0 + self.texture_offset);
             gl.BindTexture(gl::TEXTURE_2D, self.depth_map);
-
         }
 
     }

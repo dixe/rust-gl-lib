@@ -6,6 +6,7 @@ use crate::animations::gltf_animation::{Start, AnimationPlayer};
 use crate::objects::gltf_mesh::{self, Animation};
 use crate::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
 use crate::typedef::*;
+use crate::texture;
 use crate::objects::{shadow_map::ShadowMap, mesh::Mesh, cubemap::{self, Cubemap}};
 use crate::camera::{self, free_camera, follow_camera, Camera};
 use crate::na::{Translation3, Rotation3, Rotation2};
@@ -56,7 +57,8 @@ pub type SkeletonIndex = usize;
 
 struct SceneMesh {
     mesh: Mesh,
-    skeleton: Option<SkeletonIndex>
+    skeleton: Option<SkeletonIndex>,
+    texture_id: Option<texture::TextureId>
 }
 
 
@@ -133,7 +135,6 @@ pub struct Scene<UserPostProcessData> {
     pub shadow_map: Option<ShadowMap>,
 
     //render_meshes: Vec::<RenderMesh>
-
 
 
 }
@@ -242,14 +243,28 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             skin_id_to_skel_idx.insert(*skin_id, self.skeletons.len() - 1);
         }
 
+
+        let mut tex_to_id : HashMap::<usize, texture::TextureId> = HashMap::default();
+
         for (name, gltf_mesh) in &gltf_data.meshes.meshes {
             let mesh = gltf_mesh.get_mesh(&self.gl);
             // find index into skeletons, if mesh has skeleton
             let skeleton = gltf_data.skins.mesh_to_skin.get(name).map(|skin_id| *skin_id_to_skel_idx.get(skin_id).unwrap());
 
+            let mut texture_id = None;
+            if let Some(tex) = gltf_mesh.texture {
+                if !tex_to_id.contains_key(&tex) {
+                    let id = texture::gen_texture_rgba_nearest(&self.gl, &gltf_data.images[tex]);
+                    tex_to_id.insert(tex, id);
+                    // load texture
+                }
+                texture_id = tex_to_id.get(&tex).map(|id| *id);
+            }
+
             self.mesh_data.push(SceneMesh {
                 mesh,
-                skeleton
+                skeleton,
+                texture_id
             });
 
             self.meshes.insert(Rc::from(name.to_string()), self.mesh_data.len() - 1);
@@ -267,10 +282,14 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                 map.insert(name.clone(), anim.clone());
             }
         }
+
+
     }
 
     pub fn use_shadow_map(&mut self) {
-        self.shadow_map = Some(ShadowMap::new(&self.gl));
+        let mut sm = ShadowMap::new(&self.gl);
+        sm.texture_offset = 1;
+        self.shadow_map = Some(sm);
     }
 
     pub fn use_stencil(&mut self) {
@@ -501,6 +520,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                 model_mat: trans.to_homogeneous() * rotation.to_homogeneous(),
                 bones: self.bones.get(key).unwrap_or(&self.default_bones),
                 mesh: &self.mesh_data[entity.mesh_id].mesh,
+                texture: self.mesh_data[entity.mesh_id].texture_id,
             });
         }
 
@@ -605,7 +625,8 @@ pub fn play_animation(anim: Rc::<Animation>, repeat: bool, entity_id: &EntityId,
 pub struct RenderMesh<'a> {
     pub model_mat: Mat4,
     pub mesh: &'a Mesh,
-    pub bones: &'a Bones
+    pub bones: &'a Bones,
+    pub texture: Option<texture::TextureId>
 }
 
 // Can not be &scene, since then using fbo is not good, and we want a function,
@@ -633,8 +654,6 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
         bones: default_bones,
     };
 
-
-
     // SETUP STENCIL
     if stencil_shader.is_some() {
         unsafe {
@@ -644,10 +663,10 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
         }
     }
 
-
-
     // DRAW MESHES
     mesh_shader.shader.set_used();
+    mesh_shader.shader.set_i32(gl, "Texture", 0);
+    mesh_shader.shader.set_i32(gl, "shadowMap", 1);
 
     for rm in render_meshes {
         uniforms.model = rm.model_mat;
@@ -656,6 +675,10 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
         mesh_shader.set_uniforms(uniforms);
         mesh_shader.shader.set_mat4(gl,"lightSpaceMat", light_space_mat);
 
+        if let Some(tex) = rm.texture {
+            texture::active_texture(gl, 0);
+            texture::set_texture(gl, tex);
+        }
         rm.mesh.render(gl);
 
         // STENCIL RENDER PASS

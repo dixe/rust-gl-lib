@@ -52,8 +52,8 @@ void main()
 
     OUT.FragPosLightSpace = lightSpaceMat * vec4(OUT.FragPos, 1.0);
 
-    //OUT.Color = texture(Texture, TexCord).rgb;
-    OUT.Color = vec3(0.9, 0.7, 0.2);
+    OUT.Color = texture(Texture, TexCord).rgb;
+    //OUT.Color = vec3(0.9, 0.7, 0.2);
 
     gl_Position =  projection * view * pos;
 }
