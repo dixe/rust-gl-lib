@@ -16,7 +16,7 @@ use std::{thread, sync::{Arc, Mutex}};
 use std::rc::Rc;
 use std::collections::HashMap;
 use std::path::Path;
-
+use sdl2::event::{Event, WindowEvent};
 
 pub struct DataMap<T> {
     data: HashMap::<usize, T>,
@@ -134,6 +134,8 @@ pub struct Scene<UserPostProcessData> {
 
     pub shadow_map: Option<ShadowMap>,
 
+    pub viewport: gl::viewport::Viewport
+
     //render_meshes: Vec::<RenderMesh>
 
 
@@ -177,6 +179,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             shadow_map: None,
             //render_meshes: vec![],
             ui,
+            viewport,
             camera: camera::Camera::new(viewport.w as f32, viewport.h as f32),
             light_pos: V3::new(0.0, 10.0, 30.0),
             inputs: Default::default(),
@@ -224,10 +227,13 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
         let id = self.entities.insert(entity);
 
+        println!("Added entity {:?} - {} tex={:?}", id, mesh_name, self.mesh_data[mesh_id].texture_id);
+
         if let Some(s_id) = skeleton_id {
             // set bones
             self.bones.insert(id, self.skeletons[s_id].create_bones());
         }
+
 
         id
     }
@@ -372,8 +378,6 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             }
         }
 
-        self.follow_controller.yaw_change = 0.0;
-
         let dt = self.dt();
 
         self.ui.consume_events(event_pump);
@@ -382,6 +386,22 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
         for event in &self.ui.frame_events {
             self.inputs.update_events(event);
+
+            match event {
+                Event::Window {win_event: WindowEvent::Resized(x,y), ..} => {
+                    self.camera.width = *x as f32;
+                    self.camera.height = *y as f32;
+                    self.viewport.w = *x;
+                    self.viewport.h = *y;
+
+                    if let Some(ref mut fbos) = self.fbos {
+                        fbos.mesh_fbo.update_viewport(&self.gl, &self.viewport);
+                        fbos.ui_fbo.update_viewport(&self.gl, &self.viewport);
+                    }
+                    self.viewport.set_used(&self.gl);
+                },
+                _ => {}
+            }
         }
 
 
@@ -451,8 +471,6 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                 self.follow_controller.yaw_change = self.inputs.mouse_movement.xrel * self.inputs.sens * dt * base_sens;
 
                 self.follow_controller.update_camera(&mut self.camera, dt);
-
-
             }
         }
 
@@ -549,7 +567,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             }
 
             // TODO: Work with non fixed viewport
-            sm.post_render(&self.gl, self.ui.drawer2D.viewport.w, self.ui.drawer2D.viewport.h);
+            sm.post_render(&self.gl, self.viewport.w, self.viewport.h);
         }
 
 
@@ -559,9 +577,12 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
             fbos.mesh_fbo.bind_and_clear(self.clear_buffer_bits);
 
+
+
             render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
                          &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
                          light_space_mat, self.light_pos);
+
 
             fbos.mesh_fbo.unbind();
 
@@ -574,18 +595,18 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                 self.gl.Clear(gl::COLOR_BUFFER_BIT);
             }
 
-            let w = self.ui.drawer2D.viewport.w as f32;
-            let h = self.ui.drawer2D.viewport.h as f32;
+            let w = self.viewport.w as f32;
+            let h = self.viewport.h as f32;
 
             let size =  V2::new(w, h);
 
             fbos.post_process_shader.shader.set_used();
             (fbos.post_process_uniform_set)(&self.gl, &mut fbos.post_process_shader.shader, &fbos.post_process_data);
+
             self.ui.drawer2D.render_img_custom_shader(fbos.mesh_fbo.color_tex, 0, 0, size, &fbos.post_process_shader);
 
             // Draw ui on top at last
             self.ui.drawer2D.render_img(fbos.ui_fbo.color_tex, 0, 0, size);
-
         } else {
             render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
                          &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,

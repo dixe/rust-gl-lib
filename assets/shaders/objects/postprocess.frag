@@ -118,6 +118,8 @@ vec4 ShockWave() {
 void main()
 {
   //FragColor = Swirl(IN.TexCoords.st, time);
-  FragColor = ShockWave();
-  //outline();
+  //FragColor = ShockWave();
+  outline();
+
+  FragColor =  texture(text_map, IN.TexCoords);//vec4(IN.TexCoords, 0.0, 1.0);
 }

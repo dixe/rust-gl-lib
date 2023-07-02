@@ -101,8 +101,8 @@ pub fn gen_texture_rgba_nearest(gl: &gl::Gl, image: &image::RgbaImage) -> Textur
 
         gl.BindTexture(gl::TEXTURE_2D, id);
 
-        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_BORDER as i32);
-        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_BORDER as i32);
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as i32);
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as i32);
 
         gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
         gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
@@ -132,8 +132,8 @@ pub fn gen_texture_depth(gl: &gl::Gl, width: i32, height: i32) -> TextureId {
         gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
 
 
-        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_BORDER as i32);
-        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_BORDER as i32);
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as i32);
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as i32);
 
         let border_colors : [f32; 4] = [1.0; 4];
         gl.TexParameterfv(gl::TEXTURE_2D, gl::TEXTURE_BORDER_COLOR, border_colors.as_ptr() as *const gl::types::GLfloat) ;
@@ -158,6 +158,9 @@ pub fn gen_texture_framebuffer(gl: &gl::Gl, viewport: &gl::viewport::Viewport) -
         gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
         gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
 
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_BORDER as i32);
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_BORDER as i32);
+
         gl.BindTexture(gl::TEXTURE_2D, 0);
     }
 
@@ -175,11 +178,14 @@ pub fn gen_texture_depth_and_stencil(gl: &gl::Gl, viewport: &gl::viewport::Viewp
         gl.BindTexture(gl::TEXTURE_2D, id);
 
         gl.TexImage2D(
-             gl::TEXTURE_2D, 0, gl::DEPTH24_STENCIL8 as i32, viewport.w, viewport.h, 0,
+            gl::TEXTURE_2D, 0, gl::DEPTH24_STENCIL8 as i32, viewport.w, viewport.h, 0,
             gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8, 0 as *const gl::types::GLvoid);
 
         gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
         gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_BORDER as i32);
+        gl.TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_BORDER as i32);
 
         gl.BindTexture(gl::TEXTURE_2D, 0);
     }

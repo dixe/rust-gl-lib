@@ -441,8 +441,8 @@ fn render_text(gl: &gl::Gl, tr: &mut TextRenderer, text: &str, x: i32, y: i32, v
     let rect = Rect {
         x,
         y,
-        w: 1200,
-        h: 1200
+        w: viewport.w,
+        h: viewport.h
     };
 
     let sb = transform_to_screen_space(&rect, viewport);

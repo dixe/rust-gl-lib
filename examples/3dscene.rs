@@ -57,11 +57,8 @@ fn main() -> Result<(), failure::Error> {
         time : 0.0
     };
 
-
     scene.use_fbos(post_process_data, Some(post_process_uniform_set));
-
     scene.use_stencil();
-
     scene.use_shadow_map();
 
     let mut show_options = false;

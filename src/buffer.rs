@@ -1,4 +1,5 @@
 use crate::gl;
+
 use crate::texture;
 pub struct Buffer<B> where B: BufferType {
     gl: gl::Gl,
@@ -65,6 +66,24 @@ impl FrameBuffer {
         }
     }
 
+
+    pub fn update_viewport(&mut self, gl: &gl::Gl, viewport: &gl::viewport::Viewport) {
+        // update textures
+
+        self.color_tex = texture::gen_texture_framebuffer(&gl, viewport);
+        self.depth_stencil_tex = texture::gen_texture_depth_and_stencil(&gl, viewport);
+        unsafe {
+
+             // bind it
+            gl.BindFramebuffer(gl::FRAMEBUFFER, self.fbo);
+
+            gl.FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, self.color_tex, 0);
+            gl.FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::TEXTURE_2D, self.depth_stencil_tex, 0);
+
+            gl.BindFramebuffer(gl::FRAMEBUFFER, 0);
+        }
+
+    }
 
     pub fn complete(&self) -> bool {
         unsafe {

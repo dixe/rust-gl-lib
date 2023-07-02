@@ -299,6 +299,7 @@ impl Ui {
                 Window {win_event: event::WindowEvent::Resized(x,y), ..} => {
                     self.drawer2D.update_viewport(x, y);
                     self.windows.get_mut(&0).unwrap().base_container_context.width = ContainerSize::Fixed(x);
+                    self.frame_events.push(event.clone());
                 },
                 Quit { .. } => {
                     std::process::exit(0);
