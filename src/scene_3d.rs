@@ -8,7 +8,7 @@ use crate::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shade
 use crate::typedef::*;
 use crate::objects::{shadow_map::ShadowMap, mesh::Mesh, cubemap::{self, Cubemap}};
 use crate::camera::{self, free_camera, follow_camera, Camera};
-use crate::na::{Translation3};
+use crate::na::{Translation3, Rotation3};
 use crate::{buffer, movement::Inputs};
 use crate::shader::Shader;
 use std::{thread, sync::{Arc, Mutex}};
@@ -143,6 +143,7 @@ pub struct Scene<UserPostProcessData> {
 pub struct SceneEntity {
     pub mesh_id: MeshIndex,
     pub pos: V3,
+    pub angle: f32, // facing angle when char is in t pose
     // having pos and root motion make everything easier, since we can just set this in animation update.
     // if we tried to directly add it to pos, then we had to take dt into account, and also somehow make sure that we
     // got every part of every frame, so when dt changes frame, we had to add the last part of old frame root motion
@@ -214,6 +215,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
         let skeleton_id = self.mesh_data[mesh_id].skeleton;
         let entity = SceneEntity {
             mesh_id,
+            angle: 0.0,
             pos: V3::new(0.0, 0.0, 0.0),
             root_motion: V3::new(0.0, 0.0, 0.0),
             skeleton_id: self.mesh_data[mesh_id].skeleton
@@ -363,9 +365,14 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             self.inputs.update_events(event);
         }
 
+
+
         match self.selected {
             SceneControllerSelected::Free => free_camera::update_camera(&mut self.camera, dt, &self.inputs),
             SceneControllerSelected::Follow => {
+                // TODO: Should be a function points or something, we most likely want to disable/ignore movement inputs
+                // when fx roll animation is playing
+                // but not camera input
                 if let Some(entity_id) = self.controlled_entity {
                     let e = self.entities.get_mut(&entity_id).unwrap();
 
@@ -378,18 +385,40 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                     let mut m = d * self.inputs.movement.x + t * self.inputs.movement.y;
 
                     if m.magnitude() > 0.0 {
+
                         m = m.normalize(); // check sekrio what happens when holding right or left
                         // ignore z since we assume its a char controller that cannot fly
+
+
+
+                        // just use rotation 3 and their slerp. That should fix the problem wit spinning, when changing from
+                        // 0 to Tau and Tau to 0
+                        let mut new_angle = m.y.atan2(m.x);
+
+                        while new_angle < 0.0 {
+                            new_angle += std::f32::consts::TAU;
+                        }
+
+                        let angle_diff = new_angle - e.angle;
+                        let max_change = 10.0 * dt; // max rotation speed
+                        e.angle += angle_diff.signum() * f32::min(max_change, angle_diff.abs());
+                        //e.angle = new_angle;
+                        // normalize to be 0::tau
+
                         e.pos += m * self.inputs.speed * dt;
+
+                        println!("{:?}",e.angle);
                     }
 
-                    // move char, and update camera desired pitch and yaw from mouse
-                    let base_sens = 3.0;
-                    self.follow_controller.desired_pitch += self.inputs.mouse_movement.yrel * self.inputs.sens * self.inputs.inverse_y *  dt * base_sens;
-
-                    self.follow_controller.yaw_change = self.inputs.mouse_movement.xrel * self.inputs.sens * dt * base_sens;
-
+                    //Update camera desired pitch and yaw from mouse
                 }
+
+                //Update camera desired pitch and yaw from mouse
+
+                let base_sens = 3.0;
+
+                self.follow_controller.desired_pitch += self.inputs.mouse_movement.yrel * self.inputs.sens * self.inputs.inverse_y *  dt * base_sens;
+                self.follow_controller.yaw_change = self.inputs.mouse_movement.xrel * self.inputs.sens * dt * base_sens;
 
                 self.follow_controller.update_camera(&mut self.camera, dt);
 
@@ -430,8 +459,10 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                     skeleton.set_all_bones_from_skeleton(bones);
                 }
 
-                // update root motion. Maybe have a flag on scene or something to disable this. Or have a sperate method
-                entity.root_motion = self.player.root_motion(entity_id);
+                // update root motion. Maybe have a flag on scene or something to disable this.
+                // take current angle into account. Changing angle mid animation also just changes the root motion
+                let rot = Rotation3::from_euler_angles(0.0, 0.0, entity.angle);
+                entity.root_motion = rot * self.player.root_motion(entity_id);
             } else {
                 // just make sure that we update entity pos with root motion now that animatio is done,
                 // a new on might start from 0 so we need to make the root motion an actual part of pos
@@ -450,10 +481,13 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
         let mut render_meshes = vec![];
         for (key, entity) in &self.entities.data {
 
+
             let trans = Translation3::from(entity.pos + entity.root_motion);
 
+            let rotation = Rotation3::from_euler_angles(0.0, 0.0, entity.angle);
+
             render_meshes.push(RenderMesh {
-                model_mat: trans.to_homogeneous(),
+                model_mat: trans.to_homogeneous() * rotation.to_homogeneous(),
                 bones: self.bones.get(key).unwrap_or(&self.default_bones),
                 mesh: &self.mesh_data[entity.mesh_id].mesh,
             });

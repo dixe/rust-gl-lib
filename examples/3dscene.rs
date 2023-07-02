@@ -162,6 +162,12 @@ fn main() -> Result<(), failure::Error> {
         if !show_options {
             show_options = scene.ui.button("Options");
         }
+        scene.ui.newline();
+
+        if let Some(e) = scene.entities.get_mut(&player_id) {
+            //scene.ui.slider(&mut e.angle, 0.0, std::f32::consts::TAU);
+
+        }
 
         // update aimaiton player, and bones, and root motion if any
         if playing {
