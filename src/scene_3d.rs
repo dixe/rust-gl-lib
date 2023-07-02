@@ -8,7 +8,7 @@ use crate::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shade
 use crate::typedef::*;
 use crate::objects::{shadow_map::ShadowMap, mesh::Mesh, cubemap::{self, Cubemap}};
 use crate::camera::{self, free_camera, follow_camera, Camera};
-use crate::na::{Translation3, Rotation3};
+use crate::na::{Translation3, Rotation3, Rotation2};
 use crate::{buffer, movement::Inputs};
 use crate::shader::Shader;
 use std::{thread, sync::{Arc, Mutex}};
@@ -143,7 +143,7 @@ pub struct Scene<UserPostProcessData> {
 pub struct SceneEntity {
     pub mesh_id: MeshIndex,
     pub pos: V3,
-    pub angle: f32, // facing angle when char is in t pose
+    pub angle: Rotation2<f32>, // facing angle when char is in t pose
     // having pos and root motion make everything easier, since we can just set this in animation update.
     // if we tried to directly add it to pos, then we had to take dt into account, and also somehow make sure that we
     // got every part of every frame, so when dt changes frame, we had to add the last part of old frame root motion
@@ -215,7 +215,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
         let skeleton_id = self.mesh_data[mesh_id].skeleton;
         let entity = SceneEntity {
             mesh_id,
-            angle: 0.0,
+            angle: Rotation2::identity(),
             pos: V3::new(0.0, 0.0, 0.0),
             root_motion: V3::new(0.0, 0.0, 0.0),
             skeleton_id: self.mesh_data[mesh_id].skeleton
@@ -391,23 +391,34 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
 
 
-                        // just use rotation 3 and their slerp. That should fix the problem wit spinning, when changing from
-                        // 0 to Tau and Tau to 0
                         let mut new_angle = m.y.atan2(m.x);
+                        let mut diff = new_angle - e.angle.angle();
 
-                        while new_angle < 0.0 {
-                            new_angle += std::f32::consts::TAU;
+                        // normalize to range -pi to pi
+                        if diff < -std::f32::consts::PI {
+                            diff += std::f32::consts::TAU;
                         }
 
-                        let angle_diff = new_angle - e.angle;
-                        let max_change = 10.0 * dt; // max rotation speed
-                        e.angle += angle_diff.signum() * f32::min(max_change, angle_diff.abs());
-                        //e.angle = new_angle;
-                        // normalize to be 0::tau
+                        if diff > std::f32::consts::PI {
+                            diff -= std::f32::consts::TAU;
+                        }
+
+                        let sign = diff.signum();
+                        let r_speed = 10.0;
+                        // change with max rotation speed
+                        let mut change = sign * r_speed * dt;
+
+                        // if we max speed would over shot target angle, change just the needed amount
+                        if change.abs() > diff.abs() {
+                            change = diff;
+                        }
+
+                        // do the update of rotation
+                        let z_rot = Rotation2::new(change);
+                        e.angle *= z_rot;
 
                         e.pos += m * self.inputs.speed * dt;
 
-                        println!("{:?}",e.angle);
                     }
 
                     //Update camera desired pitch and yaw from mouse
@@ -461,7 +472,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
                 // update root motion. Maybe have a flag on scene or something to disable this.
                 // take current angle into account. Changing angle mid animation also just changes the root motion
-                let rot = Rotation3::from_euler_angles(0.0, 0.0, entity.angle);
+                let rot = Rotation3::from_euler_angles(0.0, 0.0, entity.angle.angle());
                 entity.root_motion = rot * self.player.root_motion(entity_id);
             } else {
                 // just make sure that we update entity pos with root motion now that animatio is done,
@@ -484,7 +495,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
             let trans = Translation3::from(entity.pos + entity.root_motion);
 
-            let rotation = Rotation3::from_euler_angles(0.0, 0.0, entity.angle);
+            let rotation = Rotation3::from_euler_angles(0.0, 0.0, entity.angle.angle());
 
             render_meshes.push(RenderMesh {
                 model_mat: trans.to_homogeneous() * rotation.to_homogeneous(),
