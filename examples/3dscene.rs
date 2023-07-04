@@ -38,6 +38,7 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl.event_pump().unwrap();
 
     let player_id = scene.create_entity("player");
+    let player_skel_id = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
     scene.controlled_entity = Some(player_id);
     let player2_id = scene.create_entity("player");
 
@@ -159,9 +160,20 @@ fn main() -> Result<(), failure::Error> {
         if !show_options {
             show_options = scene.ui.button("Options");
         }
+
         scene.ui.newline();
 
+        if scene.player.expired(&player_id) {
+
+            let idle = scene.animations.get(&player_skel_id).unwrap().get("t_pose").unwrap();
+
+            scene::play_animation(idle.clone(), true, &player_id, &mut scene.player, &mut scene.entities);
+        }
+
         if let Some(e) = scene.entities.get_mut(&player_id) {
+
+
+
             //scene.ui.slider(&mut e.angle, 0.0, std::f32::consts::TAU);
 
         }

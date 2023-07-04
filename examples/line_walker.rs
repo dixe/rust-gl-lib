@@ -4,6 +4,7 @@ use gl_lib::gl;
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use gl_lib::color::Color;
+use gl_lib::deltatime::Deltatime;
 
 type V2 = Vector2::<f64>;
 
@@ -67,7 +68,7 @@ fn main() {
     let mut knee_angle = 1.45;
 
 
-    let mut delta_time = deltatime::Deltatime::default();
+    let mut delta_time = Deltatime::default();
     loop {
 
         delta_time.update();
