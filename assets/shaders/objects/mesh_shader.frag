@@ -6,6 +6,7 @@ in VS_OUTPUT {
     vec3 FragPos;
     flat vec3 Color;
     vec4 FragPosLightSpace;
+
 } IN;
 
 

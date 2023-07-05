@@ -43,11 +43,8 @@ impl Inputs {
                 }
             },
             Event::MouseMotion{mousestate, xrel, yrel, .. } => {
-                if mousestate.right() {
-                    //println!("{:?}", (xrel, yrel));
-                    self.mouse_movement.xrel = *xrel as f32;
-                    self.mouse_movement.yrel = *yrel as f32;
-                }
+                self.mouse_movement.xrel = *xrel as f32;
+                self.mouse_movement.yrel = *yrel as f32;
             },
             _ => {}
         };
@@ -102,8 +99,8 @@ impl Default for Inputs {
             speed: 2.0,
             mouse_movement: Default::default(),
             sens: 0.15,
-            inverse_y : 1.0,
-            inverse_x : -1.0,
+            inverse_y : -1.0,
+            inverse_x : 1.0,
         }
     }
 }

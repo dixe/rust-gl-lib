@@ -205,10 +205,12 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
             if let Some(read_outputs) = reader.read_outputs() {
                 match read_outputs {
                     gltf::animation::util::ReadOutputs::Translations(ts) => {
-                        assert_eq!(frames.len(),  ts.len());
+
                         let mut i = 0;
                         for t in ts {
-                            frames[i].joints[joints_index].translation = na::Vector3::new(t[0], t[1], t[2]);
+                            if i < frames.len() {
+                                frames[i].joints[joints_index].translation = na::Vector3::new(t[0], t[1], t[2]);
+                            }
                             i += 1;
                         }
                     },

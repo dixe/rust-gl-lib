@@ -3,6 +3,8 @@ use gl_lib::shader::Shader;
 use gl_lib::shader::{BaseShader, reload_object_shader};
 use gl_lib::typedef::*;
 use gl_lib::scene_3d as scene;
+use itertools::Itertools;
+
 
 pub struct PostPData {
     time: f32
@@ -20,11 +22,33 @@ fn main() -> Result<(), failure::Error> {
     let viewport = sdl_setup.viewport;
     let gl = &sdl_setup.gl;
     let _audio_subsystem = sdl.audio().unwrap();
+    let mut event_pump = sdl.event_pump().unwrap();
 
     // disable v-sync
-    sdl_setup.video_subsystem.gl_set_swap_interval(0);
+    let _ = sdl_setup.video_subsystem.gl_set_swap_interval(0);
+    loop {
+        run_scene(gl, &mut event_pump, viewport, &window, sdl.clone());
+    }
+}
 
-    let mut scene = scene::Scene::<PostPData>::new(gl.clone(), viewport)?;
+
+fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
+             viewport: gl::viewport::Viewport,
+             window: &sdl2::video::Window,
+             sdl: sdl2::Sdl) -> Result<(), failure::Error> {
+
+    let mut scene = scene::Scene::<PostPData>::new(gl.clone(), viewport, sdl)?;
+
+    let mut cont = true;
+
+    while !cont {
+        scene.frame_start(event_pump);
+        cont = scene.ui.button("PLAY");
+
+        scene.render();
+        window.gl_swap_window();
+    }
+
     scene.set_skybox("assets/cubemap/skybox/".to_string());
     scene.load_all_meshes("E:/repos/Game-in-rust/blender_models/player.glb", true);
 
@@ -35,7 +59,7 @@ fn main() -> Result<(), failure::Error> {
     scene.inputs.speed = 15.0;
     scene.inputs.sens = 0.70;
 
-    let mut event_pump = sdl.event_pump().unwrap();
+
 
     let player_id = scene.create_entity("player");
     let player_skel_id = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
@@ -62,11 +86,12 @@ fn main() -> Result<(), failure::Error> {
     scene.use_stencil();
     scene.use_shadow_map();
 
+    let mut speed = 1.0;
     let mut show_options = false;
     loop {
 
         // set ui framebuffer, consume sdl events, increment dt ect.
-        scene.frame_start(&mut event_pump);
+        scene.frame_start(event_pump);
 
         let dt = scene.dt();
 
@@ -140,9 +165,9 @@ fn main() -> Result<(), failure::Error> {
         // change animation of entity
         let player_skel = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
         let animations = scene.animations.get(&player_skel).unwrap();
-        for (name, anim) in animations {
+        for (name, anim) in animations.iter().sorted_by_key(|x| x.0) {
             if scene.ui.button(name) {
-                scene::play_animation(anim.clone(), false, &player_id, &mut scene.player, &mut scene.entities);
+                scene::play_animation(anim.clone(), true, speed, &player_id, &mut scene.player, &mut scene.entities);
             }
         }
 
@@ -156,6 +181,11 @@ fn main() -> Result<(), failure::Error> {
         }
 
         scene.ui.newline();
+        if scene.ui.slider(&mut speed, 0.1, 10.0) {
+            scene.player.change_speed(&player_id, speed);
+        }
+
+        scene.ui.newline();
 
         if !show_options {
             show_options = scene.ui.button("Options");
@@ -165,9 +195,14 @@ fn main() -> Result<(), failure::Error> {
 
         if scene.player.expired(&player_id) {
 
-            let idle = scene.animations.get(&player_skel_id).unwrap().get("t_pose").unwrap();
+            let idle = scene.animations.get(&player_skel_id).unwrap().get("run_full").unwrap();
 
-            scene::play_animation(idle.clone(), true, &player_id, &mut scene.player, &mut scene.entities);
+            scene::play_animation(idle.clone(), true, speed, &player_id, &mut scene.player, &mut scene.entities);
+        }
+
+
+        if scene.ui.button("Reset Scene") {
+            return Ok(());
         }
 
         if let Some(e) = scene.entities.get_mut(&player_id) {
@@ -186,4 +221,5 @@ fn main() -> Result<(), failure::Error> {
         scene.render();
         window.gl_swap_window();
     }
+
 }

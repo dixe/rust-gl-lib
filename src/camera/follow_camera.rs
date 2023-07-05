@@ -24,11 +24,9 @@ impl Default for Controller {
 
 impl Controller {
 
-
     pub fn update_camera_target(&mut self, pos: V3) {
         self.target = pos;
     }
-
 
     pub fn update_camera(&mut self, camera: &mut Camera, dt: f32){
 

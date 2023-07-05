@@ -85,6 +85,9 @@ pub enum SceneControllerSelected {
 pub struct Scene<UserPostProcessData> {
     pub ui: Ui,
     pub gl: gl::Gl,
+    pub ui_mode: bool,
+
+    pub sdl: sdl2::Sdl,
 
     pub camera: camera::Camera,
 
@@ -156,7 +159,7 @@ pub struct SceneEntity {
 }
 
 impl< UserPostProcessData> Scene<UserPostProcessData> {
-    pub fn new(gl: gl::Gl, viewport: gl::viewport::Viewport) -> Result<Scene<UserPostProcessData>, failure::Error> {
+    pub fn new(gl: gl::Gl, viewport: gl::viewport::Viewport, sdl: sdl2::Sdl) -> Result<Scene<UserPostProcessData>, failure::Error> {
 
         let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
         let ui = Ui::new(drawer_2d);
@@ -176,6 +179,8 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
         Ok(Self {
             gl,
+            sdl,
+            ui_mode: true,
             shadow_map: None,
             //render_meshes: vec![],
             ui,
@@ -378,6 +383,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             }
         }
 
+
         let dt = self.dt();
 
         self.ui.consume_events(event_pump);
@@ -385,9 +391,16 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
         self.inputs.frame_start();
 
         for event in &self.ui.frame_events {
-            self.inputs.update_events(event);
+            if !self.ui_mode {
+                self.inputs.update_events(event);
+            }
 
             match event {
+                Event::KeyDown{keycode: Some(sdl2::keyboard::Keycode::Escape), .. } => {
+                    self.ui_mode = !self.ui_mode;
+                    self.sdl.mouse().show_cursor(self.ui_mode);
+                    self.sdl.mouse().set_relative_mouse_mode(!self.ui_mode);
+                },
                 Event::Window {win_event: WindowEvent::Resized(x,y), ..} => {
                     self.camera.width = *x as f32;
                     self.camera.height = *y as f32;
@@ -475,6 +488,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
         }
 
 
+
         // WAIT FOR LOAD AND SET OF CUBEMAP
         // also a scene thing, maybe in update if cubemap i set
         if let Some(ref mut cmi) = self.cubemap_imgs {
@@ -543,9 +557,8 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
         }
 
 
-
-
         let mut light_space_mat = Mat4::identity();
+
         // RENDER TO SHADOW MAP
         if let Some(sm) = &self.shadow_map {
             sm.pre_render(&self.gl, self.light_pos);
@@ -635,11 +648,11 @@ pub fn stop_animation(entity_id: &EntityId, player: &mut AnimationPlayer::<Entit
     }
 }
 
-pub fn play_animation(anim: Rc::<Animation>, repeat: bool, entity_id: &EntityId, player: &mut AnimationPlayer::<EntityId>, entities: &mut DataMap::<SceneEntity>) {
+pub fn play_animation(anim: Rc::<Animation>, repeat: bool, speed: f32, entity_id: &EntityId, player: &mut AnimationPlayer::<EntityId>, entities: &mut DataMap::<SceneEntity>) {
 
     stop_animation(entity_id, player, entities);
 
-    player.start(Start {anim, repeat, id: *entity_id});
+    player.start(Start {anim, speed, repeat, id: *entity_id});
 }
 
 

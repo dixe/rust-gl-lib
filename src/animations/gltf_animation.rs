@@ -14,6 +14,7 @@ struct ActiveAnimation {
     frame: usize,
     elapsed: f32,
     root_motion: V3,
+    speed: f32
 }
 
 
@@ -21,6 +22,7 @@ pub struct Start<AnimationId> {
     pub anim: Rc::<Animation>,
     pub repeat: bool,
     pub id: AnimationId,
+    pub speed: f32,
 }
 
 
@@ -56,15 +58,15 @@ impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> A
         self.clear_buffer.clear();
 
         for (id, active) in &mut self.animations {
-            active.elapsed += dt;
+            active.elapsed += dt * active.speed;
 
             //println!("Total ,  elapsed{:?}", (active.anim.total_secs, active.elapsed));
 
             if active.anim.total_secs > active.elapsed {
                 // set active.frame until we are at end, or current frame end after currently elapsed time
                 while active.frame < (active.anim.frames.len() - 1) &&
-                      active.anim.frames[active.frame].end_time() < active.elapsed {
-                    //println!("{:.2?}", (active.anim.frames[active.frame].end_time(), active.elapsed));
+                    active.anim.frames[active.frame].end_time() < active.elapsed {
+                        //println!("{:.2?}", (active.anim.frames[active.frame].end_time(), active.elapsed));
                     active.frame = usize::min(active.anim.frames.len() - 1 , active.frame  + 1);
                 }
             } else {
@@ -72,7 +74,8 @@ impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> A
                     self.clear_buffer.push(*id);
                 }
                 else {
-                    active.elapsed = 0.0;
+                    active.elapsed = active.anim.total_secs - active.elapsed;
+                    // this might not be correct if a frame is so short we skip the first keyframe in animation
                     active.frame = 0;
                 }
             }
@@ -120,7 +123,8 @@ impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> A
                                    repeat: start.repeat,
                                    frame: 0,
                                    elapsed: 0.0,
-                                   root_motion: V3::new(0.0, 0.0, 0.0)
+                                   root_motion: V3::new(0.0, 0.0, 0.0),
+                                   speed: start.speed
                                });
         id
     }
@@ -135,6 +139,12 @@ impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> A
 
     pub fn expired(&self, id: &AnimationId) -> bool {
         !self.animations.contains_key(id)
+    }
+
+    pub fn change_speed(&mut self, id: &AnimationId, speed: f32) {
+        if let Some(active) = self.animations.get_mut(&id) {
+            active.speed = speed;
+        }
     }
 
     pub fn update_skeleton(&mut self, anim_id: AnimationId, skeleton: &mut Skeleton) {
