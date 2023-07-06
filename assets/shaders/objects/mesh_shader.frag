@@ -6,7 +6,7 @@ in VS_OUTPUT {
     vec3 FragPos;
     flat vec3 Color;
     vec4 FragPosLightSpace;
-
+    vec2 TexCord;
 } IN;
 
 
@@ -21,7 +21,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 {
 
   // if normal points away from light, we now that it is in shadow
-  // this can also eliminate the bias sicne that created notisable
+  // this can also eliminate the bias since that created notisable
   float angle = dot(normal, lightDir);
   if (angle < 0.0 ) {
     return 1.0; // should be 1
@@ -37,12 +37,17 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
   // light outside light view frustum z far
   if(projCoords.z > 1.0)
   {
-    return 0.0; // should be 0
+    return 1.0; // should be 0
   }
 
+  if (projCoords.x > 1.0 || projCoords.x  < 0.0 ||
+      projCoords.y > 1.0 || projCoords.y  < 0.0)
+  {
+    return 1.0;
+  }
   float closestDepth = texture(shadowMap, projCoords.xy).r;
   float currentDepth = projCoords.z;
-  float shadow = currentDepth  > closestDepth ? 1.0 : 0.0;
+  float shadow = currentDepth > closestDepth ? 1.0 : 0.0;
 
   return shadow;
 }
@@ -51,32 +56,27 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 void main()
 {
 
-  vec3 col = IN.Color;
-  //vec3 col = vec3(0.3, 0.9, 0.3);
+  vec3 col = texture(Texture, IN.TexCord).rgb;
+
   // ABIENT
   float ambientStrength = 0.5;
   vec3 ambient = ambientStrength * lightColor;
-
 
   //DIFFUSE
   vec3 norm = normalize(IN.Normal);
   vec3 lightDir = normalize(lightPos - IN.FragPos);
   float diff = max(dot(norm, lightDir), 0.0);
-
   vec3 diffuse = (diff * lightColor) * 0.70;
-
 
   // SPECULAR
   float specularStrength = 0.1;
   vec3 viewDir = normalize(viewPos - IN.FragPos);
   vec3 reflectionDir = reflect(-lightDir, IN.Normal);
-
   float spec = pow(max(dot(viewDir, reflectionDir), 0.0), 5);
   vec3 specular = specularStrength * spec * lightColor;
 
+  // SHADOW
   float shadow = ShadowCalculation(IN.FragPosLightSpace, norm, lightDir);
-
-  //Color = vec4((ambient + diffuse + specular) * col, 1.0f);
 
   Color = vec4((ambient + (1.0 - shadow) * (diffuse + specular)) * col, 1.0f);
 

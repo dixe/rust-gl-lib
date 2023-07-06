@@ -11,7 +11,7 @@ out VS_OUTPUT {
   vec3 FragPos;
   flat vec3 Color;
   vec4 FragPosLightSpace;
-
+  vec2 TexCord;
 } OUT;
 
 
@@ -54,6 +54,7 @@ void main()
     OUT.FragPosLightSpace = lightSpaceMat * vec4(OUT.FragPos, 1.0);
 
     OUT.Color = texture(Texture, TexCord).rgb;
+    OUT.TexCord = TexCord;
     //OUT.Color = vec3(0.9, 0.7, 0.2);
 
     gl_Position =  projection * view * pos;

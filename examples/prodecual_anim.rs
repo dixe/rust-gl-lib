@@ -4,15 +4,24 @@ use gl_lib::shader::{BaseShader, reload_object_shader};
 use gl_lib::typedef::*;
 use gl_lib::scene_3d as scene;
 use itertools::Itertools;
+use std::rc::Rc;
+use gl_lib::objects::gltf_mesh::{KeyFrame, Animation};
+use gl_lib::imode_gui::Ui;
+use std::collections::HashMap;
+use gl_lib::animations::gltf_animation::update_skeleton_to_key_frame;
+
+
 
 
 pub struct PostPData {
     time: f32
 }
 
+
 fn post_process_uniform_set(gl: &gl::Gl, shader: &mut BaseShader, data : &PostPData) {
     shader.set_f32(gl, "time", data.time);
 }
+
 
 fn main() -> Result<(), failure::Error> {
 
@@ -28,6 +37,33 @@ fn main() -> Result<(), failure::Error> {
     let _ = sdl_setup.video_subsystem.gl_set_swap_interval(0);
     loop {
         let _ = run_scene(gl, &mut event_pump, viewport, &window, sdl.clone())?;
+    }
+}
+
+
+fn select(ui: &mut Ui, animation: &mut Rc::<Animation>, animations: &HashMap::<Rc::<str>, Rc<Animation>>, id: usize, current: &mut Rc::<str>) {
+
+    let name = format!("Choose anim - {id}");
+    let has_window = ui.window_to_id.contains_key(&name);
+
+    if ui.button(current) || has_window {
+        let res = ui.window_begin(&name);
+
+        let mut i = 0;
+        for (name, anim) in animations.iter().sorted_by_key(|x| x.0) {
+
+            if ui.button(name) {
+                *current = name.clone();
+                *animation = anim.clone();
+            }
+            i += 1;
+
+            if i > 3 {
+                ui.newline();
+                i = 0;
+            }
+        }
+        ui.window_end(&name);
     }
 }
 
@@ -49,9 +85,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         window.gl_swap_window();
     }
 
-    scene.set_skybox("assets/cubemap/skybox/".to_string());
     scene.load_all_meshes("E:/repos/Game-in-rust/blender_models/player.glb", true);
-
 
     let look_at = V3::new(5.0, 3.1, 5.0);
     scene.camera.move_to(V3::new(8.4, 4.3, 5.0));
@@ -64,17 +98,11 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     let player_id = scene.create_entity("player");
     let player_skel_id = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
     scene.controlled_entity = Some(player_id);
-    let player2_id = scene.create_entity("player");
-
 
     let world_id = scene.create_entity("world");
 
     let p1 = scene.entity_mut(&player_id).unwrap();
     p1.pos = V3::new(0.0, 00.0, 1.0);
-
-    let p2 = scene.entity_mut(&player2_id).unwrap();
-    p2.pos = V3::new(00.0, 2.0, 1.0);
-
 
     let mut playing = true;
 
@@ -88,6 +116,15 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
     let mut speed = 1.0;
     let mut show_options = false;
+
+    let mut anim_1 = scene.animations.get(&player_skel_id).unwrap().get("idle").unwrap().clone();
+    let mut name_1: Rc::<str>= Rc::from("idle".to_owned());
+
+    let mut anim_2 = scene.animations.get(&player_skel_id).unwrap().get("idle").unwrap().clone();
+    let mut name_2: Rc::<str> = Rc::from("idle".to_owned());
+
+    let mut tmp_keyframe = anim_1.frames[0].clone();
+    let mut t = 0.0;
     loop {
 
         // set ui framebuffer, consume sdl events, increment dt ect.
@@ -100,15 +137,14 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
             playing = !playing;
         }
 
-        // OWN GAME LOGIC
         if scene.ui.button("Change Camera") {
             scene.change_camera();
         }
 
-        let p1 = scene.entities.get(&player_id).unwrap();
 
+        select(&mut scene.ui, &mut anim_1, &scene.animations.get(&player_skel_id).unwrap(), 1, &mut name_1);
 
-        scene.camera_follow(p1.pos + p1.root_motion);
+        select(&mut scene.ui, &mut anim_2, &scene.animations.get(&player_skel_id).unwrap(), 2, &mut name_2);
 
 
         if scene.ui.button("Reload") {
@@ -122,100 +158,29 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
             //reload_object_shader("cubemap", &gl, &mut scene.cubemap_shader);
         }
 
-
-        if show_options {
-
-            let ui = &mut scene.ui;
-
-            show_options = !ui.window_begin("Options").closed;
-
-            ui.body_text(&format!("fps: {}", 1.0/dt));
-            ui.newline();
-
-            ui.label("Sens");
-            ui.slider(&mut scene.inputs.sens, 0.01, 1.0);
-
-            ui.label("Speed");
-            ui.slider(&mut scene.inputs.speed, 0.01, 20.0);
-
-            ui.newline();
-            let p1 = scene.entities.get(&player_id).unwrap();
-            ui.body_text(&format!("pos: {:.2?}", p1.pos));
-
-            ui.newline();
-            ui.body_text(&format!("root pos: {:.2?}", p1.root_motion));
-
-            ui.newline();
-            ui.body_text(&format!("light_pos {:.2?}", scene.light_pos));
-
-            ui.newline();
-            ui.body_text("x:");
-            ui.slider(&mut scene.light_pos.x, -30.0, 30.0 );
-
-            ui.newline();
-            ui.body_text("y:");
-            ui.slider(&mut scene.light_pos.y, -30.0, 30.0 );
-
-            ui.newline();
-            ui.body_text("z:");
-            ui.slider(&mut scene.light_pos.z, 1.0, 300.0 );
-            ui.window_end("Options");
-        }
-
-        // change animation of entity
-        let player_skel = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
-        let animations = scene.animations.get(&player_skel).unwrap();
-        for (name, anim) in animations.iter().sorted_by_key(|x| x.0) {
-            if scene.ui.button(name) {
-                scene::play_animation(anim.clone(), true, speed, &player_id, &mut scene.player, &mut scene.entities);
-            }
-        }
-
-        if let Some(ref mut fbos) = scene.fbos {
-            fbos.post_process_data.time += dt;
-            if scene.ui.button("Reset") {
-                let p1 = scene.entities.get_mut(&player_id).unwrap();
-                p1.pos = V3::new(-10.0, 0.0, 1.0);
-                fbos.post_process_data.time = 0.0;
-            }
-        }
-
-        scene.ui.newline();
-        if scene.ui.slider(&mut speed, 0.1, 10.0) {
-            scene.player.change_speed(&player_id, speed);
-        }
-
-        scene.ui.newline();
-
-        if !show_options {
-            show_options = scene.ui.button("Options");
-        }
-
-        scene.ui.newline();
-
-        if scene.player.expired(&player_id) {
-
-            let idle = scene.animations.get(&player_skel_id).unwrap().get("run_full").unwrap();
-
-            scene::play_animation(idle.clone(), true, speed, &player_id, &mut scene.player, &mut scene.entities);
-        }
-
-
         if scene.ui.button("Reset Scene") {
             return Ok(());
         }
 
-        if let Some(e) = scene.entities.get_mut(&player_id) {
-
-
-
-            //scene.ui.slider(&mut e.angle, 0.0, std::f32::consts::TAU);
-
-        }
+        scene.ui.combo_box(&mut t, -0.2, 1.2);
+        scene.ui.slider(&mut t, 0.0, 1.0);
 
         // update aimaiton player, and bones, and root motion if any
         if playing {
-            scene.update_animations();
+
+            let skeleton = &mut scene.skeletons[player_skel_id];
+
+
+            let frame_1 = &anim_1.frames[0];
+            let frame_2 = &anim_2.frames[0];
+
+
+            frame_1.interpolate(frame_2, t, &mut tmp_keyframe);
+
+
+            update_skeleton_to_key_frame(skeleton, &tmp_keyframe);
+            let bones = scene.bones.get_mut(&player_id).unwrap();
+            skeleton.set_all_bones_from_skeleton(bones);
         }
 
         scene.render();

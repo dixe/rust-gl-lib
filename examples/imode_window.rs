@@ -49,7 +49,7 @@ fn main() -> Result<(), failure::Error> {
 
         ui.newline();
         ui.small_text("And some small text that belongs the the base");
-
+b
 
         if show {
             let res = ui.window_begin("Window1");

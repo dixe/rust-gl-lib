@@ -5,6 +5,7 @@ use crate::animations::skeleton::{Bones, Skeleton};
 use crate::animations::gltf_animation::{Start, AnimationPlayer};
 use crate::objects::gltf_mesh::{self, Animation};
 use crate::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
+use crate::particle_system::emitter;
 use crate::typedef::*;
 use crate::texture;
 use crate::objects::{shadow_map::ShadowMap, mesh::Mesh, cubemap::{self, Cubemap}};
@@ -129,6 +130,8 @@ pub struct Scene<UserPostProcessData> {
     //pub animation_ids: HashMap::<EntityId, EntityId>, // Kinda want to get rid of this, and maybe just use entityId as key to animaiton player. Maybe the player should just take an id in Start. This is already out of sync and make root motion buggy;
     pub entities: DataMap::<SceneEntity>,
 
+    pub emitter: emitter::Emitter,
+
     default_bones: Bones,
 
     pub fbos: Option::<Fbos<UserPostProcessData>>,
@@ -177,6 +180,8 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             gl.ClearColor(0.9, 0.9, 0.9, 1.0);
         }
 
+
+
         Ok(Self {
             gl,
             sdl,
@@ -185,6 +190,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             //render_meshes: vec![],
             ui,
             viewport,
+            emitter: emitter::Emitter::new(1000, emitter::emit_1, emitter::update_1),
             camera: camera::Camera::new(viewport.w as f32, viewport.h as f32),
             light_pos: V3::new(0.0, 10.0, 30.0),
             inputs: Default::default(),
@@ -417,7 +423,8 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             }
         }
 
-
+        // update particles
+        self.emitter.update(dt);
 
         match self.selected {
             SceneControllerSelected::Free => free_camera::update_camera(&mut self.camera, dt, &self.inputs),
@@ -425,7 +432,12 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                 // TODO: Should be a function points or something, we most likely want to disable/ignore movement inputs
                 // when fx roll animation is playing
                 // but not camera input
+
+                self.follow_controller.update_dist(self.inputs.mouse_wheel);
+
                 if let Some(entity_id) = self.controlled_entity {
+
+
                     let e = self.entities.get_mut(&entity_id).unwrap();
 
                     // update player pos
@@ -435,6 +447,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                     let mut t = V3::new(d.y, -d.x, 0.0);
 
                     let mut m = d * self.inputs.movement.x + t * self.inputs.movement.y;
+
 
                     if m.magnitude() > 0.0 {
 

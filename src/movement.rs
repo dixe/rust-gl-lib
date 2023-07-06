@@ -15,6 +15,7 @@ pub struct Inputs {
     pub sens: f32,
     pub inverse_y: f32, // should be -1 or 1. 1 for normal, -1 for inverse
     pub inverse_x: f32,
+    pub mouse_wheel: f32
 }
 
 
@@ -24,11 +25,15 @@ impl Inputs {
     pub fn frame_start(&mut self) {
         self.mouse_movement.xrel = 0.0;
         self.mouse_movement.yrel = 0.0;
+        self.mouse_wheel = 0.0;
     }
 
     pub fn update_events(&mut self, event: &Event) {
 
         match event {
+            Event::MouseWheel {y, .. } => {
+                self.mouse_wheel -= *y as f32;
+            },
             Event::KeyDown{keycode: Some(kc), .. } => {
                 if let Some(dir) = self.mapping.move_mapping.get(&kc) {
                     // Clamp x,y,z in dependently to discrete [-1, 0, 1]
@@ -101,6 +106,7 @@ impl Default for Inputs {
             sens: 0.15,
             inverse_y : -1.0,
             inverse_x : 1.0,
+            mouse_wheel: 0.0
         }
     }
 }

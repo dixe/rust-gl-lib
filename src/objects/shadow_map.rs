@@ -71,7 +71,7 @@ impl ShadowMap {
         let z_far = 100.5;
         // how much space out light sees, bigger is more space, but also lower resolution in shadow map
         // making this big, like 50 or 100, makes the shadows pixelated
-        let size = 5.0;
+        let size = 10.0;
 
         na::Matrix4::new_orthographic(-size, size, -size, size, z_near, z_far)
 

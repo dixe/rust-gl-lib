@@ -28,6 +28,11 @@ impl Controller {
         self.target = pos;
     }
 
+
+    pub fn update_dist(&mut self, dist_delta: f32) {
+        self.desired_distance = f32::max(1.0, f32::min(15.0, self.desired_distance + dist_delta));
+    }
+
     pub fn update_camera(&mut self, camera: &mut Camera, dt: f32){
 
         let mut diff_xy = camera.pos.xy() - self.target.xy();
