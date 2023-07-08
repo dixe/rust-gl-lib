@@ -51,7 +51,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     }
 
     scene.set_skybox("assets/cubemap/skybox/".to_string());
-    scene.load_all_meshes("E:/repos/Game-in-rust/blender_models/player.glb", true);
+    scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
 
 
     let look_at = V3::new(5.0, 3.1, 5.0);
