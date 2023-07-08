@@ -83,7 +83,7 @@ pub enum SceneControllerSelected {
 }
 
 
-pub type EntityControllerFn<T> = fn(&mut SceneEntity, &Camera, &Inputs, f32, &T);
+pub type EntityControllerFn<T> = fn(&mut SceneEntity, &mut Camera, &mut follow_camera::Controller, &Inputs, f32, &T);
 
 pub struct ControlledEntity<T> {
     pub id: EntityId,
@@ -454,31 +454,14 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
                 // when fx roll animation is playing
                 // but not camera input
 
-                self.follow_controller.update_dist(self.inputs.mouse_wheel);
-
                 if let Some(entity) = &self.controlled_entity {
-
-
                     let e = self.entities.get_mut(&entity.id).unwrap();
-
-                    (entity.control_fn)(e, &self.camera, &self.inputs, dt, &entity.user_data);
-
-
-                    //Update camera desired pitch and yaw from mouse
+                    (entity.control_fn)(e, &mut self.camera, &mut self.follow_controller, &self.inputs, dt, &entity.user_data);
                 }
 
-                //Update camera desired pitch and yaw from mouse
 
-                let base_sens = 3.0;
-
-                self.follow_controller.desired_pitch += self.inputs.mouse_movement.yrel * self.inputs.sens * self.inputs.inverse_y *  dt * base_sens;
-                self.follow_controller.yaw_change = self.inputs.mouse_movement.xrel * self.inputs.sens * dt * base_sens;
-
-                self.follow_controller.update_camera(&mut self.camera, dt);
             }
         }
-
-
 
         // WAIT FOR LOAD AND SET OF CUBEMAP
         // also a scene thing, maybe in update if cubemap i set
@@ -743,7 +726,8 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
 }
 
 /// Simple controller for moving around
-pub fn base_controller<T>(entity: &mut SceneEntity, camera: &Camera, inputs: &Inputs, dt: f32, _user_data: &T) {
+/// and updating follow camera
+pub fn base_controller<T>(entity: &mut SceneEntity, camera: &mut Camera, follow_controller: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, _user_data: &T) {
 
     // update player pos
     let mut d = entity.pos - camera.pos;
@@ -791,4 +775,19 @@ pub fn base_controller<T>(entity: &mut SceneEntity, camera: &Camera, inputs: &In
 
         entity.pos += m * inputs.speed * dt;
     }
+
+
+    //Update camera
+
+    let base_sens = 3.0;
+
+    follow_controller.update_dist(inputs.mouse_wheel);
+
+    follow_controller.desired_pitch += inputs.mouse_movement.yrel * inputs.sens * inputs.inverse_y *  dt * base_sens;
+
+    follow_controller.yaw_change = inputs.mouse_movement.xrel * inputs.sens * dt * base_sens;
+
+    follow_controller.update_camera_target(entity.pos + entity.root_motion);
+
+    follow_controller.update_camera(camera, dt);
 }

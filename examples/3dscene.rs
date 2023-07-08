@@ -1,4 +1,4 @@
-use gl_lib::{gl, helpers, movement::Inputs, camera::Camera};
+use gl_lib::{gl, helpers, movement::Inputs, camera::{follow_camera, Camera}};
 use gl_lib::shader::Shader;
 use gl_lib::shader::{BaseShader, reload_object_shader};
 use gl_lib::typedef::*;
@@ -116,7 +116,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
 
         let p1 = scene.entities.get(&player_id).unwrap();
-        scene.camera_follow(p1.pos + p1.root_motion);
+
 
 
         if scene.ui.button("Reload") {
@@ -175,7 +175,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         let animations = scene.animations.get(&player_skel).unwrap();
         for (name, anim) in animations.iter().sorted_by_key(|x| x.0) {
             if scene.ui.button(name) {
-                scene::play_animation(anim.clone(), true, speed, &player_id, &mut scene.player, &mut scene.entities);
+                scene::play_animation(anim.clone(), false, speed, &player_id, &mut scene.player, &mut scene.entities);
             }
         }
 
@@ -259,15 +259,15 @@ enum ControlledData {
 }
 
 
-fn controller(entity: &mut scene::SceneEntity, camera: &Camera, inputs: &Inputs, dt: f32, user_data: &ControlledData) {
+fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, user_data: &ControlledData) {
     match user_data {
-        ControlledData::Normal => controller_regular(entity, camera, inputs, dt),
-        ControlledData::Target((_, t)) => controller_target(entity, camera, inputs, dt, t),
+        ControlledData::Normal => controller_regular(entity, camera, follow_camera, inputs, dt),
+        ControlledData::Target((_, t)) => controller_target(entity, camera, follow_camera, inputs, dt, t),
     }
 }
 
 
-fn controller_target(entity: &mut scene::SceneEntity, camera: &Camera, inputs: &Inputs, dt: f32, target: &V3) {
+fn controller_target(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, target: &V3) {
 
     // face target
     let mut forward = target - entity.pos;
@@ -286,10 +286,22 @@ fn controller_target(entity: &mut scene::SceneEntity, camera: &Camera, inputs: &
         let mut new_angle = forward.y.atan2(forward.x);
         angle_change(new_angle, entity, dt);
     }
+
+    // update camera
+    follow_camera.update_dist(inputs.mouse_wheel);
+    // set desired distance from player
+    let xy = entity.pos - forward * follow_camera.desired_distance;
+
+    camera.pos.x = xy.x;
+    camera.pos.y = xy.y;
+    camera.pos.z += inputs.mouse_movement.yrel * inputs.sens * dt;
+
+    camera.look_at(*target);
+
 }
 
 
-fn controller_regular(entity: &mut scene::SceneEntity, camera: &Camera, inputs: &Inputs, dt: f32) {
+fn controller_regular(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32) {
 
      // update player pos
     let mut forward = entity.pos - camera.pos;
@@ -314,6 +326,20 @@ fn controller_regular(entity: &mut scene::SceneEntity, camera: &Camera, inputs: 
 
         entity.pos += m * inputs.speed * dt;
     }
+
+    //Update camera desired pitch and yaw from mouse
+    let base_sens = 3.0;
+
+    follow_camera.update_dist(inputs.mouse_wheel);
+
+    follow_camera.desired_pitch += inputs.mouse_movement.yrel * inputs.sens * inputs.inverse_y *  dt * base_sens;
+
+    follow_camera.yaw_change = inputs.mouse_movement.xrel * inputs.sens * dt * base_sens;
+
+    follow_camera.update_camera_target(entity.pos + entity.root_motion);
+
+    follow_camera.update_camera(camera, dt);
+
 }
 
 

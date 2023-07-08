@@ -5,7 +5,7 @@ use crate::na;
 #[derive(Clone, Debug)]
 pub struct Controller {
     target: na::Vector3::<f32>,
-    desired_distance: f32,
+    pub desired_distance: f32,
     pub desired_pitch: f32,
     pub yaw_change: f32
 }
