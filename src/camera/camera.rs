@@ -25,12 +25,10 @@ impl Camera {
 
     pub fn new(width: f32, height: f32) -> Camera {
 
-
         let pos = na::Vector3::new(0.0, 0.0, 5.0);
         let front = na::Vector3::new(0.0, 0.0, 0.0);
         let up = na::Vector3::new(0.0, 0.0, 1.0);
         let right = na::Vector3::new(1.0, 0.0, 0.0);
-
 
         Camera {
             pos,

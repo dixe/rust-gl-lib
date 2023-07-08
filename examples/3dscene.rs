@@ -195,7 +195,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
         if scene.player.expired(&player_id) {
 
-            let idle = scene.animations.get(&player_skel_id).unwrap().get("run_full").unwrap();
+            let idle = scene.animations.get(&player_skel_id).unwrap().get("idle").unwrap();
 
             scene::play_animation(idle.clone(), true, speed, &player_id, &mut scene.player, &mut scene.entities);
         }

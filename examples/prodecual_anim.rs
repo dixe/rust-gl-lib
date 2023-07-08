@@ -1,4 +1,4 @@
-use gl_lib::{gl, helpers};
+use gl_lib::{gl, na, helpers};
 use gl_lib::shader::Shader;
 use gl_lib::shader::{BaseShader, reload_object_shader};
 use gl_lib::typedef::*;
@@ -9,7 +9,7 @@ use gl_lib::objects::gltf_mesh::{KeyFrame, Animation};
 use gl_lib::imode_gui::Ui;
 use std::collections::HashMap;
 use gl_lib::animations::gltf_animation::update_skeleton_to_key_frame;
-
+use gl_lib::animations::skeleton::Skeleton;
 
 
 
@@ -117,14 +117,26 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     let mut speed = 1.0;
     let mut show_options = false;
 
-    let mut anim_1 = scene.animations.get(&player_skel_id).unwrap().get("idle").unwrap().clone();
-    let mut name_1: Rc::<str>= Rc::from("idle".to_owned());
+    let anims = scene.animations.get(&player_skel_id).unwrap();
+    let mut anim_1 = scene.animations.get(&player_skel_id).unwrap().get("run_0").unwrap().clone();
+    let mut name_1: Rc::<str>= Rc::from("run_0".to_owned());
 
-    let mut anim_2 = scene.animations.get(&player_skel_id).unwrap().get("idle").unwrap().clone();
-    let mut name_2: Rc::<str> = Rc::from("idle".to_owned());
+    let mut anim_2 = scene.animations.get(&player_skel_id).unwrap().get("run_1").unwrap().clone();
+    let mut name_2: Rc::<str> = Rc::from("run_1".to_owned());
 
     let mut tmp_keyframe = anim_1.frames[0].clone();
     let mut t = 0.0;
+
+    let skeleton = &scene.skeletons[player_skel_id];
+    let mut wheel = Wheel {
+        frames: vec![anims.get("run_0").unwrap().frames[0].clone(),
+                     anims.get("run_1").unwrap().frames[0].clone(),
+                     anims.get("run_2").unwrap().frames[0].clone(),
+                     anims.get("run_3").unwrap().frames[0].clone()
+        ],
+        loop_time: 2.0
+    };
+
     loop {
 
         // set ui framebuffer, consume sdl events, increment dt ect.
@@ -170,10 +182,8 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
             let skeleton = &mut scene.skeletons[player_skel_id];
 
-
             let frame_1 = &anim_1.frames[0];
             let frame_2 = &anim_2.frames[0];
-
 
             frame_1.interpolate(frame_2, t, &mut tmp_keyframe);
 
@@ -186,5 +196,44 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         scene.render();
         window.gl_swap_window();
     }
+}
 
+struct Wheel {
+    frames: Vec::<KeyFrame>,
+    loop_time: f32
+}
+
+
+fn inverse(keyframe: &KeyFrame, skeleton: &Skeleton) -> KeyFrame {
+
+    let mut new = keyframe.clone();
+
+    let mut name_to_idx: HashMap<String, usize> = HashMap::default();
+    for i in 0..skeleton.joints.len() {
+        name_to_idx.insert(skeleton.joints[i].name.clone(), i);
+    }
+
+    println!("{:?}", name_to_idx);
+
+    for i in 0..skeleton.joints.len() {
+        let mut mirror_name = skeleton.joints[i].name.clone();
+
+        if mirror_name.contains(".R") {
+
+            mirror_name = skeleton.joints[i].name.replace(".R", ".L");
+            let new_idx = name_to_idx.get(&mirror_name).unwrap();
+
+            let euler = keyframe.joints[i].rotation.euler_angles();
+            new.joints[*new_idx].rotation = na::UnitQuaternion::from_euler_angles(euler.0, euler.1, -euler.2);
+        } else if mirror_name.contains(".L") {
+
+            mirror_name = skeleton.joints[i].name.replace(".L", ".R");
+            let new_idx = name_to_idx.get(&mirror_name).unwrap();
+
+            let euler = keyframe.joints[i].rotation.euler_angles();
+            new.joints[*new_idx].rotation = na::UnitQuaternion::from_euler_angles(-euler.0, euler.1, -euler.2);
+        }
+    }
+
+    new
 }

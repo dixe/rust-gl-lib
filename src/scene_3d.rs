@@ -83,6 +83,8 @@ pub enum SceneControllerSelected {
 }
 
 
+pub type EntityControllerFn = fn(&mut SceneEntity, &Camera, &Inputs, f32);
+
 pub struct Scene<UserPostProcessData> {
     pub ui: Ui,
     pub gl: gl::Gl,
@@ -99,6 +101,8 @@ pub struct Scene<UserPostProcessData> {
     // works as a default 3d char controller.
     // for own implementation keep this as none and just do in in user code
     pub controlled_entity: Option<EntityId>,
+
+    pub controller_fn: EntityControllerFn,
 
     pub selected: SceneControllerSelected,
     pub light_pos: V3,
@@ -142,9 +146,6 @@ pub struct Scene<UserPostProcessData> {
 
     pub viewport: gl::viewport::Viewport
 
-    //render_meshes: Vec::<RenderMesh>
-
-
 }
 
 
@@ -152,11 +153,15 @@ pub struct Scene<UserPostProcessData> {
 pub struct SceneEntity {
     pub mesh_id: MeshIndex,
     pub pos: V3,
-    pub angle: Rotation2<f32>, // facing angle when char is in t pose
+    pub z_angle: Rotation2<f32>, // facing angle when char is in t pose
+    pub forward_pitch: Rotation2<f32>,
+    pub side_pitch: Rotation2<f32>,
+
     // having pos and root motion make everything easier, since we can just set this in animation update.
     // if we tried to directly add it to pos, then we had to take dt into account, and also somehow make sure that we
     // got every part of every frame, so when dt changes frame, we had to add the last part of old frame root motion
     // ect. ect. this make it easier
+    // only really works for animations where we cannot change direction during animaiton,
     pub root_motion: V3,
     pub skeleton_id: Option::<SkeletonIndex>, // Is indirectly a duplicated data, since meshindex points to Scene mesh, which has skel_id. But lets keep it as a convinience
 }
@@ -195,6 +200,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             light_pos: V3::new(0.0, 10.0, 30.0),
             inputs: Default::default(),
             follow_controller: Default::default(),
+            controller_fn: base_controller,
             selected: SceneControllerSelected::Free,
             mesh_shader,
             cubemap_shader,
@@ -230,7 +236,9 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
         let skeleton_id = self.mesh_data[mesh_id].skeleton;
         let entity = SceneEntity {
             mesh_id,
-            angle: Rotation2::identity(),
+            z_angle: Rotation2::identity(),
+            forward_pitch: Rotation2::identity(),
+            side_pitch: Rotation2::identity(),
             pos: V3::new(0.0, 0.0, 0.0),
             root_motion: V3::new(0.0, 0.0, 0.0),
             skeleton_id: self.mesh_data[mesh_id].skeleton
@@ -407,6 +415,12 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
                     self.sdl.mouse().show_cursor(self.ui_mode);
                     self.sdl.mouse().set_relative_mouse_mode(!self.ui_mode);
                 },
+                Event::KeyDown{keycode: Some(sdl2::keyboard::Keycode::Tab), .. } => {
+                    self.selected = match self.selected {
+                        SceneControllerSelected::Free => SceneControllerSelected::Follow,
+                        SceneControllerSelected::Follow => SceneControllerSelected::Free
+                    }
+                },
                 Event::Window {win_event: WindowEvent::Resized(x,y), ..} => {
                     self.camera.width = *x as f32;
                     self.camera.height = *y as f32;
@@ -440,51 +454,8 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
                     let e = self.entities.get_mut(&entity_id).unwrap();
 
-                    // update player pos
-                    let mut d = e.pos - self.camera.pos;
-                    d.z = 0.0;
-                    d = d.normalize();
-                    let mut t = V3::new(d.y, -d.x, 0.0);
+                    (self.controller_fn)(e, &self.camera, &self.inputs, dt);
 
-                    let mut m = d * self.inputs.movement.x + t * self.inputs.movement.y;
-
-
-                    if m.magnitude() > 0.0 {
-
-                        m = m.normalize(); // check sekrio what happens when holding right or left
-                        // ignore z since we assume its a char controller that cannot fly
-
-
-
-                        let mut new_angle = m.y.atan2(m.x);
-                        let mut diff = new_angle - e.angle.angle();
-
-                        // normalize to range -pi to pi
-                        if diff < -std::f32::consts::PI {
-                            diff += std::f32::consts::TAU;
-                        }
-
-                        if diff > std::f32::consts::PI {
-                            diff -= std::f32::consts::TAU;
-                        }
-
-                        let sign = diff.signum();
-                        let r_speed = 10.0;
-                        // change with max rotation speed
-                        let mut change = sign * r_speed * dt;
-
-                        // if we max speed would over shot target angle, change just the needed amount
-                        if change.abs() > diff.abs() {
-                            change = diff;
-                        }
-
-                        // do the update of rotation
-                        let z_rot = Rotation2::new(change);
-                        e.angle *= z_rot;
-
-                        e.pos += m * self.inputs.speed * dt;
-
-                    }
 
                     //Update camera desired pitch and yaw from mouse
                 }
@@ -536,7 +507,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
                 // update root motion. Maybe have a flag on scene or something to disable this.
                 // take current angle into account. Changing angle mid animation also just changes the root motion
-                let rot = Rotation3::from_euler_angles(0.0, 0.0, entity.angle.angle());
+                let rot = Rotation3::from_euler_angles(0.0, 0.0, entity.z_angle.angle());
                 entity.root_motion = rot * self.player.root_motion(entity_id);
             } else {
                 // just make sure that we update entity pos with root motion now that animatio is done,
@@ -556,10 +527,9 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
         let mut render_meshes = vec![];
         for (key, entity) in &self.entities.data {
 
-
             let trans = Translation3::from(entity.pos + entity.root_motion);
 
-            let rotation = Rotation3::from_euler_angles(0.0, 0.0, entity.angle.angle());
+            let rotation = Rotation3::from_euler_angles(entity.side_pitch.angle(), entity.forward_pitch.angle(), entity.z_angle.angle());
 
             render_meshes.push(RenderMesh {
                 model_mat: trans.to_homogeneous() * rotation.to_homogeneous(),
@@ -762,5 +732,57 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
         cubemap_shader.set_mat4(gl, "projection", camera.projection());
         cubemap_shader.set_mat4(gl, "view", camera.view());
         cubemap.render(gl);
+    }
+}
+
+
+pub fn base_controller(entity: &mut SceneEntity, camera: &Camera, inputs: &Inputs, dt: f32) {
+
+    // update player pos
+    let mut d = entity.pos - camera.pos;
+    d.z = 0.0;
+    d = d.normalize();
+    let mut t = V3::new(d.y, -d.x, 0.0);
+
+    let mut m = d * inputs.movement.x + t * inputs.movement.y;
+
+    entity.forward_pitch = Rotation2::new(0.0);
+    entity.side_pitch = Rotation2::new(0.0);
+    if m.magnitude() > 0.0 {
+
+        m = m.normalize(); // check sekrio what happens when holding right or left
+        // ignore z since we assume its a char controller that cannot fly
+
+        let mut new_angle = m.y.atan2(m.x);
+        let mut diff = new_angle - entity.z_angle.angle();
+
+        // normalize to range -pi to pi
+        if diff < -std::f32::consts::PI {
+            diff += std::f32::consts::TAU;
+        }
+
+        if diff > std::f32::consts::PI {
+            diff -= std::f32::consts::TAU;
+        }
+
+        let sign = diff.signum();
+        let r_speed = 10.0;
+        // change with max rotation speed
+        let mut change = sign * r_speed * dt;
+
+        // if we max speed would over shot target angle, change just the needed amount
+        if change.abs() > diff.abs() {
+            change = diff;
+        }
+
+        // do the update of rotation
+        let z_rot = Rotation2::new(change);
+        entity.z_angle *= z_rot;
+
+        entity.forward_pitch = Rotation2::new(0.2 * inputs.movement.x as f32 );
+        entity.side_pitch = Rotation2::new(0.2 * inputs.movement.y as f32 );
+
+        println!("{:?}", m);
+        entity.pos += m * inputs.speed * dt;
     }
 }
