@@ -83,9 +83,15 @@ pub enum SceneControllerSelected {
 }
 
 
-pub type EntityControllerFn = fn(&mut SceneEntity, &Camera, &Inputs, f32);
+pub type EntityControllerFn<T> = fn(&mut SceneEntity, &Camera, &Inputs, f32, &T);
 
-pub struct Scene<UserPostProcessData> {
+pub struct ControlledEntity<T> {
+    pub id: EntityId,
+    pub user_data: T,
+    pub control_fn: EntityControllerFn<T>,
+}
+
+pub struct Scene<UserPostProcessData, UserControllerData> {
     pub ui: Ui,
     pub gl: gl::Gl,
     pub ui_mode: bool,
@@ -97,14 +103,13 @@ pub struct Scene<UserPostProcessData> {
     pub inputs: Inputs,
     pub follow_controller: follow_camera::Controller,
 
-    // if we use a follow cam and this is set the inputs will be used to control this entity
+    // if we use a follow camera and this is set the inputs will be used to control this entity
     // works as a default 3d char controller.
     // for own implementation keep this as none and just do in in user code
-    pub controlled_entity: Option<EntityId>,
-
-    pub controller_fn: EntityControllerFn,
+    pub controlled_entity: Option<ControlledEntity<UserControllerData>>,
 
     pub selected: SceneControllerSelected,
+
     pub light_pos: V3,
 
     pub player: AnimationPlayer<EntityId>,
@@ -145,7 +150,6 @@ pub struct Scene<UserPostProcessData> {
     pub shadow_map: Option<ShadowMap>,
 
     pub viewport: gl::viewport::Viewport
-
 }
 
 
@@ -166,8 +170,8 @@ pub struct SceneEntity {
     pub skeleton_id: Option::<SkeletonIndex>, // Is indirectly a duplicated data, since meshindex points to Scene mesh, which has skel_id. But lets keep it as a convinience
 }
 
-impl< UserPostProcessData> Scene<UserPostProcessData> {
-    pub fn new(gl: gl::Gl, viewport: gl::viewport::Viewport, sdl: sdl2::Sdl) -> Result<Scene<UserPostProcessData>, failure::Error> {
+impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserControllerData> {
+    pub fn new(gl: gl::Gl, viewport: gl::viewport::Viewport, sdl: sdl2::Sdl) -> Result<Scene<UserPostProcessData, UserControllerData>, failure::Error> {
 
         let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
         let ui = Ui::new(drawer_2d);
@@ -200,7 +204,6 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             light_pos: V3::new(0.0, 10.0, 30.0),
             inputs: Default::default(),
             follow_controller: Default::default(),
-            controller_fn: base_controller,
             selected: SceneControllerSelected::Free,
             mesh_shader,
             cubemap_shader,
@@ -217,8 +220,7 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             fbos: None,
             stencil_shader: None,
             clear_buffer_bits: gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT,
-            controlled_entity: None,
-
+            controlled_entity: None::<ControlledEntity<UserControllerData>>
         })
     }
 
@@ -329,6 +331,11 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
             self.gl.StencilFunc(gl::NOTEQUAL, 1, 0xFF);
             self.gl.StencilOp(gl::KEEP, gl::KEEP, gl::REPLACE);
         }
+    }
+
+
+    pub fn controlled_data_mut(&mut self) -> Option<&mut UserControllerData> {
+        self.controlled_entity.as_mut().map(|mut data| &mut data.user_data)
     }
 
 
@@ -449,12 +456,12 @@ impl< UserPostProcessData> Scene<UserPostProcessData> {
 
                 self.follow_controller.update_dist(self.inputs.mouse_wheel);
 
-                if let Some(entity_id) = self.controlled_entity {
+                if let Some(entity) = &self.controlled_entity {
 
 
-                    let e = self.entities.get_mut(&entity_id).unwrap();
+                    let e = self.entities.get_mut(&entity.id).unwrap();
 
-                    (self.controller_fn)(e, &self.camera, &self.inputs, dt);
+                    (entity.control_fn)(e, &self.camera, &self.inputs, dt, &entity.user_data);
 
 
                     //Update camera desired pitch and yaw from mouse
@@ -735,8 +742,8 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
     }
 }
 
-
-pub fn base_controller(entity: &mut SceneEntity, camera: &Camera, inputs: &Inputs, dt: f32) {
+/// Simple controller for moving around
+pub fn base_controller<T>(entity: &mut SceneEntity, camera: &Camera, inputs: &Inputs, dt: f32, _user_data: &T) {
 
     // update player pos
     let mut d = entity.pos - camera.pos;
@@ -782,7 +789,6 @@ pub fn base_controller(entity: &mut SceneEntity, camera: &Camera, inputs: &Input
         entity.forward_pitch = Rotation2::new(0.2 * inputs.movement.x as f32 );
         entity.side_pitch = Rotation2::new(0.2 * inputs.movement.y as f32 );
 
-        println!("{:?}", m);
         entity.pos += m * inputs.speed * dt;
     }
 }

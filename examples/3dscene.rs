@@ -1,10 +1,10 @@
-use gl_lib::{gl, helpers};
+use gl_lib::{gl, helpers, movement::Inputs, camera::Camera};
 use gl_lib::shader::Shader;
 use gl_lib::shader::{BaseShader, reload_object_shader};
 use gl_lib::typedef::*;
 use gl_lib::scene_3d as scene;
 use itertools::Itertools;
-
+use gl_lib::na::{self, Rotation2};
 
 pub struct PostPData {
     time: f32
@@ -37,7 +37,8 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
              window: &sdl2::video::Window,
              sdl: sdl2::Sdl) -> Result<(), failure::Error> {
 
-    let mut scene = scene::Scene::<PostPData>::new(gl.clone(), viewport, sdl)?;
+    let mut scene = scene::Scene::<PostPData, ControlledData>::new(gl.clone(), viewport, sdl)?;
+
 
     let mut cont = true;
 
@@ -60,11 +61,16 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     scene.inputs.sens = 0.70;
 
 
-
     let player_id = scene.create_entity("player");
     let player_skel_id = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
-    scene.controlled_entity = Some(player_id);
-    let player2_id = scene.create_entity("player");
+
+    scene.controlled_entity = Some(scene::ControlledEntity {
+        id: player_id,
+        user_data: ControlledData::Normal,
+        control_fn: controller
+    });
+
+    let enemy_id = scene.create_entity("player");
 
 
     let world_id = scene.create_entity("world");
@@ -72,7 +78,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     let p1 = scene.entity_mut(&player_id).unwrap();
     p1.pos = V3::new(0.0, 00.0, 1.0);
 
-    let p2 = scene.entity_mut(&player2_id).unwrap();
+    let p2 = scene.entity_mut(&enemy_id).unwrap();
     p2.pos = V3::new(00.0, 2.0, 1.0);
 
 
@@ -105,9 +111,11 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
             scene.change_camera();
         }
 
+
+        update_target(&mut scene, player_id, enemy_id);
+
+
         let p1 = scene.entities.get(&player_id).unwrap();
-
-
         scene.camera_follow(p1.pos + p1.root_motion);
 
 
@@ -194,23 +202,16 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         scene.ui.newline();
 
         if scene.player.expired(&player_id) {
-
             let idle = scene.animations.get(&player_skel_id).unwrap().get("idle").unwrap();
-
             scene::play_animation(idle.clone(), true, speed, &player_id, &mut scene.player, &mut scene.entities);
         }
 
+        if scene.ui.button("Target") {
+            //scene.controlled_entity.set_user_data(user);
+        }
 
         if scene.ui.button("Reset Scene") {
             return Ok(());
-        }
-
-        if let Some(e) = scene.entities.get_mut(&player_id) {
-
-
-
-            //scene.ui.slider(&mut e.angle, 0.0, std::f32::consts::TAU);
-
         }
 
         // update aimaiton player, and bones, and root motion if any
@@ -222,4 +223,123 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         window.gl_swap_window();
     }
 
+}
+
+/// when middle click update lock on/off, when lock on, update the target pos in user data, so we can use it
+/// later in controller
+fn update_target<T,>(scene: &mut scene::Scene<T, ControlledData>, player_id: scene::EntityId, enemy_id: scene::EntityId) {
+
+    let middle_mouse = scene.inputs.middle_mouse;
+    if let Some(controlled) = &mut scene.controlled_entity {
+        match controlled.user_data {
+            ControlledData::Target((id, pos)) => {
+                if middle_mouse {
+                    controlled.user_data = ControlledData::Normal;
+                } else {
+                    if let Some(enemy) = scene.entities.get(&enemy_id) {
+                        controlled.user_data = ControlledData::Target((enemy_id, enemy.pos));
+                    }
+               }
+            },
+            ControlledData::Normal => {
+                if middle_mouse {
+                    if let Some(enemy) = scene.entities.get(&enemy_id) {
+                        controlled.user_data = ControlledData::Target((enemy_id, enemy.pos));
+                    }
+                }
+            }
+
+        }
+    }
+}
+
+enum ControlledData {
+    Normal,
+    Target((scene::EntityId, V3))
+}
+
+
+fn controller(entity: &mut scene::SceneEntity, camera: &Camera, inputs: &Inputs, dt: f32, user_data: &ControlledData) {
+    match user_data {
+        ControlledData::Normal => controller_regular(entity, camera, inputs, dt),
+        ControlledData::Target((_, t)) => controller_target(entity, camera, inputs, dt, t),
+    }
+}
+
+
+fn controller_target(entity: &mut scene::SceneEntity, camera: &Camera, inputs: &Inputs, dt: f32, target: &V3) {
+
+    // face target
+    let mut forward = target - entity.pos;
+    forward.z = 0.0;
+    forward = forward.normalize();
+
+    let tangent = V3::new(forward.y, -forward.x, 0.0);
+
+    let movement = forward * inputs.movement.x + tangent * inputs.movement.y;
+
+    if movement.magnitude() > 0.0 {
+        entity.pos += movement.normalize() * inputs.speed * dt;
+    }
+
+    if forward.magnitude() > 0.0 {
+        let mut new_angle = forward.y.atan2(forward.x);
+        angle_change(new_angle, entity, dt);
+    }
+}
+
+
+fn controller_regular(entity: &mut scene::SceneEntity, camera: &Camera, inputs: &Inputs, dt: f32) {
+
+     // update player pos
+    let mut forward = entity.pos - camera.pos;
+    forward.z = 0.0;
+    forward = forward.normalize();
+    let tangent = V3::new(forward.y, -forward.x, 0.0);
+
+    let mut m = forward * inputs.movement.x + tangent * inputs.movement.y;
+
+    entity.forward_pitch = Rotation2::new(0.0);
+    entity.side_pitch = Rotation2::new(0.0);
+    if m.magnitude() > 0.0 {
+
+        m = m.normalize(); // check sekrio what happens when holding right or left
+        // ignore z since we assume its a char controller that cannot fly
+
+        let mut new_angle = m.y.atan2(m.x);
+        angle_change(new_angle, entity, dt);
+
+        entity.forward_pitch = Rotation2::new(0.2 * inputs.movement.x as f32 );
+        entity.side_pitch = Rotation2::new(0.2 * inputs.movement.y as f32 );
+
+        entity.pos += m * inputs.speed * dt;
+    }
+}
+
+
+fn angle_change(new_angle: f32, entity: &mut scene::SceneEntity, dt: f32) {
+
+    let mut diff = new_angle - entity.z_angle.angle();
+
+    // normalize to range -pi to pi
+    if diff < -std::f32::consts::PI {
+        diff += std::f32::consts::TAU;
+    }
+
+    if diff > std::f32::consts::PI {
+        diff -= std::f32::consts::TAU;
+    }
+
+    let sign = diff.signum();
+    let r_speed = 10.0;
+    // change with max rotation speed
+    let mut change = sign * r_speed * dt;
+
+    // if we max speed would over shot target angle, change just the needed amount
+    if change.abs() > diff.abs() {
+        change = diff;
+    }
+
+    // do the update of rotation
+    entity.z_angle *= Rotation2::new(change);
 }
