@@ -8,8 +8,7 @@ use std::time::{
 pub struct Deltatime {
     value: Duration,
     last_update: Instant,
-    time_speed: f32,
-
+    pub time_speed: f32,
 }
 
 impl Deltatime {

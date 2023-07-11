@@ -17,6 +17,7 @@ pub struct Inputs {
     pub inverse_x: f32,
     pub mouse_wheel: f32,
     pub middle_mouse: bool,
+    pub left_mouse: bool,
 }
 
 
@@ -27,7 +28,8 @@ impl Inputs {
         self.mouse_movement.xrel = 0.0;
         self.mouse_movement.yrel = 0.0;
         self.mouse_wheel = 0.0;
-        self.middle_mouse = false
+        self.middle_mouse = false;
+        self.left_mouse = false;
     }
 
     pub fn update_events(&mut self, event: &Event) {
@@ -39,6 +41,8 @@ impl Inputs {
             Event::MouseButtonDown {mouse_btn, .. } => {
                 if *mouse_btn == sdl2::mouse::MouseButton::Middle {
                     self.middle_mouse = true;
+                } else if *mouse_btn == sdl2::mouse::MouseButton::Left {
+                    self.left_mouse = true;
                 }
             },
             Event::KeyDown{keycode: Some(kc), .. } => {
@@ -114,7 +118,8 @@ impl Default for Inputs {
             inverse_y : -1.0,
             inverse_x : 1.0,
             mouse_wheel: 0.0,
-            middle_mouse: false
+            middle_mouse: false,
+            left_mouse: false,
         }
     }
 }

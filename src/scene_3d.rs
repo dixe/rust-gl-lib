@@ -394,6 +394,13 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
         }
     }
 
+    pub fn allow_char_inputs(&self) -> bool {
+        match self.selected {
+            SceneControllerSelected::Free => false,
+            SceneControllerSelected::Follow => true
+        }
+    }
+
     pub fn frame_start(&mut self, event_pump: &mut sdl2::EventPump)  {
 
         if let Some(ref mut fbos) = self.fbos {
@@ -621,11 +628,11 @@ pub fn stop_animation(entity_id: &EntityId, player: &mut AnimationPlayer::<Entit
     }
 }
 
-pub fn play_animation(anim: Rc::<Animation>, repeat: bool, speed: f32, entity_id: &EntityId, player: &mut AnimationPlayer::<EntityId>, entities: &mut DataMap::<SceneEntity>) {
+pub fn play_animation(anim: Rc::<Animation>, repeat: bool,  entity_id: &EntityId, player: &mut AnimationPlayer::<EntityId>, entities: &mut DataMap::<SceneEntity>) {
 
     stop_animation(entity_id, player, entities);
 
-    player.start(Start {anim, speed, repeat, id: *entity_id});
+    player.start(Start {anim, speed: 1.0, repeat, id: *entity_id});
 }
 
 

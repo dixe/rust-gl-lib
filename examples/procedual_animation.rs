@@ -73,7 +73,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
              window: &sdl2::video::Window,
              sdl: sdl2::Sdl) -> Result<(), failure::Error> {
 
-    let mut scene = scene::Scene::<PostPData>::new(gl.clone(), viewport, sdl)?;
+    let mut scene = scene::Scene::<PostPData, ()>::new(gl.clone(), viewport, sdl)?;
 
     let mut cont = true;
 
@@ -85,7 +85,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         window.gl_swap_window();
     }
 
-    scene.load_all_meshes("E:/repos/Game-in-rust/blender_models/player.glb", true);
+    scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
 
     let look_at = V3::new(5.0, 3.1, 5.0);
     scene.camera.move_to(V3::new(8.4, 4.3, 5.0));
@@ -97,7 +97,12 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
     let player_id = scene.create_entity("player");
     let player_skel_id = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
-    scene.controlled_entity = Some(player_id);
+
+    scene.controlled_entity = Some(scene::ControlledEntity {
+        id: player_id,
+        user_data: (),
+        control_fn: scene::base_controller
+    });
 
     let world_id = scene.create_entity("world");
 

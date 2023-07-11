@@ -19,7 +19,6 @@ fn main() -> Result<(), failure::Error> {
     let sdl_setup = helpers::setup_sdl()?;
     let window = sdl_setup.window;
     let sdl = sdl_setup.sdl;
-    let viewport = sdl_setup.viewport;
     let gl = &sdl_setup.gl;
     let _audio_subsystem = sdl.audio().unwrap();
     let mut event_pump = sdl.event_pump().unwrap();
@@ -27,16 +26,25 @@ fn main() -> Result<(), failure::Error> {
     // disable v-sync
     let _ = sdl_setup.video_subsystem.gl_set_swap_interval(0);
     loop {
-        let _ = run_scene(gl, &mut event_pump, viewport, &window, sdl.clone())?;
+        let _ = run_scene(gl, &mut event_pump, &window, sdl.clone())?;
     }
 }
 
+enum PlayerState {
+    Attack,
+    Movable,
+}
 
 fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
-             viewport: gl::viewport::Viewport,
              window: &sdl2::video::Window,
              sdl: sdl2::Sdl) -> Result<(), failure::Error> {
 
+    let viewport = gl::viewport::Viewport {
+        x: 0,
+        y: 0,
+        w: window.size().0 as i32,
+        h: window.size().1 as i32,
+    };
     let mut scene = scene::Scene::<PostPData, ControlledData>::new(gl.clone(), viewport, sdl)?;
 
 
@@ -62,12 +70,17 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
 
     let player_id = scene.create_entity("player");
+    let mut player_state = PlayerState::Movable;
+
     let player_skel_id = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
 
     scene.controlled_entity = Some(scene::ControlledEntity {
         id: player_id,
-        user_data: ControlledData::Normal,
-        control_fn: controller
+        user_data: ControlledData {
+            camera: CameraState::Normal,
+            player: PlayerState::Movable
+        },
+        control_fn: camera_controller
     });
 
     let enemy_id = scene.create_entity("player");
@@ -89,15 +102,20 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     };
 
     scene.use_fbos(post_process_data, Some(post_process_uniform_set));
-    scene.use_stencil();
+    //scene.use_stencil();
     scene.use_shadow_map();
 
-    let mut speed = 1.0;
     let mut show_options = false;
     loop {
 
         // set ui framebuffer, consume sdl events, increment dt ect.
         scene.frame_start(event_pump);
+
+        // move to before controller should take whole scene maybe, since we want to update animaiton played
+        // controller is actually a camera controller, so should maybe not even do movement2
+
+        handle_input(&mut scene);
+
 
         let dt = scene.dt();
 
@@ -175,7 +193,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         let animations = scene.animations.get(&player_skel).unwrap();
         for (name, anim) in animations.iter().sorted_by_key(|x| x.0) {
             if scene.ui.button(name) {
-                scene::play_animation(anim.clone(), false, speed, &player_id, &mut scene.player, &mut scene.entities);
+                scene::play_animation(anim.clone(), false, &player_id, &mut scene.player, &mut scene.entities);
             }
         }
 
@@ -189,8 +207,9 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         }
 
         scene.ui.newline();
-        if scene.ui.slider(&mut speed, 0.1, 10.0) {
-            scene.player.change_speed(&player_id, speed);
+        let mut speed = scene.ui.deltatime.time_speed;
+        if scene.ui.slider(&mut speed, 0.1, 1.3) {
+            scene.ui.deltatime.time_speed = speed;
         }
 
         scene.ui.newline();
@@ -202,8 +221,15 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         scene.ui.newline();
 
         if scene.player.expired(&player_id) {
-            let idle = scene.animations.get(&player_skel_id).unwrap().get("idle").unwrap();
-            scene::play_animation(idle.clone(), true, speed, &player_id, &mut scene.player, &mut scene.entities);
+
+            let idle = scene.animations.get(&player_skel_id).unwrap().get("run_full").unwrap();
+            scene::play_animation(idle.clone(), true, &player_id, &mut scene.player, &mut scene.entities);
+
+            if let Some(ref mut c_ent) = &mut scene.controlled_entity {
+                let player = scene.entities.get_mut(&c_ent.id).unwrap();
+
+                c_ent.user_data.player = PlayerState::Movable;
+            }
         }
 
         if scene.ui.button("Target") {
@@ -225,49 +251,67 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
 }
 
-/// when middle click update lock on/off, when lock on, update the target pos in user data, so we can use it
-/// later in controller
-fn update_target<T,>(scene: &mut scene::Scene<T, ControlledData>, player_id: scene::EntityId, enemy_id: scene::EntityId) {
 
-    let middle_mouse = scene.inputs.middle_mouse;
-    if let Some(controlled) = &mut scene.controlled_entity {
-        match controlled.user_data {
-            ControlledData::Target((id, pos)) => {
-                if middle_mouse {
-                    controlled.user_data = ControlledData::Normal;
-                } else {
-                    if let Some(enemy) = scene.entities.get(&enemy_id) {
-                        controlled.user_data = ControlledData::Target((enemy_id, enemy.pos));
-                    }
-               }
-            },
-            ControlledData::Normal => {
-                if middle_mouse {
-                    if let Some(enemy) = scene.entities.get(&enemy_id) {
-                        controlled.user_data = ControlledData::Target((enemy_id, enemy.pos));
-                    }
+fn handle_input<A>(scene: &mut scene::Scene<A, ControlledData>) {
+    if !scene.allow_char_inputs() {
+        return;
+    }
+
+    let dt = scene.dt();
+    if let Some(ref mut c_ent) = &mut scene.controlled_entity {
+        let player = scene.entities.get_mut(&c_ent.id).unwrap();
+
+        match c_ent.user_data.player {
+            PlayerState::Movable => {
+                match c_ent.user_data.camera {
+                    CameraState::Normal => handle_movement_regular(player, &scene.camera, &scene.inputs, dt),
+                    CameraState::Target((_, t)) => handle_movement_target(player, &t, &scene.inputs, dt),
                 }
-            }
 
+                // handle attack
+                if scene.inputs.left_mouse {
+                    c_ent.user_data.player = PlayerState::Attack;
+                    let anim = scene.animations.get(&player.skeleton_id.unwrap()).unwrap().get("attack").unwrap();
+
+                    scene::play_animation(anim.clone(), false, &c_ent.id, &mut scene.player, &mut scene.entities);
+                }
+            },
+            PlayerState::Attack => {
+                // cannot attack again, or move
+            }
         }
     }
 }
 
-enum ControlledData {
-    Normal,
-    Target((scene::EntityId, V3))
-}
 
+fn handle_movement_regular(entity: &mut scene::SceneEntity, camera: &Camera, inputs: &Inputs, dt: f32) {
 
-fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, user_data: &ControlledData) {
-    match user_data {
-        ControlledData::Normal => controller_regular(entity, camera, follow_camera, inputs, dt),
-        ControlledData::Target((_, t)) => controller_target(entity, camera, follow_camera, inputs, dt, t),
+    // update player pos
+    let mut forward = entity.pos - camera.pos;
+    forward.z = 0.0;
+    forward = forward.normalize();
+    let tangent = V3::new(forward.y, -forward.x, 0.0);
+
+    let mut m = forward * inputs.movement.x + tangent * inputs.movement.y;
+
+    entity.forward_pitch = Rotation2::new(0.0);
+    entity.side_pitch = Rotation2::new(0.0);
+
+    if m.magnitude() > 0.0 {
+
+        m = m.normalize(); // check sekrio what happens when holding right or left
+
+        let mut new_angle = m.y.atan2(m.x);
+        angle_change(new_angle, entity, dt);
+
+        entity.forward_pitch = Rotation2::new(0.1 * inputs.movement.x as f32 );
+        entity.side_pitch = Rotation2::new(0.05 * inputs.movement.y as f32 );
+
+        entity.pos += m * inputs.speed * dt;
     }
 }
 
-
-fn controller_target(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, target: &V3) {
+fn handle_movement_target(entity: &mut scene::SceneEntity, target: &V3, inputs: &Inputs, dt: f32) {
 
     // face target
     let mut forward = target - entity.pos;
@@ -282,10 +326,69 @@ fn controller_target(entity: &mut scene::SceneEntity, camera: &mut Camera, follo
         entity.pos += movement.normalize() * inputs.speed * dt;
     }
 
+
     if forward.magnitude() > 0.0 {
         let mut new_angle = forward.y.atan2(forward.x);
         angle_change(new_angle, entity, dt);
     }
+}
+
+/// when middle click update lock on/off, when lock on, update the target pos in user data, so we can use it
+/// later in controller
+fn update_target<T,>(scene: &mut scene::Scene<T, ControlledData>, player_id: scene::EntityId, enemy_id: scene::EntityId) {
+
+    let middle_mouse = scene.inputs.middle_mouse;
+
+    if let Some(controlled) = &mut scene.controlled_entity {
+        match controlled.user_data.camera {
+            CameraState::Target((id, pos)) => {
+                if middle_mouse {
+                    controlled.user_data.camera = CameraState::Normal;
+                } else {
+                    if let Some(enemy) = scene.entities.get(&enemy_id) {
+                        controlled.user_data.camera = CameraState::Target((enemy_id, enemy.pos));
+                    }
+               }
+            },
+            CameraState::Normal => {
+                if middle_mouse {
+                    if let Some(enemy) = scene.entities.get(&enemy_id) {
+                        controlled.user_data.camera = CameraState::Target((enemy_id, enemy.pos));
+                    }
+                }
+            }
+
+        }
+    }
+}
+
+
+struct ControlledData {
+    camera: CameraState,
+    player: PlayerState
+}
+
+enum CameraState {
+    Normal,
+    Target((scene::EntityId, V3))
+}
+
+
+fn camera_controller(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, user_data: &ControlledData) {
+
+    match user_data.camera {
+        CameraState::Normal => controller_regular(entity, camera, follow_camera, inputs, dt),
+        CameraState::Target((_, t)) => controller_target(entity, camera, follow_camera, inputs, dt, &t),
+    }
+}
+
+
+fn controller_target(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, target: &V3) {
+
+    // face target
+    let mut forward = target - entity.pos;
+    forward.z = 0.0;
+    forward = forward.normalize();
 
     // update camera
     follow_camera.update_dist(inputs.mouse_wheel);
@@ -302,30 +405,6 @@ fn controller_target(entity: &mut scene::SceneEntity, camera: &mut Camera, follo
 
 
 fn controller_regular(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32) {
-
-     // update player pos
-    let mut forward = entity.pos - camera.pos;
-    forward.z = 0.0;
-    forward = forward.normalize();
-    let tangent = V3::new(forward.y, -forward.x, 0.0);
-
-    let mut m = forward * inputs.movement.x + tangent * inputs.movement.y;
-
-    entity.forward_pitch = Rotation2::new(0.0);
-    entity.side_pitch = Rotation2::new(0.0);
-    if m.magnitude() > 0.0 {
-
-        m = m.normalize(); // check sekrio what happens when holding right or left
-        // ignore z since we assume its a char controller that cannot fly
-
-        let mut new_angle = m.y.atan2(m.x);
-        angle_change(new_angle, entity, dt);
-
-        entity.forward_pitch = Rotation2::new(0.2 * inputs.movement.x as f32 );
-        entity.side_pitch = Rotation2::new(0.2 * inputs.movement.y as f32 );
-
-        entity.pos += m * inputs.speed * dt;
-    }
 
     //Update camera desired pitch and yaw from mouse
     let base_sens = 3.0;

@@ -135,9 +135,11 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
         let mut total_secs = 0.0;
 
         for channel in ani.channels() {
+
             let reader = channel.reader(|buffer| Some(&buffers[buffer.index()]));
 
             let target = &channel.target();
+
             // set skin_id by first bone.
             if skin_id.is_none() {
                 skin_id = skins.node_index_to_skin.get(&target.node().index()).copied();
@@ -165,7 +167,6 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
             let joints_index = match joints_indexes.get(target.node().name().unwrap()) {
                 Some(i) => *i,
                 _ => {
-                    //println!("Skipping joint {:#?}", target.node().name().unwrap());
                     continue;
                 }
             };
@@ -249,7 +250,6 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
 
 
             if root_motion {
-
                 // seperate root motion out of frames and into root_motion vec;
                 let base = frames[0].joints[0].translation;
 
