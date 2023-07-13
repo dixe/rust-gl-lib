@@ -1,3 +1,31 @@
+
+Maybe in a different module have actionQueue
+
+That takes the queue and a mut scene, and then we can go over actions, and
+update entity active animations, fx start attack, play sould, ect.
+
+Should we also change to idle here when fx attack is done?
+
+Alternative should the scene set as on input that the current animation has finished? That way we get it as an input and can react in the same function
+that also sets state.
+
+
+ActionQueue {
+queue<Action>,
+}
+
+// Generic actions, so StartAnimation, Plays sound
+// and not Attack, Roll ect.
+Action {
+StartAnimation(EntityId, "name"), // or Rc(Anim) is we don't want names
+PlaySound("name"),
+SpawnParticle("name", loc, other info if needed)
+}
+
+
+
+
+
 use crate::{gl};
 use crate::imode_gui::drawer2d::*;
 use crate::imode_gui::ui::*;
