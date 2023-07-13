@@ -66,7 +66,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     scene.camera.move_to(V3::new(8.4, 4.3, 5.0));
     scene.camera.look_at(look_at);
     scene.inputs.speed = 15.0;
-    scene.inputs.sens = 0.70;
+    scene.inputs.sens = 0.05;
 
 
     let player_id = scene.create_entity("player");
@@ -155,13 +155,17 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
             show_options = !ui.window_begin("Options").closed;
 
-            ui.body_text(&format!("fps: {}", 1.0/dt));
+            ui.body_text(&format!("fps: {:.0?}", 1.0/dt));
             ui.newline();
 
             ui.label("Sens");
+            ui.combo_box(&mut scene.inputs.sens, 0.01, 1.0);
             ui.slider(&mut scene.inputs.sens, 0.01, 1.0);
 
+            ui.newline();
+
             ui.label("Speed");
+            ui.combo_box(&mut scene.inputs.speed, 0.01, 20.0);
             ui.slider(&mut scene.inputs.speed, 0.01, 20.0);
 
             ui.newline();
@@ -191,9 +195,9 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         // change animation of entity
         let player_skel = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
         let animations = scene.animations.get(&player_skel).unwrap();
-        for (name, anim) in animations.iter().sorted_by_key(|x| x.0) {
+        for (name, _) in animations.iter().sorted_by_key(|x| x.0) {
             if scene.ui.button(name) {
-                scene::play_animation(anim.clone(), false, &player_id, &mut scene.player, &mut scene.entities);
+                scene.action_queue.push_back(scene::Action::StartAnimation(player_id, name.clone(), 0.0));
             }
         }
 
@@ -220,18 +224,6 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
         scene.ui.newline();
 
-        if scene.player.expired(&player_id) {
-
-            let idle = scene.animations.get(&player_skel_id).unwrap().get("run_full").unwrap();
-            scene::play_animation(idle.clone(), true, &player_id, &mut scene.player, &mut scene.entities);
-
-            if let Some(ref mut c_ent) = &mut scene.controlled_entity {
-                let player = scene.entities.get_mut(&c_ent.id).unwrap();
-
-                c_ent.user_data.player = PlayerState::Movable;
-            }
-        }
-
         if scene.ui.button("Target") {
             //scene.controlled_entity.set_user_data(user);
         }
@@ -241,7 +233,9 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         }
 
         // update aimaiton player, and bones, and root motion if any
+        // and actions queue into the scene
         if playing {
+            scene.update_actions();
             scene.update_animations();
         }
 
@@ -261,6 +255,18 @@ fn handle_input<A>(scene: &mut scene::Scene<A, ControlledData>) {
     if let Some(ref mut c_ent) = &mut scene.controlled_entity {
         let player = scene.entities.get_mut(&c_ent.id).unwrap();
 
+        if scene.inputs.animation_expired {
+            // maybe handle different depending on our state
+            // default is to play idle
+            c_ent.user_data.player = PlayerState::Movable;
+            // this transition time is all good and danty, but a better version is contraints on joints
+            // then the time will vary based on the differences in the key positions, so a almost identical position will result
+            // in a low transition time
+            // This could be calculated here and set as transition time. Just find the largest time for each bone
+            // and use that
+            scene.action_queue.push_back(scene::Action::StartAnimationLooped(c_ent.id, "idle".into(), 0.3));
+        }
+
         match c_ent.user_data.player {
             PlayerState::Movable => {
                 match c_ent.user_data.camera {
@@ -268,12 +274,10 @@ fn handle_input<A>(scene: &mut scene::Scene<A, ControlledData>) {
                     CameraState::Target((_, t)) => handle_movement_target(player, &t, &scene.inputs, dt),
                 }
 
-                // handle attack
                 if scene.inputs.left_mouse {
+                    // set attack state and start animation
                     c_ent.user_data.player = PlayerState::Attack;
-                    let anim = scene.animations.get(&player.skeleton_id.unwrap()).unwrap().get("attack").unwrap();
-
-                    scene::play_animation(anim.clone(), false, &c_ent.id, &mut scene.player, &mut scene.entities);
+                    scene.action_queue.push_back(scene::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
                 }
             },
             PlayerState::Attack => {

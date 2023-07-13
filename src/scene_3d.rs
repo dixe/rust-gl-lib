@@ -1,37 +1,9 @@
-
-Maybe in a different module have actionQueue
-
-That takes the queue and a mut scene, and then we can go over actions, and
-update entity active animations, fx start attack, play sould, ect.
-
-Should we also change to idle here when fx attack is done?
-
-Alternative should the scene set as on input that the current animation has finished? That way we get it as an input and can react in the same function
-that also sets state.
-
-
-ActionQueue {
-queue<Action>,
-}
-
-// Generic actions, so StartAnimation, Plays sound
-// and not Attack, Roll ect.
-Action {
-StartAnimation(EntityId, "name"), // or Rc(Anim) is we don't want names
-PlaySound("name"),
-SpawnParticle("name", loc, other info if needed)
-}
-
-
-
-
-
 use crate::{gl};
 use crate::imode_gui::drawer2d::*;
 use crate::imode_gui::ui::*;
 use crate::animations::skeleton::{Bones, Skeleton};
-use crate::animations::gltf_animation::{Start, AnimationPlayer};
-use crate::objects::gltf_mesh::{self, Animation};
+use crate::animations::gltf_animation::{Start, AnimationPlayer, StartTransition};
+use crate::objects::gltf_mesh::{self, Animation, KeyFrame};
 use crate::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
 use crate::particle_system::emitter;
 use crate::typedef::*;
@@ -43,7 +15,7 @@ use crate::{buffer, movement::Inputs};
 use crate::shader::Shader;
 use std::{thread, sync::{Arc, Mutex}};
 use std::rc::Rc;
-use std::collections::HashMap;
+use std::collections::{VecDeque, HashMap};
 use std::path::Path;
 use sdl2::event::{Event, WindowEvent};
 
@@ -147,6 +119,8 @@ pub struct Scene<UserPostProcessData, UserControllerData> {
 
     pub clear_buffer_bits: u32,
 
+    pub action_queue: ActionQueue,
+
     cubemap_imgs: Option::<Arc::<Mutex::<Option<Vec::<image::RgbImage>>>>>,
 
     pub mesh_shader: mesh_shader::MeshShader,
@@ -158,7 +132,7 @@ pub struct Scene<UserPostProcessData, UserControllerData> {
     // multiple meshes can use the same skeleton, we only need the inverse bind matrix
     pub skeletons: Vec::<Skeleton>,
 
-    // animations is lined to skeleton, so have skeleton
+    // animations is linked to skeleton, so have skeletonIndex as key
     pub animations: HashMap::<SkeletonIndex, HashMap::<Rc::<str>, Rc<Animation>>>,
 
     // Each entity can have one set of bones
@@ -248,7 +222,8 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
             fbos: None,
             stencil_shader: None,
             clear_buffer_bits: gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT,
-            controlled_entity: None::<ControlledEntity<UserControllerData>>
+            controlled_entity: None::<ControlledEntity<UserControllerData>>,
+            action_queue: VecDeque::default(),
         })
     }
 
@@ -439,7 +414,6 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
             }
         }
 
-
         let dt = self.dt();
 
         self.ui.consume_events(event_pump);
@@ -515,19 +489,48 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
         }
     }
 
+    pub fn update_actions(&mut self) {
+
+        while let Some(action) = self.action_queue.pop_front() {
+            match action {
+                Action::StartAnimation(e_id, name, trans_time) => {
+
+                    let skel = self.entity(&e_id).unwrap().skeleton_id.unwrap();
+                    let anim = self.animations.get(&skel).unwrap().get(&name).unwrap();
+                    play_animation(anim.clone(), false, &e_id, &mut self.player, &mut self.entities, Some(trans_time));
+                },
+                Action::StartAnimationLooped(e_id, name, trans_time) => {
+
+                    let skel = self.entity(&e_id).unwrap().skeleton_id.unwrap();
+                    let anim = self.animations.get(&skel).unwrap().get(&name).unwrap();
+                    play_animation(anim.clone(), true, &e_id, &mut self.player, &mut self.entities, Some(trans_time));
+                },
+                Action::PlaySound(name) => {
+                    todo!("Play sound not implemented");
+                }
+            }
+        }
+    }
+
     pub fn update_animations(&mut self) {
         let dt = self.dt();
         self.player.update(dt);
 
         // update entities skeleton
         for (entity_id, entity) in &mut self.entities.data {
+            // update input for controlled entity with animation epxired info
+            if let Some(ce) = &self.controlled_entity {
+                if ce.id == *entity_id {
+                    self.inputs.animation_expired = self.player.expired(entity_id);
+                }
+            }
+
             if !self.player.expired(entity_id) {
                 if let Some(skel_id) = entity.skeleton_id {
 
                     let skeleton = self.skeletons.get_mut(skel_id).unwrap();
-                    self.player.update_skeleton(*entity_id, skeleton);
                     let bones = self.bones.get_mut(entity_id).unwrap();
-                    skeleton.set_all_bones_from_skeleton(bones);
+                    self.player.update_skeleton_and_bones(*entity_id, skeleton, bones);
                 }
 
                 // update root motion. Maybe have a flag on scene or something to disable this.
@@ -644,23 +647,41 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
 
 
 
-pub fn stop_animation(entity_id: &EntityId, player: &mut AnimationPlayer::<EntityId>, entities: &mut DataMap::<SceneEntity>) {
+fn stop_animation(entity_id: &EntityId,
+                  player: &mut AnimationPlayer::<EntityId>,
+                  entities: &mut DataMap::<SceneEntity>,
+                  create_key_frame: bool) -> Option<KeyFrame> {
 
-    if !player.expired(entity_id) {
-        player.remove(*entity_id);
+    if !player.removed(entity_id) {
         // update entity pos to be pos + root_motion, since root motion will be reset to new anim
         let e = entities.get_mut(entity_id).unwrap();
-        // assume that root motion keeps up grounded
+        // assume that root motion keeps us grounded
         e.pos.x += e.root_motion.x;
         e.pos.y += e.root_motion.y;
+        e.root_motion = V3::new(0.0, 0.0, 0.0);
+
+        let res = if create_key_frame {
+            player.key_frame(entity_id)
+        } else {
+            None
+        };
+        player.remove(*entity_id);
+        return res;
     }
+
+    None
 }
 
-pub fn play_animation(anim: Rc::<Animation>, repeat: bool,  entity_id: &EntityId, player: &mut AnimationPlayer::<EntityId>, entities: &mut DataMap::<SceneEntity>) {
+fn play_animation(anim: Rc::<Animation>, repeat: bool,  entity_id: &EntityId, player: &mut AnimationPlayer::<EntityId>, entities: &mut DataMap::<SceneEntity>, trans_time: Option::<f32>) {
 
-    stop_animation(entity_id, player, entities);
+    let key_frame = stop_animation(entity_id, player, entities, trans_time.is_some());
 
-    player.start(Start {anim, speed: 1.0, repeat, id: *entity_id});
+    let mut transition = key_frame.map(|start_frame| StartTransition {
+        start_frame,
+        time: trans_time.unwrap()
+    });
+
+    player.start(Start {anim, speed: 1.0, repeat, id: *entity_id, transition});
 }
 
 
@@ -825,4 +846,19 @@ pub fn base_controller<T>(entity: &mut SceneEntity, camera: &mut Camera, follow_
     follow_controller.update_camera_target(entity.pos + entity.root_motion);
 
     follow_controller.update_camera(camera, dt);
+}
+
+
+
+pub type ActionQueue = VecDeque::<Action>;
+
+// Generic actions, so StartAnimation, Plays sound
+// and not Attack, Roll ect.
+pub enum Action {
+    // TODO: Maybe don't use string, but use something morel lgiht weight like Rc::<str> or Anim or ids
+    // but should still be easy for the user
+    StartAnimation(EntityId, Rc::<str>, f32),
+    StartAnimationLooped(EntityId, Rc::<str>, f32),
+    PlaySound(String),
+    //SpawnParticle(String"name", loc, other info if needed)
 }

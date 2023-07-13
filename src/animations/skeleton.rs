@@ -69,13 +69,11 @@ impl Skeleton {
         self.set_all_bones_from_skeleton(&mut bones);
 
         bones
-
     }
 
     pub fn update_joint_matrices(&mut self, joint_index: usize, rotation: na::UnitQuaternion::<f32>, translation: na::Vector3::<f32>) {
         update_joint_matrices(&mut self.joints, joint_index, rotation, translation);
     }
-
 }
 
 

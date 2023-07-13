@@ -18,6 +18,7 @@ pub struct Inputs {
     pub mouse_wheel: f32,
     pub middle_mouse: bool,
     pub left_mouse: bool,
+    pub animation_expired: bool
 }
 
 
@@ -120,6 +121,7 @@ impl Default for Inputs {
             mouse_wheel: 0.0,
             middle_mouse: false,
             left_mouse: false,
+            animation_expired: false
         }
     }
 }

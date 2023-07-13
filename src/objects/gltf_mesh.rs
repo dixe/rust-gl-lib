@@ -263,9 +263,9 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
                     frames[i].joints[0].translation = na::Vector3::<f32>::new(0.0, 0.0, 0.0);
                 }
 
-                map.insert(Rc::from(name.clone()), Rc::from(Animation {frames, total_secs, root_motion: Some(rm)}));
+                map.insert(Rc::from(name.clone()), Rc::from(Animation {frames: frames.into(), total_secs, root_motion: Some(rm)}));
             } else {
-                map.insert(Rc::from(name.clone()), Rc::from(Animation {frames, total_secs, root_motion: None }));
+                map.insert(Rc::from(name.clone()), Rc::from(Animation {frames: frames.into(), total_secs, root_motion: None }));
             }
         }
 
@@ -814,7 +814,7 @@ pub struct VertexWeights {
 #[derive(Debug, Clone)]
 pub struct Animation {
     pub total_secs: f32,
-    pub frames: Vec::<KeyFrame>,
+    pub frames: Rc::<[KeyFrame]>,
     pub root_motion: Option::<Vec::<na::Vector3::<f32>>> // translation for each frame
 }
 

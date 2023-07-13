@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::objects::gltf_mesh::{KeyFrame, Animation};
-use crate::animations::{skeleton::{Skeleton}};
+use crate::animations::{skeleton::{Skeleton, Bones}};
 use crate::typedef::V3;
 use std::rc::Rc;
 
@@ -14,7 +14,16 @@ struct ActiveAnimation {
     frame: usize,
     elapsed: f32,
     root_motion: V3,
-    speed: f32
+    speed: f32,
+    transition: Option<Transition>,
+    expired: bool
+}
+
+#[derive(Debug)]
+struct Transition {
+    elapsed: f32,
+    time: f32, //how long transition from start_frame to first frame in animaiton should be
+    start_frame: KeyFrame
 }
 
 
@@ -23,29 +32,28 @@ pub struct Start<AnimationId> {
     pub repeat: bool,
     pub id: AnimationId,
     pub speed: f32,
+    pub transition: Option<StartTransition>
+}
+
+pub struct StartTransition {
+    pub start_frame: KeyFrame, // maybe make this Rc if we can?
+    pub time: f32, //how long transition from start_frame to first frame in animaiton should be
 }
 
 
 pub type Animations = HashMap::<String, Animation>;
 
 
-/*
-pub struct Animations {
-    next_id: AnimationId,
-    id_to_name: HashMap::<AnimationId, AnimationName>,
-    animations: HashMap::<AnimationId, Animation>,
-    mesh_to_animations: HashMap::<AnimationName, Vec::<AnimationId>>
-}
-*/
-
 #[derive(Debug, Default)]
-pub struct AnimationPlayer<AnimationId> where AnimationId : Clone + Copy + Eq + std::hash::Hash + std::default::Default {
+pub struct AnimationPlayer<AnimationId>
+where AnimationId : Clone + Copy + Eq + std::hash::Hash + std::default::Default + std::fmt::Debug
+{
     animations: HashMap::<AnimationId, ActiveAnimation>,
-    clear_buffer: Vec::<AnimationId>,
     tmp_keyframe: KeyFrame
 }
 
-impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> AnimationPlayer<AnimationId> {
+impl<AnimationId> AnimationPlayer<AnimationId>
+where AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default + std::fmt::Debug {
 
     pub fn new() -> Self {
         Self::default()
@@ -53,11 +61,30 @@ impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> A
 
     pub fn update(&mut self, dt: f32) {
         // just update dt for each active animation
-        // and clear non repeating finished animations
-
-        self.clear_buffer.clear();
+        // and set non repeating animations as expiredclear non repeating finished animations
 
         for (id, active) in &mut self.animations {
+            // we don't want to remove expired animation automaticly, since we might still need the
+            // keyframe info for transitioning
+            if active.expired {
+                continue;
+            }
+
+            // first do transition;
+            if let Some(trans) = &mut active.transition {
+
+                trans.elapsed += dt;
+                // check if transition is done
+                if trans.elapsed > trans.time {
+                    active.elapsed += trans.time - trans.elapsed;
+                    active.transition = None;
+                } else {
+                    // TODO: transition - handle root motion some how? Old animation should be done,
+                    // so root motion should be updated be aniumation
+                    continue;
+                }
+            }
+
             active.elapsed += dt * active.speed;
 
             //println!("Total ,  elapsed{:?}", (active.anim.total_secs, active.elapsed));
@@ -71,7 +98,7 @@ impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> A
                 }
             } else {
                 if !active.repeat {
-                    self.clear_buffer.push(*id);
+                    active.expired = true;
                 }
                 else {
                     active.elapsed = active.anim.total_secs - active.elapsed;
@@ -97,14 +124,32 @@ impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> A
                 active.root_motion = motion.lerp(next_motion, t);
             }
         }
-
-        for id in &self.clear_buffer {
-            self.animations.remove(id);
-        }
     }
 
     pub fn remove(&mut self, id: AnimationId) {
         self.animations.remove(&id);
+    }
+
+    pub fn key_frame(&mut self, id: &AnimationId) -> Option::<KeyFrame> {
+        if let Some(active) = self.animations.get(id) {
+            let mut frame = &active.anim.frames[active.frame];
+            // for take next, or last, no cyclic, can be implemented to either take last or cyclic so first using %
+            let mut next_frame = &active.anim.frames[usize::min(active.frame + 1, active.anim.frames.len()-1)];
+            let mut t = (active.elapsed - frame.start_sec) / frame.length_sec;
+
+            if let Some(trans) = &active.transition {
+                frame = &trans.start_frame;
+                next_frame = &active.anim.frames[0];
+                t = trans.elapsed / trans.time;
+            }
+
+
+            frame.interpolate(next_frame, t, &mut self.tmp_keyframe);
+            return Some(self.tmp_keyframe.clone());
+        }
+
+        None
+
     }
 
 
@@ -117,6 +162,15 @@ impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> A
             }
         }
 
+        let trans = if let Some(t) = start.transition {
+            Some(Transition {
+                elapsed: 0.0,
+                start_frame: t.start_frame,
+                time: t.time
+            })
+        } else {
+            None
+        };
         self.animations.insert(id,
                                ActiveAnimation {
                                    anim: start.anim,
@@ -124,7 +178,9 @@ impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> A
                                    frame: 0,
                                    elapsed: 0.0,
                                    root_motion: V3::new(0.0, 0.0, 0.0),
-                                   speed: start.speed
+                                   speed: start.speed,
+                                   transition: trans,
+                                   expired: false
                                });
         id
     }
@@ -137,8 +193,16 @@ impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> A
         V3::new(0.0, 0.0, 0.0)
     }
 
-    pub fn expired(&self, id: &AnimationId) -> bool {
+
+    pub fn removed(&self, id: &AnimationId) -> bool {
         !self.animations.contains_key(id)
+    }
+
+    pub fn expired(&self, id: &AnimationId) -> bool {
+        if let Some(active) = self.animations.get(id) {
+            return active.expired;
+        }
+        true
     }
 
     pub fn change_speed(&mut self, id: &AnimationId, speed: f32) {
@@ -147,22 +211,22 @@ impl<AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default> A
         }
     }
 
-    pub fn update_skeleton(&mut self, anim_id: AnimationId, skeleton: &mut Skeleton) {
+    pub fn update_skeleton_and_bones(&mut self, anim_id: AnimationId, skeleton: &mut Skeleton, bones: &mut Bones) {
         if let Some(active) = self.animations.get(&anim_id) {
-            // update skeleton
-
-            let frame = &active.anim.frames[active.frame];
+            let mut frame = &active.anim.frames[active.frame];
             // for take next, or last, no cyclic, can be implemented to either take last or cyclic so first using %
-            let next_frame = &active.anim.frames[usize::min(active.frame + 1, active.anim.frames.len()-1)];
+            let mut next_frame = &active.anim.frames[usize::min(active.frame + 1, active.anim.frames.len()-1)];
+            let mut t = (active.elapsed - frame.start_sec) / frame.length_sec;
 
-            // get how far into the frame we are, divided bt frame length
-            let t = (active.elapsed - frame.start_sec) / frame.length_sec;
+            if let Some(trans) = &active.transition {
+                frame = &trans.start_frame;
+                next_frame = &active.anim.frames[0];
+                t = trans.elapsed / trans.time;
+            }
 
             frame.interpolate(next_frame, t, &mut self.tmp_keyframe);
-
-            //println!("elapsed, length, frame {:?}", (active.elapsed, frame.length_sec, active.frame));
-
             update_skeleton_to_key_frame(skeleton, &self.tmp_keyframe);
+            skeleton.set_all_bones_from_skeleton(bones);
         }
     }
 }

@@ -14,7 +14,7 @@ impl Default for Controller {
     fn default() -> Self {
         Self {
             target: V3::new(0.0, 0.0, 0.0),
-            desired_distance: 10.0,
+            desired_distance: 7.0,
             desired_pitch: 0.5,
             yaw_change: 0.0,
         }
