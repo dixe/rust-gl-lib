@@ -104,6 +104,7 @@ fn load_joints(skeleton: &mut Skeleton, joints: &std::collections::HashMap<usize
     skeleton.joints.push(joint);
 
     let this_idx = skeleton.joints.len() - 1;
+
     index_map.insert(index as u16, this_idx);
     for child_index in &joints[&index].0 {
         load_joints(skeleton, joints, *child_index, this_idx, index_map);
@@ -152,7 +153,7 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
         let mut joints_data = std::collections::HashMap::new();
 
         // fill the array with joints data
-        let mut hip_index = None;
+        let mut root_index = None;
         for node in skin.joints() {
 
             let index = node.index();
@@ -167,8 +168,8 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
                 _ => { panic!("Non decomposed joints info")}
             };
 
-            if node.name().unwrap() == "hip" {
-                hip_index = Some(index);
+            if node.name().unwrap() == "root" {
+                root_index = Some(index);
             }
 
 
@@ -183,7 +184,7 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
         }
 
 
-        // start from hip index and create skeleton from there
+        // start from root index and create skeleton from there
 
         let mut skeleton = Skeleton {
             //name: skin.name().unwrap().to_string(),
@@ -191,16 +192,18 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
         };
 
         let mut index_map = std::collections::HashMap::<u16,usize>::new();
-        if let Some(hi) = hip_index {
-            load_joints(&mut skeleton, &joints_data, hi, 255, &mut index_map);
+        if let Some(root) = root_index {
+            load_joints(&mut skeleton, &joints_data, root, 255, &mut index_map);
         } else {
-            panic!("Could not find any bones with name hip. Atm we assume the root is named hip");
+            panic!("Could not find any bones with name root. Atm we assume the root is named root");
         }
 
+
+        // This create a mapping from hip bone (1) to index 0, so first bones in skeleton
+        // why is this not added in load bones??
         if !index_map.contains_key(&0) {
-            index_map.insert(0, 0);
+            index_map.insert(1, 0);
         }
-
 
         //TODO: remove this hardcoded, and find a way to do it more generally
 

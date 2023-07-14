@@ -48,8 +48,11 @@ pub struct Ui {
     pub current_window: Vec::<usize>, // index into windows, a stack
     pub window_to_id: HashMap::<String, usize>,
     pub next_window_id: usize,
-    pub active_window: Option<usize>
+    pub active_window: Option<usize>,
+
+    pub enabled: bool
 }
+
 
 impl Ui {
 
@@ -97,6 +100,7 @@ impl Ui {
             window_to_id: Default::default(),
             next_window_id: 1,
             active_window: None,
+            enabled: true
         }
     }
 
@@ -236,6 +240,15 @@ impl Ui {
         return &self.frame_events
     }
 
+    /// Disable ui from getting parsing events. When disabled send all events to
+    /// frame_events
+    pub fn disable(&mut self) {
+        self.enabled = false;
+    }
+
+    pub fn enable(&mut self) {
+        self.enabled = true;
+    }
 
     // TODO: Either return unused events only. Or return all events along with bool to indicate if the event is used/consumed by gui
     pub fn consume_events(&mut self, event_pump: &mut sdl2::EventPump) -> &[event::Event] {
@@ -243,6 +256,10 @@ impl Ui {
         self.deltatime.update();
         self.mouse_down = false;
         self.mouse_up = false;
+
+
+        self.widget_frame_events.clear();
+        self.frame_events.clear();
 
         let mut any_hot = false;
         let mut any_active = false;
@@ -264,8 +281,13 @@ impl Ui {
         }
 
 
-        self.widget_frame_events.clear();
-        self.frame_events.clear();
+        // has keep clearing windows is drawn otherwise it will never redraw
+        if !self.enabled {
+            for event in event_pump.poll_iter() {
+                self.frame_events.push(event);
+            }
+            return &self.frame_events;
+        }
 
         use event::Event::*;
         use sdl2::keyboard::Keycode::*;

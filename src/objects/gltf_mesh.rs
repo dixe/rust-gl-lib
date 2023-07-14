@@ -86,7 +86,7 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
         i += 1;
     }
 
-
+/*
     for tex in gltf.textures() {
         let img = tex.source();
 
@@ -110,7 +110,7 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
         }
 
     }
-
+*/
 
 
 
@@ -121,9 +121,6 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
             Some(n) => n.to_string(),
             _ => continue
         };
-
-        println!("\n{:#?}", name);
-
 
         let mut frames : Vec::<KeyFrame> = vec![];
         let mut skin_id : Option<SkinId> = None;
@@ -256,9 +253,9 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
                 // root motion
                 let mut rm = vec![];
 
-                // root motion will put hip bones at 0,0,0
+                // root motion will put root bones at 0,0,0
                 for i in 0..frames.len() {
-                    // only remove translation from the root/hip bone
+                    // only remove translation from the root bone
                     rm.push(frames[i].joints[0].translation - base);
                     frames[i].joints[0].translation = na::Vector3::<f32>::new(0.0, 0.0, 0.0);
                 }
@@ -348,10 +345,14 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
                     // index is into the skins.joints array, which has a list of node indexes
                     // so we have to map from index into joints to
                     data[i] = match index_map.get(&inter_joint_index[*index as usize]) {
-                        Some(mapping) => *mapping,
+                        Some(mapping) => {
+                            *mapping
+                        },
                         None => {
+                            println!("map:\n{:#?}", index_map);
+                            println!("inter_joint:\n{:#?}", (inter_joint_index, &inter_joint_index[*index as usize], index));
                             println!("c={}, j={:?}\nWeight Data = {:?}", c, j, weights_data[c]);
-                            panic!("Non mapped bone has weights. oCheck weight paint for {}", *index)
+                            panic!("Non mapped bone has weights. Check weight paint for {}", *index)
                         }
                     };
                 }

@@ -75,6 +75,7 @@ impl Ui {
         if self.is_hot(id) {
             color = Color::RgbA(49, 130, 100, 128);
         }
+
         self.drawer2D.rounded_rect_color(rect.x + x, rect.y, knob_width, rect.h , color);
 
         self.is_active(id)

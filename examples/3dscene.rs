@@ -89,10 +89,10 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     let world_id = scene.create_entity("world");
 
     let p1 = scene.entity_mut(&player_id).unwrap();
-    p1.pos = V3::new(0.0, 00.0, 1.0);
+    p1.pos = V3::new(0.0, 00.0, 0.0);
 
     let p2 = scene.entity_mut(&enemy_id).unwrap();
-    p2.pos = V3::new(00.0, 2.0, 1.0);
+    p2.pos = V3::new(00.0, 2.0, 0.0);
 
 
     let mut playing = true;

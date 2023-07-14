@@ -428,6 +428,9 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
             match event {
                 Event::KeyDown{keycode: Some(sdl2::keyboard::Keycode::Escape), .. } => {
                     self.ui_mode = !self.ui_mode;
+
+                    self.ui.enabled = self.ui_mode;
+
                     self.sdl.mouse().show_cursor(self.ui_mode);
                     self.sdl.mouse().set_relative_mouse_mode(!self.ui_mode);
                 },
