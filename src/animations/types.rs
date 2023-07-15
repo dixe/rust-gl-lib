@@ -74,7 +74,10 @@ impl Joint {
         let trans_mat = na::Matrix4::new_translation(&translation);
 
         trans_mat * rot_mat
+    }
 
+    pub fn world_pos(&self ) -> na::Vector3::<f32> {
+         na::Vector3::new(self.world_matrix[12], self.world_matrix[13], self.world_matrix[14])
     }
 
     pub fn transformation(&self) -> Transformation {

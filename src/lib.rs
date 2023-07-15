@@ -43,6 +43,7 @@ pub mod animations;
 pub mod imode_gui;
 
 pub mod collision2d;
+pub mod collision3d;
 
 pub mod particle_system;
 

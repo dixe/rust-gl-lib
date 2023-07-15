@@ -83,6 +83,7 @@ fn main() -> Result<(), failure::Error> {
         let z = f32::sin(2.0 * angle);
 
         camera.move_to(na::Vector3::new(x * dist, y * dist, 2.0 * z));
+        camera.look_at(na::Vector3::new(0.0, 0.0, 0.0));
 
         unsafe {
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);

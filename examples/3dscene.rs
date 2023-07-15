@@ -1,5 +1,6 @@
 use gl_lib::{gl, helpers, movement::Inputs, camera::{follow_camera, Camera}};
-use gl_lib::shader::Shader;
+use gl_lib::shader::{self, Shader};
+use gl_lib::objects::cube;
 use gl_lib::shader::{BaseShader, reload_object_shader};
 use gl_lib::typedef::*;
 use gl_lib::scene_3d as scene;
@@ -85,14 +86,13 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
     let enemy_id = scene.create_entity("player");
 
-
     let world_id = scene.create_entity("world");
 
     let p1 = scene.entity_mut(&player_id).unwrap();
     p1.pos = V3::new(0.0, 00.0, 0.0);
 
     let p2 = scene.entity_mut(&enemy_id).unwrap();
-    p2.pos = V3::new(00.0, 2.0, 0.0);
+    p2.pos = V3::new(0.0, 2.0, 0.0);
 
 
     let mut playing = true;
@@ -106,6 +106,13 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     scene.use_shadow_map();
 
     let mut show_options = false;
+    let skel = &scene.skeletons[scene.entity(&player_id).unwrap().skeleton_id.unwrap()];
+    let skel_col_boxes = skel.generate_bone_collision_boxes();
+
+
+    // TODO: Tmp data for hitboxes should live in scene so we can easy render hitboxes for debug
+    let mut hitbox_shader = shader::hitbox_shader::HitboxShader::new(gl).unwrap();
+    let cube = cube::Cube::new(gl);
     loop {
 
         // set ui framebuffer, consume sdl events, increment dt ect.
@@ -135,6 +142,28 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
         let p1 = scene.entities.get(&player_id).unwrap();
 
+        // render skeleton collisionBoxes
+        for col_box in &skel_col_boxes {
+
+            let b = col_box.make_transformed(p1.pos, na::UnitQuaternion::<f32>::identity());
+
+            let color = na::Vector3::new(1.0, 1.0, 0.0);
+            TODO: Mybe try this just to see if our boxes are somewhat correct
+            // goal is to make the follow the bones
+                let cube_model = cube::Cube::from_collision_box(col_box, color, gl);
+
+
+            hitbox_shader.shader.set_used();
+
+            let uniforms = shader::hitbox_shader::Uniforms {
+                projection: scene.camera.projection(),
+                view: scene.camera.view()
+            };
+            hitbox_shader.set_uniforms(uniforms);
+
+            cube.render(gl);
+        }
+
 
 
         if scene.ui.button("Reload") {
@@ -145,7 +174,8 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
             if let Some(ref mut stencil) = scene.stencil_shader {
                 reload_object_shader("stencil", &gl, &mut stencil.shader);
             }
-            //reload_object_shader("cubemap", &gl, &mut scene.cubemap_shader);
+
+            reload_object_shader("hitbox", &gl, &mut hitbox_shader.shader);
         }
 
 

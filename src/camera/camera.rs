@@ -91,8 +91,6 @@ impl Camera {
         //println!("look_at: {:.5?}", (target, self.pitch, self.yaw, current, base.dot(&new)));
 
         self.update_camera_vectors();
-
-
     }
 
 

@@ -1,6 +1,9 @@
 use crate::na;
 use crate::animations::types::*;
+use crate::collision3d;
 use std::collections::HashMap;
+use crate::typedef::*;
+use crate::collision3d::CollisionBox;
 
 pub type Bones = Vec::<na::Matrix4::<f32>>;
 
@@ -73,6 +76,25 @@ impl Skeleton {
 
     pub fn update_joint_matrices(&mut self, joint_index: usize, rotation: na::UnitQuaternion::<f32>, translation: na::Vector3::<f32>) {
         update_joint_matrices(&mut self.joints, joint_index, rotation, translation);
+    }
+
+    pub fn generate_bone_collision_boxes(&self) -> Vec::<collision3d::CollisionBox> {
+
+        let mut res: Vec::<CollisionBox> = vec![];
+        for joint in &self.joints {
+            // skip root
+            if joint.parent_index == 255 {
+                continue;
+            }
+
+            let to = joint.world_pos();
+            let from = self.joints[joint.parent_index].world_pos();
+
+            let bb = CollisionBox::from_end_centers(to, from, 0.3);
+            res.push(bb);
+        }
+
+        res
     }
 }
 
