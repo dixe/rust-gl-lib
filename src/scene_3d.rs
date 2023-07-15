@@ -158,8 +158,14 @@ pub struct Scene<UserPostProcessData, UserControllerData> {
 #[derive(Default)]
 pub struct SceneEntity {
     pub mesh_id: MeshIndex,
+    // TODO: Maybe have some of this in arrays like data driven, so fx world does not have velocity
+    // acceleration ect
     pub pos: V3,
+    pub acceleration: V3,
+    pub velocity: V3,
+    pub target_z_angle: Rotation2<f32>,
     pub z_angle: Rotation2<f32>, // facing angle when char is in t pose
+
     pub forward_pitch: Rotation2<f32>,
     pub side_pitch: Rotation2<f32>,
 
@@ -245,6 +251,9 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
             forward_pitch: Rotation2::identity(),
             side_pitch: Rotation2::identity(),
             pos: V3::new(0.0, 0.0, 0.0),
+            acceleration: V3::new(0.0, 0.0, 0.0),
+            velocity: V3::new(0.0, 0.0, 0.0),
+            target_z_angle: Rotation2::identity(),
             root_motion: V3::new(0.0, 0.0, 0.0),
             skeleton_id: self.mesh_data[mesh_id].skeleton
         };
@@ -668,7 +677,9 @@ fn stop_animation(entity_id: &EntityId,
         } else {
             None
         };
+
         player.remove(*entity_id);
+
         return res;
     }
 

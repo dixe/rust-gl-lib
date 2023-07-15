@@ -288,6 +288,8 @@ fn handle_input<A>(scene: &mut scene::Scene<A, ControlledData>) {
 }
 
 
+
+
 fn handle_movement_regular(entity: &mut scene::SceneEntity, camera: &Camera, inputs: &Inputs, dt: f32) {
 
     // update player pos
@@ -301,18 +303,29 @@ fn handle_movement_regular(entity: &mut scene::SceneEntity, camera: &Camera, inp
     entity.forward_pitch = Rotation2::new(0.0);
     entity.side_pitch = Rotation2::new(0.0);
 
+    entity.velocity = V3::new(0.0, 0.0, 0.0);
     if m.magnitude() > 0.0 {
 
         m = m.normalize(); // check sekrio what happens when holding right or left
-
         let mut new_angle = m.y.atan2(m.x);
-        angle_change(new_angle, entity, dt);
-
-        entity.forward_pitch = Rotation2::new(0.1 * inputs.movement.x as f32 );
-        entity.side_pitch = Rotation2::new(0.05 * inputs.movement.y as f32 );
-
-        entity.pos += m * inputs.speed * dt;
+        entity.target_z_angle =  Rotation2::new(new_angle);
+        entity.velocity = m * inputs.speed;
     }
+
+    // TODO: Could be called a more general place
+    update_from_conditions(entity, dt);
+}
+
+fn update_from_conditions(entity: &mut scene::SceneEntity, dt: f32) {
+    // rotate to target facing dir
+    angle_change(entity.target_z_angle.angle(), entity, dt);
+
+    // update pos from vel
+    entity.pos += entity.velocity * dt;
+
+    //entity.forward_pitch = Rotation2::new(0.1 * entity.velocity.x );
+    //entity.side_pitch = Rotation2::new(0.05 * entity.velocity.y );
+
 }
 
 fn handle_movement_target(entity: &mut scene::SceneEntity, target: &V3, inputs: &Inputs, dt: f32) {
@@ -326,15 +339,17 @@ fn handle_movement_target(entity: &mut scene::SceneEntity, target: &V3, inputs: 
 
     let movement = forward * inputs.movement.x + tangent * inputs.movement.y;
 
+    entity.velocity = V3::new(0.0, 0.0, 0.0);
     if movement.magnitude() > 0.0 {
-        entity.pos += movement.normalize() * inputs.speed * dt;
+        entity.velocity = movement.normalize() * inputs.speed;
     }
 
 
     if forward.magnitude() > 0.0 {
-        let mut new_angle = forward.y.atan2(forward.x);
-        angle_change(new_angle, entity, dt);
+        let new_angle = forward.y.atan2(forward.x);
+        entity.target_z_angle =  Rotation2::new(new_angle);
     }
+    update_from_conditions(entity, dt);
 }
 
 /// when middle click update lock on/off, when lock on, update the target pos in user data, so we can use it
@@ -440,7 +455,7 @@ fn angle_change(new_angle: f32, entity: &mut scene::SceneEntity, dt: f32) {
     }
 
     let sign = diff.signum();
-    let r_speed = 10.0;
+    let r_speed = 20.0;
     // change with max rotation speed
     let mut change = sign * r_speed * dt;
 
