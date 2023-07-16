@@ -548,10 +548,13 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
                     let bones = self.bones.get_mut(entity_id).unwrap();
                     self.player.update_skeleton_and_bones(*entity_id, skeleton, bones);
 
-
                     // update hitboxes to current skeleton position
                     if let Some(hit_boxes) = self.skeleton_hit_boxes.get_mut(entity_id) {
-                        skeleton.update_bone_collision_boxes(hit_boxes);
+                        let rotation = Rotation3::from_euler_angles(entity.forward_pitch.angle(),
+                                                                    entity.side_pitch.angle(),
+                                                                    entity.z_angle.angle());
+
+                        skeleton.update_bone_collision_boxes(hit_boxes, entity.pos , rotation);
                     }
                 }
 

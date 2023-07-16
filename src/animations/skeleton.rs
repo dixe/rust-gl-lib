@@ -78,7 +78,7 @@ impl Skeleton {
         update_joint_matrices(&mut self.joints, joint_index, rotation, translation);
     }
 
-    pub fn update_bone_collision_boxes(&self, output: &mut Vec::<collision3d::CollisionBox>) {
+    pub fn update_bone_collision_boxes(&self, output: &mut Vec::<collision3d::CollisionBox>, root: V3, rotation: na::Rotation3::<f32>) {
 
         // ensure that there is enough allocated items to index into
         for _ in 0..(self.joints.len() - output.len()) {
@@ -96,7 +96,8 @@ impl Skeleton {
             let to = joint.world_pos();
             let from = self.joints[joint.parent_index].world_pos();
 
-            output[i] = CollisionBox::from_end_centers(from, to, 0.1);
+            output[i] = CollisionBox::from_end_centers(from, to, 0.1).make_transformed(root, rotation);
+
             i+= 1;
         }
     }

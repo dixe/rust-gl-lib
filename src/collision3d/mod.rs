@@ -167,6 +167,7 @@ impl CollisionBox {
         let side_half = side_len / 2.0;
 
 
+        let center = (from_c + to_c) / 2.0;
         CollisionBox {
             v0: from_c + perp1 * side_half + perp2 * side_half,
             v1: from_c + perp1 * side_half + perp2 * -side_half,
@@ -178,7 +179,7 @@ impl CollisionBox {
             v6: to_c + perp1 * -side_half + perp2 * -side_half,
             v7: to_c + perp1 * -side_half + perp2 * side_half,
 
-            center: (from_c + to_c) / 2.0,
+            center,
             length: dir.magnitude(),
             dir: dir.normalize(),
             side_len,
@@ -186,7 +187,7 @@ impl CollisionBox {
     }
 
 
-    pub fn make_transformed(&self, translation: V3, rotation: na::UnitQuaternion::<f32>) -> CollisionBox {
+    pub fn make_transformed(&self, translation: V3, rotation: na::Rotation3::<f32>) -> CollisionBox {
 
         CollisionBox {
             v0: rotation * self.v0  + translation,
@@ -197,7 +198,7 @@ impl CollisionBox {
             v5: rotation * self.v5  + translation,
             v6: rotation * self.v6  + translation,
             v7: rotation * self.v7  + translation,
-            center: self.center + translation,
+            center: rotation * self.center + translation,
             dir: rotation * self.dir,
             length: self.length,
             side_len: self.side_len

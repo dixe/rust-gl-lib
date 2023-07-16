@@ -144,7 +144,9 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         for col_box in scene.skeleton_hit_boxes.get(&player_id).unwrap() {
 
             // update model matrix
-            let t = Translation3::from(col_box.center + p1.pos);
+            // center is just for rendering, since we just translate, rotate and scale a unit cube in a shader
+            // The actual box already has these coords added
+            let bone_t = Translation3::from(col_box.center);
 
             // First we want to scale it to the target size
             // its a unit square, so just multiply with w and h
@@ -163,7 +165,10 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
             // since it is just a rendering of the vertices in col_box
             // dir and center should change when applying general rotation and keyframe bone rotation
 
-            let model_mat = t.to_homogeneous() * r.to_homogeneous() * scale;
+
+            // p_t.to_homogeneous() * p_r.to_homogeneous() *
+            let model_mat = bone_t.to_homogeneous() *  r.to_homogeneous() *  scale;
+
             let mut uniforms = shader::hitbox_shader::Uniforms {
                 projection: scene.camera.projection(),
                 view: scene.camera.view(),
@@ -370,8 +375,8 @@ fn handle_movement_regular(entity: &mut scene::SceneEntity, camera: &Camera, inp
 
     let mut m = forward * inputs.movement.x + tangent * inputs.movement.y;
 
-    entity.forward_pitch = Rotation2::new(0.0);
-    entity.side_pitch = Rotation2::new(0.0);
+    entity.forward_pitch = Rotation2::new(-0.2);
+    entity.side_pitch = Rotation2::new(0.2);
 
     entity.velocity = V3::new(0.0, 0.0, 0.0);
     if m.magnitude() > 0.0 {
