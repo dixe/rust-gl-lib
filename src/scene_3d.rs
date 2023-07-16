@@ -18,6 +18,8 @@ use std::rc::Rc;
 use std::collections::{VecDeque, HashMap};
 use std::path::Path;
 use sdl2::event::{Event, WindowEvent};
+use crate::collision3d::CollisionBox;
+
 
 pub struct DataMap<T> {
     data: HashMap::<usize, T>,
@@ -132,6 +134,8 @@ pub struct Scene<UserPostProcessData, UserControllerData> {
     // multiple meshes can use the same skeleton, we only need the inverse bind matrix
     pub skeletons: Vec::<Skeleton>,
 
+    pub skeleton_hit_boxes: HashMap::<EntityId, Vec::<CollisionBox>>,
+
     // animations is linked to skeleton, so have skeletonIndex as key
     pub animations: HashMap::<SkeletonIndex, HashMap::<Rc::<str>, Rc<Animation>>>,
 
@@ -230,6 +234,7 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
             clear_buffer_bits: gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT,
             controlled_entity: None::<ControlledEntity<UserControllerData>>,
             action_queue: VecDeque::default(),
+            skeleton_hit_boxes: Default::default(),
         })
     }
 
@@ -539,10 +544,15 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
 
             if !self.player.expired(entity_id) {
                 if let Some(skel_id) = entity.skeleton_id {
-
                     let skeleton = self.skeletons.get_mut(skel_id).unwrap();
                     let bones = self.bones.get_mut(entity_id).unwrap();
                     self.player.update_skeleton_and_bones(*entity_id, skeleton, bones);
+
+
+                    // update hitboxes to current skeleton position
+                    if let Some(hit_boxes) = self.skeleton_hit_boxes.get_mut(entity_id) {
+                        skeleton.update_bone_collision_boxes(hit_boxes);
+                    }
                 }
 
                 // update root motion. Maybe have a flag on scene or something to disable this.

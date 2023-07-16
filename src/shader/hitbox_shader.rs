@@ -26,6 +26,7 @@ impl HitboxShader {
 
     pub fn set_uniforms(&self, uni: Uniforms) {
         self.shader.set_mat4(&self.gl, "projection", uni.projection);
+        self.shader.set_mat4(&self.gl, "model", uni.model);
         self.shader.set_mat4(&self.gl, "view", uni.view);
     }
 }
@@ -34,6 +35,7 @@ impl HitboxShader {
 pub struct Uniforms {
     pub projection: Mat4,
     pub view: Mat4,
+    pub model: Mat4,
 }
 
 

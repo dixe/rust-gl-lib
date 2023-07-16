@@ -273,23 +273,3 @@ impl Cube {
         }
     }
 }
-
-
-
-fn create_box(off_set: na::Vector3::<f32>, rotation: Option<na::Vector3::<f32>>) -> CollisionBox {
-    let rot_mat = match rotation {
-        Some(rot) => na::Rotation3::new(rot),
-        None => na::Rotation3::identity(),
-    };
-
-    CollisionBox {
-        v0: rot_mat * na::Vector3::new(0.0, 0.0, 0.0) + off_set,
-        v1: rot_mat * na::Vector3::new(1.0, 0.0, 0.0) + off_set,
-        v2: rot_mat * na::Vector3::new(1.0, 1.0, 0.0) + off_set,
-        v3: rot_mat * na::Vector3::new(0.0, 1.0, 0.0) + off_set,
-        v4: rot_mat * na::Vector3::new(0.0, 0.0, 1.0) + off_set,
-        v5: rot_mat * na::Vector3::new(1.0, 0.0, 1.0) + off_set,
-        v6: rot_mat * na::Vector3::new(1.0, 1.0, 1.0) + off_set,
-        v7: rot_mat * na::Vector3::new(0.0, 1.0, 1.0) + off_set,
-    }
-}

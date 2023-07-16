@@ -87,13 +87,10 @@ where AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default +
 
             active.elapsed += dt * active.speed;
 
-            //println!("Total ,  elapsed{:?}", (active.anim.total_secs, active.elapsed));
-
             if active.anim.total_secs > active.elapsed {
                 // set active.frame until we are at end, or current frame end after currently elapsed time
                 while active.frame < (active.anim.frames.len() - 1) &&
                     active.anim.frames[active.frame].end_time() < active.elapsed {
-                        //println!("{:.2?}", (active.anim.frames[active.frame].end_time(), active.elapsed));
                     active.frame = usize::min(active.anim.frames.len() - 1 , active.frame  + 1);
                 }
             } else {

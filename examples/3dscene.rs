@@ -5,7 +5,7 @@ use gl_lib::shader::{BaseShader, reload_object_shader};
 use gl_lib::typedef::*;
 use gl_lib::scene_3d as scene;
 use itertools::Itertools;
-use gl_lib::na::{self, Rotation2};
+use gl_lib::na::{self, Rotation2, Translation3};
 
 pub struct PostPData {
     time: f32
@@ -106,28 +106,11 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     scene.use_shadow_map();
 
     let mut show_options = false;
-    let skel = &scene.skeletons[scene.entity(&player_id).unwrap().skeleton_id.unwrap()];
-    let skel_col_boxes = skel.generate_bone_collision_boxes();
-
+    scene.skeleton_hit_boxes.insert(player_id, vec![]);
 
     // TODO: Tmp data for hitboxes should live in scene so we can easy render hitboxes for debug
     let mut hitbox_shader = shader::hitbox_shader::HitboxShader::new(gl).unwrap();
-    let mut col_cubes = vec![];
-
-    let p1 = scene.entity_mut(&player_id).unwrap();
-    for col_box in &skel_col_boxes {
-
-        let b = col_box.make_transformed(p1.pos, na::UnitQuaternion::<f32>::identity());
-
-        let color = na::Vector3::new(1.0, 1.0, 0.0);
-
-        /*
-        TODO: Mybe try this just to see if our boxes are somewhat correct
-        // goal is to make the follow the bones
-         */
-
-        col_cubes.push(cube::Cube::from_collision_box(col_box.clone(), color, gl));
-    }
+    let base_cube = cube::Cube::new(gl); // base cube used to display hitboxes
 
     loop {
 
@@ -138,7 +121,6 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         // controller is actually a camera controller, so should maybe not even do movement2
 
         handle_input(&mut scene);
-
 
         let dt = scene.dt();
 
@@ -159,27 +141,39 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         let p1 = scene.entities.get(&player_id).unwrap();
 
 
-        unsafe {
-            gl.Disable(gl::CULL_FACE);
-        }
+        for col_box in scene.skeleton_hit_boxes.get(&player_id).unwrap() {
 
-        let mut skip = false;
-        for cube in &col_cubes {
-            skip = !skip;
-            if skip {
-                //continue;
-            }
+            // update model matrix
+            let t = Translation3::from(col_box.center + p1.pos);
 
-            hitbox_shader.shader.set_used();
+            // First we want to scale it to the target size
+            // its a unit square, so just multiply with w and h
+            let mut scale = na::Matrix4::<f32>::identity();
+            scale[0] = col_box.side_len;
+            scale[5] = col_box.side_len;
+            scale[10] = col_box.length;
 
-            let uniforms = shader::hitbox_shader::Uniforms {
+            let axis = na::Unit::new_normalize(col_box.dir);
+            let up = V3::new(0.0, 0.0, 1.0);
+            let r = na::Rotation3::face_towards(&axis, &up);
+
+            // TODO:  also rotate based on char z_angle, and maybe pitch and roll ??
+            // also use current bones, but that should be done to collision box, so that
+            // we can also use it in collision. So this displaying should be done for now
+            // since it is just a rendering of the vertices in col_box
+            // dir and center should change when applying general rotation and keyframe bone rotation
+
+            let model_mat = t.to_homogeneous() * r.to_homogeneous() * scale;
+            let mut uniforms = shader::hitbox_shader::Uniforms {
                 projection: scene.camera.projection(),
-                view: scene.camera.view()
+                view: scene.camera.view(),
+                model: model_mat
             };
 
+            hitbox_shader.shader.set_used();
             hitbox_shader.set_uniforms(uniforms);
 
-            cube.render(gl);
+            base_cube.render(gl);
         }
 
         /*

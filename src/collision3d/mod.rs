@@ -15,6 +15,10 @@ pub struct CollisionBox {
     pub v5: V3,
     pub v6: V3,
     pub v7: V3,
+    pub center: V3,
+    pub dir: V3, // normalized to point along the long axis (bone)
+    pub length: f32,
+    pub side_len: f32,
 }
 
 
@@ -122,17 +126,22 @@ impl Triangle {
 
 impl CollisionBox {
 
-    pub fn new(center: V3, rot: na::Rotation3::<f32>, scale: na::Matrix3::<f32> ) -> CollisionBox {
 
+    pub fn empty() -> Self {
+        let v = V3::new(0.0, 0.0, 0.0);
         CollisionBox {
-            v0: rot * (scale * V3::new(-0.5, -0.5, -0.5)) + center,
-            v1: rot * (scale * V3::new(0.5, -0.5, -0.5) ) + center,
-            v2: rot * (scale * V3::new(0.5, 0.5, -0.5)) + center,
-            v3: rot * (scale * V3::new(-0.5, 0.5, -0.5)) + center,
-            v4: rot * (scale * V3::new(-0.5, -0.5, 0.5)) + center,
-            v5: rot * (scale * V3::new(0.5, -0.5, 0.5)) + center,
-            v6: rot * (scale * V3::new(0.5, 0.5, 0.5)) + center,
-            v7: rot * (scale * V3::new(-0.5, 0.5, 0.5)) + center,
+            v0: v,
+            v1: v,
+            v2: v,
+            v3: v,
+            v4: v,
+            v5: v,
+            v6: v,
+            v7: v,
+            center: v,
+            dir: V3::new(1.0, 0.0, 0.0),
+            length: 0.0,
+            side_len: 0.0
         }
     }
 
@@ -164,27 +173,18 @@ impl CollisionBox {
             v2: from_c + perp1 * -side_half + perp2 * -side_half,
             v3: from_c + perp1 * -side_half + perp2 * side_half,
 
-
             v4: to_c + perp1 * side_half + perp2 * side_half,
             v5: to_c + perp1 * side_half + perp2 * -side_half,
             v6: to_c + perp1 * -side_half + perp2 * -side_half,
             v7: to_c + perp1 * -side_half + perp2 * side_half,
+
+            center: (from_c + to_c) / 2.0,
+            length: dir.magnitude(),
+            dir: dir.normalize(),
+            side_len,
         }
     }
 
-    pub fn from_mesh_data(vertices: &Vec<V3>) -> CollisionBox {
-
-        CollisionBox {
-            v0: vertices[0],
-            v1: vertices[1],
-            v2: vertices[2],
-            v3: vertices[3],
-            v4: vertices[4],
-            v5: vertices[5],
-            v6: vertices[6],
-            v7: vertices[7],
-        }
-    }
 
     pub fn make_transformed(&self, translation: V3, rotation: na::UnitQuaternion::<f32>) -> CollisionBox {
 
@@ -197,6 +197,10 @@ impl CollisionBox {
             v5: rotation * self.v5  + translation,
             v6: rotation * self.v6  + translation,
             v7: rotation * self.v7  + translation,
+            center: self.center + translation,
+            dir: rotation * self.dir,
+            length: self.length,
+            side_len: self.side_len
         }
     }
 
@@ -825,8 +829,6 @@ mod tests {
             }
         };
     }
-
-
 
     #[test]
     fn collision_box_transform() {
