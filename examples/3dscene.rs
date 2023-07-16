@@ -112,7 +112,23 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
     // TODO: Tmp data for hitboxes should live in scene so we can easy render hitboxes for debug
     let mut hitbox_shader = shader::hitbox_shader::HitboxShader::new(gl).unwrap();
-    let cube = cube::Cube::new(gl);
+    let mut col_cubes = vec![];
+
+    let p1 = scene.entity_mut(&player_id).unwrap();
+    for col_box in &skel_col_boxes {
+
+        let b = col_box.make_transformed(p1.pos, na::UnitQuaternion::<f32>::identity());
+
+        let color = na::Vector3::new(1.0, 1.0, 0.0);
+
+        /*
+        TODO: Mybe try this just to see if our boxes are somewhat correct
+        // goal is to make the follow the bones
+         */
+
+        col_cubes.push(cube::Cube::from_collision_box(col_box.clone(), color, gl));
+    }
+
     loop {
 
         // set ui framebuffer, consume sdl events, increment dt ect.
@@ -142,15 +158,44 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
         let p1 = scene.entities.get(&player_id).unwrap();
 
+
+        unsafe {
+            gl.Disable(gl::CULL_FACE);
+        }
+
+        let mut skip = false;
+        for cube in &col_cubes {
+            skip = !skip;
+            if skip {
+                //continue;
+            }
+
+            hitbox_shader.shader.set_used();
+
+            let uniforms = shader::hitbox_shader::Uniforms {
+                projection: scene.camera.projection(),
+                view: scene.camera.view()
+            };
+
+            hitbox_shader.set_uniforms(uniforms);
+
+            cube.render(gl);
+        }
+
+        /*
         // render skeleton collisionBoxes
         for col_box in &skel_col_boxes {
 
             let b = col_box.make_transformed(p1.pos, na::UnitQuaternion::<f32>::identity());
 
             let color = na::Vector3::new(1.0, 1.0, 0.0);
+
+            /*
             TODO: Mybe try this just to see if our boxes are somewhat correct
             // goal is to make the follow the bones
-                let cube_model = cube::Cube::from_collision_box(col_box, color, gl);
+             */
+
+            let cube_model = cube::Cube::from_collision_box(col_box.clone(), color, gl);
 
 
             hitbox_shader.shader.set_used();
@@ -159,10 +204,11 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
                 projection: scene.camera.projection(),
                 view: scene.camera.view()
             };
+
             hitbox_shader.set_uniforms(uniforms);
 
-            cube.render(gl);
-        }
+            cube_model.render(gl);
+        }*/
 
 
 

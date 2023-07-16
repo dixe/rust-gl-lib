@@ -90,7 +90,7 @@ impl Skeleton {
             let to = joint.world_pos();
             let from = self.joints[joint.parent_index].world_pos();
 
-            let bb = CollisionBox::from_end_centers(to, from, 0.3);
+            let bb = CollisionBox::from_end_centers(to, from, 0.1);
             res.push(bb);
         }
 

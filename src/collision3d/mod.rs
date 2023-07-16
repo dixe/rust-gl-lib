@@ -145,32 +145,30 @@ impl CollisionBox {
         let b = dir.y;
         let c = dir.z;
 
-
         // find perpendicular vector to dir
         // form https://math.stackexchange.com/questions/137362/how-to-find-perpendicular-vector-to-another-vector
         let mut perp1 = V3::new(c, c, -a * (-b));
-        let mut perp2 = V3::new(c, -c, -a * (-b));
         if perp1.magnitude() == 0.0 {
             perp1 =  V3::new(-b * (-c) ,a, a);
         }
 
+        // find orthgonal to perp1 by cross with normalize dir
         perp1 = perp1.normalize();
-        perp2 = perp2.normalize();
-
-        println!("dir = {:.2?} perp1 = {:.2?} perp2 ={:.2?}", dir, perp1, perp2);
-
-
-
+        let perp2 = dir.normalize().cross(&perp1).normalize();
         let side_half = side_len / 2.0;
+
+
         CollisionBox {
-            v0: from_c + perp1 * side_half,
-            v1: from_c + perp1 * side_half * - 1.0,
-            v2: from_c + perp2 * side_half * - 1.0,
-            v3: from_c + perp2 * side_half,
-            v4: to_c + perp1 * side_half,
-            v5: to_c + perp1 * side_half * - 1.0,
-            v6: to_c + perp2 * side_half * - 1.0,
-            v7: to_c + perp2 * side_half
+            v0: from_c + perp1 * side_half + perp2 * side_half,
+            v1: from_c + perp1 * side_half + perp2 * -side_half,
+            v2: from_c + perp1 * -side_half + perp2 * -side_half,
+            v3: from_c + perp1 * -side_half + perp2 * side_half,
+
+
+            v4: to_c + perp1 * side_half + perp2 * side_half,
+            v5: to_c + perp1 * side_half + perp2 * -side_half,
+            v6: to_c + perp1 * -side_half + perp2 * -side_half,
+            v7: to_c + perp1 * -side_half + perp2 * side_half,
         }
     }
 
