@@ -60,3 +60,85 @@ struct PlanStep {
 Goto(),
 Aimaiton(Animation)
 }
+
+
+```
+
+Action {
+    Name : Rc::<str>,
+    Pre: Rc::<[Cond]>,
+    cost: i32,
+    post: Rc::<[Cond]>,
+}
+
+Cond {
+    name: Rc::<str>,
+    state: State,
+}
+
+State {
+    True,
+    False,
+    Leq(i32),
+    Qeq(i32),
+    Eq(i32)
+}
+
+
+
+Goal {
+    name: Rc::<str>,
+    sat: Rc::<[Cond]>,
+}
+
+let goal = Goal { name: "GetAxe",
+       sat: Cond { name: "HasAxe", state: True}
+}
+
+let buy = Action {
+    name: "BuyAxe",
+    pre: [
+        Cond { name: "AtShop", state: True},
+        Cond { name: "HasMoney", state: geq(10) }
+    ],
+    post: [
+        Cond { name: "HasAxe", state: True},
+    ]
+}
+
+let to_shop = Action {
+    name: "GotToShop",
+    post: [
+        Cond { name: "AtShop", state: True},
+    ]
+}
+
+
+fn valid(goal.pre, [buy, to_shop], state: {money: 20}) -> Option<Actions> {
+    let sat = goal.sat;
+
+    let is_valid = true;
+    for cond in goal.sat {
+        // see that "BuyAxe" satisfies goal
+        // filters out has_money, since it is satifsied
+
+        // maybe return a new state, with money = 10, so that if a later
+        // action requires 15 money, we cannot also do that
+        let (new_sat, new_state) = filter(buy.pre, state);
+
+        is_valid &= valid(new_sat, [buy, to_shop], new_state);        
+    }
+
+    if is_valid {
+        return Some(actions);// so to_shop, buy)
+    }
+    return None
+}
+
+
+// take a list of conditions and filters out already satified
+// conditions, with the alteration of the state if needed
+fn filter(conditions: &[Cond], state) -> (&[Cond], state) {
+
+}
+```
