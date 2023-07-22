@@ -33,7 +33,7 @@ fn main() -> Result<(), failure::Error> {
     let glp_path = "E:/repos/Game-in-rust/blender_models/Animation_test.glb";
     //let glp_path = "E:/repos/Game-in-rust/blender_models/enemy1.glb";
 
-    let gltf_data = gltf_mesh::meshes_from_gltf(glp_path)?;
+    let gltf_data = gltf_mesh::meshes_from_gltf(glp_path, false)?;
 
     let mut shader = mesh_shader::MeshShader::new(&gl)?;
 
@@ -74,7 +74,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut player = AnimationPlayer::new();
 
-    let mut anim_id = 0;
+    let anim_id = 1;
     let mut playing = true;
 
     let _t : f32 = 0.0;
@@ -110,7 +110,7 @@ fn main() -> Result<(), failure::Error> {
             for (name, anim) in gltf_data.animations.get(skin_id).unwrap() {
                 if ui.button(name) {
                     player.remove(anim_id);
-                    anim_id = player.start(Start {anim: anim.clone(), repeat: true});
+                    player.start(Start {id: anim_id, speed: 1.0, transition: None, anim: anim.clone(), repeat: true});
                 }
             }
         }
@@ -125,11 +125,9 @@ fn main() -> Result<(), failure::Error> {
         }
 
         // update skeleton and bones from animation, if animation done, nothing is updated
-        player.update_skeleton(anim_id, &mut skeleton);
-        skeleton.set_all_bones_from_skeleton(&mut bones);
+        player.update_skeleton_and_bones(anim_id, &mut skeleton, &mut bones);
 
         draw(&gl, &camera, &bones, &shader, &stencil_shader, &mesh, s);
-
 
         window.gl_swap_window();
     }

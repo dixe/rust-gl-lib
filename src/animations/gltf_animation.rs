@@ -63,7 +63,7 @@ where AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default +
         // just update dt for each active animation
         // and set non repeating animations as expiredclear non repeating finished animations
 
-        for (id, active) in &mut self.animations {
+        for (_id, active) in &mut self.animations {
             // we don't want to remove expired animation automaticly, since we might still need the
             // keyframe info for transitioning
             if active.expired {
@@ -112,7 +112,7 @@ where AnimationId: Clone + Copy + Eq + std::hash::Hash + std::default::Default +
 
                 let frame = &active.anim.frames[active.frame];
                 // for take next, or last, no cyclic, can be implemented to either take last or cyclic so first using %
-                let next_frame = &active.anim.frames[next];
+                let _next_frame = &active.anim.frames[next];
                 let motion = &rm[active.frame];
                 // for take next, or last, no cyclic, can be implemented to either take last or cyclic so first using %
                 let next_motion = &rm[next];

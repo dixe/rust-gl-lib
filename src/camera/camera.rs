@@ -1,4 +1,4 @@
-use crate::typedef::*;
+
 use crate::na;
 use crate::gl::viewport::*;
 

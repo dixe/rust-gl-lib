@@ -24,7 +24,9 @@ fn main() -> Result<(), failure::Error> {
     // disable v-sync
     sdl_setup.video_subsystem.gl_set_swap_interval(0);
 
-    let mut scene = scene::Scene::<PostPData>::new(gl.clone(), viewport)?;
+    let mut event_pump = sdl.event_pump().unwrap();
+
+    let mut scene = scene::Scene::<PostPData>::new(gl.clone(), viewport, sdl)?;
     scene.set_skybox("assets/cubemap/skybox/".to_string());
     scene.load_all_meshes("E:/repos/Game-in-rust/blender_models/player.glb", true);
 
@@ -32,16 +34,14 @@ fn main() -> Result<(), failure::Error> {
     let look_at = V3::new(5.0, 3.1, 5.0);
     scene.camera.move_to(V3::new(8.4, 4.3, 5.0));
     scene.camera.look_at(look_at);
-    scene.free_controller.speed = 15.0;
-    scene.free_controller.sens = 1.5;
-
-    let mut event_pump = sdl.event_pump().unwrap();
+    scene.inputs.speed = 15.0;
+    scene.inputs.sens = 1.5;
 
     let player_id = scene.create_entity("player");
     let player2_id = scene.create_entity("player");
 
 
-    let world_id = scene.create_entity("world");
+    let _world_id = scene.create_entity("world");
 
     let p1 = scene.entity_mut(&player_id).unwrap();
     p1.pos = V3::new(0.0, 00.0, 1.0);
@@ -95,10 +95,10 @@ fn main() -> Result<(), failure::Error> {
             ui.newline();
 
             ui.label("Sens");
-            ui.slider(&mut scene.free_controller.sens, 0.01, 2.0);
+            ui.slider(&mut scene.inputs.sens, 0.01, 2.0);
 
             ui.label("Speed");
-            ui.slider(&mut scene.free_controller.speed, 0.01, 20.0);
+            ui.slider(&mut scene.inputs.speed, 0.01, 20.0);
 
             ui.newline();
             let p1 = scene.entities.get(&player_id).unwrap();
@@ -127,9 +127,9 @@ fn main() -> Result<(), failure::Error> {
         // change animation of entity
         let player_skel = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
         let animations = scene.animations.get(&player_skel).unwrap();
-        for (name, anim) in animations {
+        for (name, _anim) in animations {
             if scene.ui.button(name) {
-                scene::play_animation(anim.clone(), false, &player_id, &mut scene.player, &mut scene.entities);
+                scene.action_queue.push_back(scene::Action::StartAnimation(player_id, name.clone(), 0.0));
             }
         }
 

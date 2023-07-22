@@ -1,12 +1,12 @@
 use gl_lib::goap::*;
-use gl_lib::{gl, helpers, na};
+use gl_lib::{gl, helpers};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use gl_lib::imode_gui::Pos;
+
 use std::rc::Rc;
 use std::fs;
 use toml;
-use itertools::Itertools;
+
 use std::collections::HashMap;
 
 
@@ -19,7 +19,7 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl_setup.sdl.event_pump().unwrap();
 
 
-    let axe_goal = Goal {
+    let _axe_goal = Goal {
         name: "GetAxe".into(),
         desired_state: HashMap::from([("HasAxe".into(),true)]),
         is_valid: HashMap::from([("HasAxe".into(), false)]),
@@ -27,7 +27,7 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-    let chill_goal = Goal {
+    let _chill_goal = Goal {
         name: "Chill".into(),
         desired_state: HashMap::from([]),
         is_valid: HashMap::from([]),
@@ -102,7 +102,7 @@ fn main() -> Result<(), failure::Error> {
 
 
         ui.newline();
-        for (name, val) in &world_state {
+        for (name, _val) in &world_state {
             if ui.button(&format!("Remove:{}", &name)) {
                 rm.push(name.clone());
             }

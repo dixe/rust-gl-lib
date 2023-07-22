@@ -16,7 +16,7 @@ use crate::shader::Shader;
 use std::{thread, sync::{Arc, Mutex}};
 use std::rc::Rc;
 use std::collections::{VecDeque, HashMap};
-use std::path::Path;
+
 use sdl2::event::{Event, WindowEvent};
 use crate::collision3d::CollisionBox;
 
@@ -93,7 +93,7 @@ pub struct ControlledEntity<T> {
     pub control_fn: EntityControllerFn<T>,
 }
 
-pub struct Scene<UserPostProcessData, UserControllerData> {
+pub struct Scene<UserPostProcessData, UserControllerData =()> {
     pub ui: Ui,
     pub gl: gl::Gl,
     pub ui_mode: bool,
@@ -352,7 +352,7 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
 
 
     pub fn controlled_data_mut(&mut self) -> Option<&mut UserControllerData> {
-        self.controlled_entity.as_mut().map(|mut data| &mut data.user_data)
+        self.controlled_entity.as_mut().map(|data| &mut data.user_data)
     }
 
 
@@ -522,7 +522,7 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
                     let anim = self.animations.get(&skel).unwrap().get(&name).unwrap();
                     play_animation(anim.clone(), true, &e_id, &mut self.player, &mut self.entities, Some(trans_time));
                 },
-                Action::PlaySound(name) => {
+                Action::PlaySound(_name) => {
                     todo!("Play sound not implemented");
                 }
             }
@@ -703,7 +703,7 @@ fn play_animation(anim: Rc::<Animation>, repeat: bool,  entity_id: &EntityId, pl
 
     let key_frame = stop_animation(entity_id, player, entities, trans_time.is_some());
 
-    let mut transition = key_frame.map(|start_frame| StartTransition {
+    let transition = key_frame.map(|start_frame| StartTransition {
         start_frame,
         time: trans_time.unwrap()
     });
@@ -723,13 +723,13 @@ pub struct RenderMesh<'a> {
 // since we want to call it from mutiple places
 fn render_scene(gl: &gl::Gl, camera: &Camera,
                 mesh_shader: &mesh_shader::MeshShader,
-                mesh_data: &Vec::<SceneMesh>,
-                bones: &HashMap::<EntityId, Bones>,
+                _mesh_data: &Vec::<SceneMesh>,
+                _bones: &HashMap::<EntityId, Bones>,
                 default_bones: &Bones,
                 cubemap_opt: &Option<Cubemap>,
                 cubemap_shader: &BaseShader,
                 stencil_shader: &Option<mesh_shader::MeshShader>,
-                shadow_map: &Option<ShadowMap>,
+                _shadow_map: &Option<ShadowMap>,
                 render_meshes: &[RenderMesh],
                 light_space_mat: Mat4,
                 light_pos: V3) {
@@ -816,7 +816,7 @@ pub fn base_controller<T>(entity: &mut SceneEntity, camera: &mut Camera, follow_
     let mut d = entity.pos - camera.pos;
     d.z = 0.0;
     d = d.normalize();
-    let mut t = V3::new(d.y, -d.x, 0.0);
+    let t = V3::new(d.y, -d.x, 0.0);
 
     let mut m = d * inputs.movement.x + t * inputs.movement.y;
 
@@ -827,7 +827,7 @@ pub fn base_controller<T>(entity: &mut SceneEntity, camera: &mut Camera, follow_
         m = m.normalize(); // check sekrio what happens when holding right or left
         // ignore z since we assume its a char controller that cannot fly
 
-        let mut new_angle = m.y.atan2(m.x);
+        let new_angle = m.y.atan2(m.x);
         let mut diff = new_angle - entity.z_angle.angle();
 
         // normalize to range -pi to pi

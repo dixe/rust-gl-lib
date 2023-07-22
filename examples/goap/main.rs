@@ -1,12 +1,12 @@
 use gl_lib::goap::*;
-use gl_lib::{gl, helpers, na};
+use gl_lib::{gl, helpers};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use gl_lib::imode_gui::Pos;
+
 use std::rc::Rc;
 use std::fs;
 use toml;
-use itertools::Itertools;
+
 use std::collections::HashMap;
 
 
@@ -19,7 +19,7 @@ fn main() -> Result<(), failure::Error> {
     let mut event_pump = sdl_setup.sdl.event_pump().unwrap();
 
 
-    let axe_goal = Goal {
+    let _axe_goal = Goal {
         name: "GetAxe".into(),
         desired_state: HashMap::from([("HasAxe".into(),true)]),
         is_valid: HashMap::from([("HasAxe".into(), false)]),
@@ -27,7 +27,7 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-    let chill_goal = Goal {
+    let _chill_goal = Goal {
         name: "Chill".into(),
         desired_state: HashMap::from([]),
         is_valid: HashMap::from([]),
@@ -37,10 +37,9 @@ fn main() -> Result<(), failure::Error> {
     let mut world_state = State::default();
 
 
-    let goals = [axe_goal, chill_goal];
+    let mut goals = load_goals().unwrap();
 
-    let actions_str = fs::read_to_string("examples/goap.toml").unwrap();
-    let mut actions : Actions = toml::from_str(&actions_str).unwrap();
+    let mut actions = load_actions().unwrap();
 
     let mut rm: Vec::<Rc::<str>> = vec![];
     loop {
@@ -74,16 +73,26 @@ fn main() -> Result<(), failure::Error> {
             println!("{:?}", world_state);
         }
 
-        if ui.button("Reload_actions") {
-            let actions_str = fs::read_to_string("examples/goap.toml").unwrap();
-            match toml::from_str::<Actions>(&actions_str) {
-                Ok(a) => {
-                    actions = a;
+        if ui.button("Reload_data") {
+            match load_actions() {
+                Ok(res) => {
+                    actions = res;
                 },
                 Err(e) => {
                     println!("{:?}", e);
                 }
             }
+
+            match load_goals() {
+                Ok(res) => {
+                    goals = res
+                },
+                Err(e) => {
+                    println!("{:?}", e);
+                }
+            }
+
+
         }
 
 
@@ -93,7 +102,7 @@ fn main() -> Result<(), failure::Error> {
 
 
         ui.newline();
-        for (name, val) in &world_state {
+        for (name, _val) in &world_state {
             if ui.button(&format!("Remove:{}", &name)) {
                 rm.push(name.clone());
             }
@@ -107,4 +116,16 @@ fn main() -> Result<(), failure::Error> {
 
         sdl_setup.window.gl_swap_window();
     }
+}
+
+
+fn load_goals() -> Result::<Goals, toml::de::Error> {
+    let goal_str = fs::read_to_string("examples/goap/goals.toml").unwrap();
+    toml::from_str(&goal_str)
+}
+
+
+fn load_actions() -> Result::<Actions, toml::de::Error> {
+    let action_str = fs::read_to_string("examples/goap/actions.toml").unwrap();
+    toml::from_str(&action_str)
 }

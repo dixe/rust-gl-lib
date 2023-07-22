@@ -37,7 +37,7 @@ fn main() -> Result<(), failure::Error> {
     let glp_path = "E:/repos/Game-in-rust/blender_models/Animation_test.glb";
     //let glp_path = "E:/repos/Game-in-rust/blender_models/enemy1.glb";
 
-    let gltf_data = gltf_mesh::meshes_from_gltf(glp_path)?;
+    let gltf_data = gltf_mesh::meshes_from_gltf(glp_path, false)?;
 
     let mut shader = mesh_shader::MeshShader::new(&gl)?;
     let mut post_process_shader = texture_shader::TextureShader::new(&gl)?;
@@ -64,7 +64,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut player = AnimationPlayer::new();
 
-    let mut anim_id = 0;
+    let anim_id = 0;
     let mut playing = true;
 
     let mut time : f32 = 0.0;
@@ -101,10 +101,12 @@ fn main() -> Result<(), failure::Error> {
     });
 
 
+    let clear_bits = gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT;
+
     loop {
 
         // Setup to use Ui fbo so all ui is drawn to its own frame buffer
-        ui_fbo.bind_and_clear();
+        ui_fbo.bind_and_clear(clear_bits);
 
         ui.consume_events(&mut event_pump);
 
@@ -130,7 +132,7 @@ fn main() -> Result<(), failure::Error> {
             for (name, anim) in gltf_data.animations.get(skin_id).unwrap() {
                 if ui.button(name) {
                     player.remove(anim_id);
-                    anim_id = player.start(Start {anim: anim.clone(), repeat: true});
+                    player.start(Start {id: anim_id, speed: 1.0, transition: None, anim: anim.clone(), repeat: true});
                 }
             }
         }
@@ -162,8 +164,7 @@ fn main() -> Result<(), failure::Error> {
         }
 
         // update skeleton and bones from animation, if animation done, nothing is updated
-        player.update_skeleton(anim_id, &mut skeleton);
-        skeleton.set_all_bones_from_skeleton(&mut bones);
+        player.update_skeleton_and_bones(anim_id, &mut skeleton, &mut bones);
 
         ui_fbo.unbind();
 
@@ -201,7 +202,8 @@ pub fn draw(gl: &gl::Gl, fbo: &buffer::FrameBuffer, camera: &Camera,
             bones: &Bones, shader: &mesh_shader::MeshShader, mesh: &Mesh,
             cubemap_opt: &Option<Cubemap>, cubemap_shader: &BaseShader) {
 
-    fbo.bind_and_clear();
+    let clear_bits = gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT;
+    fbo.bind_and_clear(clear_bits);
 
 
     // DRAW MESH

@@ -33,9 +33,9 @@ impl Controller {
         self.desired_distance = f32::max(1.0, f32::min(15.0, self.desired_distance + dist_delta));
     }
 
-    pub fn update_camera(&mut self, camera: &mut Camera, dt: f32){
+    pub fn update_camera(&mut self, camera: &mut Camera, _dt: f32){
 
-        let mut diff_xy = camera.pos.xy() - self.target.xy();
+        let diff_xy = camera.pos.xy() - self.target.xy();
         let yaw = (diff_xy.y).atan2(diff_xy.x) - self.yaw_change;
 
         self.desired_pitch = f32::min(f32::max(0.0, self.desired_pitch), std::f32::consts::PI/2.0);

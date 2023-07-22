@@ -47,7 +47,7 @@ fn select(ui: &mut Ui, animation: &mut Rc::<Animation>, animations: &HashMap::<R
     let has_window = ui.window_to_id.contains_key(&name);
 
     if ui.button(current) || has_window {
-        let res = ui.window_begin(&name);
+        let _res = ui.window_begin(&name);
 
         let mut i = 0;
         for (name, anim) in animations.iter().sorted_by_key(|x| x.0) {
@@ -104,7 +104,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         control_fn: scene::base_controller
     });
 
-    let world_id = scene.create_entity("world");
+    let _world_id = scene.create_entity("world");
 
     let p1 = scene.entity_mut(&player_id).unwrap();
     p1.pos = V3::new(0.0, 00.0, 1.0);
@@ -119,8 +119,8 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     scene.use_stencil();
     scene.use_shadow_map();
 
-    let mut speed = 1.0;
-    let mut show_options = false;
+    let _speed = 1.0;
+    let _show_options = false;
 
     let anims = scene.animations.get(&player_skel_id).unwrap();
     let mut anim_1 = scene.animations.get(&player_skel_id).unwrap().get("run_0").unwrap().clone();
@@ -132,8 +132,8 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     let mut tmp_keyframe = anim_1.frames[0].clone();
     let mut t = 0.0;
 
-    let skeleton = &scene.skeletons[player_skel_id];
-    let mut wheel = Wheel {
+    let _skeleton = &scene.skeletons[player_skel_id];
+    let _wheel = Wheel {
         frames: vec![anims.get("run_0").unwrap().frames[0].clone(),
                      anims.get("run_1").unwrap().frames[0].clone(),
                      anims.get("run_2").unwrap().frames[0].clone(),
@@ -147,7 +147,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         // set ui framebuffer, consume sdl events, increment dt ect.
         scene.frame_start(event_pump);
 
-        let dt = scene.dt();
+        let _dt = scene.dt();
 
         // OWN GAME LOGIC
         if scene.ui.button("Play/Pause") {

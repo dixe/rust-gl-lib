@@ -71,9 +71,9 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
 
     let player_id = scene.create_entity("player");
-    let mut player_state = PlayerState::Movable;
+    let _player_state = PlayerState::Movable;
 
-    let player_skel_id = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
+    let _player_skel_id = scene.entity(&player_id).unwrap().skeleton_id.unwrap();
 
     scene.controlled_entity = Some(scene::ControlledEntity {
         id: player_id,
@@ -86,7 +86,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
 
     let enemy_id = scene.create_entity("player");
 
-    let world_id = scene.create_entity("world");
+    let _world_id = scene.create_entity("world");
 
     let p1 = scene.entity_mut(&player_id).unwrap();
     p1.pos = V3::new(0.0, 00.0, 0.0);
@@ -138,7 +138,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         update_target(&mut scene, player_id, enemy_id);
 
 
-        let p1 = scene.entities.get(&player_id).unwrap();
+        let _p1 = scene.entities.get(&player_id).unwrap();
 
 
         for col_box in scene.skeleton_hit_boxes.get(&player_id).unwrap() {
@@ -169,7 +169,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
             // p_t.to_homogeneous() * p_r.to_homogeneous() *
             let model_mat = bone_t.to_homogeneous() *  r.to_homogeneous() *  scale;
 
-            let mut uniforms = shader::hitbox_shader::Uniforms {
+            let uniforms = shader::hitbox_shader::Uniforms {
                 projection: scene.camera.projection(),
                 view: scene.camera.view(),
                 model: model_mat
@@ -382,7 +382,7 @@ fn handle_movement_regular(entity: &mut scene::SceneEntity, camera: &Camera, inp
     if m.magnitude() > 0.0 {
 
         m = m.normalize(); // check sekrio what happens when holding right or left
-        let mut new_angle = m.y.atan2(m.x);
+        let new_angle = m.y.atan2(m.x);
         entity.target_z_angle =  Rotation2::new(new_angle);
         entity.velocity = m * inputs.speed;
     }
@@ -429,13 +429,13 @@ fn handle_movement_target(entity: &mut scene::SceneEntity, target: &V3, inputs: 
 
 /// when middle click update lock on/off, when lock on, update the target pos in user data, so we can use it
 /// later in controller
-fn update_target<T,>(scene: &mut scene::Scene<T, ControlledData>, player_id: scene::EntityId, enemy_id: scene::EntityId) {
+fn update_target<T,>(scene: &mut scene::Scene<T, ControlledData>, _player_id: scene::EntityId, enemy_id: scene::EntityId) {
 
     let middle_mouse = scene.inputs.middle_mouse;
 
     if let Some(controlled) = &mut scene.controlled_entity {
         match controlled.user_data.camera {
-            CameraState::Target((id, pos)) => {
+            CameraState::Target((_id, _pos)) => {
                 if middle_mouse {
                     controlled.user_data.camera = CameraState::Normal;
                 } else {

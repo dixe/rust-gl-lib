@@ -1,4 +1,4 @@
-use gl_lib::{helpers, na};
+
 use gl_lib::typedef::*;
 
 fn main() {
@@ -12,7 +12,7 @@ fn main() {
 
     let v_dot = v.normalize();
 
-    let mut apara = v_dot * a.dot(&v_dot);
+    let apara = v_dot * a.dot(&v_dot);
     let aperp = a + apara * -1.0;
     let across = aperp.cross(&v_dot);
 

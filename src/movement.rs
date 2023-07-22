@@ -1,6 +1,6 @@
-use crate::camera::*;
+
 use crate::na;
-use sdl2::event::{Event, WindowEvent};
+use sdl2::event::{Event};
 use sdl2::keyboard::Keycode::{self, * };
 use std::collections::HashMap;
 
@@ -59,7 +59,7 @@ impl Inputs {
                     self.movement -= dir;
                 }
             },
-            Event::MouseMotion{mousestate, xrel, yrel, .. } => {
+            Event::MouseMotion{ xrel, yrel, .. } => {
                 self.mouse_movement.xrel = *xrel as f32;
                 self.mouse_movement.yrel = *yrel as f32;
             },

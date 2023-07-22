@@ -1,10 +1,10 @@
 use gl_lib::{gl, objects::cube, shader::{self, Shader}, camera};
 use failure;
-use std::time::Instant;
-use gl_lib::{helpers, na};
+
+use gl_lib::{helpers};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
-use gl_lib::imode_gui::Pos;
+
 use gl_lib::typedef::*;
 
 fn main() -> Result<(), failure::Error> {
@@ -53,7 +53,8 @@ let sdl_setup = helpers::setup_sdl()?;
 
         let uniforms = shader::hitbox_shader::Uniforms {
             projection: camera.projection(),
-            view: camera.view()
+            view: camera.view(),
+            model: Mat4::identity()
         };
 
         shader.shader.set_used();
