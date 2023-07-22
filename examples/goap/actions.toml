@@ -4,7 +4,7 @@ cost = 2
 
 [action.pre]
 AtShop = true
-
+HasMoney = true
 [action.post]
 HasAxe = true
 
@@ -13,22 +13,26 @@ HasAxe = true
 name = "LootAxe"
 cost = 1
 
-
 [action.pre]
 HasCorpse = true
-
 [action.post]
 HasAxe = true
-
 
 
 [[action]]
 name = "GoToShop"
 cost = 1
 
-
 [action.pre]
 HasMoney = true
-
 [action.post]
 AtShop = true
+
+
+[[action]]
+name = "GetMoney"
+cost = 1
+
+[action.pre]
+[action.post]
+HasMoney = true

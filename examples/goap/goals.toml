@@ -1,0 +1,14 @@
+[[goal]]
+name = "GetAxe"
+
+[goal.desired_state]
+HasAxe = true
+[goal.is_valid]
+HasAxe = false
+
+[[goal]]
+name = "chill"
+cost = 1
+
+[goal.desired_state]
+[goal.is_valid]

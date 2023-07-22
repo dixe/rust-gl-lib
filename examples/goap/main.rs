@@ -37,9 +37,10 @@ fn main() -> Result<(), failure::Error> {
     let mut world_state = State::default();
 
 
-    let mut goals = load_goals().unwrap();
+    let goals = [axe_goal, chill_goal];
 
-    let mut actions = load_actions().unwrap();
+    let actions_str = fs::read_to_string("examples/goap.toml").unwrap();
+    let mut actions : Actions = toml::from_str(&actions_str).unwrap();
 
     let mut rm: Vec::<Rc::<str>> = vec![];
     loop {
@@ -73,26 +74,16 @@ fn main() -> Result<(), failure::Error> {
             println!("{:?}", world_state);
         }
 
-        if ui.button("Reload_data") {
-            match load_actions() {
-                Ok(res) => {
-                    actions = res;
+        if ui.button("Reload_actions") {
+            let actions_str = fs::read_to_string("examples/goap.toml").unwrap();
+            match toml::from_str::<Actions>(&actions_str) {
+                Ok(a) => {
+                    actions = a;
                 },
                 Err(e) => {
                     println!("{:?}", e);
                 }
             }
-
-            match load_goals() {
-                Ok(res) => {
-                    goals = res
-                },
-                Err(e) => {
-                    println!("{:?}", e);
-                }
-            }
-
-
         }
 
 
@@ -116,16 +107,4 @@ fn main() -> Result<(), failure::Error> {
 
         sdl_setup.window.gl_swap_window();
     }
-}
-
-
-fn load_goals() -> Result::<Goals, toml::de::Error> {
-    let goal_str = fs::read_to_string("examples/goap/goals.toml").unwrap();
-    toml::from_str(&goal_str)
-}
-
-
-fn load_actions() -> Result::<Actions, toml::de::Error> {
-    let action_str = fs::read_to_string("examples/goap/actions.toml").unwrap();
-    toml::from_str(&action_str)
 }
