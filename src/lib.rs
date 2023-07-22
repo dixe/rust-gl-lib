@@ -43,6 +43,7 @@ pub mod animations;
 pub mod imode_gui;
 
 pub mod collision2d;
+
 pub mod collision3d;
 
 pub mod particle_system;
@@ -50,6 +51,8 @@ pub mod particle_system;
 pub mod general_animation;
 
 pub mod audio;
+
+pub mod goap;
 
 /// Defines point in ScreenBox x,y in \[0.0; 1.0\]
 /// Top left corner is x=0, y=0

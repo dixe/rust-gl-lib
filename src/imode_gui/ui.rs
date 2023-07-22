@@ -76,12 +76,14 @@ impl Ui {
         let mut windows: HashMap::<usize, Window>  = Default::default();
         windows.insert(0, base_window);
 
-        unsafe {
-            //drawer2D.gl.Enable(gl::DEPTH_TEST);
-            //drawer2D.gl.DepthFunc(gl::LEQUAL);
-        }
-
         let mut deltatime = deltatime::Deltatime::new();
+
+
+        // set default clear color
+
+        unsafe {
+            drawer2D.gl.ClearColor(0.9, 0.9, 0.9, 1.0);
+        }
 
         Self {
             deltatime,

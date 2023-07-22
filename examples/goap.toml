@@ -1,0 +1,34 @@
+[[action]]
+name = "BuyAxe"
+cost = 2
+
+[action.pre]
+AtShop = true
+
+[action.post]
+HasAxe = true
+
+
+[[action]]
+name = "LootAxe"
+cost = 1
+
+
+[action.pre]
+HasCorpse = true
+
+[action.post]
+HasAxe = true
+
+
+
+[[action]]
+name = "GoToShop"
+cost = 1
+
+
+[action.pre]
+HasMoney = true
+
+[action.post]
+AtShop = true
