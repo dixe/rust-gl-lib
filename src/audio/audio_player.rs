@@ -2,6 +2,7 @@
 use std::sync::Arc;
 use std::collections::HashMap;
 use sdl2::audio::{AudioSpecDesired, AudioCallback, AudioDevice, AudioSpecWAV, AudioCVT, AudioFormat};
+use std::rc::Rc;
 
 
 #[derive(Clone)]
@@ -72,7 +73,7 @@ pub struct AudioPlayer {
     audio_subsystem: sdl2::AudioSubsystem,
     desired_spec: AudioSpecDesired,
     master_volume: f32,
-    sounds: HashMap::<String, Sound>
+    sounds: HashMap::<Rc::<str>, Sound>
 }
 
 struct Sound {
@@ -91,7 +92,7 @@ impl AudioPlayer {
         }
     }
 
-    pub fn add_sound(&mut self, name: &str, path: &str) {
+    pub fn add_sound(&mut self, name: Rc::<str>, path: &str) {
 
         let wav_raw_file = AudioSpecWAV::load_wav(path).expect("Could not load test WAV file");
 
@@ -106,7 +107,7 @@ impl AudioPlayer {
 
         let data = cvt.convert(wav_raw_file.buffer().to_vec());
 
-        self.sounds.insert(name.to_string(), Sound {
+        self.sounds.insert(name.clone(), Sound {
             buffer: data.into()
         });
 
@@ -114,7 +115,7 @@ impl AudioPlayer {
 
 
     pub fn new(audio_subsystem: sdl2::AudioSubsystem) -> Self {
-        let sounds = HashMap::<String, Sound>::default();
+        let sounds = HashMap::<Rc::<str>, Sound>::default();
 
         let samples = 128;
         let desired_spec = AudioSpecDesired {
@@ -146,12 +147,13 @@ impl AudioPlayer {
         }
     }
 
-    pub fn play_sound(&mut self) {
-        // mutate channel data
-        {
+    pub fn play_sound(&mut self, name: &str) {
+        if let Some(sound) = self.sounds.get(name) {
             let mut mixer = self.channel.device.lock();
-            mixer.add(self.sounds.get("deflect").unwrap())
+            mixer.add(sound);
+        } else {
+            println!("Could not play sound '{:?}' not loaded",  name);
         }
-
     }
+
 }

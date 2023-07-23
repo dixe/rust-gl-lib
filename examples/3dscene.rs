@@ -62,6 +62,8 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     scene.set_skybox("assets/cubemap/skybox/".to_string());
     scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
 
+    scene.load_sound("attack".into(), &"examples/pixel_sekiro/assets/audio/deflect_1.wav");
+
 
     let look_at = V3::new(5.0, 3.1, 5.0);
     scene.camera.move_to(V3::new(8.4, 4.3, 5.0));
@@ -353,6 +355,7 @@ fn handle_input<A>(scene: &mut scene::Scene<A, ControlledData>) {
                     // set attack state and start animation
                     c_ent.user_data.player = PlayerState::Attack;
                     scene.action_queue.push_back(scene::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
+                    scene.action_queue.push_back(scene::Action::PlaySound("attack".into()));
                 }
             },
             PlayerState::Attack => {

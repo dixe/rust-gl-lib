@@ -116,9 +116,7 @@ fn plan_goal(conditions: &Conditions, actions: &Actions, state: &State) -> Optio
 
     push_node(&mut plans, &conditions, None, first_node);
 
-    let mut i = 0;
     while let Some(node) = plans.pop() {
-        i += 1;
         // find all actions that satisfied one of the required conditions and push action if possible
 
         if node.finished() {

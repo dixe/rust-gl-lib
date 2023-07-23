@@ -13,6 +13,7 @@ use crate::camera::{self, free_camera, follow_camera, Camera};
 use crate::na::{Translation3, Rotation3, Rotation2};
 use crate::{buffer, movement::Inputs};
 use crate::shader::Shader;
+use crate::audio::audio_player::AudioPlayer;
 use std::{thread, sync::{Arc, Mutex}};
 use std::rc::Rc;
 use std::collections::{VecDeque, HashMap};
@@ -116,6 +117,8 @@ pub struct Scene<UserPostProcessData, UserControllerData =()> {
 
     pub player: AnimationPlayer<EntityId>,
 
+    audio_player: AudioPlayer,
+
     pub cubemap : Option::<Cubemap>,
     pub cubemap_shader: BaseShader,
 
@@ -182,7 +185,7 @@ pub struct SceneEntity {
     pub skeleton_id: Option::<SkeletonIndex>, // Is indirectly a duplicated data, since meshindex points to Scene mesh, which has skel_id. But lets keep it as a convinience
 }
 
-impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserControllerData> {
+impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserControllerData> {
     pub fn new(gl: gl::Gl, viewport: gl::viewport::Viewport, sdl: sdl2::Sdl) -> Result<Scene<UserPostProcessData, UserControllerData>, failure::Error> {
 
         let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
@@ -190,6 +193,8 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
         let mesh_shader = mesh_shader::MeshShader::new(&gl)?;
         let cubemap_shader = load_object_shader("cubemap", &gl).unwrap();
         let player = AnimationPlayer::<EntityId>::new();
+
+        let audio_player = AudioPlayer::new(sdl.audio().unwrap());
 
         let mut default_bones = vec![];
         for _i in 0..32 {
@@ -220,6 +225,7 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
             mesh_shader,
             cubemap_shader,
             player,
+            audio_player,
             cubemap: None,
             meshes: Default::default(),
             mesh_data: Default::default(),
@@ -275,6 +281,12 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
 
         id
     }
+
+    pub fn load_sound(&mut self, name: Rc::<str>, path: &str) {
+        self.audio_player.add_sound(name.clone(), path);
+    }
+
+
 
     pub fn load_all_meshes(&mut self, path: &str, root_motion: bool) {
 
@@ -522,8 +534,8 @@ impl< UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCo
                     let anim = self.animations.get(&skel).unwrap().get(&name).unwrap();
                     play_animation(anim.clone(), true, &e_id, &mut self.player, &mut self.entities, Some(trans_time));
                 },
-                Action::PlaySound(_name) => {
-                    todo!("Play sound not implemented");
+                Action::PlaySound(name) => {
+                    self.audio_player.play_sound(&name)
                 }
             }
         }
@@ -886,6 +898,6 @@ pub enum Action {
     // but should still be easy for the user
     StartAnimation(EntityId, Rc::<str>, f32),
     StartAnimationLooped(EntityId, Rc::<str>, f32),
-    PlaySound(String),
+    PlaySound(Rc::<str>),
     //SpawnParticle(String"name", loc, other info if needed)
 }
