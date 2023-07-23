@@ -48,7 +48,7 @@ pub fn load_and_run(gl: &gl::Gl,
 
 
     audio_player.clear();
-    audio_player.add_sound("deflect", &"examples/pixel_sekiro/assets/audio/deflect_1.wav");
+    audio_player.add_sound("deflect".into(), &"examples/pixel_sekiro/assets/audio/deflect_1.wav");
 
     let mut scene = scene::new(&mut animation_player, &assets, audio_player);
 

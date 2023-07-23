@@ -303,7 +303,7 @@ pub fn update_entity<'a: 'b, 'b>(entity: &mut Entity,
             if animation_player.expired(id) {
                 // attack deflected
                 if let Some(def) = deflection {
-                    audio_player.play_sound();
+                    audio_player.play_sound("deflect".into());
 
                     let interupt = def.interupt();
                     let sheet = &assets.attack_deflected(&entity.combos[entity.active_combo], entity.attack_counter);
