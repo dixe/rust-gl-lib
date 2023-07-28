@@ -68,8 +68,12 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
     let look_at = V3::new(5.0, 3.1, 5.0);
     scene.camera.move_to(V3::new(8.4, 4.3, 5.0));
     scene.camera.look_at(look_at);
-    scene.inputs.speed = 15.0;
-    scene.inputs.sens = 0.05;
+
+    scene.inputs.follow.speed = 15.0;
+    scene.inputs.follow.sens = 0.15;
+
+    scene.inputs.free.speed = 12.0;
+    scene.inputs.free.sens = 0.65;
 
 
     let player_id = scene.create_entity("player");
@@ -236,14 +240,15 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
             ui.newline();
 
             ui.label("Sens");
-            ui.combo_box(&mut scene.inputs.sens, 0.01, 1.0);
-            ui.slider(&mut scene.inputs.sens, 0.01, 1.0);
+            let inputs = scene.inputs.current_mut();
+            ui.combo_box(&mut inputs.sens, 0.01, 1.0);
+            ui.slider(&mut inputs.sens, 0.01, 1.0);
 
             ui.newline();
 
             ui.label("Speed");
-            ui.combo_box(&mut scene.inputs.speed, 0.01, 20.0);
-            ui.slider(&mut scene.inputs.speed, 0.01, 20.0);
+            ui.combo_box(&mut inputs.speed, 0.01, 20.0);
+            ui.slider(&mut inputs.speed, 0.01, 20.0);
 
             ui.newline();
             let p1 = scene.entities.get(&player_id).unwrap();
@@ -332,7 +337,7 @@ fn handle_input<A>(scene: &mut scene::Scene<A, ControlledData>) {
     if let Some(ref mut c_ent) = &mut scene.controlled_entity {
         let player = scene.entities.get_mut(&c_ent.id).unwrap();
 
-        if scene.inputs.animation_expired {
+        if scene.inputs.current().animation_expired {
             // maybe handle different depending on our state
             // default is to play idle
             c_ent.user_data.player = PlayerState::Movable;
@@ -347,11 +352,11 @@ fn handle_input<A>(scene: &mut scene::Scene<A, ControlledData>) {
         match c_ent.user_data.player {
             PlayerState::Movable => {
                 match c_ent.user_data.camera {
-                    CameraState::Normal => handle_movement_regular(player, &scene.camera, &scene.inputs, dt),
-                    CameraState::Target((_, t)) => handle_movement_target(player, &t, &scene.inputs, dt),
+                    CameraState::Normal => handle_movement_regular(player, &scene.camera, &scene.inputs.current(), dt),
+                    CameraState::Target((_, t)) => handle_movement_target(player, &t, &scene.inputs.current(), dt),
                 }
 
-                if scene.inputs.left_mouse {
+                if scene.inputs.current().left_mouse {
                     // set attack state and start animation
                     c_ent.user_data.player = PlayerState::Attack;
                     scene.action_queue.push_back(scene::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
@@ -434,7 +439,7 @@ fn handle_movement_target(entity: &mut scene::SceneEntity, target: &V3, inputs: 
 /// later in controller
 fn update_target<T,>(scene: &mut scene::Scene<T, ControlledData>, _player_id: scene::EntityId, enemy_id: scene::EntityId) {
 
-    let middle_mouse = scene.inputs.middle_mouse;
+    let middle_mouse = scene.inputs.current().middle_mouse;
 
     if let Some(controlled) = &mut scene.controlled_entity {
         match controlled.user_data.camera {
@@ -503,14 +508,11 @@ fn controller_target(entity: &mut scene::SceneEntity, camera: &mut Camera, follo
 
 fn controller_regular(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32) {
 
-    //Update camera desired pitch and yaw from mouse
-    let base_sens = 3.0;
-
     follow_camera.update_dist(inputs.mouse_wheel);
 
-    follow_camera.desired_pitch += inputs.mouse_movement.yrel * inputs.sens * inputs.inverse_y *  dt * base_sens;
+    follow_camera.desired_pitch += inputs.mouse_movement.yrel * inputs.sens * inputs.inverse_y *  dt;
 
-    follow_camera.yaw_change = inputs.mouse_movement.xrel * inputs.sens * dt * base_sens;
+    follow_camera.yaw_change = inputs.mouse_movement.xrel * inputs.sens * dt ;
 
     follow_camera.update_camera_target(entity.pos + entity.root_motion);
 

@@ -94,6 +94,36 @@ pub struct ControlledEntity<T> {
     pub control_fn: EntityControllerFn<T>,
 }
 
+pub struct SceneInputs {
+    pub free: Inputs,
+    pub follow: Inputs,
+    pub selected: SceneControllerSelected,
+}
+
+impl SceneInputs {
+    fn update_events(&mut self, event: &Event) {
+        match self.selected {
+            SceneControllerSelected::Free => self.free.update_events(event),
+            SceneControllerSelected::Follow => self.follow.update_events(event)
+        }
+    }
+
+    pub fn current_mut(&mut self) -> &mut Inputs {
+        match self.selected {
+            SceneControllerSelected::Free => &mut self.free,
+            SceneControllerSelected::Follow => &mut self.follow,
+        }
+    }
+
+
+    pub fn current(&self) -> &Inputs {
+        match self.selected {
+            SceneControllerSelected::Free => &self.free,
+            SceneControllerSelected::Follow => &self.follow,
+        }
+    }
+}
+
 pub struct Scene<UserPostProcessData, UserControllerData =()> {
     pub ui: Ui,
     pub gl: gl::Gl,
@@ -103,15 +133,13 @@ pub struct Scene<UserPostProcessData, UserControllerData =()> {
 
     pub camera: camera::Camera,
 
-    pub inputs: Inputs,
+    pub inputs: SceneInputs,
     pub follow_controller: follow_camera::Controller,
 
     // if we use a follow camera and this is set the inputs will be used to control this entity
     // works as a default 3d char controller.
     // for own implementation keep this as none and just do in in user code
     pub controlled_entity: Option<ControlledEntity<UserControllerData>>,
-
-    pub selected: SceneControllerSelected,
 
     pub light_pos: V3,
 
@@ -219,9 +247,12 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
             emitter: emitter::Emitter::new(1000, emitter::emit_1, emitter::update_1),
             camera: camera::Camera::new(viewport.w as f32, viewport.h as f32),
             light_pos: V3::new(0.0, 10.0, 30.0),
-            inputs: Default::default(),
+            inputs : SceneInputs {
+                follow: Default::default(),
+                free: Default::default(),
+                selected: SceneControllerSelected::Free,
+            },
             follow_controller: Default::default(),
-            selected: SceneControllerSelected::Free,
             mesh_shader,
             cubemap_shader,
             player,
@@ -309,8 +340,12 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
             let mut texture_id = None;
             if let Some(tex) = gltf_mesh.texture {
+                println!("tex for {name}  {:#?}", tex);
                 if !tex_to_id.contains_key(&tex) {
-                    let id = texture::gen_texture_rgba_nearest(&self.gl, &gltf_data.images[tex]);
+                    println!("{:?}", tex);
+                    //TODO: Fix this so we load correct texture and not just 0
+                    println!("IMAGES: {:?}",gltf_data.images.len());
+                    let id = texture::gen_texture_rgba_nearest(&self.gl, &gltf_data.images[0]);
                     tex_to_id.insert(tex, id);
                     // load texture
                 }
@@ -417,14 +452,14 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
 
     pub fn change_camera(&mut self) {
-        self.selected = match self.selected {
+        self.inputs.selected = match self.inputs.selected {
             SceneControllerSelected::Free => SceneControllerSelected::Follow,
             SceneControllerSelected::Follow => SceneControllerSelected::Free
         }
     }
 
     pub fn allow_char_inputs(&self) -> bool {
-        match self.selected {
+        match self.inputs.selected {
             SceneControllerSelected::Free => false,
             SceneControllerSelected::Follow => true
         }
@@ -444,7 +479,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
         self.ui.consume_events(event_pump);
 
-        self.inputs.frame_start();
+        self.inputs.current_mut().frame_start();
 
         for event in &self.ui.frame_events {
             if !self.ui_mode {
@@ -461,7 +496,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
                     self.sdl.mouse().set_relative_mouse_mode(!self.ui_mode);
                 },
                 Event::KeyDown{keycode: Some(sdl2::keyboard::Keycode::Tab), .. } => {
-                    self.selected = match self.selected {
+                    self.inputs.selected = match self.inputs.selected {
                         SceneControllerSelected::Free => SceneControllerSelected::Follow,
                         SceneControllerSelected::Follow => SceneControllerSelected::Free
                     }
@@ -485,8 +520,8 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
         // update particles
         self.emitter.update(dt);
 
-        match self.selected {
-            SceneControllerSelected::Free => free_camera::update_camera(&mut self.camera, dt, &self.inputs),
+        match self.inputs.selected {
+            SceneControllerSelected::Free => free_camera::update_camera(&mut self.camera, dt, &self.inputs.free),
             SceneControllerSelected::Follow => {
                 // TODO: Should be a function points or something, we most likely want to disable/ignore movement inputs
                 // when fx roll animation is playing
@@ -494,7 +529,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
                 if let Some(entity) = &self.controlled_entity {
                     let e = self.entities.get_mut(&entity.id).unwrap();
-                    (entity.control_fn)(e, &mut self.camera, &mut self.follow_controller, &self.inputs, dt, &entity.user_data);
+                    (entity.control_fn)(e, &mut self.camera, &mut self.follow_controller, &self.inputs.follow, dt, &entity.user_data);
                 }
 
 
@@ -550,7 +585,8 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
             // update input for controlled entity with animation epxired info
             if let Some(ce) = &self.controlled_entity {
                 if ce.id == *entity_id {
-                    self.inputs.animation_expired = self.player.expired(entity_id);
+                    let inputs = self.inputs.current_mut();
+                    inputs.animation_expired = self.player.expired(entity_id);
                 }
             }
 

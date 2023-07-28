@@ -3,6 +3,9 @@ use super::*;
 mod button;
 pub use button::*;
 
+mod graph;
+pub use graph::*;
+
 mod slider;
 pub use slider::*;
 
