@@ -1,3 +1,4 @@
+use crate::imode_gui::Rect;
 use crate::imode_gui::Color;
 
 #[derive(Debug, Clone)]
@@ -110,6 +111,21 @@ impl Spacing {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum BorderRadius {
+    HeightRelative(f64),
+    Fixed(i32) // in pixels
+}
+
+impl BorderRadius {
+
+    pub fn get(&self, rect: Rect) -> f64 {
+        match self {
+            Self::Fixed(pixels) => *pixels as f64,
+            Self::HeightRelative(portion) => rect.h as f64 * *portion
+        }
+    }
+}
 
 
 #[derive(Debug, Clone, Copy)]
@@ -118,16 +134,17 @@ pub struct ButtonStyle {
     pub hover_color: Color,
     pub active_color: Color,
     pub text_color: Color,
-
+    pub radius: BorderRadius,
 }
 
 impl Default for ButtonStyle {
     fn default() -> Self {
         Self {
-            color: Color::Rgb(109, 156, 116),
-            hover_color: Color::Rgb(114, 214, 126),
-            active_color: Color::Rgb(111, 135, 114),
-            text_color: Color::Rgb(0, 0, 0),
+            color: Color::Rgb(220, 220, 220),
+            hover_color: Color::Rgb(40, 40, 40),
+            active_color: Color::Rgb(200, 200, 200),
+            text_color: Color::Rgb(10, 10, 10),
+            radius: BorderRadius::HeightRelative(0.33),
         }
     }
 }

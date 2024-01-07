@@ -140,7 +140,7 @@ impl Ui {
                 }
             }
 
-            self.drawer2D.rounded_rect_color(x, y, elm_w, rb.total_height as i32, color);
+            self.drawer2D.rect_color(x, y, elm_w, rb.total_height as i32, color);
             self.drawer2D.render_text(&format!("{:?}", items[i]), x, y, pxs);
 
         }

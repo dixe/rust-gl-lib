@@ -8,6 +8,33 @@ type V2 = na::Vector2::<f32>;
 
 impl Ui {
 
+    pub fn view_polygon(&mut self, polygon: &Polygon, p_trans: &PolygonTransform) {
+
+        let transform = p_trans.mat3();
+
+        let len = polygon.vertices.len();
+        let color = Color::Rgb(0, 0, 0);
+        for i in 0..len {
+            let v = polygon.vertices[i].transform(transform);
+
+            let mut r = 1.0;
+            self.drawer2D.circle(v.x, v.y, r, color);
+
+            if i < len - 1 {
+                let p2 = polygon.vertices[i + 1].transform(transform);
+                self.drawer2D.line(v.x, v.y, p2.x, p2.y, 2.0);
+            }
+        }
+
+        if len > 2 {
+            let p1 = polygon.vertices[len - 1].transform(transform);
+            let p2 = polygon.vertices[0].transform(transform);
+
+            self.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 2.0);
+        }
+    }
+
+
     /// draw a polygon mapping vertecies to screen coordinates
     /// returns true if dragpoint was activated
     pub fn view_raw_polygon(&mut self, polygon: &mut Polygon, draggable: bool, show_idx: bool, show_pos: bool, color: Color) -> bool {
@@ -206,32 +233,6 @@ impl Ui {
 
         (res, drag)
 
-    }
-
-    pub fn view_polygon(&mut self, polygon: &Polygon, p_trans: &PolygonTransform) {
-
-        let transform = p_trans.mat3();
-
-        let len = polygon.vertices.len();
-        let color = Color::Rgb(0, 0, 0);
-        for i in 0..len {
-            let v = polygon.vertices[i].transform(transform);
-
-            let mut r = 1.0;
-            self.drawer2D.circle(v.x, v.y, r, color);
-
-            if i < len - 1 {
-                let p2 = polygon.vertices[i + 1].transform(transform);
-                self.drawer2D.line(v.x, v.y, p2.x, p2.y, 2.0);
-            }
-        }
-
-        if len > 2 {
-            let p1 = polygon.vertices[len - 1].transform(transform);
-            let p2 = polygon.vertices[0].transform(transform);
-
-            self.drawer2D.line(p1.x, p1.y, p2.x, p2.y, 2.0);
-        }
     }
 
     pub fn polygon_editor(&mut self, orig_polygon: &mut Polygon, options: &mut PolygonOptions) {

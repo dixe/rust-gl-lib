@@ -35,7 +35,7 @@ impl Ui{
 
         let graph_color = Color::Rgb(0, 0, 0);
 
-        self.drawer2D.rounded_rect_color(rect.x , rect.y, rect.w, rect.h, bg_color);
+        self.drawer2D.rect_color(rect.x , rect.y, rect.w, rect.h, bg_color);
 
 
         // find step, ie. how much x increases when we step 1 pixel
@@ -55,14 +55,14 @@ impl Ui{
         let mapped_y_0 = map_to_pixel_space(0.0, info.h as f32, data_range, min_y) + rect.y as f32;
 
         if mapped_y_0 > rect.y as f32 && mapped_y_0 < (rect.y + rect.h) as f32 {
-            self.drawer2D.rounded_rect_color(rect.x, mapped_y_0 - 1.0, info.w, 2, coord_color);
+            self.drawer2D.rect_color(rect.x, mapped_y_0 - 1.0, info.w, 2, coord_color);
         }
 
         // draw a line in y=0
 
         if info.start <= 0.0 && info.end >= 0.0 {
             let mapped_x = (-info.start) / (info.end - info.start) * info.w as f32 + rect.x as f32;
-            self.drawer2D.rounded_rect_color(mapped_x - 1.0, rect.y, 2, info.h, coord_color);
+            self.drawer2D.rect_color(mapped_x - 1.0, rect.y, 2, info.h, coord_color);
         }
 
 
@@ -74,7 +74,7 @@ impl Ui{
             let x1 = rect.x + i;
 
             let mapped_y = map_to_pixel_space(y, info.h as f32, data_range, min_y) + rect.y as f32;
-            self.drawer2D.rounded_rect_color(x1 , mapped_y, 1, 1, graph_color);
+            self.drawer2D.rect_color(x1 , mapped_y, 1, 1, graph_color);
             i += 1;
             x += step;
         }

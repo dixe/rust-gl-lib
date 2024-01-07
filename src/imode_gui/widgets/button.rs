@@ -1,4 +1,4 @@
-use super::*;
+ use super::*;
 
 pub enum ButtonContent<'a> {
     Text(&'a str),
@@ -11,6 +11,13 @@ impl Ui{
 
     pub fn button_at_empty(&mut self, rect: Rect) -> bool {
         self.button_base(ButtonContent::None, rect)
+    }
+
+
+    pub fn button_at_text_fixed(&mut self, text: &str, rect: Rect) -> bool {
+        // TODO check that text is inside rect
+        self.button_base(ButtonContent::Text(text), rect)
+
     }
 
     pub fn button_at_text(&mut self, text: &str, x: i32, y: i32) -> bool {
@@ -90,33 +97,26 @@ impl Ui{
 
         let mut color = self.style.button.color;
         let mut text_color = self.style.button.text_color;
-        if self.is_hot(id) {
-            color = self.style.button.hover_color;
-        }
+
+        let r = self.style.button.radius.get(rect);
 
         if self.is_active(id) {
             color = self.style.button.active_color;
         }
 
-        let x_off = if self.is_active(id) {0} else {0};
-        let y_off = if self.is_active(id) {0} else {0};
+        // outline
+        if self.is_hot(id) {
+            self.drawer2D.rounded_rect_color(rect.x, rect.y , rect.w, rect.h, r, self.style.button.hover_color);
 
-
-        // black border
-        if !self.is_active(id) {
-            let z = self.drawer2D.z;
-            self.drawer2D.z = z - 0.1;
-            self.drawer2D.rounded_rect_color(rect.x - 1, rect.y - 1 , rect.w + 2, rect.h + 2, Color::Rgb(0,0,0));
-            self.drawer2D.z = z;
         }
-
-
 
         let pad_l = self.style.padding.left;
         let pad_t = self.style.padding.top;
 
-        self.drawer2D.rounded_rect_color(rect.x + x_off , rect.y + y_off, rect.w, rect.h, color);
+        // background
+        self.drawer2D.rounded_rect_color(rect.x + 1 , rect.y + 1, rect.w - 2, rect.h - 2, r,  color);
 
+        // text
         match content {
             ButtonContent::Text(text) => {
                 let pxs = self.style.text_styles.button.pixel_size;

@@ -53,7 +53,7 @@ impl Triangle {
 
     }
 
-    fn edges(&self) -> Vec<(V3, V3)> {
+    pub fn edges(&self) -> Vec<(V3, V3)> {
         vec! [
             (self.v0, self.v1),
             (self.v1, self.v2),
@@ -61,7 +61,7 @@ impl Triangle {
         ]
     }
 
-    fn edge_normals(&self) -> Vec<EdgeWithNormal> {
+    pub fn edge_normals(&self) -> Vec<EdgeWithNormal> {
 
         vec! [
             EdgeWithNormal {

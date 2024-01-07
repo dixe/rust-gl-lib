@@ -118,3 +118,18 @@ impl ScreenBox {
         self.y + self.height
     }
 }
+
+struct Geom<T1: math::numeric::Numeric, T2: math::numeric::Numeric, T3: math::numeric::Numeric, T4: math::numeric::Numeric> {
+    x: T1,
+    y: T2,
+    w: T3,
+    h: T4
+}
+
+
+pub struct ScreenSpaceCoords {
+    pub left: f32,
+    pub right: f32,
+    pub top: f32,
+    pub bottom: f32
+}

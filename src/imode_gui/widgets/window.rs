@@ -126,14 +126,14 @@ impl Ui{
             self.drawer2D.z = window.base_container_context.base_z - 0.1;
 
             // Background
-            self.drawer2D.rounded_rect_color(anchor.x,
+            self.drawer2D.rect_color(anchor.x,
                                              anchor.y,
                                              window_w,
                                              window_h,
                                              bg_color);
             // window Top Bar
 
-            self.drawer2D.rounded_rect_color(anchor.x,
+            self.drawer2D.rect_color(anchor.x,
                                              anchor.y - window.top_bar_size.y,
                                              window.top_bar_size.x,
                                              window.top_bar_size.y,
@@ -157,13 +157,13 @@ impl Ui{
 
 
             // left vertical
-            self.drawer2D.rounded_rect_color(tl.x, tl.y, thickness, bl.y - tl.y, color);
+            self.drawer2D.rect_color(tl.x, tl.y, thickness, bl.y - tl.y, color);
 
             // right vertical
-            self.drawer2D.rounded_rect_color(tr.x, tr.y, thickness, br.y - tr.y, color);
+            self.drawer2D.rect_color(tr.x, tr.y, thickness, br.y - tr.y, color);
 
             // bottom horizontal
-            self.drawer2D.rounded_rect_color(bl.x, bl.y, br.x - bl.x + thickness, thickness, color);
+            self.drawer2D.rect_color(bl.x, bl.y, br.x - bl.x + thickness, thickness, color);
 
 
             // Reset matchContent width and height

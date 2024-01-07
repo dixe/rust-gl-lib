@@ -3,7 +3,7 @@
 //!
 //! The source can also serve as an inspiration or reference when implementing
 //! new struct for a more specific task.
-
+use crate::gl;
 
 pub mod square;
 
@@ -32,3 +32,8 @@ pub mod gltf_mesh;
 pub mod sprite_sheet;
 
 pub mod cubemap;
+
+
+pub trait RenderObject {
+    fn render(&self, gl: &gl::Gl);
+}

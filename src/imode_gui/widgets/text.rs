@@ -107,14 +107,14 @@ impl Ui {
 
         let color = Color::Rgb(250, 250, 250);
         // background
-        self.drawer2D.rounded_rect_color(rect.x , rect.y, rect.w, rect.h, color);
+        self.drawer2D.rect_color(rect.x , rect.y, rect.w, rect.h, color);
 
         if active {
         // cursor
             let render_box = self.drawer2D.text_render_box_with_font_name(txt, pixel_size, font_name);
 
             let cursor_color = Color::Rgb(5,5,5);
-            self.drawer2D.rounded_rect_color(rect.x + 2 + render_box.total_width as i32, rect.y + 2, 5, pixel_size, cursor_color);
+            self.drawer2D.rect_color(rect.x + 2 + render_box.total_width as i32, rect.y + 2, 5, pixel_size, cursor_color);
         }
         // draw the text input
         self.drawer2D.render_text_from_font_name(txt, rect.x, rect.y, pixel_size, font_name);

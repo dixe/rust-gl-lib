@@ -13,7 +13,7 @@ impl Ui {
         let id = self.next_id();
 
         let mut rect = Rect {
-            x: 10, y: 10, w:100, h: 20
+            x: 0, y: 00, w:100, h: 20
         };
 
         rect = self.layout_rect(rect);
@@ -60,23 +60,35 @@ impl Ui {
 
         let item_in_range = f64::min(f64::max(min_f64, item_f64), max_f64);
 
-        let x_f64 = ((item_in_range - min_f64) / (max_f64 - min_f64)) * ((rect.w - knob_width) as f64);
+        let x_f64 = knob_width as f64 / 2.0 + ((item_in_range - min_f64) / (max_f64 - min_f64)) * ((rect.w as f64 - knob_width as f64) as f64);
 
         let x = x_f64.round() as i32;
 
-        // Slider background
-        let mut bg_color = Color::RgbA(40, 98, 118, 128);
+        // SLIDER BACKGROUND
+        let mut bg_color = Color::RgbA(220, 220, 220, 255);
 
-        self.drawer2D.rounded_rect_color(rect.x, rect.y + rect.h/ 2 - 1,  rect.w, 2, bg_color);
+        // original
+
+        self.drawer2D.rounded_rect_color(rect.x, rect.y,  rect.w, rect.h, rect.h / 3, bg_color);
 
 
-        // slider knob
-        let mut color = Color::RgbA(49, 172, 181, 128);
+        // SLIDER KNOB
+        let mut color_outline = Color::RgbA(50, 50, 50, 255);
         if self.is_hot(id) {
-            color = Color::RgbA(49, 130, 100, 128);
+            color_outline = Color::RgbA(40, 40, 40, 255);
         }
 
-        self.drawer2D.rounded_rect_color(rect.x + x, rect.y, knob_width, rect.h , color);
+        // draw the outline
+        let r = (knob_width as f64) / 2.0;
+        if self.is_hot(id) {
+            self.drawer2D.circle(rect.x + x, rect.y + rect.h / 2, r + 0.7, color_outline);
+        } else {
+            self.drawer2D.circle(rect.x + x, rect.y + rect.h / 2, r, color_outline);
+        }
+
+        // draw inner part
+
+        self.drawer2D.circle(rect.x + x, rect.y + rect.h / 2, r - 1.3 , bg_color);
 
         self.is_active(id)
     }
@@ -132,7 +144,7 @@ impl Ui {
 
         // Draw box
 
-        self.drawer2D.rounded_rect_color(rect.x, rect.y, rect.w, rect.h, Color::Rgb(200, 179, 171));
+        self.drawer2D.rect_color(rect.x, rect.y, rect.w, rect.h, Color::Rgb(200, 179, 171));
 
         // TODO: maybe just use text renderercenter alignemnt
         let x = rect.x + self.style.padding.x();
@@ -190,7 +202,7 @@ impl Ui {
         let y_max = y_max_t.to_f64();
 
         let bg_color = Color::Rgb(240, 240, 240);
-        self.drawer2D.rounded_rect_color(rect.x, rect.y, rect.w, rect.h, bg_color);
+        self.drawer2D.rect_color(rect.x, rect.y, rect.w, rect.h, bg_color);
         let center_x = rect.x as f64 + ((x - x_min) / (x_max - x_min)) * rect.w as f64;
         let center_y = rect.y as f64 + ((y - y_min) / (y_max - y_min)) * rect.h as f64;
 

@@ -93,7 +93,7 @@ impl FrameBuffer {
         }
     }
 
-    /// bind FRAME BUFFER FOR BOTH READ AND WRITE
+    /// BIND FRAME BUFFER FOR BOTH READ AND WRITE
     pub fn bind_and_clear(&self, clear_bits: u32) {
         unsafe {
             self.gl.BindFramebuffer(gl::FRAMEBUFFER, self.fbo);

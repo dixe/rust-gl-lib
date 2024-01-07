@@ -5,12 +5,17 @@ use super::*;
 impl Ui {
 
     /// returns true when mouse down on drag point, so when activated.
-    pub fn drag_point(&mut self, pos: &mut Pos, r: f64) -> bool {
+    pub fn drag_point<T>(&mut self, p: &mut T, r: f64) -> bool where
+    T: ToPos{
 
-        let (_, res) = self.drag_point_no_draw(pos, r);
+        let mut pos = p.to_pos();
+        let (_, res) = self.drag_point_no_draw(&mut pos, r);
 
         // Draw
         self.drawer2D.circle(pos.x, pos.y, r as i32,self.style.button.color);
+
+        p.from_pos(pos);
+
         res
     }
 

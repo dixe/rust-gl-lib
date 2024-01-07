@@ -31,6 +31,7 @@ impl Color {
         Color::RgbAf32(c.x, c.y, c.z, c.w)
     }
 
+
     pub fn as_vec4(&self) -> na::Vector4::<f32> {
         match *self {
             Color::Rgb(r,g,b) => na::Vector4::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0),
@@ -67,6 +68,16 @@ impl Color {
         };
 
         *self = r;
+    }
+
+
+    // Colors
+    pub fn black() -> Self {
+        Color::Rgb(0,0,0)
+    }
+
+    pub fn white() -> Self {
+        Color::Rgb(255, 255, 255)
     }
 }
 

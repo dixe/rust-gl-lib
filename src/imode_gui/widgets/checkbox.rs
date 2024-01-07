@@ -1,7 +1,7 @@
 use super::*;
 
 impl Ui {
-    pub fn checkbox(&mut self, val: &mut bool) {
+    pub fn checkbox(&mut self, checked: &mut bool) {
         let id = self.next_id();
 
         let mut rect = Rect {
@@ -17,7 +17,7 @@ impl Ui {
         if self.is_active(id) {
             if self.mouse_up {
                 if self.is_hot(id) {
-                    *val = !*val;
+                    *checked = !*checked;
                 }
                 self.set_not_active();
 
@@ -29,29 +29,37 @@ impl Ui {
             }
         }
 
-        // Draw it
-        let mut color = Color::Rgb(200, 200, 200);
-        //
-        // bg color
-        self.drawer2D.rounded_rect_color(rect.x , rect.y, rect.w, rect.h, color);
+        // Draw it, same style as button
+        let r = self.style.button.radius.get(rect);
+        let mut color = self.style.button.color;
+        let mut thickness = 1.3;
 
-        color = Color::Rgb(150, 150, 150);
-
-        if self.is_hot(id) {
-            color = Color::Rgb(100, 100, 100);
-        }
 
         if self.is_active(id) {
-            color = Color::Rgb(40, 40, 40);
+            color = self.style.button.active_color;
+            // also update outline maybe
+            thickness = 1.6;
         }
 
-        if *val {
+        // outline
+        if self.is_hot(id) {
+            self.drawer2D.rounded_rect_color(rect.x, rect.y , rect.w, rect.h, r, self.style.button.hover_color);
+        }
+
+        // background
+        self.drawer2D.rounded_rect_color(rect.x + 1 , rect.y + 1, rect.w - 2, rect.h - 2, r,  color);
+
+        // checkmark
+        if *checked {
             color = Color::Rgb(5, 5, 5);
+            //self.drawer2D.rounded_rect_color(rect.x + 2 , rect.y + 2, rect.w -4 , rect.h -4, rect.h / 2, color);
+
+
+            // maybe try to do a check with two line
+            self.drawer2D.line(rect.x + 5 , rect.y + 10, rect.x + 10, rect.y + 16, thickness);
+
+            self.drawer2D.line(rect.x + 10, rect.y + 16, rect.x + 16 , rect.y + 4, thickness);
         }
-
-        self.drawer2D.rounded_rect_color(rect.x + 2 , rect.y + 2, rect.w -4 , rect.h -4, color);
-
-
 
 
     }

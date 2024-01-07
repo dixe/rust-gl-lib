@@ -70,7 +70,7 @@ fn main() -> Result<(), failure::Error> {
         }
 
 
-        ui.drawer2D.rounded_rect_color(player.pos.x, player.pos.y, 30, 30, player_color);
+        ui.drawer2D.rect_color(player.pos.x, player.pos.y, 30, 30, player_color);
 
         match mode {
             Mode::Play(elapsed) => {

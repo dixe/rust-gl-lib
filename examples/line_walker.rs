@@ -261,7 +261,7 @@ fn calc_joint_angles(body_pos: V2, limb: &Limb) -> Angles {
 fn draw_with_center(ui: &mut Ui, center: V2, width: i32, color: Color) {
     let w_half = width/2;
 
-    ui.drawer2D.rounded_rect_color(center.x as i32 - w_half, center.y as i32 - w_half, width, width, color);
+    ui.drawer2D.rect_color(center.x as i32 - w_half, center.y as i32 - w_half, width, width, color);
 }
 
 

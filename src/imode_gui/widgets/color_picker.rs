@@ -29,7 +29,7 @@ impl Ui{
             rect = self.layout_rect(rect);
 
             // draw a background for our colorpicker
-            self.drawer2D.rounded_rect_color(rect.x, rect.y, rect.w, rect.h, Color::Rgb(162, 179, 171));
+            self.drawer2D.rect_color(rect.x, rect.y, rect.w, rect.h, Color::Rgb(162, 179, 171));
 
             self.set_active_context(id, rect);
 
@@ -83,7 +83,7 @@ impl Ui{
                     self.set_active(id);
                 }
             }
-            self.drawer2D.rounded_rect_color(rect.x, rect.y, rect.w, rect.h, *color)
+            self.drawer2D.rect_color(rect.x, rect.y, rect.w, rect.h, *color)
         }
 
     }
@@ -136,7 +136,7 @@ impl Ui{
 
         // Draw target
         let x = (rect.w as f32 * h / 360.0) as i32;
-        self.drawer2D.rounded_rect_color(rect.x + x, rect.y, 5, rect.h, Color::Rgb(30, 30, 30));
+        self.drawer2D.rect_color(rect.x + x, rect.y, 5, rect.h, Color::Rgb(30, 30, 30));
     }
 
     fn color_square(&mut self, color: &mut Color) -> Rect {

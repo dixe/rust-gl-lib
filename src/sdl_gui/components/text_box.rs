@@ -3,7 +3,7 @@ use crate::shader::rounded_rect_shader::{RoundedRectShader, Uniforms};
 use crate::text_rendering::text_renderer::{
     TextAlignment, TextAlignmentX, TextAlignmentY, TextRenderer,
 };
-use crate::{gl, objects::square, shader::TransformationShader, ScreenBox};
+use crate::{gl, shader::TransformationShader, objects::{RenderObject, square}, ScreenBox};
 use std::fmt;
 
 #[derive(Debug, Clone)]

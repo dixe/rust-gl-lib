@@ -110,6 +110,10 @@ impl Ui {
         self.deltatime.time()
     }
 
+    pub fn fps(&self) -> f32 {
+        1.0 / self.deltatime.time()
+    }
+
     pub fn set_hot(&mut self, id: Id) {
         self.ctx_fn(|ctx| ctx.set_hot(id));
     }

@@ -20,6 +20,37 @@ pub mod style;
 
 pub type Pos = na::Vector2::<i32>;
 
+pub trait ToPos {
+    fn to_pos(&self) -> Pos;
+
+    fn from_pos(&mut self, p: Pos);
+}
+
+impl ToPos for Pos {
+
+    fn to_pos(&self) -> Pos {
+        *self
+    }
+
+    fn from_pos(&mut self, p: Pos) {
+        *self = p;
+    }
+}
+
+
+
+impl ToPos for na::Vector2::<f32> {
+
+    fn to_pos(&self) -> Pos {
+        Pos::new(self.x as i32, self.y as i32)
+    }
+
+    fn from_pos(&mut self, p: Pos) {
+        self.x = p.x as f32;
+        self.y = p.y as f32;
+    }
+}
+
 #[derive(Debug, Clone, Default, Copy, PartialEq, Hash, Eq)]
 pub struct Id {
     widget_id: u64,

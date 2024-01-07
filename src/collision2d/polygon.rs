@@ -32,6 +32,25 @@ impl Polygon {
         c / self.vertices.len() as f32
     }
 
+
+    pub fn bounding_box_size(&self) -> V2 {
+
+        let mut min_x = self.vertices[0].x;
+        let mut min_y = self.vertices[0].y;
+        let mut max_x = self.vertices[0].x;
+        let mut max_y = self.vertices[0].y;
+
+        for v in &self.vertices {
+            min_x = f32::min(min_x, v.x);
+            min_y = f32::min(min_y, v.y);
+
+            max_x = f32::max(max_x, v.x);
+            max_y = f32::max(max_y, v.y);
+        }
+
+        V2::new(max_x - min_x, max_y - min_y)
+    }
+
     pub fn interpolate(target_poly: &mut Polygon, polygon_1: &Polygon, t_1: &PolygonTransform, polygon_2: &Polygon, t_2: &PolygonTransform, t: f32) -> Option<PolygonTransform> {
 
         let len = polygon_1.vertices.len();

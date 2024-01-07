@@ -1,10 +1,10 @@
 use crate::buffer;
 use crate::gl;
-
+use super::RenderObject;
 
 pub struct TextureQuad {
     vao: buffer::VertexArray,
-    _vbo: buffer::ArrayBuffer,
+    vbo: buffer::ArrayBuffer,
     _ebo: buffer::ElementArrayBuffer
 }
 
@@ -37,16 +37,11 @@ impl TextureQuad {
 
             // 2.
             vbo.bind();
-            vbo.static_draw_data(&vertices);
+            vbo.dynamic_draw_data(&vertices);
 
             // 3
             ebo.bind();
-            gl.BufferData(
-                gl::ELEMENT_ARRAY_BUFFER,
-                (indices.len() * std::mem::size_of::<u32>()) as gl::types::GLsizeiptr,
-                indices.as_ptr() as *const gl::types::GLvoid,
-                gl::STATIC_DRAW);
-
+            ebo.static_draw_data(&indices);
 
             // 4.
             gl.VertexAttribPointer(
@@ -79,12 +74,47 @@ impl TextureQuad {
 
         TextureQuad {
             vao,
-            _vbo: vbo,
+            vbo,
             _ebo: ebo,
         }
     }
 
+
+
+    pub fn sub_data(&self, pos_data: &[f32; 12], tex_data: &[f32; 8]) {
+
+        let data: Vec<f32> = vec![
+            // positions                             // texture coords
+            pos_data[0], pos_data[1], pos_data[2],    tex_data[0], tex_data[1],
+            pos_data[3], pos_data[4], pos_data[5],    tex_data[2], tex_data[3],
+            pos_data[6], pos_data[7], pos_data[8],    tex_data[4], tex_data[5],
+            pos_data[9], pos_data[10], pos_data[11],  tex_data[6], tex_data[7],
+        ];
+
+        self.vbo.bind();
+        self.vbo.sub_data(&data, 0);
+        self.vbo.unbind();
+    }
+
     pub fn render(&self, gl: &gl::Gl) {
+        self.vao.bind();
+        unsafe {
+            // draw
+            gl.DrawElements(
+                gl::TRIANGLES,
+                6,
+                gl::UNSIGNED_INT,
+                0 as *const gl::types::GLvoid
+            );
+        }
+
+        self.vao.unbind();
+    }
+}
+
+
+impl RenderObject for TextureQuad {
+    fn render(&self, gl: &gl::Gl) {
         self.vao.bind();
         unsafe {
             // draw

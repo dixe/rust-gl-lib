@@ -3,7 +3,7 @@ use crate::gl;
 use crate::shader::BaseShader;
 use nalgebra as na;
 use na::vector;
-
+use super::RenderObject;
 
 use failure;
 
@@ -13,6 +13,26 @@ pub struct Square {
     vbo: buffer::ArrayBuffer,
     _ebo: buffer::ElementArrayBuffer,
 }
+
+
+impl RenderObject for Square {
+     fn render(&self, gl: &gl::Gl) {
+        self.vao.bind();
+
+        unsafe {
+            // draw
+            gl.DrawElements(
+                gl::TRIANGLES,
+                6,
+                gl::UNSIGNED_INT,
+                0 as *const gl::types::GLvoid
+            );
+        }
+
+        self.vao.unbind();
+    }
+}
+
 
 impl Square {
 
@@ -84,6 +104,14 @@ impl Square {
         self.vbo.unbind();
     }
 
+    pub fn sub_data_all(&self, data: &[f32; 8]) {
+
+        self.vbo.bind();
+        self.vbo.sub_data(data, 0);
+        self.vbo.unbind();
+    }
+
+
     /// Creates a basic default shader that takes a mat4 transformation uniform transform
     pub fn default_shader(gl: &gl::Gl) -> Result<BaseShader, failure::Error> {
 
@@ -108,21 +136,6 @@ void main()
         BaseShader::new(gl, vert_source, frag_source)
     }
 
-    pub fn render(&self, gl: &gl::Gl) {
-        self.vao.bind();
-
-        unsafe {
-            // draw
-            gl.DrawElements(
-                gl::TRIANGLES,
-                6,
-                gl::UNSIGNED_INT,
-                0 as *const gl::types::GLvoid
-            );
-        }
-
-        self.vao.unbind();
-    }
 
     pub fn line_2d_transform(from_world: na::Vector2::<f32>, to_world: na::Vector2::<f32>, screen_w: f32, screen_h: f32, width: f32) -> na::Matrix4::<f32> {
         // use X axis as the long axis, scale y and z to width

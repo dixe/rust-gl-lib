@@ -7,8 +7,10 @@ use crate::shader::{ Shader, TransformationShader, PosColorShader,
                      rounded_rect_shader::{self as rrs, RoundedRectShader},
                      circle_shader::{self as cs, CircleShader},
                      circle_outline_shader::{self as cos, CircleOutlineShader},
-                     texture_shader::{self as ts, TextureShader}};
-use crate::objects::{square, color_square, texture_quad, polygon, sprite_sheet};
+                     texture_shader::{self as ts, TextureShader},
+                     viewport_shader::{self as vps, ViewportShader}
+   };
+use crate::objects::{RenderObject, square, color_square, texture_quad, polygon, sprite_sheet};
 use crate::color::Color;
 use crate::helpers::SetupError;
 use crate::text_rendering::font::Font;
@@ -16,7 +18,8 @@ use crate::text_rendering::font_cache::FontCache;
 use crate::texture::TextureId;
 use crate::imode_gui::viewport::Viewport;
 use crate::math::numeric::Numeric;
-
+use crate::shader::BaseShader;
+use crate::Geom;
 
 pub struct Drawer2D {
     // general
@@ -38,6 +41,7 @@ pub struct Drawer2D {
     pub circle_shader: CircleShader,
     pub circle_outline_shader: CircleOutlineShader,
     pub texture_shader: TextureShader,
+    pub viewport_shader: ViewportShader,
     pub polygon_shader: Box::<Shader>,
     polygon_vertex_buffer: Vec::<f32>,
     polygon_indices_buffer: Vec::<u32>,
@@ -52,7 +56,6 @@ pub struct Drawer2D {
 impl Drawer2D {
 
     pub fn new(gl: &gl::Gl, viewport: viewport::Viewport) -> Result<Self, SetupError> {
-
 
         let inner_font = Default::default();
         let font = Font::msdf(gl, inner_font);
@@ -70,6 +73,7 @@ impl Drawer2D {
         let color_square_shader = Box::new(color_square::ColorSquare::default_shader(&gl)?);
 
         let texture_shader = TextureShader::new(gl)?;
+        let viewport_shader = ViewportShader::new(gl)?;
 
 
         let color_square_h_line_shader = Box::new(color_square::ColorSquare::h_line_shader(&gl)?);
@@ -100,8 +104,67 @@ impl Drawer2D {
             polygon_vertex_buffer: vec![],
             color_square_h_line_shader,
             z: 0.0,
+            viewport_shader,
             color: Color::Rgb(0,0,0)
         })
+    }
+
+
+    fn reload_shader(gl: &gl::Gl, name: &str, reference: &mut BaseShader) {
+
+        let vert_path = &format!("../rust-gl-lib/assets/shaders/objects/{}.vert", name);
+        let frag_path = &format!("../rust-gl-lib/assets/shaders/objects/{}.frag", name);
+        let vert = match std::fs::read_to_string(vert_path) {
+            Ok(v) => v,
+            Err(e) => {
+                println!("Could not file vertex shader for {} looked in {:?}", name, vert_path);
+                return;
+            }
+        };
+
+
+        let frag = match std::fs::read_to_string(frag_path) {
+            Ok(f) => f,
+            Err(e) => {
+                println!("Could not file fragment shader for {} looked in {:?}", name,  frag_path);
+                return;
+            }
+        };
+
+        let shader = BaseShader::new(gl, &vert, &frag);
+
+        match shader {
+            Ok(s) => {
+                *reference = s;
+                println!("Reloaded shader: {}", name);
+            },
+            Err(e) => {
+                println!("Error comiling {} {}", name, e);
+            }
+        }
+    }
+
+    /// Assume that shaders are in the asset folder, as when building
+    /// used for debugging
+    pub fn reload_all_shaders(&mut self) {
+
+        Self::reload_shader(&self.gl, "rounded_rect", &mut self.rounded_rect_shader.shader);
+
+        Self::reload_shader(&self.gl, "image", &mut self.texture_shader.shader);
+/*
+        self.circle_shader = CircleShader::new(&self.gl)?;
+
+        self.circle_outline_shader = CircleOutlineShader::new(&self.gl)?;
+        self.color_square_shader = Box::new(color_square::ColorSquare::default_shader(&&self.gl)?);
+
+        self.texture_shader = TextureShader::new(&self.gl)?;
+
+
+        self.color_square_h_line_shader = Box::new(color_square::ColorSquare::h_line_shader(&&self.gl)?);
+
+        self.polygon_shader = Box::new(polygon::Polygon::create_shader(&self.gl)?);
+
+*/
     }
 
     pub fn update_viewport(&mut self, w: i32, h: i32) {
@@ -149,7 +212,7 @@ impl Drawer2D {
 
         let geom = Geom { x, y, w, h };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+        let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
         self.color_square_shader.set_mat4(&self.gl, "transform", transform);
 
         self.color_square.render(&self.gl);
@@ -169,7 +232,7 @@ impl Drawer2D {
             h: r * 2.0,
         };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+        let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
 
 
         self.circle_shader.set_transform(transform);
@@ -207,7 +270,7 @@ impl Drawer2D {
             h: r * 2.0,
         };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+        let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
 
 
         self.circle_outline_shader.set_transform(transform);
@@ -228,7 +291,7 @@ impl Drawer2D {
 
 
     pub fn rounded_rect<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&self, x: T1, y: T2, w: T3, h: T4) {
-        self.rounded_rect_color(x, y, w, h, Color::Rgb(100, 100, 100));
+        self.rect_color(x, y, w, h, Color::Rgb(100, 100, 100));
     }
 
 
@@ -264,7 +327,7 @@ impl Drawer2D {
 
         let geom = Geom { x, y, w, h };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+        let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
 
         self.color_square_h_line_shader.set_mat4(&self.gl, "transform", transform);
 
@@ -272,27 +335,30 @@ impl Drawer2D {
 
     }
 
-    pub fn rounded_rect_color<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&self, x: T1, y: T2, w: T3, h: T4, color: Color) {
 
+    pub fn rounded_rect_color<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric>(&self, x: T1, y: T2, w: T3, h: T4, r: T5, color: Color) {
         self.rounded_rect_shader.shader.set_used();
 
         let geom = Geom { x, y, w, h };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0,  &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+        let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
 
 
         self.rounded_rect_shader.set_transform(transform);
 
 
         self.rounded_rect_shader.set_uniforms(rrs::Uniforms { color,
-                                                             pixel_height: geom.w.to_f32(),
+                                                             pixel_height: geom.h.to_f32(),
                                                              pixel_width: geom.w.to_f32(),
-                                                             radius: 0.0
+                                                             radius: r.to_f32(),
         });
 
         self.square.render(&self.gl);
     }
 
+    pub fn rect_color<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&self, x: T1, y: T2, w: T3, h: T4, color: Color) {
+        self.rounded_rect_color(x, y, w, h, 0.0, color)
+    }
 
     /// Get render box with the default font in text renderer
     pub fn text_render_box(&self, text: &str, pixel_size: i32) -> TextRenderBox {
@@ -346,12 +412,54 @@ impl Drawer2D {
             h: size.y
         };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+        let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
         self.texture_shader.setup(ts::Uniforms { texture_id, transform });
 
         self.texture_square.render(&self.gl);
     }
 
+
+    /// render the texture in texture_id, at x,y with size and rotation angle in radians
+    pub fn render_img_rot(&mut self, texture_id: TextureId, x: i32, y: i32, rot: RotationWithOrigin, size: na::Vector2::<f32>) {
+
+        self.texture_shader.shader.set_used();
+
+        let geom = Geom {
+            x,
+            y,
+            w: size.x,
+            h: size.y
+        };
+
+
+        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+
+        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
+
+        self.texture_square.render(&self.gl);
+
+    }
+
+    /// render the texture in texture_id, at x,y with size and rotation angle in radians
+    pub fn render_img_custom_obj(&mut self, texture_id: TextureId, render_obj: &(impl RenderObject), x: i32, y: i32, rot: RotationWithOrigin, size: na::Vector2::<f32>) {
+
+        self.texture_shader.shader.set_used();
+
+        let geom = Geom {
+            x,
+            y,
+            w: size.x,
+            h: size.y
+        };
+
+
+        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+
+        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
+
+        render_obj.render(&self.gl);
+
+    }
 
     /// render the texture_id_id, at x,y with size using the cusom shader
     pub fn render_img_custom_shader(&mut self, texture_id: TextureId, x: i32, y: i32, size: na::Vector2::<f32>, shader: &TextureShader) {
@@ -365,7 +473,7 @@ impl Drawer2D {
             h: size.y
         };
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+        let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
         shader.setup(ts::Uniforms { texture_id, transform });
 
         self.texture_square.render(&self.gl);
@@ -386,7 +494,7 @@ impl Drawer2D {
 
         let y_flip = if sprite.flip_y { -1.0} else { 1.0};
 
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(size.x.to_f32() / 2.0, size.y.to_f32()), y_flip, self.z);
+        let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(size.x.to_f32() / 2.0, size.y.to_f32()), y_flip, self.z);
         self.texture_shader.setup(ts::Uniforms { texture_id, transform });
 
         let l = sprite.pixel_l as f32 / sprite.sheet_size.x;
@@ -400,31 +508,67 @@ impl Drawer2D {
     }
 
 
-    /// render the texture in texture_id, at x,y with size and rotation angle in radians
-    pub fn render_img_rot(&mut self, texture_id: TextureId, x: i32, y: i32, radians: f32, size: na::Vector2::<f32>) {
+    /// render object where vertices data is in viewport space/worldspace
+    pub fn render_viewport_obj(&mut self, obj: &RenderObject, color: Color) {
+        self.viewport_shader.shader.set_used();
 
-        self.texture_shader.shader.set_used();
+        let transform =  Orthographic3::new(0.0, self.viewport.w as f32, 0.0, self.viewport.h as f32, -10.0, 100.0);
 
-        let geom = Geom {
-            x,
-            y,
-            w: size.x,
-            h: size.y
-        };
+        self.viewport_shader.setup(vps::Uniforms { transform: transform.into(), color });
 
-
-        let transform = unit_square_transform_matrix(&geom, 0.0, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
-
-        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
-
-        self.texture_square.render(&self.gl);
-
-        self.texture_square.render(&self.gl);
-
+        obj.render(&self.gl);
     }
+
+
 }
 
 
+pub enum RotationWithOrigin {
+    Center(f32),
+    TopLeft(f32),
+    TopRight(f32),
+}
+
+impl RotationWithOrigin {
+
+    pub fn to_homogeneous(&self, w: f32, h: f32) -> na::Matrix4::<f32> {
+        // we want to rotate the specified angle
+        match self {
+            Self::Center(rot) => {
+                let rot = Rotation::from_euler_angles(0.0, 0.0, *rot);
+                return rot.to_homogeneous();
+            },
+            Self::TopLeft(rot) => {
+                // first move top left corner to origin, the rotate, them move back
+
+                let w_half = w/2.0;
+                let h_half = h/2.0;
+                let t1 = Translation3::new(w_half, -h_half, 0.0);
+                let t2 = Translation3::new(-w_half, h_half, 0.0);
+
+                let rot = Rotation::from_euler_angles(0.0, 0.0, *rot);
+
+
+                return t2.to_homogeneous() * rot.to_homogeneous() * t1.to_homogeneous();
+            },
+            Self::TopRight(rot) => {
+                // first move top left corner to origin, the rotate, them move back
+
+                let w_half = w/2.0;
+                let h_half = h/2.0;
+                let t1 = Translation3::new(-w_half, -h_half, 0.0);
+                let t2 = Translation3::new(w_half, h_half, 0.0);
+
+                let rot = Rotation::from_euler_angles(0.0, 0.0, *rot);
+
+
+                return t2.to_homogeneous() * rot.to_homogeneous() * t1.to_homogeneous();
+            }
+
+        }
+
+    }
+}
 
 
 pub struct SheetSubSprite {
@@ -504,7 +648,7 @@ pub fn unit_line_transform<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T
 
 fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric + std::fmt::Debug>(
     geom: &Geom<T1, T2, T3, T4>,
-    radians: f32,
+    rot: RotationWithOrigin,
     viewport: &viewport::Viewport,
     anchor: na::Vector2::<T5>,
     y_flip: f32,
@@ -514,9 +658,8 @@ fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numer
     scale[0] = geom.w.to_f32();
     scale[5] = geom.h.to_f32();
 
-    // we want to rotate the specified angle
-    let rot = Rotation::from_euler_angles(0.0, 0.0, radians);
 
+    let rot_mat = rot.to_homogeneous(geom.w.to_f32(), geom.h.to_f32());
 
     // Unit len square and center at 0.0. So for anchor 0,0 as top left corner
     // move 0.5 * x_scale along x, and - 0.5 * y_scale along y
@@ -537,7 +680,8 @@ fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numer
     flip[0] = y_flip;
     flip[5] = 1.0;
 
-    proj.to_homogeneous() * t.to_homogeneous() * rot.to_homogeneous() * flip * scale
+
+    proj.to_homogeneous() * t.to_homogeneous() * rot_mat * flip * scale
 
 }
 
@@ -555,13 +699,6 @@ fn polygon(gl: &gl::Gl, polygon: &mut polygon::Polygon, polygon_shader: &Box::<S
     polygon_shader.set_mat4(&gl, "transform", transform);
 
     polygon.render(&gl);
-}
-
-struct Geom<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric> {
-    x: T1,
-    y: T2,
-    w: T3,
-    h: T4
 }
 
 

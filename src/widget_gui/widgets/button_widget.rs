@@ -2,8 +2,6 @@ use crate::widget_gui::*;
 use crate::widget_gui::render;
 use crate::text_rendering::text_renderer::TextRenderer;
 
-
-
 #[derive(Debug, Clone)]
 pub struct ButtonWidget {
     pub text: String,
