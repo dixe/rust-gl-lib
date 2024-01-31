@@ -79,6 +79,18 @@ impl Color {
     pub fn white() -> Self {
         Color::Rgb(255, 255, 255)
     }
+
+    pub fn red() -> Self {
+        Color::Rgb(255, 0, 0)
+    }
+
+    pub fn green() -> Self {
+        Color::Rgb(0, 255, 0)
+    }
+
+    pub fn blue() -> Self {
+        Color::Rgb(0, 0, 255)
+    }
 }
 
 

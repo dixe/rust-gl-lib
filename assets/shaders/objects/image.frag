@@ -10,8 +10,10 @@ in VS_OUTPUT {
 void main()
 {
   vec4 col = texture2D(text_map, IN.TexCoords);
+
   //col.xyz = IN.TexCoords.xxx;
   //col.w = 1.0;
   // assume premultiplied in texture
+
   FragColor = col;
 }

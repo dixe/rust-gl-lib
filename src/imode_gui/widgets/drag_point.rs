@@ -12,7 +12,7 @@ impl Ui {
         let (_, res) = self.drag_point_no_draw(&mut pos, r);
 
         // Draw
-        self.drawer2D.circle(pos.x, pos.y, r as i32,self.style.button.color);
+        self.drawer2D.circle(pos.x, pos.y, r as i32, self.style.drag_point);
 
         p.from_pos(pos);
 

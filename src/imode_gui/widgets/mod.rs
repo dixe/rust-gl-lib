@@ -35,3 +35,6 @@ pub use img::*;
 
 mod polygon;
 pub use polygon::*;
+
+mod cell_grid;
+pub use cell_grid::*;

@@ -20,6 +20,8 @@ use crate::imode_gui::viewport::Viewport;
 use crate::math::numeric::Numeric;
 use crate::shader::BaseShader;
 use crate::Geom;
+use crate::typedef::V2;
+
 
 pub struct Drawer2D {
     // general
@@ -151,6 +153,8 @@ impl Drawer2D {
         Self::reload_shader(&self.gl, "rounded_rect", &mut self.rounded_rect_shader.shader);
 
         Self::reload_shader(&self.gl, "image", &mut self.texture_shader.shader);
+
+        Self::reload_shader(&self.gl, "viewport", &mut self.viewport_shader.shader);
 /*
         self.circle_shader = CircleShader::new(&self.gl)?;
 
@@ -527,6 +531,7 @@ pub enum RotationWithOrigin {
     Center(f32),
     TopLeft(f32),
     TopRight(f32),
+    Point(V2, f32)
 }
 
 impl RotationWithOrigin {
@@ -558,6 +563,18 @@ impl RotationWithOrigin {
                 let h_half = h/2.0;
                 let t1 = Translation3::new(-w_half, -h_half, 0.0);
                 let t2 = Translation3::new(w_half, h_half, 0.0);
+
+                let rot = Rotation::from_euler_angles(0.0, 0.0, *rot);
+
+
+                return t2.to_homogeneous() * rot.to_homogeneous() * t1.to_homogeneous();
+            },
+            Self::Point(p, rot) => {
+                let w_half = w/2.0;
+                let h_half = h/2.0;
+
+                let t1 = Translation3::new(w_half - p.x, -h_half + p.y, 0.0);
+                let t2 = Translation3::new(-w_half + p.x, h_half - p.y, 0.0);
 
                 let rot = Rotation::from_euler_angles(0.0, 0.0, *rot);
 

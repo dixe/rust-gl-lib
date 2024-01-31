@@ -133,11 +133,8 @@ fn calc_char_info(font: &Font, text: &str, max_width: f32, input_scale: f32, cha
         let chr = match font.page_char(c as u32) {
             Some(chr) => chr,
             None => {
-                // TODO: maybe in release just use unicode replacement char instead of panic
                 // TODO: Also maybe replace \t with a space, so we can render tabs
-                // panic!("No char with code '{}' ({}) found in font", c, c as u32)
                 font.default_page_char()
-
             }
         };
 
@@ -167,9 +164,10 @@ fn calc_char_info(font: &Font, text: &str, max_width: f32, input_scale: f32, cha
     let mut total_height = 0.0;
     let mut total_width = 0.0;
     // Process chars to wrap newlines, on whole word if possible
-    let line_height =  font.line_height() * input_scale;
-    let mut current_max_h = line_height;
+    let line_height = font.line_height() * input_scale;
+    let mut current_max_h = 0.0;
 
+    let mut max_offset_y = 0.0;
 
     let mut current_w = 0.0;
     for info in chars_info.iter_mut() {
@@ -189,6 +187,7 @@ fn calc_char_info(font: &Font, text: &str, max_width: f32, input_scale: f32, cha
 
         info.y += y_offset;
 
+        max_offset_y = f32::max(max_offset_y, info.chr.y_offset * input_scale);
         current_max_h = f32::max(current_max_h, (info.chr.height + info.chr.y_offset) * input_scale);
         current_w = info.x + x_advance;
     }
@@ -199,6 +198,7 @@ fn calc_char_info(font: &Font, text: &str, max_width: f32, input_scale: f32, cha
     TextRenderBox {
         total_width,
         total_height,
+        max_offset_y,
     }
 }
 
@@ -333,4 +333,5 @@ struct CharPosInfo {
 pub struct TextRenderBox {
     pub total_width: f32,
     pub total_height: f32,
+    pub max_offset_y: f32
 }

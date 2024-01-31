@@ -1,28 +1,21 @@
  use super::*;
 
-pub enum ButtonContent<'a> {
-    Text(&'a str),
-    None,
-    //Img
-}
+impl Ui{
 
-impl Ui {
-
-
-    pub fn button_at_empty(&mut self, rect: Rect) -> bool {
-        self.button_base(ButtonContent::None, rect)
+    pub fn pixel_grid_at_empty(&mut self, rect: Rect) -> bool {
+        self.pixel_grid_base(PixelGridContent::None, rect)
     }
 
 
-    pub fn button_at_text_fixed(&mut self, text: &str, rect: Rect) -> bool {
+    pub fn pixel_grid_at_text_fixed(&mut self, text: &str, rect: Rect) -> bool {
         // TODO check that text is inside rect
-        self.button_base(ButtonContent::Text(text), rect)
+        self.pixel_grid_base(PixelGridContent::Text(text), rect)
 
     }
 
-    pub fn button_at_text(&mut self, text: &str, x: i32, y: i32) -> bool {
+    pub fn pixel_grid_at_text(&mut self, text: &str, x: i32, y: i32) -> bool {
 
-        let pxs = self.style.text_styles.button.pixel_size;
+        let pxs = self.style.text_styles.pixel_grid.pixel_size;
         let rb = self.drawer2D.text_render_box(text, pxs);
 
         let pad_r = self.style.padding.right;
@@ -38,12 +31,12 @@ impl Ui {
             h: rb.total_height as i32  + pad_t + pad_b
         };
 
-        self.button_base(ButtonContent::Text(text), rect)
+        self.pixel_grid_base(PixelGridContent::Text(text), rect)
     }
 
-    pub fn button(&mut self, text: &str) -> bool {
+    pub fn pixel_grid(&mut self, text: &str) -> bool {
 
-        let pxs = self.style.text_styles.button.pixel_size;
+        let pxs = self.style.text_styles.pixel_grid.pixel_size;
         let rb = self.drawer2D.text_render_box(text, pxs);
 
 
@@ -61,12 +54,12 @@ impl Ui {
         };
 
         rect = self.layout_rect(rect);
-        self.button_base(ButtonContent::Text(text), rect)
+        self.pixel_grid_base(PixelGridContent::Text(text), rect)
     }
 
-    fn button_base(&mut self, content: ButtonContent, rect: Rect) -> bool {
+    fn pixel_grid_base(&mut self, content: PixelGridContent, rect: Rect) -> bool {
 
-        // figure out button layout
+        // figure out pixel_grid layout
 
         let id = self.next_id();
         let mut res = false;
@@ -93,20 +86,20 @@ impl Ui {
         }
 
 
-        // draw button
+        // draw pixel_grid
 
-        let mut color = self.style.button.color;
-        let mut text_color = self.style.button.text_color;
+        let mut color = self.style.pixel_grid.color;
+        let mut text_color = self.style.pixel_grid.text_color;
 
-        let r = self.style.button.radius.get(rect);
+        let r = self.style.pixel_grid.radius.get(rect);
 
         if self.is_active(id) {
-            color = self.style.button.active_color;
+            color = self.style.pixel_grid.active_color;
         }
 
         // outline
         if self.is_hot(id) {
-            self.drawer2D.rounded_rect_color(rect.x, rect.y , rect.w, rect.h, r, self.style.button.hover_color);
+            self.drawer2D.rounded_rect_color(rect.x, rect.y , rect.w, rect.h, r, self.style.pixel_grid.hover_color);
 
         }
 
@@ -116,22 +109,6 @@ impl Ui {
         // background
         self.drawer2D.rounded_rect_color(rect.x + 1 , rect.y + 1, rect.w - 2, rect.h - 2, r,  color);
 
-        // text
-        match content {
-            ButtonContent::Text(text) => {
-                let pxs = self.style.text_styles.button.pixel_size;
-                let font_name = &self.style.text_styles.button.font_name;
-
-                // TODO: Some more logic with alignment, maybe not here but inside text renderer
-                // maybe we need to pass a rect, so we can align center inside that?
-                let rb = self.drawer2D.text_render_box(text, pxs);
-
-                self.drawer2D.render_text_from_font_name(text, rect.x + pad_l, rect.y + pad_t - rb.max_offset_y as i32, pxs, font_name);
-            },
-            ButtonContent::None => {
-
-            }
-        };
 
         // done
 
