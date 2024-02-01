@@ -20,7 +20,6 @@ impl Ui {
 
         let knob_width = rect.h - 2;
 
-
         // state mangement
 
         if self.mouse_in_rect(&rect) {
@@ -80,14 +79,16 @@ impl Ui {
 
         // draw the outline
         let r = (knob_width as f64) / 2.0;
+
+        let mut outline_thickness = 0.3;
         if self.is_hot(id) {
-            self.drawer2D.circle(rect.x + x, rect.y + rect.h / 2, r + 0.7, color_outline);
-        } else {
-            self.drawer2D.circle(rect.x + x, rect.y + rect.h / 2, r, color_outline);
+            outline_thickness = 0.7;
         }
 
-        // draw inner part
+        self.drawer2D.circle_outline(rect.x + x, rect.y + rect.h / 2, r, outline_thickness, color_outline);
 
+
+        // draw inner part
         self.drawer2D.circle(rect.x + x, rect.y + rect.h / 2, r - 1.3 , bg_color);
 
         self.is_active(id)

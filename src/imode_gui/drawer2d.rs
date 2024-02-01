@@ -53,6 +53,7 @@ pub struct Drawer2D {
     // fonts
     pub font_cache: FontCache,
     pub calls: usize,
+    // some basic setup for z levels
     pub z: f32,
 
     pub instance_transforms: Vec::<na::Matrix4::<f32>>,
@@ -166,6 +167,8 @@ impl Drawer2D {
         Self::reload_shader(&self.gl, "image", &mut self.texture_shader.shader);
 
         Self::reload_shader(&self.gl, "viewport", &mut self.viewport_shader.shader);
+
+        Self::reload_shader(&self.gl, "circle_outline_shader", &mut self.circle_outline_shader.shader);
 /*
         self.circle_shader = CircleShader::new(&self.gl)?;
 
@@ -192,6 +195,7 @@ impl Drawer2D {
 
     pub fn line<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric>(
         &self, x_t: T1, y_t: T2, x1_t: T3, y1_t: T4, thickness_t: T5) {
+
 
         let x = x_t.to_f64();
         let y = y_t.to_f64();
@@ -364,10 +368,6 @@ impl Drawer2D {
 
     pub fn rounded_rect_color<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric>(&mut self, x: T1, y: T2, w: T3, h: T4, r: T5, color: Color) {
 
-        //self.calls += 1;
-
-        self.rounded_rect_shader.shader.set_used();
-
         let geom = Geom { x, y, w, h };
 
         let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z - 1.0);
@@ -375,17 +375,6 @@ impl Drawer2D {
 
         self.instance_transforms.push(transform);
         self.instance_colors.push(color.as_vec4());
-
-
-/*        self.rounded_rect_shader.set_uniforms(rrs::Uniforms { color,
-                                                             pixel_height: geom.h.to_f32(),
-                                                             pixel_width: geom.w.to_f32(),
-                                                             radius: r.to_f32(),
-        });
-
-        self.square.render(&self.gl);
-*/
-
     }
 
     pub fn rect_color<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&mut self, x: T1, y: T2, w: T3, h: T4, color: Color) {

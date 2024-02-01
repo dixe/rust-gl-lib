@@ -32,6 +32,7 @@ impl RoundedRectShader {
 
         self.shader.set_f32(&self.gl, "radius", uni.radius);
     }
+
 }
 
 #[derive(Clone, Debug, Copy)]

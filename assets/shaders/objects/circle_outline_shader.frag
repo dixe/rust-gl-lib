@@ -16,7 +16,7 @@ uniform float thickness;
 
 float circle_outline(vec2 p)
 {
-  return max((radius - thickness) - length(p), length(p) - radius);
+  return max((radius - thickness) - length(p) , length(p) - radius);
 }
 
 void main()
@@ -24,7 +24,7 @@ void main()
   // maybe look at https://www.shadertoy.com/view/WtdSDs
   // or https://iquilezles.org/articles/distfunctions
 
-  // Square is defined with corners in 0.5 and -0.5 on both x and y axis.
+  // Squaxore is defined with corners in 0.5 and -0.5 on both x and y axis.
 
   float screen_x = IN.FragPos.x * pixel_width;
   float screen_y = IN.FragPos.y * pixel_height;

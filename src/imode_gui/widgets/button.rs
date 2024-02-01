@@ -101,13 +101,17 @@ impl Ui {
         let r = self.style.button.radius.get(rect);
 
         if self.is_active(id) {
+
             color = self.style.button.active_color;
+
         }
 
         // outline
         if self.is_hot(id) {
+            let z = self.drawer2D.z;
+            self.drawer2D.z = -0.1;
             self.drawer2D.rounded_rect_color(rect.x, rect.y , rect.w, rect.h, r, self.style.button.hover_color);
-
+            self.drawer2D.z = z
         }
 
         let pad_l = self.style.padding.left;
