@@ -3,7 +3,10 @@ use crate::objects::color_square::SquareColors;
 
 impl Ui{
 
-    pub fn color_picker(&mut self, color: &mut Color) {
+    /// Returns true when the color is changed
+    pub fn color_picker(&mut self, color: &mut Color) -> bool {
+
+        let mut changed = false;
 
         let id = self.next_id();
 
@@ -33,13 +36,14 @@ impl Ui{
 
             self.set_active_context(id, rect);
 
-            let color_square_rect = self.color_square(color);
+            let (color_square_rect, mut c) = self.color_square(color);
+            changed |= c;
 
             let mut c_vec4 = color.as_vec4();
 
 
             self.newline();
-            self.color_line(color);
+            changed |= self.color_line(color);
 
 
             let x = color_square_rect.x + color_square_rect.w + self.style.spacing.x;
@@ -55,7 +59,7 @@ impl Ui{
             self.combo_box(&mut c_vec4.w, 0.0, 1.0);
 
             color.set_alpha(c_vec4.w);
-
+            changed = true;
             self.exit_active_context(id);
 
             let in_rect = self.mouse_in_rect(&rect);
@@ -86,13 +90,16 @@ impl Ui{
             self.drawer2D.rect_color(rect.x, rect.y, rect.w, rect.h, *color)
         }
 
+        changed
     }
 
-    fn color_line(&mut self, color: &mut Color) {
+    /// Returns true when the color is changed
+    fn color_line(&mut self, color: &mut Color) -> bool {
         // TODO: do this rect work all in color_picker and have these two functions take rects
 
         let id = self.next_id();
 
+        let mut changed = false;
 
         let mut rect = Rect {
             x: 0,
@@ -127,7 +134,8 @@ impl Ui{
             if self.mouse_up {
                 self.set_not_active();
             }
-            *color = Color::Hsv(h, hsv.y, hsv.z, hsv.w)
+            *color = Color::Hsv(h, hsv.y, hsv.z, hsv.w);
+            changed = true;
         }
 
 
@@ -137,14 +145,16 @@ impl Ui{
         // Draw target
         let x = (rect.w as f32 * h / 360.0) as i32;
         self.drawer2D.rect_color(rect.x + x, rect.y, 5, rect.h, Color::Rgb(30, 30, 30));
+        changed
     }
 
-    fn color_square(&mut self, color: &mut Color) -> Rect {
+    fn color_square(&mut self, color: &mut Color) -> (Rect, bool) {
 
         // figure out button layout
 
         let id = self.next_id();
 
+        let mut changed = false;
         // border box, with space for padding for text content
         let mut rect = Rect {
             x: 0,
@@ -163,7 +173,7 @@ impl Ui{
 
         if self.is_active(id) {
             *color = pos_to_color(self.mouse_pos, rect, *color);
-
+             changed = true;
             if self.mouse_up {
                 self.set_not_active();
 
@@ -198,7 +208,7 @@ impl Ui{
         let center_y = rect.y as f32 + (1.0 - hsv.z) * (rect.h as f32);
         self.drawer2D.circle(center_x as i32, center_y as i32, 6, Color::Rgb(200, 200, 200));
 
-        rect
+        (rect, changed)
     }
 }
 

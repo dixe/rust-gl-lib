@@ -1,4 +1,5 @@
 use super::*;
+use crate::buffer;
 use crate::na::{self, Point3, Vector3, Translation3, geometry::Rotation, Vector2, Orthographic3};
 use crate::text_rendering::text_renderer::{TextRenderer, TextRenderBox};
 use crate::{gl::{self, viewport}, ScreenBox, ScreenCoords};
@@ -51,8 +52,13 @@ pub struct Drawer2D {
     pub color: Color,
     // fonts
     pub font_cache: FontCache,
+    pub calls: usize,
+    pub z: f32,
 
-    pub z: f32
+    pub instance_transforms: Vec::<na::Matrix4::<f32>>,
+    pub instance_colors: Vec::<na::Vector4::<f32>>,
+    pub instance_transform_vbo: buffer::ArrayBuffer,
+    pub instance_color_vbo: buffer::ArrayBuffer,
 }
 
 impl Drawer2D {
@@ -87,6 +93,7 @@ impl Drawer2D {
         let polygon = polygon::Polygon::new(gl, &vec![], &vec![], None);
 
         Ok(Self {
+            calls: 0,
             font_cache,
             gl: (*gl).clone(),
             tr: text_renderer,
@@ -107,7 +114,11 @@ impl Drawer2D {
             color_square_h_line_shader,
             z: 0.0,
             viewport_shader,
-            color: Color::Rgb(0,0,0)
+            color: Color::Rgb(0,0,0),
+            instance_transforms: vec![],
+            instance_transform_vbo: buffer::ArrayBuffer::new(&gl),
+            instance_colors: vec![],
+            instance_color_vbo: buffer::ArrayBuffer::new(&gl),
         })
     }
 
@@ -292,9 +303,20 @@ impl Drawer2D {
         self.square.render(&self.gl);
     }
 
+    pub fn disable_depth_test(&self) {
+        unsafe {
+            &self.gl.Disable(gl::DEPTH_TEST); // for stuff we need this with instanced rendering of quads, so we still can see text on top
+        }
+    }
 
 
-    pub fn rounded_rect<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&self, x: T1, y: T2, w: T3, h: T4) {
+    pub fn enable_depth_test(&self) {
+        unsafe {
+            &self.gl.Enable(gl::DEPTH_TEST); // for stuff we need this with instanced rendering of quads, so we still can see text on top
+        }
+    }
+
+    pub fn rounded_rect<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&mut self, x: T1, y: T2, w: T3, h: T4) {
         self.rect_color(x, y, w, h, Color::Rgb(100, 100, 100));
     }
 
@@ -340,27 +362,33 @@ impl Drawer2D {
     }
 
 
-    pub fn rounded_rect_color<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric>(&self, x: T1, y: T2, w: T3, h: T4, r: T5, color: Color) {
+    pub fn rounded_rect_color<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric>(&mut self, x: T1, y: T2, w: T3, h: T4, r: T5, color: Color) {
+
+        //self.calls += 1;
+
         self.rounded_rect_shader.shader.set_used();
 
         let geom = Geom { x, y, w, h };
 
-        let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+        let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z - 1.0);
 
 
-        self.rounded_rect_shader.set_transform(transform);
+        self.instance_transforms.push(transform);
+        self.instance_colors.push(color.as_vec4());
 
 
-        self.rounded_rect_shader.set_uniforms(rrs::Uniforms { color,
+/*        self.rounded_rect_shader.set_uniforms(rrs::Uniforms { color,
                                                              pixel_height: geom.h.to_f32(),
                                                              pixel_width: geom.w.to_f32(),
                                                              radius: r.to_f32(),
         });
 
         self.square.render(&self.gl);
+*/
+
     }
 
-    pub fn rect_color<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&self, x: T1, y: T2, w: T3, h: T4, color: Color) {
+    pub fn rect_color<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&mut self, x: T1, y: T2, w: T3, h: T4, color: Color) {
         self.rounded_rect_color(x, y, w, h, 0.0, color)
     }
 
@@ -457,7 +485,7 @@ impl Drawer2D {
         };
 
 
-        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+        let transform = unit_square_transform_matrix(&geom, rot, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z + 1.0);
 
         self.texture_shader.setup(ts::Uniforms { texture_id, transform });
 
@@ -521,6 +549,82 @@ impl Drawer2D {
         self.viewport_shader.setup(vps::Uniforms { transform: transform.into(), color });
 
         obj.render(&self.gl);
+    }
+
+    pub fn render_instances(&mut self) {
+
+        // pass data to buffer
+
+        // first transforms
+        self.instance_transform_vbo.bind();
+        self.instance_transform_vbo.sub_data(&self.instance_transforms, 0);
+        self.instance_transform_vbo.unbind();
+
+
+        // second colors
+        self.instance_color_vbo.bind();
+        self.instance_color_vbo.sub_data(&self.instance_colors, 0);
+        self.instance_color_vbo.unbind();
+
+
+        self.rounded_rect_shader.shader.set_used();
+
+        self.square.render_instanced(&self.gl, self.instance_transforms.len());
+
+        // TODO: Maybe clear in different place
+        self.instance_transforms.clear();
+        self.instance_colors.clear();
+
+    }
+
+    /// Create buffer with space for 1000 square mat4<f32> transforms
+    pub fn setup_instance_buffer(&mut self) {
+
+
+        // size of vector4<f32>
+        let v4Size = (4 * std::mem::size_of::<f32>()) as i32;
+        // size of mat4<f32>
+        let m4Size = 4 * v4Size;
+        unsafe {
+
+            // TODO: Also have colors and radius of the square in instance array
+            self.instance_transform_vbo.bind();
+            self.instance_transform_vbo.dynamic_draw_size((1000 * m4Size) as u32);
+
+            // set up pointers, using square VAO for now, so we can just bind that vao and render instanced
+            self.square.vao.bind();
+
+
+            // SETUP TRANSFORM MATRICES
+            self.gl.EnableVertexAttribArray(1);
+            self.gl.VertexAttribPointer(1, 4, gl::FLOAT, gl::FALSE, m4Size, 0 as *const gl::types::GLvoid);
+            self.gl.EnableVertexAttribArray(2);
+            self.gl.VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, m4Size, (4 * std::mem::size_of::<f32>()) as *const gl::types::GLvoid);
+            self.gl.EnableVertexAttribArray(3);
+            self.gl.VertexAttribPointer(3, 4, gl::FLOAT, gl::FALSE, m4Size,  (4 * 2 * std::mem::size_of::<f32>()) as *const gl::types::GLvoid);
+            self.gl.EnableVertexAttribArray(4);
+            self.gl.VertexAttribPointer(4, 4, gl::FLOAT, gl::FALSE, m4Size,  (4 * 3 * std::mem::size_of::<f32>()) as *const gl::types::GLvoid);
+
+            self.gl.VertexAttribDivisor(1, 1);
+            self.gl.VertexAttribDivisor(2, 1);
+            self.gl.VertexAttribDivisor(3, 1);
+            self.gl.VertexAttribDivisor(4, 1);
+
+
+
+            // SETUP COLORS
+
+            self.instance_color_vbo.bind();
+            self.instance_color_vbo.dynamic_draw_size((1000 * v4Size) as u32);
+
+            self.gl.EnableVertexAttribArray(5);
+            self.gl.VertexAttribPointer(5, 4, gl::FLOAT, gl::FALSE, v4Size, 0 as *const gl::types::GLvoid);
+
+            self.gl.VertexAttribDivisor(5, 1);
+
+            self.square.vao.unbind();
+
+        }
     }
 
 

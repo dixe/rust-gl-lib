@@ -1,16 +1,15 @@
 #version 330 core
 
-uniform vec4 u_color;
-
 in VS_OUTPUT {
     vec2 FragPos;
     vec2 Pos;
+    vec4 color;
 } IN;
 
 out vec4 FragColor;
 
-uniform float pixel_width;
-uniform float pixel_height;
+//uniform float pixel_width;
+//uniform float pixel_height;
 
 uniform float radius;
 
@@ -25,6 +24,10 @@ float roundedRectangle(vec2 p, vec2 size, float radius)
 void main()
 {
 
+
+  float pixel_width = 1.0;
+  float pixel_height = 1.0;
+
   // maybe look at https://www.shadertoy.com/view/WtdSDs
 
   // Square is defined with corners in 0.5 and -0.5 on both x and y axis.
@@ -37,7 +40,7 @@ void main()
   // uv but in screen space. uv.u(x) is in [-pixel_width; pixel_width]
   vec2 uv =  vec2(u * pixel_width, v * pixel_height);
 
-  vec4 col = u_color;
+  vec4 col = IN.color;
 
   vec2 size = vec2(pixel_width, pixel_height);
 
@@ -52,4 +55,6 @@ void main()
 
   FragColor = col;
   //FragColor = vec4(abs(uv.x / pixel_width), abs(uv.y / pixel_height), 1.0, 1.0);
+
+  //FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 }

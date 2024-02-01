@@ -8,14 +8,14 @@ use super::RenderObject;
 use failure;
 
 
-pub struct Square {
-    pub vao: buffer::VertexArray,
+pub struct InstanceSquare {
+    vao: buffer::VertexArray,
     vbo: buffer::ArrayBuffer,
     _ebo: buffer::ElementArrayBuffer,
 }
 
 
-impl RenderObject for Square {
+impl RenderObject for InstanceSquare {
      fn render(&self, gl: &gl::Gl) {
         self.vao.bind();
 
@@ -34,7 +34,7 @@ impl RenderObject for Square {
 }
 
 
-impl Square {
+impl InstanceSquare {
 
     pub fn new(gl: &gl::Gl) -> Self {
 
@@ -67,7 +67,7 @@ impl Square {
             ebo.bind();
             ebo.static_draw_data(&indices);
 
-            // 4. pointer for 2d pos(x,y)
+            // 4.
             gl.VertexAttribPointer(
                 0,
                 2,
@@ -109,25 +109,6 @@ impl Square {
         self.vbo.bind();
         self.vbo.sub_data(data, 0);
         self.vbo.unbind();
-    }
-
-
-    pub fn render_instanced(&self, gl: &gl::Gl, count: usize) {
-        self.vao.bind();
-
-        unsafe {
-            // draw
-            gl.DrawElementsInstanced(
-                gl::TRIANGLES,
-                6,
-                gl::UNSIGNED_INT,
-                0 as *const gl::types::GLvoid,
-                count as i32
-            );
-        }
-
-        self.vao.unbind();
-
     }
 
 

@@ -1,8 +1,10 @@
 use super::*;
 
 impl Ui {
-    pub fn checkbox(&mut self, checked: &mut bool) {
+
+    pub fn checkbox(&mut self, checked: &mut bool) -> bool {
         let id = self.next_id();
+        let mut changed = false;
 
         let mut rect = Rect {
             x: 0 , y: 0 , w: 20, h: 20
@@ -18,6 +20,7 @@ impl Ui {
             if self.mouse_up {
                 if self.is_hot(id) {
                     *checked = !*checked;
+                    changed = true;
                 }
                 self.set_not_active();
 
@@ -61,6 +64,6 @@ impl Ui {
             self.drawer2D.line(rect.x + 10, rect.y + 16, rect.x + 16 , rect.y + 4, thickness);
         }
 
-
+        changed
     }
 }
