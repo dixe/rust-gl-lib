@@ -6,6 +6,7 @@ use crate::{gl::{self, viewport}, ScreenBox, ScreenCoords};
 use crate::text_rendering::text_renderer::{TextAlignment, TextAlignmentX,TextAlignmentY};
 use crate::shader::{ Shader, TransformationShader, PosColorShader,
                      rounded_rect_shader::{self as rrs, RoundedRectShader},
+                     rounded_rect_instanced_shader::{self as rris, RoundedRectInstancedShader},
                      circle_shader::{self as cs, CircleShader},
                      circle_outline_shader::{self as cos, CircleOutlineShader},
                      texture_shader::{self as ts, TextureShader},
@@ -39,6 +40,7 @@ pub struct Drawer2D {
     //shaders
     pub color_square: color_square::ColorSquare,
     pub rounded_rect_shader: RoundedRectShader,
+    pub rounded_rect_instanced_shader: RoundedRectInstancedShader,
     pub color_square_shader: Box::<Shader>,
     pub color_square_h_line_shader: Box::<Shader>,
     pub circle_shader: CircleShader,
@@ -56,6 +58,7 @@ pub struct Drawer2D {
     // some basic setup for z levels
     pub z: f32,
 
+    pub instanced: bool,
     pub instance_transforms: Vec::<na::Matrix4::<f32>>,
     pub instance_colors: Vec::<na::Vector4::<f32>>,
     pub instance_transform_vbo: buffer::ArrayBuffer,
@@ -76,6 +79,7 @@ impl Drawer2D {
         let texture_square = texture_quad::TextureQuad::new(gl);
         let sprite_sheet_square = sprite_sheet::SpriteSheetSquare::new(gl);
         let rrs = RoundedRectShader::new(gl)?;
+        let rris = RoundedRectInstancedShader::new(gl)?;
         let cs = CircleShader::new(gl)?;
 
         let cos = CircleOutlineShader::new(gl)?;
@@ -103,6 +107,7 @@ impl Drawer2D {
             texture_square,
             texture_shader,
             rounded_rect_shader: rrs,
+            rounded_rect_instanced_shader: rris,
             square,
             polygon,
             polygon_shader,
@@ -120,6 +125,7 @@ impl Drawer2D {
             instance_transform_vbo: buffer::ArrayBuffer::new(&gl),
             instance_colors: vec![],
             instance_color_vbo: buffer::ArrayBuffer::new(&gl),
+            instanced: false, //TODO: does not work, since shaders assumes instanced, so maybe just always use instanced
         })
     }
 
@@ -164,11 +170,30 @@ impl Drawer2D {
 
         Self::reload_shader(&self.gl, "rounded_rect", &mut self.rounded_rect_shader.shader);
 
+        Self::reload_shader(&self.gl, "rounded_rect_instanced", &mut self.rounded_rect_instanced_shader.shader);
+
         Self::reload_shader(&self.gl, "image", &mut self.texture_shader.shader);
 
         Self::reload_shader(&self.gl, "viewport", &mut self.viewport_shader.shader);
 
         Self::reload_shader(&self.gl, "circle_outline_shader", &mut self.circle_outline_shader.shader);
+
+        // TODO: foreach font reload shader?
+        // loop over all msdf fonts
+        // TODO: move shader out of fonts. Since many fonts will use the same shader, move the shader list into TextRenderer
+        // also move font_cache into text renderer, since its better suited there
+        for (_, v) in self.font_cache.msdf_fonts.iter_mut() {
+            Self::reload_shader(&self.gl, "../msdf_mask_text_render", &mut v.shader);
+        }
+
+        for (_, map) in self.font_cache.fnt_fonts.iter_mut() {
+            for (_, v) in map.iter_mut() {
+                Self::reload_shader(&self.gl, "../alpha_mask_text_render", &mut v.shader);
+            }
+        }
+
+        Self::reload_shader(&self.gl, "../msdf_text_render", &mut self.tr.font.shader);
+
 /*
         self.circle_shader = CircleShader::new(&self.gl)?;
 
@@ -258,9 +283,9 @@ impl Drawer2D {
 
 
         self.circle_shader.set_uniforms(cs::Uniforms { color,
-                                                      pixel_height: geom.h.to_f32(),
-                                                      pixel_width: geom.w.to_f32(),
-                                                      radius: r as f32
+                                                       pixel_height: geom.h.to_f32(),
+                                                       pixel_width: geom.w.to_f32(),
+                                                       radius: r as f32
         });
 
 
@@ -359,6 +384,7 @@ impl Drawer2D {
 
         let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
 
+
         self.color_square_h_line_shader.set_mat4(&self.gl, "transform", transform);
 
         self.square.render(&self.gl);
@@ -372,9 +398,23 @@ impl Drawer2D {
 
         let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z - 1.0);
 
+        if self.instanced {
+            self.instance_transforms.push(transform);
+            self.instance_colors.push(color.as_vec4());
+        } else {
 
-        self.instance_transforms.push(transform);
-        self.instance_colors.push(color.as_vec4());
+            self.rounded_rect_shader.shader.set_used();
+            self.rounded_rect_shader.set_transform(transform);
+
+            self.rounded_rect_shader.set_uniforms(rrs::Uniforms { color,
+                                                                  pixel_height: geom.h.to_f32(),
+                                                                  pixel_width: geom.w.to_f32(),
+                                                                  radius: r.to_f32(),
+            });
+
+            self.square.render(&self.gl);
+        }
+
     }
 
     pub fn rect_color<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric>(&mut self, x: T1, y: T2, w: T3, h: T4, color: Color) {
@@ -542,6 +582,11 @@ impl Drawer2D {
 
     pub fn render_instances(&mut self) {
 
+        if !self.instanced {
+            return;
+        }
+
+        self.enable_depth_test();
         // pass data to buffer
 
         // first transforms
@@ -556,7 +601,7 @@ impl Drawer2D {
         self.instance_color_vbo.unbind();
 
 
-        self.rounded_rect_shader.shader.set_used();
+        self.rounded_rect_instanced_shader.shader.set_used();
 
         self.square.render_instanced(&self.gl, self.instance_transforms.len());
 
@@ -569,6 +614,7 @@ impl Drawer2D {
     /// Create buffer with space for 1000 square mat4<f32> transforms
     pub fn setup_instance_buffer(&mut self) {
 
+        self.instanced = true;
 
         // size of vector4<f32>
         let v4Size = (4 * std::mem::size_of::<f32>()) as i32;

@@ -5,13 +5,14 @@ use crate::text_rendering::{font::*};
 use crate::gl;
 use crate::objects;
 use crate::*;
+use crate::color::Color;
 
 /// A collections of a font, shader and a texture that can render text using open.
 pub struct TextRenderer {
-    font: Font,
-    color: na::Vector3::<f32>,
+    pub font: Font,
+    color: Color,
     char_quad: Box<objects::char_quad::CharQuad>,
-    smoothness: f32
+    smoothness: f32,
 }
 
 pub enum TextSize {
@@ -43,8 +44,7 @@ impl TextRenderer {
     }
 
     /// Set the color that [render_text](Self::render_text) uses.
-    /// The input should be is rgb and each component should be in the range \[0;1\]
-    pub fn set_text_color(&mut self, color: na::Vector3::<f32>) {
+    pub fn set_text_color(&mut self, color: Color) {
         self.color = color;
     }
 
@@ -69,18 +69,36 @@ impl TextRenderer {
     /// Also sets the current color, default is black. See [set_text_color](Self::set_text_color) for how to change the color.
     pub fn render_text(&mut self, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, pixel_size: i32) {
 
+        /*
         let projection = na::geometry::Orthographic3::new(0.0, screen_box.screen_w, screen_box.screen_h, 0.0, 0.0, 10.0);
-        let texture_id = self.font.texture_id();
-        setup_shader(self.font.shader(), gl, projection, texture_id, self.color);
-        render_text_with_font(&mut self.char_quad, &self.font, gl, text, alignment, screen_box, pixel_size);
+        let texture_id = font.texture_id();
+        setup_shader(font.shader(), gl, projection, texture_id, self.color);
+         */
+
+        // TODO: Handle font change, that should trigger a render of everything in buffer with current font, and then reset buffer for charquad
+
+        render_text_with_font(&mut self.char_quad, &self.font, gl, text, alignment, screen_box, pixel_size, self.color);
     }
 
     pub fn render_text_with_font(&mut self, font: &Font, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, pixel_size: i32) {
 
+        /*
         let projection = na::geometry::Orthographic3::new(0.0, screen_box.screen_w, screen_box.screen_h, 0.0, 0.0, 10.0);
         let texture_id = font.texture_id();
         setup_shader(font.shader(), gl, projection, texture_id, self.color);
-        render_text_with_font(&mut self.char_quad, font, gl, text, alignment, screen_box, pixel_size);
+         */
+        render_text_with_font(&mut self.char_quad, font, gl, text, alignment, screen_box, pixel_size, self.color);
+    }
+
+    pub fn render_char_quad(&mut self, font: &Font, gl: &gl::Gl, screen_w: f32, screen_h: f32) {
+
+        let projection = na::geometry::Orthographic3::new(0.0, screen_w, screen_h, 0.0, 0.0, 10.0);
+
+        let texture_id = font.texture_id();
+
+        setup_shader(font.shader(), gl, projection, texture_id, self.color);
+
+        self.char_quad.render(gl);
     }
 
     pub fn change_font(&mut self, font: Font) {
@@ -98,11 +116,11 @@ impl TextRenderer {
 
 
 
-fn render_text_quads_pixel(char_quad: &mut objects::char_quad::CharQuad, gl: &gl::Gl, draw_info: &DrawInfo) {
+fn render_text_quads_pixel(char_quad: &mut objects::char_quad::CharQuad, gl: &gl::Gl, draw_info: &DrawInfo, screen_box: ScreenBox, color: Color) {
 
     // Draw the chars
     let buffer_size = char_quad.buffer_size();
-    let mut i = 0;
+    let mut i = char_quad.next_buffer_index();
     for info in draw_info.chars_info.iter() {
         if info.y > draw_info.bottom {
             break;
@@ -116,11 +134,18 @@ fn render_text_quads_pixel(char_quad: &mut objects::char_quad::CharQuad, gl: &gl
         i += 1;
 
         if i >= buffer_size {
-            char_quad.render(gl, i);
+
+            let projection = na::geometry::Orthographic3::new(0.0, screen_box.screen_w, screen_box.screen_h, 0.0, 0.0, 10.0);
+            let texture_id = draw_info.font.texture_id();
+
+            setup_shader(draw_info.font.shader(), gl, projection, texture_id, color);
+
+            char_quad.render(gl);
             i = 0;
         }
     }
-    char_quad.render(gl, i);
+
+    //char_quad.render(gl);
 }
 
 
@@ -203,7 +228,7 @@ fn calc_char_info(font: &Font, text: &str, max_width: f32, input_scale: f32, cha
 }
 
 
-pub fn render_text_with_font(char_quad: &mut objects::char_quad::CharQuad, font: &Font, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, pixel_size: i32) {
+pub fn render_text_with_font(char_quad: &mut objects::char_quad::CharQuad, font: &Font, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, pixel_size: i32, color: Color) {
 
 
     let input_scale = pixel_size as f32 / font.size();
@@ -214,7 +239,7 @@ pub fn render_text_with_font(char_quad: &mut objects::char_quad::CharQuad, font:
 
 
     // higher than 1 means the text does NOT fit in the assigned box. And we have to account for scroll input
-    //let text_to_window_ratio = dbg!(render_box.total_height / screen_box.screen_h);
+    // let text_to_window_ratio = dbg!(render_box.total_height / screen_box.screen_h);
 
 
     // maybe scroll bar should not be between 0 and 1
@@ -256,15 +281,15 @@ pub fn render_text_with_font(char_quad: &mut objects::char_quad::CharQuad, font:
         font
     };
 
-    render_text_quads_pixel(char_quad, gl, &draw_info);
+    render_text_quads_pixel(char_quad, gl, &draw_info, screen_box, color);
 }
 
 
-fn setup_shader(shader: &BaseShader, gl: &gl::Gl, projection: na::geometry::Orthographic3::<f32>, texture_id: u32, color: na::Vector3::<f32>) {
+fn setup_shader(shader: &BaseShader, gl: &gl::Gl, projection: na::geometry::Orthographic3::<f32>, texture_id: u32, color: Color) {
 
     shader.set_used();
 
-    shader.set_vec3(gl, "color", color);
+    shader.set_vec4(gl, "color", color.as_vec4());
 
     shader.set_i32(gl, "text_map", 0);
 

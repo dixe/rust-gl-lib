@@ -16,7 +16,15 @@ uniform float thickness;
 
 float circle_outline(vec2 p)
 {
-  return max((radius - thickness) - length(p) , length(p) - radius);
+  // make two circles
+  // first is out regular nagive inside, positive outside, with radius = r
+  float c1 = length(p) - radius;
+
+  // second is a smaller circle with negative outside, and positive inside and radius = r - thickness
+  float c2 = (radius - thickness) - length(p);
+
+  // there is a small "outline" where both circles are negative, therefore take the max of the two
+  return max(c1, c2);
 }
 
 void main()

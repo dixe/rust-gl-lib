@@ -2,7 +2,7 @@
 
 #version 330 core
 out vec4 FragColor;
-uniform vec3 color;
+uniform vec4 color;
 
 uniform sampler2D text_map;
 
@@ -43,8 +43,10 @@ void main()
   float sd = median(s.r, s.g, s.b) - 0.5;
 
   // Weight between inside and outside (anti-aliasing)
-  float w = sd/fwidth(sd) + 0.5;
+  float w = sd / fwidth(sd) + 0.5;
   w = clamp(w, 0.0, 1.0);
 
-  FragColor = vec4(color, 1.0) * w;
+  FragColor = color* w;
+
+  //FragColor = vec4(color.xyz* w, 1.0);
 }

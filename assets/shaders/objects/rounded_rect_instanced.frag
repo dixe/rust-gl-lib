@@ -1,16 +1,15 @@
 #version 330 core
 
-uniform vec4 u_color;
-
 in VS_OUTPUT {
     vec2 FragPos;
     vec2 Pos;
+    vec4 color;
 } IN;
 
 out vec4 FragColor;
 
-uniform float pixel_width;
-uniform float pixel_height;
+//uniform float pixel_width;
+//uniform float pixel_height;
 
 uniform float radius;
 
@@ -41,7 +40,7 @@ void main()
   // uv but in screen space. uv.u(x) is in [-pixel_width; pixel_width]
   vec2 uv =  vec2(u * pixel_width, v * pixel_height);
 
-  vec4 col = u_color;
+  vec4 col = IN.color;
 
   vec2 size = vec2(pixel_width, pixel_height);
 

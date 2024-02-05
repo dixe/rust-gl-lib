@@ -106,6 +106,7 @@ fn main() -> Result<(), failure::Error> {
 
         ui.small_text(text);
 
+        ui.finalize_frame();
         window.gl_swap_window();
     }
 }

@@ -1,6 +1,8 @@
-use gl_lib::{gl, helpers};
+use gl_lib::{gl, ScreenBox, helpers};
 use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
+use gl_lib::text_rendering::text_renderer::TextAlignment;
+
 
 use gl_lib::color::Color;
 
@@ -17,27 +19,29 @@ fn main() -> Result<(), failure::Error> {
 
     let mut event_pump = sdl.event_pump().unwrap();
     let mut onoff = false;
-    let mut color = Color::Rgb(0,0,0);
-
-     // Set background color to white
-    unsafe {
-        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
-    }
+    let mut color = Color::Rgb(27, 27, 27);
 
 
     let mut show = true;
 
     let mut input = "".to_string();
+    let offset = 0.0;
+    ui.drawer2D.tr.set_text_color(Color::Rgb(240, 240, 240));
+    ui.drawer2D.font_cache.fonts_path = Some("assets\\fonts\\".to_string());
+
+    //ui.drawer2D.setup_instance_buffer();
+
+    let mut x_off = 0.0;
     loop {
-
-        let _c_vec = color.as_vec4();
-        unsafe {
-            // gl.ClearColor(c_vec.x, c_vec.y, c_vec.z, c_vec.w);
-
-        }
 
         // Basic clear gl stuff and get events to UI
         unsafe {
+            gl.Enable(gl::DEPTH_TEST); // for stuff we need this with instanced rendering of quads, so we still can see text on top
+
+            let cc = color.as_vec4();
+
+            gl.ClearColor(cc.x, cc.y, cc.z, cc.w);
+
             gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
@@ -47,11 +51,27 @@ fn main() -> Result<(), failure::Error> {
 
         ui.newline();
 
-        ui.textbox(&mut input);
-        ui.body_text("BOdy text beloiong to the main windows in the app");
+        //ui.textbox(&mut input);
+        ui.body_text("Body text beloiong to the main windows in the app");
 
         ui.newline();
-        ui.small_text(&("And some small text that belongs the the base input: ".to_owned() + &input));
+
+        if ui.button("Reload shaders") {
+            ui.drawer2D.reload_all_shaders();
+        }
+
+        /*
+        ui.body_text(&("And some small text that belongs the the base input: ".to_owned() + &input));
+
+        ui.newline();
+
+*/
+        //ui.newline();
+
+        //println!("{:?}", x_off);
+        ui.drawer2D.tr.render_text(&gl, "Text that will slide", TextAlignment::default(), ScreenBox { x: x_off+ 100.0, y: 100.0, width: 300.0, height: 100.0, screen_w: viewport.w as f32, screen_h: viewport.h as f32}, 16);
+
+        ui.slider(&mut x_off, 0.0, 1.0);
 
 
         if show {
@@ -83,6 +103,8 @@ fn main() -> Result<(), failure::Error> {
         ui.color_picker(&mut color);
         ui.color_picker(&mut color);
         ui.color_picker(&mut color);
+
+        ui.finalize_frame();
 
         window.gl_swap_window();
     }

@@ -11,7 +11,7 @@ pub use self::msdf_font::*;
 #[derive(Debug, Clone)]
 pub struct Font {
     texture_id: TextureId,
-    shader: BaseShader,
+    pub shader: BaseShader,
     inner_font: InnerFont
 }
 

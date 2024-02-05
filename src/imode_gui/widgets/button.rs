@@ -101,9 +101,7 @@ impl Ui {
         let r = self.style.button.radius.get(rect);
 
         if self.is_active(id) {
-
             color = self.style.button.active_color;
-
         }
 
         // outline

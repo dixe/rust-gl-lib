@@ -46,8 +46,6 @@ impl FntFont {
 
     /// Assumes that the png file referred to in the font is located in the same directory as the .fnt file.
     /// Fonts generated from steps here: <https://github.com/libgdx/libgdx/wiki/Distance-field-fonts>]
-
-
     pub fn load_font(text: &str, image: image::RgbaImage) -> Result<FntFont, Box<dyn Error>> {
 
         let mut lines = text.lines();
@@ -62,7 +60,7 @@ impl FntFont {
 
         // texture has 0,0 at lower left, font file has 0,0 at upper left, so inverse the y to match uv coordinates
         for c in &mut page.chars {
-            c.y = image.height() as f32 - c.y;
+            //c.y = image.height() as f32 - c.y;
         }
 
         Ok(FntFont {

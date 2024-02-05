@@ -43,10 +43,10 @@ pub struct TextStyle {
 impl Default for TextStyles {
     fn default() -> Self {
         Self {
-            small: TextStyle { pixel_size: 12, font_name: "Consolas".to_string()},
-            body: TextStyle { pixel_size: 20, font_name: "Consolas".to_string() },
-            button: TextStyle { pixel_size: 20, font_name: "Consolas".to_string() },
-            heading: TextStyle { pixel_size: 40, font_name: "Consolas".to_string()},
+            small: TextStyle { pixel_size: 14, font_name: "Consolas".to_string()},
+            body: TextStyle { pixel_size: 16, font_name: "Consolas".to_string() },
+            button: TextStyle { pixel_size: 16, font_name: "Consolas".to_string() },
+            heading: TextStyle { pixel_size: 22, font_name: "Consolas".to_string()},
         }
     }
 }
@@ -142,8 +142,8 @@ pub struct ButtonStyle {
 impl Default for ButtonStyle {
     fn default() -> Self {
         Self {
-            color: Color::Rgb(220, 220, 220),
-            hover_color: Color::Rgb(40, 40, 40),
+            color: Color::Rgb(60, 60, 60),
+            hover_color: Color::Rgb(70, 70, 70),
             active_color: Color::Rgb(200, 200, 200),
             text_color: Color::Rgb(10, 10, 10),
             radius: BorderRadius::HeightRelative(0.33),

@@ -24,6 +24,10 @@ Run with `cargo t -- --test-threads=1` to only have 1 sdl instance at a time.
 * [x] Intermediate mode gui should internally keep track of drawer2D.z and for most widget draw on top. This way rendering the background of windows after widgets is not a problem
 
 
+# Instancing
+Drawing some thing instanced and some not, reuslts in fx slider knob circle will have the clearcolor as part of the square that is
+alpha 0. Cannot get around it, unless we can draw the slider background before the knob. That means we need to to instancing in
+layers, and circles should be instanced too.
 
 
 https://www.reddit.com/r/godot/comments/xgrk0g/goap_goaloriented_action_planning_is_absolutely/
@@ -126,7 +130,7 @@ fn valid(goal.pre, [buy, to_shop], state: {money: 20}) -> Option<Actions> {
         // action requires 15 money, we cannot also do that
         let (new_sat, new_state) = filter(buy.pre, state);
 
-        is_valid &= valid(new_sat, [buy, to_shop], new_state);        
+        is_valid &= valid(new_sat, [buy, to_shop], new_state);
     }
 
     if is_valid {

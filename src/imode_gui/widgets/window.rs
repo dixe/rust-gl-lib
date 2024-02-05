@@ -113,8 +113,8 @@ impl Ui{
 
             let anchor = window.base_container_context.anchor_pos;
 
-            let bg_color = Color::Rgb(200, 200, 255);
-            let color = Color::Rgb(255,255,255);
+            let bg_color = Color::Rgb(27, 27, 27);
+            let color = Color::Rgb(90, 90, 110);
 
             let window_w = window.base_container_context.width.size() + self.style.spacing.x * 4;
 
@@ -150,20 +150,19 @@ impl Ui{
 
 
             let bl = anchor + Pos::new(0, window_h);
-
-            let br = anchor
-                + Pos::new(window_w, window_h);
-            //+ Pos::new(self.style.spacing.x * 4, self.style.spacing.y);;
+            let br = anchor + Pos::new(window_w, window_h);
 
 
             // left vertical
-            self.drawer2D.rect_color(tl.x, tl.y, thickness, bl.y - tl.y, color);
+            // TODO: Something is a little wonkey. if we just do tl.x and thicknes, nothing is shown
+            // I think when drawing the window content we are no offsetting the thickness so we draw over the left side
+            self.drawer2D.rect_color(tl.x - thickness, tl.y, thickness, bl.y - tl.y, color);
 
             // right vertical
             self.drawer2D.rect_color(tr.x, tr.y, thickness, br.y - tr.y, color);
 
             // bottom horizontal
-            self.drawer2D.rect_color(bl.x, bl.y, br.x - bl.x + thickness, thickness, color);
+            self.drawer2D.rect_color(bl.x - thickness, bl.y, br.x - bl.x + thickness * 2, thickness, color);
 
 
             // Reset matchContent width and height

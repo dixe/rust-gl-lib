@@ -2,14 +2,14 @@ use crate::gl;
 use std::collections::HashMap;
 use crate::text_rendering::font::{FontType, Font, FntFont};
 use std::path::Path;
-
+use path_absolutize::*;
 
 /// Cache that will load fonts when needed, might at some point also unload unused fonts
 pub struct FontCache {
     pub default: Font,
     pub fonts_path: Option<String>,
-    msdf_fonts: HashMap::<String, Font>,
-    fnt_fonts: HashMap::<String, HashMap::<i32, Font>>,
+    pub msdf_fonts: HashMap::<String, Font>,
+    pub fnt_fonts: HashMap::<String, HashMap::<i32, Font>>,
     gl: gl::Gl
 }
 
@@ -34,6 +34,7 @@ impl FontCache {
     }
 
     pub fn get_or_default(&mut self, pixel_size: i32, font_name: &str) -> &Font {
+
         if pixel_size >= 20  {
             // see if we have msdf, and use that, otherwise use default
             if let Some(font) = self.get_msdf_font(font_name) {
@@ -89,14 +90,13 @@ impl FontCache {
             Some(p) => {
                 let fnt_name = format!("{font_name}_{pixel_size}.fnt");
                 let file_path = Path::new(p).join(fnt_name);
-
                 if file_path.exists() {
-                    match FntFont::load_fnt_font(file_path) {
+                    match FntFont::load_fnt_font(&file_path) {
                         Ok(font) => {
                             return Some(Font::fnt(&self.gl, font));
                         },
                         Err(err) => {
-                            println!("Load font from '{:?}' failed {:?}", p, err);
+                            println!("Load font from '{:?}' failed {:?}", file_path.absolutize(), err);
                             return None;
                         }
                     }
@@ -110,6 +110,7 @@ impl FontCache {
 
     pub fn add_font(&mut self, font: Font) {
         let font_name = font.name();
+
         match font.font_type() {
             FontType::Fnt => {
                 if !self.fnt_fonts.contains_key(font_name) {

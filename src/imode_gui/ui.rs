@@ -370,6 +370,19 @@ impl Ui {
         let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap_or(&0)).unwrap();
         window.drag_point = pos;
     }
+
+    pub fn finalize_frame(&mut self) {
+
+        self.drawer2D.render_instances();
+
+        // Hmm, we ned pxs to get the font, which we need for texture id
+        let pxs = self.style.text_styles.button.pixel_size;
+        let font_name = &self.style.text_styles.button.font_name;
+        let font = self.drawer2D.font_cache.get_or_default(pxs, font_name);
+
+        self.drawer2D.tr.render_char_quad(font, &self.drawer2D.gl, self.drawer2D.viewport.w as f32, self.drawer2D.viewport.h as f32);
+
+    }
 }
 
 fn clear_context(ctx: &mut ContainerContext) {

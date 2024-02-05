@@ -13,7 +13,7 @@ impl Ui {
         let id = self.next_id();
 
         let mut rect = Rect {
-            x: 0, y: 00, w:100, h: 20
+            x: 0, y: 00, w:500, h: 20
         };
 
         rect = self.layout_rect(rect);
@@ -64,32 +64,28 @@ impl Ui {
         let x = x_f64.round() as i32;
 
         // SLIDER BACKGROUND
-        let mut bg_color = Color::RgbA(220, 220, 220, 255);
-
-        // original
+        let bg_color = self.style.button.color;
 
         self.drawer2D.rounded_rect_color(rect.x, rect.y,  rect.w, rect.h, rect.h / 3, bg_color);
 
 
         // SLIDER KNOB
-        let mut color_outline = Color::RgbA(50, 50, 50, 255);
-        if self.is_hot(id) {
-            color_outline = Color::RgbA(40, 40, 40, 255);
-        }
+        let mut color_outline = Color::RgbA(180, 180, 180, 255);
 
         // draw the outline
         let r = (knob_width as f64) / 2.0;
 
         let mut outline_thickness = 0.3;
         if self.is_hot(id) {
-            outline_thickness = 0.7;
+            color_outline = Color::Rgb(210, 210, 210);
+            outline_thickness = 0.8;
         }
 
         self.drawer2D.circle_outline(rect.x + x, rect.y + rect.h / 2, r, outline_thickness, color_outline);
 
-
         // draw inner part
-        self.drawer2D.circle(rect.x + x, rect.y + rect.h / 2, r - 1.3 , bg_color);
+        let c_color = Color::RgbA(255, 0, 0, 255);
+        self.drawer2D.circle(rect.x + x, rect.y + rect.h / 2, r, bg_color);
 
         self.is_active(id)
     }

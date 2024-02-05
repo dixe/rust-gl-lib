@@ -17,7 +17,7 @@ uniform float radius;
 
 float circle(vec2 p, float radius)
 {
-  return length(p) - radius;
+  return length(p) - radius; // when inside circle output < 0 when outside output > 0
 }
 
 void main()

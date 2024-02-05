@@ -4,7 +4,7 @@ use crate::text_rendering::font;
 use image;
 
 
-const BUFFER_SIZE: usize = 4098;
+const BUFFER_SIZE: usize = 4096;
 // two triangle no EBO
 const ELEMENTS: usize = 6;
 const STRIDE: usize = 4;
@@ -12,8 +12,8 @@ const STRIDE: usize = 4;
 pub struct CharQuad {
     vao: buffer::VertexArray,
     vbo: buffer::ArrayBuffer,
-    buffer: [f32; ELEMENTS * BUFFER_SIZE * STRIDE]
-
+    buffer: [f32; ELEMENTS * BUFFER_SIZE * STRIDE],
+    chars: usize,
 }
 
 
@@ -77,8 +77,14 @@ impl CharQuad {
         Self {
             vbo: vbo,
             vao: vao,
-            buffer: [0.0; ELEMENTS * BUFFER_SIZE * STRIDE]
+            buffer: [0.0; ELEMENTS * BUFFER_SIZE * STRIDE],
+            chars: 0
         }
+    }
+
+
+    pub fn next_buffer_index(&self) -> usize {
+        self.chars
     }
 
     pub fn buffer_size(&self) -> usize {
@@ -147,6 +153,10 @@ impl CharQuad {
     }
 
     pub fn update_char_pixels(&mut self, buffer_index: usize, x: f32, y: f32, scale: f32, &chr: &font::PageChar, image_info: ImageInfo) {
+
+        // assume that we always update the last item
+        self.chars = buffer_index + 1;
+
         let t_left = chr.x  / image_info.width;
         let t_right = (chr.x + chr.width)  / image_info.width;
         let t_top = (chr.y)  / image_info.height;
@@ -208,27 +218,36 @@ impl CharQuad {
         self.buffer[start_index + 21 ] = y_b as f32;
         self.buffer[start_index + 22 ] = t_left as f32;
         self.buffer[start_index + 23 ] = t_bottom as f32;
+
+
     }
 
 
-    pub fn render(&self, gl: &gl::Gl, chars: usize) {
+    pub fn render(&mut self, gl: &gl::Gl) {
+
+        if self.chars == 0 {
+            return;
+        }
+
         self.vao.bind();
         unsafe {
             self.vbo.bind();
             gl.BufferSubData(
                 gl::ARRAY_BUFFER,
                 0,
-                (chars * ELEMENTS * STRIDE * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
+                (self.chars * ELEMENTS * STRIDE * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
                 self.buffer.as_ptr() as *const gl::types::GLvoid
             );
         }
         unsafe {
             // draw
 
-            gl.DrawArrays(gl::TRIANGLES, 0, (chars * ELEMENTS) as i32);
+            gl.DrawArrays(gl::TRIANGLES, 0, (self.chars * ELEMENTS) as i32);
         }
 
         self.vao.unbind();
+
+        self.chars = 0;
 
     }
 }

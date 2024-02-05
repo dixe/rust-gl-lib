@@ -1,5 +1,3 @@
-//see: https://github.com/Chlumsky/msdfgen#using-a-multi-channel-distance-field
-
 #version 330 core
 out vec4 FragColor;
 uniform vec3 color;
@@ -15,5 +13,6 @@ void main()
 
   float s = texture2D(text_map, IN.TexCoords).a;
 
-  FragColor = vec4(color * s, 1.0 * s);
+  FragColor = vec4(color, 1.0);
+  //FragColor = vec4(1.0, 1.0, 1.0, 1.0);
 }
