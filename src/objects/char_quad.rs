@@ -99,12 +99,12 @@ impl CharQuad {
         let t_top = 1.0;
         let t_bottom = 0.0;
 
+        // draw in top left
 
-        // quad coords in middle for now
-        let x_l = -0.5;
-        let x_r = 0.5;
-        let y_t = 0.5;
-        let y_b = -0.5;
+        let x_l = 400.0;
+        let x_r = 1000.0;
+        let y_t = 200.0;
+        let y_b = 1000.0;
 
 
         let start_index = buffer_index * ELEMENTS * STRIDE;

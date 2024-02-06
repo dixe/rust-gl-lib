@@ -1,5 +1,4 @@
 //see: https://github.com/Chlumsky/msdfgen#using-a-multi-channel-distance-field
-
 #version 330 core
 out vec4 FragColor;
 uniform vec4 color;
@@ -49,4 +48,5 @@ void main()
   FragColor = color* w;
 
   //FragColor = vec4(color.xyz* w, 1.0);
+
 }

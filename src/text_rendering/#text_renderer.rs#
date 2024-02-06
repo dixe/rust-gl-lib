@@ -10,7 +10,7 @@ use crate::color::Color;
 /// A collections of a font, shader and a texture that can render text using open.
 pub struct TextRenderer {
     pub font: Font,
-    pub color: Color,
+    color: Color,
     char_quad: Box<objects::char_quad::CharQuad>,
     smoothness: f32,
 }

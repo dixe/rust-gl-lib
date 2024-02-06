@@ -22,13 +22,14 @@ fn main() -> Result<(), failure::Error> {
     let mut color = Color::Rgb(27, 27, 27);
 
 
-    let mut show = true;
+
+    let mut show = false;
 
     let mut input = "".to_string();
     let offset = 0.0;
     ui.drawer2D.tr.set_text_color(Color::Rgb(240, 240, 240));
     ui.drawer2D.font_cache.fonts_path = Some("assets\\fonts\\".to_string());
-
+    let mut text_color = ui.drawer2D.tr.color;
     //ui.drawer2D.setup_instance_buffer();
 
     let mut x_off = 0.0;
@@ -47,7 +48,7 @@ fn main() -> Result<(), failure::Error> {
 
         ui.consume_events(&mut event_pump);
 
-        ui.heading_text("Not in a window");
+        //ui.heading_text("Not in a window");
 
         ui.newline();
 
@@ -60,6 +61,7 @@ fn main() -> Result<(), failure::Error> {
             ui.drawer2D.reload_all_shaders();
         }
 
+
         /*
         ui.body_text(&("And some small text that belongs the the base input: ".to_owned() + &input));
 
@@ -69,7 +71,7 @@ fn main() -> Result<(), failure::Error> {
         //ui.newline();
 
         //println!("{:?}", x_off);
-        ui.drawer2D.tr.render_text(&gl, "Text that will slide", TextAlignment::default(), ScreenBox { x: x_off+ 100.0, y: 100.0, width: 300.0, height: 100.0, screen_w: viewport.w as f32, screen_h: viewport.h as f32}, 16);
+        //ui.drawer2D.tr.render_text(&gl, "Text that will slide", TextAlignment::default(), ScreenBox { x: x_off+ 100.0, y: 100.0, width: 300.0, height: 100.0, screen_w: viewport.w as f32, screen_h: viewport.h as f32}, 16);
 
         ui.slider(&mut x_off, 0.0, 1.0);
 
@@ -87,7 +89,11 @@ fn main() -> Result<(), failure::Error> {
             ui.newline();
 
 
-            ui.color_picker(&mut color);
+
+            if ui.color_picker(&mut text_color) {
+                ui.drawer2D.tr.set_text_color(text_color);
+            }
+
             ui.window_end("Window1");
 
             show = !res.closed;

@@ -60,7 +60,7 @@ impl FntFont {
 
         // texture has 0,0 at lower left, font file has 0,0 at upper left, so inverse the y to match uv coordinates
         for c in &mut page.chars {
-            //c.y = image.height() as f32 - c.y;
+            c.y = image.height() as f32 - c.y;
         }
 
         Ok(FntFont {
@@ -87,8 +87,9 @@ impl FntFont {
 
         let parent = fnt_path.parent().ok_or(ParseFontError::PathHasNotParent)?;
         let img_path = parent.join(&page.info.file_name);
-
+        println!("{:?}", &img_path);
         let image = ImageReader::open(img_path)?.decode()?.into_rgba8();
+
 
         return Self::load_font(&text, image);
 
