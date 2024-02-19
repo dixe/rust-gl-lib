@@ -2,11 +2,13 @@ use crate::shader::{BaseShader};
 use crate::gl;
 use crate::texture::{self, TextureId};
 
+mod msdf_font;
+pub use self::msdf_font::*;
+
+
 mod fnt_font;
 pub use self::fnt_font::*;
 
-mod msdf_font;
-pub use self::msdf_font::*;
 
 #[derive(Debug, Clone)]
 pub struct Font {

@@ -8,7 +8,8 @@ pub struct Style {
     pub auto_wrap: bool,
     pub text_styles: TextStyles,
     pub button: ButtonStyle,
-    pub drag_point: Color
+    pub drag_point: Color,
+    pub clear_color: Color
 }
 
 impl Default for Style {
@@ -20,6 +21,7 @@ impl Default for Style {
             text_styles: Default::default(),
             button: Default::default(),
             drag_point: Color::Rgb(220, 220, 220),
+            clear_color: Color::Rgb(27, 27, 27)
         }
     }
 }

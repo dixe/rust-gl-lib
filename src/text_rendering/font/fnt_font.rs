@@ -20,27 +20,6 @@ pub struct FntFont {
 }
 
 
-static FONT_TEXT: &str = include_str!("../../../assets/fonts/Consolas_12.fnt");
-static FONT_IMG: &[u8] = include_bytes!("../../../assets/fonts/Consolas_0_12.png");
-
-
-impl Default for FntFont {
-    fn default() -> Self {
-
-        let loaded_img = match image::load_from_memory(FONT_IMG) {
-            Ok(img) => img,
-            Err(err) => panic!("Load default font, creating image failed with: {}", err)
-        };
-
-        let image = loaded_img.into_rgba8();
-
-        match FntFont::load_font(FONT_TEXT, image) {
-            Ok(font) => font,
-            Err(err) => panic!("Load default font failed with: {}", err)
-        }
-    }
-}
-
 
 impl FntFont {
 

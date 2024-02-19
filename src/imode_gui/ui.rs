@@ -6,11 +6,14 @@ use crate::objects::square;
 use sdl2::event;
 use crate::color::Color;
 use crate::imode_gui::style::*;
-use crate::text_rendering::font::{Font, FntFont};
+use crate::text_rendering::font::{Font, MsdfFont};
 use super::*;
 use std::collections::HashMap;
 use crate::math::numeric::Numeric;
 use crate::deltatime;
+use std::rc::Rc;
+use std::cell::Cell;
+use std::borrow::BorrowMut;
 
 #[derive(Eq, Hash, PartialEq, Clone, Copy, Debug, Default)]
 pub struct CtxId {
@@ -50,13 +53,14 @@ pub struct Ui {
     pub next_window_id: usize,
     pub active_window: Option<usize>,
 
-    pub enabled: bool
+    pub enabled: bool,
+    pub window: Rc<sdl2::video::Window>,
 }
 
 
 impl Ui {
 
-    pub fn new(mut drawer2D: Drawer2D) -> Self {
+    pub fn new(mut drawer2D: Drawer2D, window: Rc<sdl2::video::Window>) -> Self {
 
         let mut base_window : Window = Default::default();
         base_window.name = "BASE".to_owned();
@@ -65,25 +69,12 @@ impl Ui {
 
         let style = Default::default();
 
-        // load fonts for small text size, and add to drawer2D font cache
-
-        let small_font_inner = FntFont::default();
-
-        let small_font = Font::fnt(&drawer2D.gl, small_font_inner);
-
-        drawer2D.font_cache.add_font(small_font);
-
         let mut windows: HashMap::<usize, Window>  = Default::default();
         windows.insert(0, base_window);
 
         let mut deltatime = deltatime::Deltatime::new();
 
-
-        // set default clear color
-
-        unsafe {
-            drawer2D.gl.ClearColor(0.9, 0.9, 0.9, 1.0);
-        }
+        drawer2D.tr.set_text_color(Color::Rgb(240, 240, 240));
 
         Self {
             deltatime,
@@ -102,7 +93,8 @@ impl Ui {
             window_to_id: Default::default(),
             next_window_id: 1,
             active_window: None,
-            enabled: true
+            enabled: true,
+            window,
         }
     }
 
@@ -256,8 +248,30 @@ impl Ui {
         self.enabled = true;
     }
 
+
+    pub fn start_frame(&mut self, event_pump: &mut sdl2::EventPump) {
+        // Basic clear gl stuff and get events to UI
+
+        // TODO: Store enable and disable flags
+        unsafe {
+            self.drawer2D.gl.Enable(gl::DEPTH_TEST); // for stuff we need this with instanced rendering of quads, so we still can see text on top
+
+            let cc = self.style.clear_color.as_vec4();
+
+            self.drawer2D.gl.ClearColor(cc.x, cc.y, cc.z, cc.w);
+
+            self.drawer2D.gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+        }
+
+        self.consume_events(event_pump);
+
+    }
+
     // TODO: Either return unused events only. Or return all events along with bool to indicate if the event is used/consumed by gui
-    pub fn consume_events(&mut self, event_pump: &mut sdl2::EventPump) -> &[event::Event] {
+
+    // Event pump in self seem like a bad idea, need some interioer mutability (ok), but also limit what we can do in event loop,
+    // we cannot call a &mut self method. That is quite a limit
+    pub fn consume_events(&mut self, event_pump: &mut sdl2::EventPump) {
 
         self.deltatime.update();
         self.mouse_down = false;
@@ -292,7 +306,7 @@ impl Ui {
             for event in event_pump.poll_iter() {
                 self.frame_events.push(event);
             }
-            return &self.frame_events;
+            return;
         }
 
         use event::Event::*;
@@ -357,8 +371,6 @@ impl Ui {
                 }
             }
         }
-
-        return &self.frame_events;
     }
 
     pub fn set_window_pos(&mut self, pos: Pos) {
@@ -371,7 +383,7 @@ impl Ui {
         window.drag_point = pos;
     }
 
-    pub fn finalize_frame(&mut self) {
+    pub fn end_frame(&mut self) {
 
         self.drawer2D.render_instances();
 
@@ -381,6 +393,8 @@ impl Ui {
         let font = self.drawer2D.font_cache.get_or_default(pxs, font_name);
 
         self.drawer2D.tr.render_char_quad(font, &self.drawer2D.gl, self.drawer2D.viewport.w as f32, self.drawer2D.viewport.h as f32);
+
+        self.window.gl_swap_window();
 
     }
 }

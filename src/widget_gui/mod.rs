@@ -46,7 +46,7 @@ impl UiState {
 
     pub fn new(gl: &gl::Gl) -> Self {
         let sdf_font = Default::default();
-        let font = Font::fnt(gl, sdf_font);
+        let font = Font::msdf(gl, sdf_font);
         UiState {
             next_id: 0,
             widgets: Vec::new(),

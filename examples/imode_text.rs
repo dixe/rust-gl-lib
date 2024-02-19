@@ -61,17 +61,16 @@ fn main() -> Result<(), failure::Error> {
             ui.drawer2D.reload_all_shaders();
         }
 
+        ui.newline();
 
-        /*
         ui.body_text(&("And some small text that belongs the the base input: ".to_owned() + &input));
 
         ui.newline();
 
-*/
         //ui.newline();
 
         //println!("{:?}", x_off);
-        //ui.drawer2D.tr.render_text(&gl, "Text that will slide", TextAlignment::default(), ScreenBox { x: x_off+ 100.0, y: 100.0, width: 300.0, height: 100.0, screen_w: viewport.w as f32, screen_h: viewport.h as f32}, 16);
+        ui.drawer2D.tr.render_text(&gl, "Text that will slide", TextAlignment::default(), ScreenBox { x: x_off+ 100.0, y: 100.0, width: 300.0, height: 100.0, screen_w: viewport.w as f32, screen_h: viewport.h as f32}, 16);
 
         ui.slider(&mut x_off, 0.0, 1.0);
 

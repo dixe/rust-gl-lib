@@ -84,7 +84,7 @@ impl<Message> SdlGlWindow<Message> where Message: Clone + fmt::Debug {
         viewport.set_used(&gl);
 
         let sdf_font = Default::default();
-        let font = Font::fnt(&gl, sdf_font);
+        let font = Font::msdf(&gl, sdf_font);
         let text_renderer = text_renderer::TextRenderer::new(&gl, font);
 
 

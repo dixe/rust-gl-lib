@@ -1,13 +1,14 @@
 #![allow(non_snake_case)]
 use serde::{Serialize, Deserialize};
 use serde_json::Result;
-
+use std::path::Path;
 use crate::shader::{BaseShader};
 use crate::gl;
 use super::*;
+use std::fmt;
 
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct MsdfFont {
     pub image: image::RgbaImage, // TODO: only store height and width, and not full image, for each font
     pub info: FontInfo,
@@ -19,6 +20,19 @@ pub struct MsdfFont {
 
 static FONT_JSON: &str = include_str!("../../../assets/fonts/msdf_consolas.json");
 static FONT_IMG: &[u8] = include_bytes!("../../../assets/fonts/msdf_consolas.png");
+
+
+impl fmt::Debug for MsdfFont {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MsdFont")
+            //.field("info", &self.info)
+            .field("name", &self.info.name)
+            //.field("chars", &self.chars)
+            .field("line_height", &self.line_height)
+            .field("pixel_size", &self.pixel_size)
+            .finish()
+    }
+}
 
 
 impl Default for MsdfFont {
@@ -41,7 +55,7 @@ impl Default for MsdfFont {
 
 impl MsdfFont {
 
-    pub fn load_from_paths(json_p: &str, img_p: &str) -> Result<MsdfFont> {
+    pub fn load_from_paths<P: AsRef<Path>>(json_p: P, img_p: P) -> Result<MsdfFont> {
 
         let jp = std::fs::canonicalize(json_p).unwrap();
         let ip = std::fs::canonicalize(img_p).unwrap();

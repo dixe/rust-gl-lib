@@ -183,12 +183,12 @@ impl Drawer2D {
         // TODO: move shader out of fonts. Since many fonts will use the same shader, move the shader list into TextRenderer
         // also move font_cache into text renderer, since its better suited there
         for (_, v) in self.font_cache.msdf_fonts.iter_mut() {
-            Self::reload_shader(&self.gl, "../msdf_mask_text_render", &mut v.shader);
+            Self::reload_shader(&self.gl, "../msdf_text_render", &mut v.shader);
         }
 
-        for (_, map) in self.font_cache.fnt_fonts.iter_mut() {
+        for (_, map) in self.font_cache.softmask_fonts.iter_mut() {
             for (_, v) in map.iter_mut() {
-                Self::reload_shader(&self.gl, "../alpha_mask_text_render", &mut v.shader);
+                Self::reload_shader(&self.gl, "../softmask_text_render", &mut v.shader);
             }
         }
 

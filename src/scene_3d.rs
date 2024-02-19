@@ -214,10 +214,8 @@ pub struct SceneEntity {
 }
 
 impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserControllerData> {
-    pub fn new(gl: gl::Gl, viewport: gl::viewport::Viewport, sdl: sdl2::Sdl) -> Result<Scene<UserPostProcessData, UserControllerData>, failure::Error> {
+    pub fn new(gl: gl::Gl, viewport: gl::viewport::Viewport, ui: Ui, sdl: sdl2::Sdl) -> Result<Scene<UserPostProcessData, UserControllerData>, failure::Error> {
 
-        let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
-        let ui = Ui::new(drawer_2d);
         let mesh_shader = mesh_shader::MeshShader::new(&gl)?;
         let cubemap_shader = load_object_shader("cubemap", &gl).unwrap();
         let player = AnimationPlayer::<EntityId>::new();

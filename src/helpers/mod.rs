@@ -6,7 +6,10 @@ use crate::shader::circle_shader::CircleShader;
 use crate::objects::square::Square;
 use crate::text_rendering::text_renderer::TextRenderer;
 use crate::text_rendering::font::*;
-
+use std::rc::Rc;
+use std::cell::Cell;
+use crate::imode_gui::Ui;
+use crate::imode_gui::drawer2d::Drawer2D;
 
 #[derive(Debug, Fail)]
 pub enum SetupError {
@@ -24,11 +27,23 @@ pub struct BasicSetup {
     pub sdl: sdl2::Sdl,
     pub video_subsystem: sdl2::VideoSubsystem,
     pub gl: gl::Gl,
-    pub window: sdl2::video::Window,
+    pub window: Rc<sdl2::video::Window>,
     pub viewport: gl::viewport::Viewport,
-    pub gl_context: sdl2::video::GLContext
+    pub gl_context: sdl2::video::GLContext,
+    pub event_pump: sdl2::EventPump,
 }
 
+
+impl BasicSetup {
+
+    pub fn ui(&self) -> Ui {
+        let window = self.window.clone();
+        let gl = &self.gl;
+        let drawer_2d = Drawer2D::new(&gl, self.viewport).unwrap();
+
+        Ui::new(drawer_2d, window)
+    }
+}
 
 impl From<failure::Error> for SetupError {
     fn from(other: failure::Error) -> Self {
@@ -89,6 +104,7 @@ pub fn setup_sdl() -> Result<BasicSetup, SetupError> {
     });
     viewport.set_used(&gl);
 
+    let event_pump = sdl.event_pump().unwrap();
 
     Ok(BasicSetup {
         sdl,
@@ -96,9 +112,10 @@ pub fn setup_sdl() -> Result<BasicSetup, SetupError> {
         height,
         video_subsystem,
         gl,
-        window,
+        window: window.into(),
         viewport,
-        gl_context
+        gl_context,
+        event_pump
     })
 }
 
