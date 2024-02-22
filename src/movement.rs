@@ -113,9 +113,9 @@ impl Default for Inputs {
         Self {
             movement: na::Vector3::new(0.0, 0.0, 0.0),
             mapping: Default::default(),
-            speed: 2.0,
+            speed: 10.0,
             mouse_movement: Default::default(),
-            sens: 0.15,
+            sens: 0.25,
             inverse_y : -1.0,
             inverse_x : 1.0,
             mouse_wheel: 0.0,

@@ -19,7 +19,9 @@ impl ShadowMap {
         // we could use buffer::FrameBuffer, but it is set up for color, depth ect, so easier to just to it manually here
         // so we can set drawbuffer none and reader buffer none,
         let mut depth_map_fbo = 0;
-        let depth_map = texture::gen_texture_depth(gl, 1024, 1024);
+        let w = 4096;
+        let h = 4096;
+        let depth_map = texture::gen_texture_depth(gl, w, h);
 
         unsafe {
             gl.GenFramebuffers(1, &mut depth_map_fbo);
@@ -36,8 +38,8 @@ impl ShadowMap {
             depth_map_fbo,
             depth_map,
             shader,
-            w: 1024,
-            h: 1024,
+            w,
+            h,
             texture_offset: 0
         }
     }

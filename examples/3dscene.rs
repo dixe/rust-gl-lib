@@ -16,18 +16,18 @@ fn post_process_uniform_set(gl: &gl::Gl, shader: &mut BaseShader, data : &PostPD
 }
 
 fn main() -> Result<(), failure::Error> {
-
-    let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let mut ui = sdl_setup.ui();
     let gl = &sdl_setup.gl;
-    let _audio_subsystem = sdl.audio().unwrap();
-    let mut event_pump = sdl.event_pump().unwrap();
+    let viewport = sdl_setup.viewport;
 
     // disable v-sync
     let _ = sdl_setup.video_subsystem.gl_set_swap_interval(0);
+
+    let mut scene = scene::Scene::<PostPData, ControlledData>::new(gl.clone(), viewport, ui, sdl_setup.sdl)?;
+
     loop {
-        let _ = run_scene(gl, &mut event_pump, &window, sdl.clone())?;
+        let _ = run_scene(gl, &mut scene, &mut sdl_setup.event_pump)?;
     }
 }
 
@@ -36,17 +36,7 @@ enum PlayerState {
     Movable,
 }
 
-fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
-             window: &sdl2::video::Window,
-             sdl: sdl2::Sdl) -> Result<(), failure::Error> {
-
-    let viewport = gl::viewport::Viewport {
-        x: 0,
-        y: 0,
-        w: window.size().0 as i32,
-        h: window.size().1 as i32,
-    };
-    let mut scene = scene::Scene::<PostPData, ControlledData>::new(gl.clone(), viewport, sdl)?;
+fn run_scene(gl: &gl::Gl, scene: &mut scene::Scene<PostPData, ControlledData>, event_pump: &mut sdl2::EventPump) -> Result<(), failure::Error> {
 
 
     let mut cont = true;
@@ -56,7 +46,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         cont = scene.ui.button("PLAY");
 
         scene.render();
-        window.gl_swap_window();
+        scene.frame_end();
     }
 
     scene.set_skybox("assets/cubemap/skybox/".to_string());
@@ -126,7 +116,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         // move to before controller should take whole scene maybe, since we want to update animaiton played
         // controller is actually a camera controller, so should maybe not even do movement2
 
-        handle_input(&mut scene);
+        handle_input(scene);
 
         let dt = scene.dt();
 
@@ -141,7 +131,7 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         }
 
 
-        update_target(&mut scene, player_id, enemy_id);
+        update_target(scene, player_id, enemy_id);
 
 
         let _p1 = scene.entities.get(&player_id).unwrap();
@@ -314,6 +304,9 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
             return Ok(());
         }
 
+        scene.ui.newline();
+        scene.ui.body_text("Press 'Esc' to toggle between char\ncontrol mode, and overview mode.\nTab to change camera mode");
+
         // update aimaiton player, and bones, and root motion if any
         // and actions queue into the scene
         if playing {
@@ -322,9 +315,8 @@ fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
         }
 
         scene.render();
-        window.gl_swap_window();
+        scene.frame_end();
     }
-
 }
 
 

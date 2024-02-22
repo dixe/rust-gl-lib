@@ -2,11 +2,11 @@
 out vec4 Color;
 
 in VS_OUTPUT {
-  flat vec3 Normal;
-    vec3 FragPos;
-    flat vec3 Color;
-    vec4 FragPosLightSpace;
-    vec2 TexCord;
+  vec3 Normal;
+  vec3 FragPos;
+  vec3 Color;
+  vec4 FragPosLightSpace;
+  vec2 TexCord;
 } IN;
 
 
@@ -37,14 +37,16 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
   // light outside light view frustum z far
   if(projCoords.z > 1.0)
   {
-    return 1.0; // should be 0
+    return 0.0; // 0 for light, 1 for dark
   }
 
+  // Outside light square
   if (projCoords.x > 1.0 || projCoords.x  < 0.0 ||
       projCoords.y > 1.0 || projCoords.y  < 0.0)
   {
-    return 1.0;
+    return 0.0; // 0 for light, 1 for dark
   }
+
   float closestDepth = texture(shadowMap, projCoords.xy).r;
   float currentDepth = projCoords.z;
   float shadow = currentDepth > closestDepth ? 1.0 : 0.0;
@@ -52,12 +54,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
   return shadow;
 }
 
-
-void main()
-{
-
-  vec3 col = texture(Texture, IN.TexCord).rgb;
-
+float calc_light() {
   // ABIENT
   float ambientStrength = 0.5;
   vec3 ambient = ambientStrength * lightColor;
@@ -77,11 +74,21 @@ void main()
 
   // SHADOW
   float shadow = ShadowCalculation(IN.FragPosLightSpace, norm, lightDir);
-
   //shadow = 0.0;
-  Color = vec4((ambient + (1.0 - shadow) * (diffuse + specular)) * col, 1.0f);
+  float l = ambientStrength + (1.0 - shadow) * (diff + spec);
+
+  return smoothstep(0.50, 0.75, l);
+
+}
+
+void main()
+{
+
+  vec3 col = texture(Texture, IN.TexCord).rgb;
+
+  float light = calc_light();
 
 
-  //Color = vec4(IN.Color, 1.0);
-  //Color = vec4(shadow, shadow, shadow, 1.0);
+  Color = vec4(light * col, 1.0);
+
 }

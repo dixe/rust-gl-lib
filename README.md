@@ -24,6 +24,11 @@ Run with `cargo t -- --test-threads=1` to only have 1 sdl instance at a time.
 * [x] Intermediate mode gui should internally keep track of drawer2D.z and for most widget draw on top. This way rendering the background of windows after widgets is not a problem
 
 
+# Features
+
+* [ ] Nav mesh
+* [ ] Toon shader
+
 # Instancing
 Drawing some thing instanced and some not, reuslts in fx slider knob circle will have the clearcolor as part of the square that is
 alpha 0. Cannot get around it, unless we can draw the slider background before the knob. That means we need to to instancing in

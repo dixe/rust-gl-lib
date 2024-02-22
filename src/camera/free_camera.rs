@@ -17,6 +17,7 @@ pub fn update_camera(camera: &mut Camera, dt: f32, input: &Inputs){
     //println!("Dir: {:.2?}", dir);
     let dt_speed = dt * input.speed;
 
+
     pos += camera.front * dir.x * dt_speed;
     pos += camera.right * dir.y * dt_speed;
     pos += camera.up * dir.z * dt_speed;
@@ -117,7 +118,7 @@ impl Default for Controller {
         Controller {
             movement: na::Vector3::new(0.0, 0.0, 0.0),
             mapping: Default::default(),
-            speed: 2.0,
+            speed: 10.0,
             mouse_movement: Default::default(),
             sens: 0.15,
             inverse_y : 1.0,

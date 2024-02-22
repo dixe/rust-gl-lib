@@ -17,7 +17,7 @@ use crate::audio::audio_player::AudioPlayer;
 use std::{thread, sync::{Arc, Mutex}};
 use std::rc::Rc;
 use std::collections::{VecDeque, HashMap};
-
+use crate::helpers;
 use sdl2::event::{Event, WindowEvent};
 use crate::collision3d::CollisionBox;
 
@@ -49,6 +49,7 @@ impl<T> DataMap<T> {
     pub fn get(&self, id: &usize) -> Option<&T> {
         self.data.get(&id)
     }
+
     pub fn get_mut(&mut self, id: &usize) -> Option<&mut T> {
         self.data.get_mut(&id)
     }
@@ -124,7 +125,7 @@ impl SceneInputs {
     }
 }
 
-pub struct Scene<UserPostProcessData, UserControllerData =()> {
+pub struct Scene<UserPostProcessData, UserControllerData = ()> {
     pub ui: Ui,
     pub gl: gl::Gl,
     pub ui_mode: bool,
@@ -214,7 +215,11 @@ pub struct SceneEntity {
 }
 
 impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserControllerData> {
-    pub fn new(gl: gl::Gl, viewport: gl::viewport::Viewport, ui: Ui, sdl: sdl2::Sdl) -> Result<Scene<UserPostProcessData, UserControllerData>, failure::Error> {
+    pub fn new(sdl_setup: &mut helpers::BasicSetup) -> Result<Scene<UserPostProcessData, UserControllerData>, failure::Error> {
+        let gl = sdl_setup.gl.clone();
+        let viewport = sdl_setup.viewport;
+        let ui = sdl_setup.ui();
+        let sdl = sdl_setup.sdl.clone();
 
         let mesh_shader = mesh_shader::MeshShader::new(&gl)?;
         let cubemap_shader = load_object_shader("cubemap", &gl).unwrap();
@@ -233,17 +238,25 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
         }
 
 
+        let mut camera = camera::Camera::new(viewport.w as f32, viewport.h as f32);
+        let look_at = V3::new(0.0, 0.0, 0.0);
+
+        camera.move_to(V3::new(10.4, 0.0, 5.0));
+        camera.look_at(look_at);
+
+        let mut sm = ShadowMap::new(&gl);
+        sm.texture_offset = 1;
 
         Ok(Self {
             gl,
             sdl,
             ui_mode: true,
-            shadow_map: None,
+            shadow_map: Some(sm),
             //render_meshes: vec![],
             ui,
             viewport,
             emitter: emitter::Emitter::new(1000, emitter::emit_1, emitter::update_1),
-            camera: camera::Camera::new(viewport.w as f32, viewport.h as f32),
+            camera,
             light_pos: V3::new(0.0, 10.0, 30.0),
             inputs : SceneInputs {
                 follow: Default::default(),
@@ -475,7 +488,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
         let dt = self.dt();
 
-        self.ui.consume_events(event_pump);
+        self.ui.start_frame(event_pump);
 
         self.inputs.current_mut().frame_start();
 
@@ -549,6 +562,11 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
                 self.cubemap_imgs = None;
             }
         }
+    }
+
+    pub fn frame_end(&mut self) {
+
+        self.ui.end_frame();
     }
 
     pub fn update_actions(&mut self) {
@@ -661,12 +679,8 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
                 self.gl.CullFace(gl::BACK);
             }
 
-            // TODO: Work with non fixed viewport
             sm.post_render(&self.gl, self.viewport.w, self.viewport.h);
         }
-
-
-
 
         if let Some(ref mut fbos) = self.fbos {
             fbos.ui_fbo.unbind();
@@ -701,6 +715,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
             self.ui.drawer2D.render_img_custom_shader(fbos.mesh_fbo.color_tex, 0, 0, size, &fbos.post_process_shader);
 
+            // TODO: Handle this when using instanced ui rendering
             // Draw ui on top at last
             self.ui.drawer2D.render_img(fbos.ui_fbo.color_tex, 0, 0, size);
         } else {

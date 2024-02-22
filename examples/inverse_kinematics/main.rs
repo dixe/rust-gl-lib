@@ -15,18 +15,17 @@ fn post_process_uniform_set(gl: &gl::Gl, shader: &mut BaseShader, data : &PostPD
 fn main() -> Result<(), failure::Error> {
 
     let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
     let viewport = sdl_setup.viewport;
     let gl = &sdl_setup.gl;
-    let _audio_subsystem = sdl.audio().unwrap();
 
     // disable v-sync
     sdl_setup.video_subsystem.gl_set_swap_interval(0);
 
-    let mut event_pump = sdl.event_pump().unwrap();
+    let mut ui = sdl_setup.ui();
+    let mut scene = scene::Scene::<PostPData>::new(gl.clone(), viewport, ui, sdl_setup.sdl)?;
 
-    let mut scene = scene::Scene::<PostPData>::new(gl.clone(), viewport, sdl)?;
+    let mut event_pump = sdl_setup.event_pump;
+
     scene.set_skybox("assets/cubemap/skybox/".to_string());
     scene.load_all_meshes("E:/repos/Game-in-rust/blender_models/player.glb", true);
 
@@ -34,8 +33,9 @@ fn main() -> Result<(), failure::Error> {
     let look_at = V3::new(5.0, 3.1, 5.0);
     scene.camera.move_to(V3::new(8.4, 4.3, 5.0));
     scene.camera.look_at(look_at);
-    scene.inputs.speed = 15.0;
-    scene.inputs.sens = 1.5;
+    scene.inputs.free.speed = 15.0;
+    scene.inputs.free.sens = 1.5;
+
 
     let player_id = scene.create_entity("player");
     let player2_id = scene.create_entity("player");
@@ -95,10 +95,10 @@ fn main() -> Result<(), failure::Error> {
             ui.newline();
 
             ui.label("Sens");
-            ui.slider(&mut scene.inputs.sens, 0.01, 2.0);
+            ui.slider(&mut scene.inputs.free.sens, 0.01, 2.0);
 
             ui.label("Speed");
-            ui.slider(&mut scene.inputs.speed, 0.01, 20.0);
+            ui.slider(&mut scene.inputs.free.speed, 0.01, 20.0);
 
             ui.newline();
             let p1 = scene.entities.get(&player_id).unwrap();
@@ -154,6 +154,6 @@ fn main() -> Result<(), failure::Error> {
         }
 
         scene.render();
-        window.gl_swap_window();
+        scene.frame_end();
     }
 }
