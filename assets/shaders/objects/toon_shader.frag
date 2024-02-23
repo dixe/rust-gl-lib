@@ -54,9 +54,10 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
   return shadow;
 }
 
-float calc_light() {
+
+void main() {
   // ABIENT
-  float ambientStrength = 0.5;
+  float ambientStrength = 0.4;
   vec3 ambient = ambientStrength * lightColor;
 
   //DIFFUSE
@@ -77,18 +78,29 @@ float calc_light() {
   //shadow = 0.0;
   float l = ambientStrength + (1.0 - shadow) * (diff + spec);
 
-  return smoothstep(0.50, 0.75, l);
 
-}
+  // l is between 0 and 1 with a narrow gradient .
+  l = smoothstep(0.50, 0.75, l);
 
-void main()
-{
+  // map l to new range, low is basically ambient light strength
+
+  float new_range_lower = 0.4;
+  float new_range_upper = 1.0;
+  float slope = (new_range_upper - new_range_lower) / (1.0 - 0.0);
+
+  l = new_range_lower + slope * l;
+
+  // pick a color for l
 
   vec3 col = texture(Texture, IN.TexCord).rgb;
 
-  float light = calc_light();
+  // white highlight, we might only want this on some specific object, should be set per object maybe. We could set threshold via
+  // uniform or attribs
+  float s = diff;
+  if (s > 1.995) {
+    col = vec3(1.0, 1.0, 1.0);
+  }
 
-
-  Color = vec4(light * col, 1.0);
+  Color = vec4(l * col * lightColor, 1.0);
 
 }

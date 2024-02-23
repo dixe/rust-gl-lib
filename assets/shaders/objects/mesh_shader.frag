@@ -37,14 +37,15 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
   // light outside light view frustum z far
   if(projCoords.z > 1.0)
   {
-    return 1.0; // should be 0
+    return 0.0; // should be 0
   }
 
   if (projCoords.x > 1.0 || projCoords.x  < 0.0 ||
       projCoords.y > 1.0 || projCoords.y  < 0.0)
   {
-    return 1.0;
+    return 0.0;
   }
+
   float closestDepth = texture(shadowMap, projCoords.xy).r;
   float currentDepth = projCoords.z;
   float shadow = currentDepth > closestDepth ? 1.0 : 0.0;

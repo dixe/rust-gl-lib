@@ -20,7 +20,7 @@ use std::collections::{VecDeque, HashMap};
 use crate::helpers;
 use sdl2::event::{Event, WindowEvent};
 use crate::collision3d::CollisionBox;
-
+use crate::color::Color;
 
 pub struct DataMap<T> {
     data: HashMap::<usize, T>,
@@ -143,6 +143,7 @@ pub struct Scene<UserPostProcessData, UserControllerData = ()> {
     pub controlled_entity: Option<ControlledEntity<UserControllerData>>,
 
     pub light_pos: V3,
+    pub light_color: Color,
 
     pub player: AnimationPlayer<EntityId>,
 
@@ -258,6 +259,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
             emitter: emitter::Emitter::new(1000, emitter::emit_1, emitter::update_1),
             camera,
             light_pos: V3::new(0.0, 10.0, 30.0),
+            light_color: Color::Rgb(255, 255, 255),
             inputs : SceneInputs {
                 follow: Default::default(),
                 free: Default::default(),
@@ -565,7 +567,6 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
     }
 
     pub fn frame_end(&mut self) {
-
         self.ui.end_frame();
     }
 
@@ -691,7 +692,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
             render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
                          &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
-                         light_space_mat, self.light_pos);
+                         light_space_mat, self.light_pos, self.light_color);
 
 
             fbos.mesh_fbo.unbind();
@@ -721,7 +722,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
         } else {
             render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
                          &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
-                         light_space_mat, self.light_pos);
+                         light_space_mat, self.light_pos, self.light_color);
         }
     }
 
@@ -794,11 +795,13 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
                 _shadow_map: &Option<ShadowMap>,
                 render_meshes: &[RenderMesh],
                 light_space_mat: Mat4,
-                light_pos: V3) {
+                light_pos: V3,
+                light_color: Color) {
 
 
     let mut uniforms = mesh_shader::Uniforms {
         light_pos,
+        light_color,
         projection: camera.projection(),
         model: Mat4::identity(),
         view: camera.view(),
