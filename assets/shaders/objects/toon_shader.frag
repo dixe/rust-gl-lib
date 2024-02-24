@@ -13,8 +13,68 @@ in VS_OUTPUT {
 uniform vec3 lightColor;
 uniform vec3 lightPos;
 uniform vec3 viewPos;
+
 layout(binding=0) uniform sampler2D Texture;
 layout(binding=1) uniform sampler2D shadowMap;
+
+
+
+float pcf(vec3 projCoords, float bias) {
+  float shadow = 0.0;
+  vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+  float sum = 0.0;
+  for(int x = -1; x <= 1; ++x)
+    {
+      for(int y = -1; y <= 1; ++y)
+        {
+          sum += 1;
+          float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
+          shadow += projCoords.z - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+  shadow /= sum;
+
+  return shadow;
+}
+
+
+float ShadowCalculationPcf(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
+{
+
+  // if normal points away from light, we now that it is in shadow
+  // this can also eliminate the bias since that created notisable
+  float angle = dot(normal, lightDir);
+  if (angle < 0.0 ) {
+    return 1.0; // should be 1
+  }
+
+  // get correct projection, when using perspective and ortho
+  // in [-1,1]
+  vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+
+  // map to [0,1]
+  projCoords = projCoords * 0.5 + 0.5;
+
+  // light outside light view frustum z far
+  if(projCoords.z > 1.0)
+  {
+    return 0.0; // 0 for light, 1 for dark
+  }
+
+  // Outside light square
+  if (projCoords.x > 1.0 || projCoords.x  < 0.0 ||
+      projCoords.y > 1.0 || projCoords.y  < 0.0)
+  {
+    return 0.0; // 0 for light, 1 for dark
+  }
+
+
+  // bias more than 0 seems to create a hole. Maybe investigate
+  float bias = 0.0; //max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+  float shadow = pcf(projCoords, bias);
+
+  return shadow;
+}
 
 
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
@@ -74,7 +134,7 @@ void main() {
   vec3 specular = specularStrength * spec * lightColor;
 
   // SHADOW
-  float shadow = ShadowCalculation(IN.FragPosLightSpace, norm, lightDir);
+  float shadow = ShadowCalculationPcf(IN.FragPosLightSpace, norm, lightDir);
   //shadow = 0.0;
   float l = ambientStrength + (1.0 - shadow) * (diff + spec);
 

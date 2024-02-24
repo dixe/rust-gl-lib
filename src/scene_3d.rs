@@ -658,12 +658,13 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
         }
 
 
-        let mut light_space_mat = Mat4::identity();
+        // TODO: Allocate once and reuse a vec, maybe just on scene
+        let mut light_space_mats = vec![];
 
         // RENDER TO SHADOW MAP
         if let Some(sm) = &self.shadow_map {
-            sm.pre_render(&self.gl, self.light_pos);
-            light_space_mat = sm.light_space_mat(self.light_pos);
+            // calc and set light_space_mats
+            sm.pre_render(&self.gl, self.light_pos,  &mut light_space_mats);
 
             unsafe {
                 self.gl.Enable(gl::CULL_FACE);
@@ -692,7 +693,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
             render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
                          &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
-                         light_space_mat, self.light_pos, self.light_color);
+                         &light_space_mats, self.light_pos, self.light_color);
 
 
             fbos.mesh_fbo.unbind();
@@ -722,7 +723,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
         } else {
             render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
                          &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
-                         light_space_mat, self.light_pos, self.light_color);
+                         &light_space_mats, self.light_pos, self.light_color);
         }
     }
 
@@ -794,7 +795,7 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
                 stencil_shader: &Option<mesh_shader::MeshShader>,
                 _shadow_map: &Option<ShadowMap>,
                 render_meshes: &[RenderMesh],
-                light_space_mat: Mat4,
+                light_space_mats: &Vec::<Mat4>,
                 light_pos: V3,
                 light_color: Color) {
 
@@ -822,6 +823,14 @@ fn render_scene(gl: &gl::Gl, camera: &Camera,
     mesh_shader.shader.set_used();
     mesh_shader.shader.set_i32(gl, "Texture", 0);
     mesh_shader.shader.set_i32(gl, "shadowMap", 1);
+
+
+    // TODO: We should set mats as a vec
+    let mut light_space_mat = Mat4::identity();
+
+    if light_space_mats.len() > 0 {
+        light_space_mat = light_space_mats[0];
+    }
 
     for rm in render_meshes {
         uniforms.model = rm.model_mat;

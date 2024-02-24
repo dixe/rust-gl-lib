@@ -2,6 +2,7 @@ use crate::gl;
 use crate::texture;
 use crate::na;
 use crate::shader::{self, Shader};
+use crate::typedef::{V4, Mat4};
 
 pub struct ShadowMap {
     depth_map_fbo: u32,
@@ -9,7 +10,10 @@ pub struct ShadowMap {
     pub shader: shader::BaseShader,
     w: i32,
     h: i32,
-    pub texture_offset: u32
+    pub texture_offset: u32,
+    pub z_far: f32,
+    pub z_near: f32,
+    pub size: f32
 }
 
 impl ShadowMap {
@@ -40,12 +44,15 @@ impl ShadowMap {
             shader,
             w,
             h,
-            texture_offset: 0
+            texture_offset: 0,
+            z_near: 0.5,
+            z_far: 50.5,
+            size: 10.0
         }
     }
 
 
-    pub fn pre_render(&self, gl: &gl::Gl, light_pos: na::Vector3::<f32>) {
+    pub fn pre_render(&self, gl: &gl::Gl, light_pos: na::Vector3::<f32>, light_space_mats: &mut Vec::<na::Matrix4::<f32>>) {
 
         unsafe {
             gl.Viewport(0, 0, self.w, self.h);
@@ -54,29 +61,57 @@ impl ShadowMap {
         }
 
         self.shader.set_used();
-        let light_space_mat = self.light_space_mat(light_pos);
 
-        self.shader.set_mat4(gl, "light_space_mat", light_space_mat);
+        self.light_space_mats(light_pos, light_space_mats);
+
+        // TODO: we should set the whole vec into mats
+        self.shader.set_mat4(gl, "light_space_mat", light_space_mats[0]);
     }
 
 
 
-    pub fn light_space_mat(&self, light_pos: na::Vector3::<f32>) -> na::Matrix4::<f32> {
-        self.projection() * self.view(light_pos)
+    fn light_space_mats(&self, light_pos: na::Vector3::<f32>, light_space_mats: &mut Vec::<na::Matrix4::<f32>>) {
+        light_space_mats.push(self.projection() * self.view(light_pos));
     }
 
     pub fn projection(&self) -> na::Matrix4::<f32> {
         // see https://learnopengl.com/Guest-Articles/2021/CSM for info about how to generate this and view
         // so that everything in the view frustrum is in the shadow map, but also multiple leves, so small close things
         // still has a nice shadow
-        let z_near = 0.5;
-        let z_far = 10.5;
         // how much space out light sees, bigger is more space, but also lower resolution in shadow map
         // making this big, like 50 or 100, makes the shadows pixelated
-        let size = 10.0;
+        let size = self.size;
+        na::Matrix4::new_orthographic(-size, size, -size, size, self.z_near, self.z_far)
 
-        na::Matrix4::new_orthographic(-size, size, -size, size, z_near, z_far)
+    }
 
+
+    fn getFrustumCornersWorldSpace(proj: &Mat4, view: Mat4) -> Vec::<V4>
+    {
+
+        let inv: Mat4 = (proj * view).try_inverse().unwrap();
+
+        let mut frustumCorners = vec![];
+        for xi in 0..2 {
+            for yi in 0..2 {
+                for zi in 0..2 {
+                    let x = xi as f32;
+                    let y = yi as f32;
+                    let z = zi as f32;
+
+                    let pt = inv * V4::new(
+                        2.0 * x - 1.0,
+                        2.0 * y - 1.0,
+                        2.0 * z - 1.0,
+                        1.0);
+
+                    frustumCorners.push(pt / pt.w);
+
+                }
+            }
+        }
+
+        frustumCorners
     }
 
     pub fn view(&self, light_pos: na::Vector3::<f32>) -> na::Matrix4::<f32> {

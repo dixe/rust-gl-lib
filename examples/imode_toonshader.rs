@@ -35,6 +35,7 @@ fn main() -> Result<(), failure::Error> {
 
     scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
 
+
     let _player_id = scene.create_entity("player");
     let _world_id = scene.create_entity("World");
 
@@ -44,14 +45,14 @@ fn main() -> Result<(), failure::Error> {
     let light_id = scene.create_entity("Light");
 
 
-    scene.light_pos = V3::new(-1.0, -5.0, 1.0);
+    scene.light_pos = V3::new(-1.0, -5.0, 30.0);
 
     scene.ui.style.clear_color = Color::Rgb(100, 100, 100);
 
     update_pos(&mut scene, rock_id, V3::new(00.0, 5.0, 0.0));
     update_pos(&mut scene, sphere_id, V3::new(-1.0, 3.0, 3.0));
     update_pos(&mut scene, sphere_1, V3::new(1.0, -3.0, 1.0));
-    let lp = scene.light_pos + V3::new(0.0, 0.0, 2.0);
+    let lp = V3::new(1.0, -4.0, 3.0);
     update_pos(&mut scene, light_id, lp);
 
     scene.use_stencil();
@@ -156,6 +157,24 @@ fn options(scene: &mut scene::Scene::<PostPData>, data : &mut Data) {
             }
         }
 
+    }
+
+
+    if let Some(sm) = &mut scene.shadow_map {
+        ui.newline();
+        ui.body_text(&format!("z_near: {:.2?}, z_far: {:.2?}", sm.z_near, sm.z_far));
+
+        ui.newline();
+        ui.body_text("z_near:");
+        ui.slider(&mut sm.z_near, 0.0, 10.0);
+
+        ui.newline();
+        ui.body_text("z_far:");
+        ui.slider(&mut sm.z_far, 0.0, 50.0);
+
+        ui.newline();
+        ui.body_text("size:");
+        ui.slider(&mut sm.size, 1.0, 50.0);
     }
 
 

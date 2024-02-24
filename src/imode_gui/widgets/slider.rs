@@ -13,7 +13,7 @@ impl Ui {
         let id = self.next_id();
 
         let mut rect = Rect {
-            x: 0, y: 00, w:500, h: 20
+            x: 0, y: 00, w:300, h: 20
         };
 
         rect = self.layout_rect(rect);
