@@ -7,13 +7,14 @@ use gl_lib::color::Color;
 use gl_lib::typedef::V3;
 use gl_lib::shader;
 use gl_lib::scene_3d::EntityId;
-
+use gl_lib::camera::{follow_camera, Camera};
+use gl_lib::movement::Inputs;
 
 pub struct PostPData {
     time: f32
 }
 
-type Scene = scene::Scene::<PostPData>;
+type Scene = scene::Scene::<PostPData, PlayerData>;
 
 fn update_pos(scene: &mut Scene, id: EntityId, pos: V3) {
     if let Some(c) = scene.entities.get_mut(&id) {
@@ -27,16 +28,31 @@ struct Data {
     wire_mode: bool
 }
 
+
+#[derive(Default)]
+struct PlayerData {
+    attacking: bool
+        //state: PlayerState
+}
+
+#[derive(Default)]
+enum PlayerState {
+    Attack,
+    #[default]
+    Movable,
+}
+
+
 fn main() -> Result<(), failure::Error> {
 
     let mut sdl_setup = helpers::setup_sdl()?;
     //let mut scene = scene::Scene::<PostPData>::new(sld_setugl.clone(), viewport, sdl_setup.ui(), sdl_setup.sdl)?;
-    let mut scene = scene::Scene::<PostPData>::new(&mut sdl_setup)?;
+    let mut scene = Scene::new(&mut sdl_setup)?;
 
     scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
 
 
-    let _player_id = scene.create_entity("player");
+    let player_id = scene.create_entity("player");
     let _world_id = scene.create_entity("World");
 
     let rock_id = scene.create_entity("Rock");
@@ -48,6 +64,12 @@ fn main() -> Result<(), failure::Error> {
     scene.light_pos = V3::new(-1.0, -5.0, 30.0);
 
     scene.ui.style.clear_color = Color::Rgb(100, 100, 100);
+
+    scene.controlled_entity = Some(scene::ControlledEntity {
+        id: player_id,
+        user_data: PlayerData::default(),
+        control_fn: controller
+    });
 
     update_pos(&mut scene, rock_id, V3::new(00.0, 5.0, 0.0));
     update_pos(&mut scene, sphere_id, V3::new(-1.0, 3.0, 3.0));
@@ -63,22 +85,26 @@ fn main() -> Result<(), failure::Error> {
         light_id
     };
 
+
+    // start idle animation for player
+    scene.action_queue.push_back(scene::Action::StartAnimationLooped(player_id, "idle".into(), 0.3));
+
     loop {
 
         scene.frame_start(&mut sdl_setup.event_pump);
 
+        handle_input(&mut scene);
         scene.render();
 
         // UI on top
         ui(&mut scene, &mut data);
-
 
         scene.frame_end();
     }
 }
 
 
-fn ui(scene: &mut scene::Scene::<PostPData>, data : &mut Data) {
+fn ui(scene: &mut Scene, data : &mut Data) {
     if scene.ui.button("MeshShader") {
         shader::reload_object_shader("mesh_shader", &scene.gl, &mut scene.mesh_shader.shader)
     }
@@ -107,7 +133,7 @@ fn ui(scene: &mut scene::Scene::<PostPData>, data : &mut Data) {
 }
 
 
-fn options(scene: &mut scene::Scene::<PostPData>, data : &mut Data) {
+fn options(scene: &mut Scene, data : &mut Data) {
 
     let ui = &mut scene.ui;
 
@@ -184,4 +210,48 @@ fn options(scene: &mut scene::Scene::<PostPData>, data : &mut Data) {
     let lp = scene.light_pos + V3::new(0.0, 0.0, 2.0);;
     //update_pos(scene, data.light_id, lp);
 
+}
+
+
+
+fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, user_data: &PlayerData) {
+
+    // update entity.pos
+    let m = inputs.movement;
+    entity.pos += dt * inputs.speed * V3::new(-1.0 *m.x, m.y, 0.0);
+
+    // update camera
+
+    let offset = V3::new(10.0, -3.5, 12.0);
+    camera.pos = entity.pos + offset;
+    camera.look_at(entity.pos);
+}
+
+
+// should this be in controlled entity controller_fn? Just requried us to also pass action_queue, for now
+// taking a scene here is the most "free" since we can look at enemies, use camera ect.
+fn handle_input<A>(scene: &mut scene::Scene<A, PlayerData>) {
+    if !scene.allow_char_inputs() {
+        return;
+    }
+
+    let dt = scene.dt();
+    if let Some(ref mut c_ent) = &mut scene.controlled_entity {
+        let player = scene.entities.get_mut(&c_ent.id).unwrap();
+        let player_data = &mut c_ent.user_data;
+
+        // play idle
+        if scene.inputs.current().animation_expired {
+            player_data.attacking = false;
+            scene.action_queue.push_back(scene::Action::StartAnimationLooped(c_ent.id, "idle".into(), 0.3));
+        }
+
+
+        if !player_data.attacking && scene.inputs.current().left_mouse {
+            // set attack state and start animation
+            player_data.attacking = true;
+            scene.action_queue.push_back(scene::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
+            scene.action_queue.push_back(scene::Action::PlaySound("attack".into()));
+        }
+    }
 }

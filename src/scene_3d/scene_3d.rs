@@ -81,6 +81,7 @@ pub struct Fbos<UserPostprocesData> {
     pub post_process_data: UserPostprocesData
 }
 
+#[derive(Debug)]
 pub enum SceneControllerSelected {
     Free,
     Follow
@@ -540,6 +541,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
                 // when fx roll animation is playing
                 // but not camera input
 
+
                 if let Some(entity) = &self.controlled_entity {
                     let e = self.entities.get_mut(&entity.id).unwrap();
                     (entity.control_fn)(e, &mut self.camera, &mut self.follow_controller, &self.inputs.follow, dt, &entity.user_data);
@@ -564,7 +566,12 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
                 self.cubemap_imgs = None;
             }
         }
+
+        //TODO: have a playing/pause bool
+        self.update_actions();
+        self.update_animations();
     }
+
 
     pub fn frame_end(&mut self) {
         self.ui.end_frame();
