@@ -199,7 +199,7 @@ pub trait Element<Message> : fmt::Debug where Message: fmt::Debug {
     fn add_attribute(mut self, attribute: Attribute) -> Self where Self: Sized {
         use Attribute::*;
 
-        let mut cur = self.attributes_mut();
+        let cur = self.attributes_mut();
         match attribute {
             Width(la) => {
                 cur.width = la

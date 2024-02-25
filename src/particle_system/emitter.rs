@@ -1,7 +1,7 @@
 use crate::particle_system::particle::Particle;
 use crate::particle_system::particle_circle::ParticleCircle;
-use crate::imode_gui::drawer2d::Drawer2D;
-use crate::na;
+
+
 use rand::Rng;
 use crate::color::Color;
 use crate::typedef::V3;

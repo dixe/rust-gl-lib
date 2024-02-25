@@ -128,12 +128,12 @@ pub fn load_object_shader(name: &str, gl: &gl::Gl) -> Result::<BaseShader, failu
     let vp = format!("assets/shaders/objects/{name}.vert");
     let fp = format!("assets/shaders/objects/{name}.frag");
     let vert_shader_path = std::path::Path::new(&vp);
-    let vert_source = std::fs::read_to_string(vert_shader_path.clone())
+    let vert_source = std::fs::read_to_string(vert_shader_path)
         .expect(&format!("Could not reader vert shader file at: {:?}", vert_shader_path));
 
 
     let frag_shader_path = std::path::Path::new(&fp);
-    let frag_source = std::fs::read_to_string(frag_shader_path.clone())
+    let frag_source = std::fs::read_to_string(frag_shader_path)
         .expect(&format!("Could not reader frag shader file at: {:?}", frag_shader_path));
 
     shader::BaseShader::new(gl, &vert_source, &frag_source)
@@ -143,12 +143,12 @@ pub fn reload_object_shader(name: &str, gl: &gl::Gl, shader: &mut BaseShader) {
     let vp = format!("assets/shaders/objects/{name}.vert");
     let fp = format!("assets/shaders/objects/{name}.frag");
     let vert_shader_path = std::path::Path::new(&vp);
-    let vert_source = std::fs::read_to_string(vert_shader_path.clone())
+    let vert_source = std::fs::read_to_string(vert_shader_path)
         .expect(&format!("Could not reader vert shader file at: {:?}", vert_shader_path));
 
 
     let frag_shader_path = std::path::Path::new(&fp);
-    let frag_source = std::fs::read_to_string(frag_shader_path.clone())
+    let frag_source = std::fs::read_to_string(frag_shader_path)
         .expect(&format!("Could not reader frag shader file at: {:?}", frag_shader_path));
 
     match shader::BaseShader::new(gl, &vert_source, &frag_source) {

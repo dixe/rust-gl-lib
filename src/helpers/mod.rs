@@ -7,7 +7,7 @@ use crate::objects::square::Square;
 use crate::text_rendering::text_renderer::TextRenderer;
 use crate::text_rendering::font::*;
 use std::rc::Rc;
-use std::cell::Cell;
+
 use crate::imode_gui::Ui;
 use crate::imode_gui::drawer2d::Drawer2D;
 

@@ -1,11 +1,11 @@
 use crate::{gl};
-use crate::imode_gui::drawer2d::*;
+
 use crate::imode_gui::ui::*;
 use crate::animations::skeleton::{Bones, Skeleton};
 use crate::animations::gltf_animation::{Start, AnimationPlayer, StartTransition};
 use crate::objects::gltf_mesh::{self, Animation, KeyFrame};
 use crate::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
-use crate::particle_system::{emitter, particle};
+use crate::particle_system::{emitter};
 use crate::typedef::*;
 use crate::texture;
 use crate::objects::{shadow_map::ShadowMap, mesh::Mesh, cubemap::{self, Cubemap}};
@@ -21,7 +21,7 @@ use crate::helpers;
 use sdl2::event::{Event, WindowEvent};
 use crate::collision3d::CollisionBox;
 use crate::color::Color;
-use crate::particle_system::particle::Particle;
+
 use crate::particle_system::particle_circle::ParticleCircle;
 
 pub struct DataMap<T> {
@@ -335,7 +335,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
     pub fn remove_entity(&mut self, id: &EntityId) {
 
-        if let Some(e) = self.entities.remove(id) {
+        if let Some(_e) = self.entities.remove(id) {
             // entity e removed, will be destroyed at end of this scope
             self.bones.remove(id);
         }
