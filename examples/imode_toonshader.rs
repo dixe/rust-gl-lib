@@ -9,18 +9,13 @@ use gl_lib::shader;
 use gl_lib::scene_3d::EntityId;
 use gl_lib::camera::{follow_camera, Camera};
 use gl_lib::movement::Inputs;
+use gl_lib::na::{self, Rotation2, Translation3};
 
 pub struct PostPData {
     time: f32
 }
 
 type Scene = scene::Scene::<PostPData, PlayerData>;
-
-fn update_pos(scene: &mut Scene, id: EntityId, pos: V3) {
-    if let Some(c) = scene.entities.get_mut(&id) {
-        c.pos = pos;
-    }
-}
 
 struct Data {
     light_id: EntityId,
@@ -50,7 +45,9 @@ fn main() -> Result<(), failure::Error> {
     let mut scene = Scene::new(&mut sdl_setup)?;
 
     scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
+    scene.load_sound("attack".into(), &"examples/pixel_sekiro/assets/audio/deflect_1.wav");
 
+    shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.mesh_shader.shader);
 
     let player_id = scene.create_entity("player");
     let _world_id = scene.create_entity("World");
@@ -60,8 +57,9 @@ fn main() -> Result<(), failure::Error> {
     let sphere_1 = scene.create_entity("Sphere");
     let light_id = scene.create_entity("Light");
 
+    let enemy_id = scene.create_entity("enemy");
 
-    scene.light_pos = V3::new(-1.0, -5.0, 30.0);
+    scene.light_pos = V3::new(-10.0, -5.0, 30.0);
 
     scene.ui.style.clear_color = Color::Rgb(100, 100, 100);
 
@@ -71,11 +69,16 @@ fn main() -> Result<(), failure::Error> {
         control_fn: controller
     });
 
-    update_pos(&mut scene, rock_id, V3::new(00.0, 5.0, 0.0));
-    update_pos(&mut scene, sphere_id, V3::new(-1.0, 3.0, 3.0));
-    update_pos(&mut scene, sphere_1, V3::new(1.0, -3.0, 1.0));
+    scene::update_pos(&mut scene, rock_id, V3::new(00.0, 5.0, 0.0));
+    scene::update_pos(&mut scene, sphere_id, V3::new(-1.0, 3.0, 3.0));
+    scene::update_pos(&mut scene, sphere_1, V3::new(1.0, -3.0, 1.0));
+
+    scene::update_pos(&mut scene, enemy_id, V3::new(5.0, 5.0, 0.0));
+
+
+
     let lp = V3::new(1.0, -4.0, 3.0);
-    update_pos(&mut scene, light_id, lp);
+    scene::update_pos(&mut scene, light_id, lp);
 
     scene.use_stencil();
 
@@ -89,11 +92,23 @@ fn main() -> Result<(), failure::Error> {
     // start idle animation for player
     scene.action_queue.push_back(scene::Action::StartAnimationLooped(player_id, "idle".into(), 0.3));
 
+    let mut game = Game::default();
+    game.enemies.push(enemy_id);
+
+
     loop {
 
         scene.frame_start(&mut sdl_setup.event_pump);
 
-        handle_input(&mut scene);
+        handle_input(&mut scene, &mut game);
+
+
+        // GAME SYSTEMS
+
+        missile_system(&mut game.missiles, &mut scene);
+
+
+
         scene.render();
 
         // UI on top
@@ -207,7 +222,7 @@ fn options(scene: &mut Scene, data : &mut Data) {
     ui.window_end("Options");
 
     // update light cube to follow the light
-    let lp = scene.light_pos + V3::new(0.0, 0.0, 2.0);;
+    let lp = scene.light_pos + V3::new(0.0, 0.0, 2.0);
     //update_pos(scene, data.light_id, lp);
 
 }
@@ -218,9 +233,15 @@ fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camer
 
     // update entity.pos
     let m = inputs.movement;
-    entity.pos += dt * inputs.speed * V3::new(-1.0 *m.x, m.y, 0.0);
+    entity.pos += dt * inputs.speed * V3::new(-m.x, m.y, 0.0);
+
 
     // update camera
+    let new_angle = m.y.atan2(-m.x);
+
+    if m.magnitude() > 0.0 {
+        entity.z_angle =  Rotation2::new(new_angle);
+    }
 
     let offset = V3::new(10.0, -3.5, 12.0);
     camera.pos = entity.pos + offset;
@@ -230,7 +251,7 @@ fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camer
 
 // should this be in controlled entity controller_fn? Just requried us to also pass action_queue, for now
 // taking a scene here is the most "free" since we can look at enemies, use camera ect.
-fn handle_input<A>(scene: &mut scene::Scene<A, PlayerData>) {
+fn handle_input(scene: &mut Scene, game: &mut Game) {
     if !scene.allow_char_inputs() {
         return;
     }
@@ -240,6 +261,7 @@ fn handle_input<A>(scene: &mut scene::Scene<A, PlayerData>) {
         let player = scene.entities.get_mut(&c_ent.id).unwrap();
         let player_data = &mut c_ent.user_data;
 
+        let player_pos = player.pos;
         // play idle
         if scene.inputs.current().animation_expired {
             player_data.attacking = false;
@@ -252,6 +274,63 @@ fn handle_input<A>(scene: &mut scene::Scene<A, PlayerData>) {
             player_data.attacking = true;
             scene.action_queue.push_back(scene::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
             scene.action_queue.push_back(scene::Action::PlaySound("attack".into()));
+
+
+            // find enemy
+            if game.enemies.len() > 0 {
+
+                let enemy_id = game.enemies[0];
+
+                // spawn an arrow that homes to enemy
+                let id = scene.create_entity("arrow");
+                scene::update_pos(scene, id, player_pos + V3::new(0.0, 0.0, 1.0));
+                game.missiles.push(Missile {id, target_id: enemy_id });
+
+            }
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+struct Game {
+    enemies: Vec::<EntityId>,
+    missiles: Vec::<Missile>,
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+struct Missile {
+    id: EntityId,
+    target_id: EntityId,
+}
+
+
+fn missile_system(missiles: &mut Vec::<Missile>, scene: &mut Scene) {
+    let speed = 20.0;
+    let dt = scene.dt();
+    let mut i = 0;
+    while i < missiles.len() { // use while loop so we can modify missiles during loop
+
+        let m = missiles[i];
+
+        let missile = scene.entities.get(&m.id).unwrap();
+        // TODO: this can fail, if the target is dead and gone
+        let target = scene.entities.get(&m.target_id).unwrap();
+
+        let dir = target.pos - missile.pos;
+
+        let new_p = missile.pos + dir.normalize() * speed * dt;
+
+        scene::update_dir(scene, m.id, dir);
+        scene::update_pos(scene, m.id, new_p);
+
+        // fake some collision
+        if dir.xy().magnitude() < 0.2 {
+            // remove from missiles
+            missiles.swap_remove(i);
+            // remove from scene
+            scene.remove_entity(&m.id);
+        } else {
+            i += 1;
         }
     }
 }

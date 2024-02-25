@@ -5,7 +5,7 @@ use crate::animations::skeleton::{Bones, Skeleton};
 use crate::animations::gltf_animation::{Start, AnimationPlayer, StartTransition};
 use crate::objects::gltf_mesh::{self, Animation, KeyFrame};
 use crate::shader::{mesh_shader, BaseShader, texture_shader, reload_object_shader, load_object_shader};
-use crate::particle_system::emitter;
+use crate::particle_system::{emitter, particle};
 use crate::typedef::*;
 use crate::texture;
 use crate::objects::{shadow_map::ShadowMap, mesh::Mesh, cubemap::{self, Cubemap}};
@@ -21,6 +21,7 @@ use crate::helpers;
 use sdl2::event::{Event, WindowEvent};
 use crate::collision3d::CollisionBox;
 use crate::color::Color;
+
 
 pub struct DataMap<T> {
     data: HashMap::<usize, T>,
@@ -52,6 +53,10 @@ impl<T> DataMap<T> {
 
     pub fn get_mut(&mut self, id: &usize) -> Option<&mut T> {
         self.data.get_mut(&id)
+    }
+
+    pub fn remove(&mut self, id: &usize) -> Option<T> {
+        self.data.remove(id)
     }
 }
 
@@ -179,7 +184,7 @@ pub struct Scene<UserPostProcessData, UserControllerData = ()> {
     //pub animation_ids: HashMap::<EntityId, EntityId>, // Kinda want to get rid of this, and maybe just use entityId as key to animaiton player. Maybe the player should just take an id in Start. This is already out of sync and make root motion buggy;
     pub entities: DataMap::<SceneEntity>,
 
-    pub emitter: emitter::Emitter,
+    pub emitter: emitter::Emitter<particle::ParticleCircle>,
 
     default_bones: Bones,
 
@@ -325,6 +330,14 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
 
         id
+    }
+
+    pub fn remove_entity(&mut self, id: &EntityId) {
+
+        if let Some(e) = self.entities.remove(id) {
+            // entity e removed, will be destroyed at end of this scope
+            self.bones.remove(id);
+        }
     }
 
     pub fn load_sound(&mut self, name: Rc::<str>, path: &str) {
@@ -546,8 +559,6 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
                     let e = self.entities.get_mut(&entity.id).unwrap();
                     (entity.control_fn)(e, &mut self.camera, &mut self.follow_controller, &self.inputs.follow, dt, &entity.user_data);
                 }
-
-
             }
         }
 
@@ -651,6 +662,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
         // setup render meshes data
         let mut render_meshes = vec![];
         for (key, entity) in &self.entities.data {
+
 
             let trans = Translation3::from(entity.pos + entity.root_motion);
 
