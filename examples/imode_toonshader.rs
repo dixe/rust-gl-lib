@@ -1,7 +1,7 @@
-use gl_lib::{gl, ScreenBox, helpers};
-use gl_lib::imode_gui::drawer2d::*;
-use gl_lib::imode_gui::ui::*;
-use gl_lib::text_rendering::text_renderer::TextAlignment;
+use gl_lib::{gl, helpers};
+
+
+
 use gl_lib::scene_3d as scene;
 use gl_lib::color::Color;
 use gl_lib::typedef::V3;
@@ -9,7 +9,7 @@ use gl_lib::shader;
 use gl_lib::scene_3d::EntityId;
 use gl_lib::camera::{follow_camera, Camera};
 use gl_lib::movement::Inputs;
-use gl_lib::na::{self, Rotation2, Translation3};
+use gl_lib::na::{Rotation2};
 
 pub struct PostPData {
     time: f32
@@ -222,14 +222,14 @@ fn options(scene: &mut Scene, data : &mut Data) {
     ui.window_end("Options");
 
     // update light cube to follow the light
-    let lp = scene.light_pos + V3::new(0.0, 0.0, 2.0);
+    let _lp = scene.light_pos + V3::new(0.0, 0.0, 2.0);
     //update_pos(scene, data.light_id, lp);
 
 }
 
 
 
-fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, user_data: &PlayerData) {
+fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, _follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, _user_data: &PlayerData) {
 
     // update entity.pos
     let m = inputs.movement;
@@ -256,7 +256,7 @@ fn handle_input(scene: &mut Scene, game: &mut Game) {
         return;
     }
 
-    let dt = scene.dt();
+    let _dt = scene.dt();
     if let Some(ref mut c_ent) = &mut scene.controlled_entity {
         let player = scene.entities.get_mut(&c_ent.id).unwrap();
         let player_data = &mut c_ent.user_data;
