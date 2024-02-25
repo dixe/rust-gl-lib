@@ -5,7 +5,7 @@ use gl_lib::imode_gui::drawer2d::*;
 use gl_lib::imode_gui::ui::*;
 use sdl2::event;
 use rand::Rng;
-use gl_lib::particle_system::particle::ParticleCircle;
+use gl_lib::particle_system::particle_circle::ParticleCircle;
 use gl_lib::typedef::V3;
 
 fn main() -> Result<(), failure::Error> {
@@ -55,7 +55,7 @@ fn main() -> Result<(), failure::Error> {
 
         let dt = ui.dt();
         emitter.update(dt);
-        emitter.draw_all(|p| particle::render(p, &mut ui.drawer2D));
+        emitter.draw_all(|p| particle_circle::render(p, &mut ui.drawer2D));
 
 
         ui.end_frame();

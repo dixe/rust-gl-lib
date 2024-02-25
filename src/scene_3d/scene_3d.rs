@@ -21,7 +21,8 @@ use crate::helpers;
 use sdl2::event::{Event, WindowEvent};
 use crate::collision3d::CollisionBox;
 use crate::color::Color;
-
+use crate::particle_system::particle::Particle;
+use crate::particle_system::particle_circle::ParticleCircle;
 
 pub struct DataMap<T> {
     data: HashMap::<usize, T>,
@@ -184,7 +185,7 @@ pub struct Scene<UserPostProcessData, UserControllerData = ()> {
     //pub animation_ids: HashMap::<EntityId, EntityId>, // Kinda want to get rid of this, and maybe just use entityId as key to animaiton player. Maybe the player should just take an id in Start. This is already out of sync and make root motion buggy;
     pub entities: DataMap::<SceneEntity>,
 
-    pub emitter: emitter::Emitter<particle::ParticleCircle>,
+    pub emitter: emitter::Emitter<ParticleCircle>,
 
     default_bones: Bones,
 
