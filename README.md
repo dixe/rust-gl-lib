@@ -29,6 +29,14 @@ Run with `cargo t -- --test-threads=1` to only have 1 sdl instance at a time.
 * [ ] Nav mesh
 * [ ] Toon shader
 
+# Component System
+Use specs crate
+Often systems want to use some components for entities. Fx a damage system will want the health of entities. A component system in scene could be
+with string index, so we can query "health" for a entity_id. The idea behind putting it into scene is to have a place to store them, and a built in system for querying
+compontents. So adding a now one, fx health, attackInfo, armor, ect. is quite simple. The main problem is the types. One way is to extend scene using macro,
+so adding a new health components will generate a container and logic for retriving the component. Can we use enum with dispatch? So components are user defined,
+and we then define a
+
 # Instancing
 Drawing some thing instanced and some not, reuslts in fx slider knob circle will have the clearcolor as part of the square that is
 alpha 0. Cannot get around it, unless we can draw the slider background before the knob. That means we need to to instancing in

@@ -1,7 +1,4 @@
 use gl_lib::{gl, helpers};
-
-
-
 use gl_lib::scene_3d as scene;
 use gl_lib::color::Color;
 use gl_lib::typedef::V3;
@@ -92,20 +89,27 @@ fn main() -> Result<(), failure::Error> {
     // start idle animation for player
     scene.action_queue.push_back(scene::Action::StartAnimationLooped(player_id, "idle".into(), 0.3));
 
-    let mut game = Game::default();
-    game.enemies.push(enemy_id);
 
+    let mut game_data = GameData::default();
+    game_data.enemies.push(Unit {id: enemy_id, hp: 5.0});
+
+    let mut game = Game {
+        data: game_data,
+        systems: vec![death_system, missile_system]
+    };
 
     loop {
 
         scene.frame_start(&mut sdl_setup.event_pump);
 
-        handle_input(&mut scene, &mut game);
+        handle_input(&mut scene, &mut game.data);
 
 
         // GAME SYSTEMS
 
-        missile_system(&mut game.missiles, &mut scene);
+        missile_system(&mut game.data, &mut scene);
+
+        death_system(&mut game.data, &mut scene);
 
 
 
@@ -251,7 +255,7 @@ fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, _follow_came
 
 // should this be in controlled entity controller_fn? Just requried us to also pass action_queue, for now
 // taking a scene here is the most "free" since we can look at enemies, use camera ect.
-fn handle_input(scene: &mut Scene, game: &mut Game) {
+fn handle_input(scene: &mut Scene, game: &mut GameData) {
     if !scene.allow_char_inputs() {
         return;
     }
@@ -259,6 +263,7 @@ fn handle_input(scene: &mut Scene, game: &mut Game) {
     let _dt = scene.dt();
     if let Some(ref mut c_ent) = &mut scene.controlled_entity {
         let player = scene.entities.get_mut(&c_ent.id).unwrap();
+        let player_id = c_ent.id;
         let player_data = &mut c_ent.user_data;
 
         let player_pos = player.pos;
@@ -275,25 +280,43 @@ fn handle_input(scene: &mut Scene, game: &mut Game) {
             scene.action_queue.push_back(scene::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
             scene.action_queue.push_back(scene::Action::PlaySound("attack".into()));
 
+            // spawn damage ring
+            let effect_id = scene.create_entity("Damage");
+            scene::update_pos(scene, effect_id, player_pos + V3::new(0.0, 0.0, 1.5));
+            // this is a particle like thing
+
 
             // find enemy
             if game.enemies.len() > 0 {
 
-                let enemy_id = game.enemies[0];
+                let enemy = &game.enemies[0];
 
                 // spawn an arrow that homes to enemy
                 let id = scene.create_entity("arrow");
                 scene::update_pos(scene, id, player_pos + V3::new(0.0, 0.0, 1.0));
-                game.missiles.push(Missile {id, target_id: enemy_id });
+                game.missiles.push(Missile {id, target_id: enemy.id });
 
             }
         }
     }
 }
 
-#[derive(Debug, Default)]
+type SystemFn = fn(&mut GameData, &mut Scene);
+
 struct Game {
-    enemies: Vec::<EntityId>,
+    data: GameData,
+    systems: Vec::<SystemFn>
+}
+
+#[derive(Debug, Default)]
+struct Unit {
+    id: EntityId,
+    hp: f32,
+}
+
+#[derive(Debug, Default)]
+struct GameData {
+    enemies: Vec::<Unit>,
     missiles: Vec::<Missile>,
 }
 
@@ -304,13 +327,57 @@ struct Missile {
 }
 
 
-fn missile_system(missiles: &mut Vec::<Missile>, scene: &mut Scene) {
+trait MissileSystem {
+    /// Return number of missiles used for loop
+    fn missiles(&self) -> usize;
+
+    /// Return mut missile for given index in loop
+    fn missile(&mut self, idx: usize) -> &mut Missile; // should be some kind of missile trait
+
+    /// Call impl for on hit for given missile idx, return bool indicating whether the missile was remove or not.
+    /// Used to continue loop correctly
+    fn on_missile_hit(&mut self, idx: usize, scene: &mut Scene) -> bool;
+}
+
+
+impl MissileSystem for GameData {
+    fn missiles(&self) -> usize {
+        self.missiles.len()
+    }
+
+    fn missile(&mut self, idx: usize) -> &mut  Missile {
+        self.missiles.get_mut(idx).expect("Death system should not have called with idx outside scope")
+    }
+
+    fn on_missile_hit(&mut self, idx: usize, scene: &mut Scene) -> bool {
+        let m = self.missiles[idx];
+
+        self.missiles.swap_remove(idx);
+
+        // remove from scene
+        scene.remove_entity(&m.id);
+
+
+        // apply damage
+        if let Some(enemy) = self.enemies.iter_mut().find(|e| e.id == m.target_id) {
+            enemy.hp -= 1.0;
+        }
+
+        // maybe a missile bounces to next target,
+        // and we decrement bounce life, and then
+        // we return false unti bounces or not target reached.
+        // For now just true since we remove from missiles
+        true
+    }
+}
+
+fn missile_system(game: &mut impl MissileSystem, scene: &mut Scene) {
     let speed = 20.0;
     let dt = scene.dt();
     let mut i = 0;
-    while i < missiles.len() { // use while loop so we can modify missiles during loop
+    while i < game.missiles() { // use while loop so we can modify during loop
 
-        let m = missiles[i];
+        let m = game.missile(i);
 
         let missile = scene.entities.get(&m.id).unwrap();
         // TODO: this can fail, if the target is dead and gone
@@ -323,14 +390,60 @@ fn missile_system(missiles: &mut Vec::<Missile>, scene: &mut Scene) {
         scene::update_dir(scene, m.id, dir);
         scene::update_pos(scene, m.id, new_p);
 
-        // fake some collision
+        // fake some collision, maybe have missile system call back to impl for hit
+        let mut update = true;
         if dir.xy().magnitude() < 0.2 {
-            // remove from missiles
-            missiles.swap_remove(i);
-            // remove from scene
-            scene.remove_entity(&m.id);
-        } else {
+            update = game.on_missile_hit(i, scene);
+        }
+        if update {
             i += 1;
         }
+    }
+}
+
+fn death_system(game: &mut impl DeathSystem, scene: &mut Scene) {
+
+    let mut i = 0;
+    while i < game.units() { // use while loop so we can modify during loop
+        let unit = game.unit(i);
+
+        let mut update = true;
+
+        if unit.hp <= 0.0 {
+            update = game.on_death(i, scene);
+        }
+
+
+        if update {
+            i += 1;
+        }
+    }
+}
+
+
+trait DeathSystem {
+    fn units(&self) -> usize;
+    fn unit(&mut self, idx: usize) -> &mut Unit; // should be some kind of Hp trait impl
+    fn on_death(&mut self, idx: usize, scene: &mut Scene) -> bool;
+}
+
+
+impl DeathSystem for GameData {
+    fn units(&self) -> usize {
+        self.enemies.len()
+    }
+
+    fn unit(&mut self, idx: usize) -> &mut Unit {
+        self.enemies.get_mut(idx).expect("Death system should not have called with idx outside scope")
+    }
+
+    fn on_death(&mut self, idx: usize, scene: &mut Scene) -> bool {
+        let unit = self.enemies.get_mut(idx).expect("Death system should not have called with idx outside scope");
+        // for now remove, maybe have fn on trait to handle on death, so game can set correct animations ect
+        scene.remove_entity(&unit.id);
+        self.enemies.swap_remove(idx);
+        true
+        // death anim
+        // then die
     }
 }

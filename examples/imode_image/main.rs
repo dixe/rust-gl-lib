@@ -24,22 +24,10 @@ fn main() -> Result<(), failure::Error> {
         }
     }
 
-
-    let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
-    let viewport = sdl_setup.viewport;
+    let mut sdl_setup = helpers::setup_sdl()?;
     let gl = &sdl_setup.gl;
+    let mut ui = sdl_setup.ui();
 
-    let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
-    let mut ui = Ui::new(drawer_2d);
-
-    // Set background color to white
-    unsafe {
-        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
-    }
-
-    let mut event_pump = sdl.event_pump().unwrap();
 
     let mut img = image::open(path).unwrap().into_rgba8();
     if pre_mul {
@@ -52,13 +40,8 @@ fn main() -> Result<(), failure::Error> {
     let mut size = na::Vector2::<f32>::new(100.0, 100.0 * aspect);
 
     loop {
+        ui.start_frame(&mut sdl_setup.event_pump);
 
-        // Basic clear gl stuff and get events to UI
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
-
-        ui.consume_events(&mut event_pump);
 
         ui.slider(&mut size.x, 10.0, 1000.0);
         size.y = size.x * aspect;
@@ -85,6 +68,6 @@ fn main() -> Result<(), failure::Error> {
         ui.image(texture_id, size * 4.0);
         ui.image_at(texture_id, size * 3.0, 0, 600);
 
-        window.gl_swap_window();
+        ui.end_frame();
     }
 }

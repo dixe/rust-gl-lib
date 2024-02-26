@@ -1,5 +1,4 @@
 use crate::{gl};
-
 use crate::imode_gui::ui::*;
 use crate::animations::skeleton::{Bones, Skeleton};
 use crate::animations::gltf_animation::{Start, AnimationPlayer, StartTransition};
@@ -21,8 +20,9 @@ use crate::helpers;
 use sdl2::event::{Event, WindowEvent};
 use crate::collision3d::CollisionBox;
 use crate::color::Color;
-
 use crate::particle_system::particle_circle::ParticleCircle;
+use core::convert::TryInto;
+
 
 pub struct DataMap<T> {
     data: HashMap::<usize, T>,

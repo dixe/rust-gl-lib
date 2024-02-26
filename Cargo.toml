@@ -26,6 +26,8 @@ rand = "0.8.4"
 gl_lib_proc = { path = "gl-lib_proc" }
 toml = "0.7.6"
 path-absolutize = "3.1.1"
+enum_dispatch = "0.3.12"
+enum_delegate = "0.2.0"
 
 
 [dependencies.sdl2]
