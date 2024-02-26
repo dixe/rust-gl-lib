@@ -107,9 +107,9 @@ fn main() -> Result<(), failure::Error> {
 
         // GAME SYSTEMS
 
-        missile_system(&mut game.data, &mut scene);
-
-        death_system(&mut game.data, &mut scene);
+        for s in &game.systems {
+            s(&mut game.data, &mut scene);
+        }
 
 
 
