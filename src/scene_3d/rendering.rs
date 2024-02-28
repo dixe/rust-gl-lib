@@ -40,13 +40,10 @@ pub struct RenderMesh<'a> {
 // since we want to call it from mutiple places
 pub fn render_scene(gl: &gl::Gl, camera: &Camera,
                     mesh_shader: &mesh_shader::MeshShader,
-                    _mesh_data: &Vec::<SceneMesh>,
-                    _bones: &HashMap::<EntityId, Bones>,
                     default_bones: &Bones,
                     cubemap_opt: &Option<Cubemap>,
                     cubemap_shader: &BaseShader,
                     stencil_shader: &Option<mesh_shader::MeshShader>,
-                    _shadow_map: &Option<ShadowMap>,
                     render_meshes: &[RenderMesh],
                     light_space_mats: &Vec::<Mat4>,
                     light_pos: V3,
@@ -253,8 +250,8 @@ impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
 
 
 
-            render_scene(&self.gl, &camera, &self.mesh_shader, &mesh_data, &bones, &default_bones,
-                         &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
+            render_scene(&self.gl, &camera, &self.mesh_shader, &default_bones,
+                         &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &render_meshes,
                          &light_space_mats, light_pos, light_color);
 
 
@@ -283,8 +280,8 @@ impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
             // Draw ui on top at last
             ui.drawer2D.render_img(fbos.ui_fbo.color_tex, 0, 0, size);
         } else {
-            render_scene(&self.gl, &camera, &self.mesh_shader, &mesh_data, &bones, &default_bones,
-                         &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
+            render_scene(&self.gl, &camera, &self.mesh_shader, &default_bones,
+                         &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &render_meshes,
                          &light_space_mats, light_pos, light_color);
         }
     }
