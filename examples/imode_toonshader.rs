@@ -9,7 +9,7 @@ use gl_lib::movement::Inputs;
 use gl_lib::na::{Rotation2};
 use gl_lib::scene_3d::actions;
 use sdl2::event::Event;
-use gl_lib::scene_3d::scene_3d::ControlledEntity;
+
 
 pub struct PostPData {
     time: f32
@@ -103,7 +103,7 @@ fn main() -> Result<(), failure::Error> {
 
 
 
-    let mut game_data = GameData::default();
+    let game_data = GameData::default();
 
 
     let mut game = Game {
@@ -309,7 +309,7 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
     let _dt = scene.dt();
     if let Some(ref mut c_ent) = &mut scene.controlled_entity {
         let player = scene.entities.get_mut(&c_ent.id).unwrap();
-        let player_id = c_ent.id;
+        let _player_id = c_ent.id;
         let player_data = &mut c_ent.user_data;
 
         let player_pos = player.pos;

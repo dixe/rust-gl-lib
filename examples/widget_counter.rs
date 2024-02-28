@@ -107,12 +107,12 @@ fn reload_text_shader(gl: &gl::Gl, widget_setup: &mut helpers::WidgetSetup) {
 
 
     let vert_shader_path = std::path::Path::new("E:/repos/rust-gl-lib/assets/shaders/sdf_text_render.vert");
-    let vert_source = std::fs::read_to_string(vert_shader_path.clone())
+    let vert_source = std::fs::read_to_string(vert_shader_path)
         .expect(&format!("Could not reader vert shader file at: {:?}", vert_shader_path));
 
 
     let frag_shader_path = std::path::Path::new("E:/repos/rust-gl-lib/assets/shaders/sdf_text_render.frag");
-    let frag_source = std::fs::read_to_string(frag_shader_path.clone())
+    let frag_source = std::fs::read_to_string(frag_shader_path)
         .expect(&format!("Could not reader frag shader file at: {:?}", frag_shader_path));
 
     match shader::BaseShader::new(gl, &vert_source, &frag_source) {

@@ -601,7 +601,7 @@ fn create_axis_aligned_box(cb: &CollisionBox) -> AxisBox {
 
 mod tests {
 
-    use crate::physics::collision_3d::*;
+    use crate::collision3d::*;
     use nalgebra as na;
 
 
