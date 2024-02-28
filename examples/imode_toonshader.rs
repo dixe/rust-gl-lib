@@ -7,7 +7,9 @@ use gl_lib::scene_3d::EntityId;
 use gl_lib::camera::{follow_camera, Camera};
 use gl_lib::movement::Inputs;
 use gl_lib::na::{Rotation2};
+use gl_lib::scene_3d::actions;
 use sdl2::event::Event;
+use gl_lib::scene_3d::scene_3d::ControlledEntity;
 
 pub struct PostPData {
     time: f32
@@ -41,7 +43,7 @@ fn spawn_enemy(scene: &mut Scene, game_data: &mut GameData) {
 
     scene::update_pos(scene, enemy_id, V3::new(5.0, 5.0, 0.0));
 
-    scene.action_queue.push_back(scene::Action::StartAnimationLooped(enemy_id, "dance".into(), 0.3));
+    scene.action_queue.push_back(actions::Action::StartAnimationLooped(enemy_id, "dance".into(), 0.3));
 
     game_data.enemies.push(Unit { id: enemy_id, hp: 5.0, dead: false });
 }
@@ -98,7 +100,7 @@ fn main() -> Result<(), failure::Error> {
 
 
     // start idle animation for player
-    scene.action_queue.push_back(scene::Action::StartAnimationLooped(player_id, "t_pose".into(), 0.3));
+    scene.action_queue.push_back(actions::Action::StartAnimationLooped(player_id, "t_pose".into(), 0.3));
 
 
 
@@ -316,15 +318,15 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
         // play idle
         if scene.inputs.current().animation_expired {
             player_data.attacking = false;
-            scene.action_queue.push_back(scene::Action::StartAnimationLooped(c_ent.id, "idle".into(), 0.3));
+            scene.action_queue.push_back(actions::Action::StartAnimationLooped(c_ent.id, "idle".into(), 0.3));
         }
 
 
         if !player_data.attacking && scene.inputs.current().left_mouse {
             // set attack state and start animation
             player_data.attacking = true;
-            scene.action_queue.push_back(scene::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
-            scene.action_queue.push_back(scene::Action::PlaySound("attack".into()));
+            scene.action_queue.push_back(actions::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
+            scene.action_queue.push_back(actions::Action::PlaySound("attack".into()));
 
             // spawn damage ring
             let effect_id = scene.create_entity("Damage");
@@ -510,7 +512,7 @@ impl DeathSystem for GameData {
         // set dead
         unit.dead = true;
         // start death anim
-        scene.action_queue.push_back(scene::Action::StartAnimation(unit.id, "death".into(), 0.0));
+        scene.action_queue.push_back(actions::Action::StartAnimation(unit.id, "death".into(), 0.0));
         true
     }
 }

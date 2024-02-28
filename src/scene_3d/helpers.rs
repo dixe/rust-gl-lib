@@ -1,6 +1,6 @@
 use crate::typedef::V3;
-use crate::scene_3d::*;
 use crate::na::Rotation2;
+use crate::scene_3d::scene_3d::{Scene, EntityId};
 
 pub fn update_pos<A,B>(scene: &mut Scene<A,B>, id: EntityId, pos: V3) {
     if let Some(c) = scene.entities.get_mut(&id) {
