@@ -7,6 +7,7 @@ use gl_lib::scene_3d::EntityId;
 use gl_lib::camera::{follow_camera, Camera};
 use gl_lib::movement::Inputs;
 use gl_lib::na::{Rotation2};
+use sdl2::event::Event;
 
 pub struct PostPData {
     time: f32
@@ -34,6 +35,16 @@ enum PlayerState {
     Movable,
 }
 
+fn spawn_enemy(scene: &mut Scene, game_data: &mut GameData) {
+
+    let enemy_id = scene.create_entity("enemy");
+
+    scene::update_pos(scene, enemy_id, V3::new(5.0, 5.0, 0.0));
+
+    scene.action_queue.push_back(scene::Action::StartAnimationLooped(enemy_id, "dance".into(), 0.3));
+
+    game_data.enemies.push(Unit { id: enemy_id, hp: 5.0, dead: false });
+}
 
 fn main() -> Result<(), failure::Error> {
 
@@ -54,7 +65,8 @@ fn main() -> Result<(), failure::Error> {
     let sphere_1 = scene.create_entity("Sphere");
     let light_id = scene.create_entity("Light");
 
-    let enemy_id = scene.create_entity("enemy");
+
+
 
     scene.light_pos = V3::new(-10.0, -5.0, 30.0);
 
@@ -70,7 +82,6 @@ fn main() -> Result<(), failure::Error> {
     scene::update_pos(&mut scene, sphere_id, V3::new(-1.0, 3.0, 3.0));
     scene::update_pos(&mut scene, sphere_1, V3::new(1.0, -3.0, 1.0));
 
-    scene::update_pos(&mut scene, enemy_id, V3::new(5.0, 5.0, 0.0));
 
 
 
@@ -89,17 +100,18 @@ fn main() -> Result<(), failure::Error> {
     // start idle animation for player
     scene.action_queue.push_back(scene::Action::StartAnimationLooped(player_id, "t_pose".into(), 0.3));
 
-    scene.action_queue.push_back(scene::Action::StartAnimationLooped(enemy_id, "dance".into(), 0.3));
+
 
 
     let mut game_data = GameData::default();
-    game_data.enemies.push(Unit {id: enemy_id, hp: 5.0});
+
 
     let mut game = Game {
         data: game_data,
         systems: vec![death_system, missile_system]
     };
 
+    spawn_enemy(&mut scene, &mut game.data);
     loop {
 
         scene.frame_start(&mut sdl_setup.event_pump);
@@ -276,6 +288,20 @@ fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, _follow_came
 // should this be in controlled entity controller_fn? Just requried us to also pass action_queue, for now
 // taking a scene here is the most "free" since we can look at enemies, use camera ect.
 fn handle_input(scene: &mut Scene, game: &mut GameData) {
+
+    // commands like R to spawn new enemy
+    // TODO: Find a way to not clone here
+    for e in &scene.ui.frame_events.clone() {
+        match e {
+            Event::KeyUp{keycode: Some(sdl2::keyboard::Keycode::R), .. } => {
+                spawn_enemy(scene, game);
+            },
+            _ => {},
+
+        }
+    }
+
+
     if !scene.allow_char_inputs() {
         return;
     }
@@ -319,6 +345,8 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
             }
         }
     }
+
+
 }
 
 type SystemFn = fn(&mut GameData, &mut Scene);
@@ -332,6 +360,7 @@ struct Game {
 struct Unit {
     id: EntityId,
     hp: f32,
+    dead: bool
 }
 
 #[derive(Debug, Default)]
@@ -429,10 +458,13 @@ fn death_system(game: &mut impl DeathSystem, scene: &mut Scene) {
 
         let mut update = true;
 
-        if unit.hp <= 0.0 {
-            update = game.on_death(i, scene);
-        }
 
+        // if alive and get lower than 0 hp play dead anim
+        if !unit.dead && unit.hp <= 0.0 {
+            update = game.on_death(i, scene);
+        } else if unit.dead {
+            update = game.update_dead(i, scene);
+        }
 
         if update {
             i += 1;
@@ -445,6 +477,7 @@ trait DeathSystem {
     fn units(&self) -> usize;
     fn unit(&mut self, idx: usize) -> &mut Unit; // should be some kind of Hp trait impl
     fn on_death(&mut self, idx: usize, scene: &mut Scene) -> bool;
+    fn update_dead(&mut self, idx: usize, scene: &mut Scene) -> bool;
 }
 
 
@@ -457,13 +490,27 @@ impl DeathSystem for GameData {
         self.enemies.get_mut(idx).expect("Death system should not have called with idx outside scope")
     }
 
+    fn update_dead(&mut self, idx: usize, scene: &mut Scene) -> bool {
+        let unit = self.enemies.get_mut(idx).expect("Death system should not have called with idx outside scope");
+
+        if scene.player.expired(&unit.id) {
+            // remove unit
+            scene.remove_entity(&unit.id);
+            self.enemies.swap_remove(idx);
+            return false;
+        }
+
+        true
+    }
+
+
     fn on_death(&mut self, idx: usize, scene: &mut Scene) -> bool {
         let unit = self.enemies.get_mut(idx).expect("Death system should not have called with idx outside scope");
-        // for now remove, maybe have fn on trait to handle on death, so game can set correct animations ect
-        scene.remove_entity(&unit.id);
-        self.enemies.swap_remove(idx);
+
+        // set dead
+        unit.dead = true;
+        // start death anim
+        scene.action_queue.push_back(scene::Action::StartAnimation(unit.id, "death".into(), 0.0));
         true
-        // death anim
-        // then die
     }
 }
