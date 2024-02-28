@@ -137,7 +137,7 @@ pub fn render_scene(gl: &gl::Gl, camera: &Camera,
 
 
 
-pub struct RenderPipeLine<UserPostProcessData> {
+pub struct RenderPipeline<UserPostProcessData> {
 
     pub gl: gl::Gl,
 
@@ -156,10 +156,44 @@ pub struct RenderPipeLine<UserPostProcessData> {
     pub stencil_shader: Option<mesh_shader::MeshShader>,
 }
 
-impl<UserPostProcessData> RenderPipeLine<UserPostProcessData> {
+impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
+
+
+    pub fn new(gl: gl::Gl) -> Result<Self,  failure::Error> {
+
+        let mut sm = ShadowMap::new(&gl);
+        sm.texture_offset = 1;
+        let mesh_shader = mesh_shader::MeshShader::new(&gl)?;
+        let cubemap_shader = load_object_shader("cubemap", &gl).unwrap();
+
+        Ok(Self {
+            gl,
+            mesh_shader,
+            cubemap_shader,
+            cubemap: None,
+            fbos: None,
+            stencil_shader: None,
+            clear_buffer_bits: gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT,
+            shadow_map: Some(sm),
+        })
+    }
+
+    pub fn use_stencil(&mut self) {
+        let mut mesh_shader = mesh_shader::MeshShader::new(&self.gl).unwrap();
+        mesh_shader.shader = load_object_shader("stencil", &self.gl).unwrap();
+
+        self.stencil_shader = Some(mesh_shader);
+        self.clear_buffer_bits |= gl::STENCIL_BUFFER_BIT;
+
+        unsafe {
+            self.gl.Enable(gl::STENCIL_TEST);
+            self.gl.StencilFunc(gl::NOTEQUAL, 1, 0xFF);
+            self.gl.StencilOp(gl::KEEP, gl::KEEP, gl::REPLACE);
+        }
+    }
 
     pub fn render(&mut self, mesh_data: &Vec::<SceneMesh>,
-                  camera: camera::Camera,
+                  camera: &camera::Camera,
                   light_pos: V3,
                   light_color: Color,
                   ui: &mut Ui,

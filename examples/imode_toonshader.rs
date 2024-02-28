@@ -57,7 +57,7 @@ fn main() -> Result<(), failure::Error> {
     scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
     scene.load_sound("attack".into(), &"examples/pixel_sekiro/assets/audio/deflect_1.wav");
 
-    shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.mesh_shader.shader);
+    shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.default_render_pipeline.mesh_shader.shader);
 
     let player_id = scene.create_entity("player");
     let _world_id = scene.create_entity("World");
@@ -66,8 +66,6 @@ fn main() -> Result<(), failure::Error> {
     let sphere_id = scene.create_entity("Sphere");
     let sphere_1 = scene.create_entity("Sphere");
     let light_id = scene.create_entity("Light");
-
-
 
 
     scene.light_pos = V3::new(-10.0, -5.0, 30.0);
@@ -90,7 +88,7 @@ fn main() -> Result<(), failure::Error> {
     let lp = V3::new(1.0, -4.0, 3.0);
     scene::update_pos(&mut scene, light_id, lp);
 
-    scene.use_stencil();
+    scene.default_render_pipeline.use_stencil();
 
     let mut data = Data {
         show_options: false,
@@ -154,23 +152,23 @@ fn pre_load(scene: &mut Scene, sdl_setup: &mut helpers::BasicSetup) {
 
 fn ui(scene: &mut Scene, data : &mut Data) {
     if scene.ui.button("MeshShader") {
-        shader::reload_object_shader("mesh_shader", &scene.gl, &mut scene.mesh_shader.shader)
+        shader::reload_object_shader("mesh_shader", &scene.gl, &mut scene.default_render_pipeline.mesh_shader.shader)
     }
 
     if scene.ui.button("ToonShader") {
-        shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.mesh_shader.shader)
+        shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.default_render_pipeline.mesh_shader.shader)
     }
 
     if scene.ui.button("use stencil") {
-        if scene.stencil_shader.is_some() {
-            scene.stencil_shader = None;
+        if scene.default_render_pipeline.stencil_shader.is_some() {
+            scene.default_render_pipeline.stencil_shader = None;
         } else {
-            scene.use_stencil();
+            scene.default_render_pipeline.use_stencil();
         }
     }
 
-    if scene.stencil_shader.is_some() && scene.ui.button("stencil") {
-        shader::reload_object_shader("stencil", &scene.gl, &mut scene.stencil_shader.as_mut().unwrap().shader)
+    if scene.default_render_pipeline.stencil_shader.is_some() && scene.ui.button("stencil") {
+        shader::reload_object_shader("stencil", &scene.gl, &mut scene.default_render_pipeline.stencil_shader.as_mut().unwrap().shader)
     }
 
     if data.show_options {
@@ -239,7 +237,7 @@ fn options(scene: &mut Scene, data : &mut Data) {
     }
 
 
-    if let Some(sm) = &mut scene.shadow_map {
+    if let Some(sm) = &mut scene.default_render_pipeline.shadow_map {
         ui.newline();
         ui.body_text(&format!("z_near: {:.2?}, z_far: {:.2?}", sm.z_near, sm.z_far));
 

@@ -25,10 +25,7 @@ use core::convert::TryInto;
 use crate::scene_3d::types::DataMap;
 use crate::scene_3d::rendering::{RenderMesh, render_scene};
 use crate::scene_3d::actions::*;
-
-
-
-
+use crate::scene_3d::RenderPipeline;
 
 
 pub type EntityId = usize;
@@ -127,15 +124,12 @@ pub struct Scene<UserPostProcessData, UserControllerData = ()> {
     audio_player: AudioPlayer,
 
     pub cubemap : Option::<Cubemap>,
-    pub cubemap_shader: BaseShader,
 
     pub clear_buffer_bits: u32,
 
     pub action_queue: ActionQueue,
 
     cubemap_imgs: Option::<Arc::<Mutex::<Option<Vec::<image::RgbImage>>>>>,
-
-    pub mesh_shader: mesh_shader::MeshShader,
 
     // multiple entities can use the same mesh
     pub meshes: HashMap::<Rc::<str>, MeshIndex>, // name to mesh, pt mesh names are uniquie
@@ -161,11 +155,10 @@ pub struct Scene<UserPostProcessData, UserControllerData = ()> {
 
     pub fbos: Option::<Fbos<UserPostProcessData>>,
 
-    pub stencil_shader: Option<mesh_shader::MeshShader>,
+    pub viewport: gl::viewport::Viewport,
 
-    pub shadow_map: Option<ShadowMap>,
+    pub default_render_pipeline: RenderPipeline<UserPostProcessData>
 
-    pub viewport: gl::viewport::Viewport
 }
 
 
@@ -199,8 +192,6 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
         let ui = sdl_setup.ui();
         let sdl = sdl_setup.sdl.clone();
 
-        let mesh_shader = mesh_shader::MeshShader::new(&gl)?;
-        let cubemap_shader = load_object_shader("cubemap", &gl).unwrap();
         let player = AnimationPlayer::<EntityId>::new();
 
         let audio_player = AudioPlayer::new(sdl.audio().unwrap());
@@ -222,14 +213,12 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
         camera.move_to(V3::new(10.4, 0.0, 5.0));
         camera.look_at(look_at);
 
-        let mut sm = ShadowMap::new(&gl);
-        sm.texture_offset = 1;
 
         Ok(Self {
+            default_render_pipeline: RenderPipeline::new(gl.clone())?,
             gl,
             sdl,
             ui_mode: true,
-            shadow_map: Some(sm),
             ui,
             viewport,
             emitter: emitter::Emitter::new(1000, emitter::emit_1, emitter::update_1),
@@ -242,8 +231,6 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
                 selected: SceneControllerSelected::Free,
             },
             follow_controller: Default::default(),
-            mesh_shader,
-            cubemap_shader,
             player,
             audio_player,
             cubemap: None,
@@ -256,7 +243,6 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
             cubemap_imgs: None,
             default_bones,
             fbos: None,
-            stencil_shader: None,
             clear_buffer_bits: gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT,
             controlled_entity: None::<ControlledEntity<UserControllerData>>,
             action_queue: VecDeque::default(),
@@ -374,24 +360,11 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
     }
 
+    //TODO: Move to renderpipeline, but after we have mutiple and can access them easy
     pub fn use_shadow_map(&mut self) {
         let mut sm = ShadowMap::new(&self.gl);
         sm.texture_offset = 1;
-        self.shadow_map = Some(sm);
-    }
-
-    pub fn use_stencil(&mut self) {
-        let mut mesh_shader = mesh_shader::MeshShader::new(&self.gl).unwrap();
-        mesh_shader.shader = load_object_shader("stencil", &self.gl).unwrap();
-
-        self.stencil_shader = Some(mesh_shader);
-        self.clear_buffer_bits |= gl::STENCIL_BUFFER_BIT;
-
-        unsafe {
-            self.gl.Enable(gl::STENCIL_TEST);
-            self.gl.StencilFunc(gl::NOTEQUAL, 1, 0xFF);
-            self.gl.StencilOp(gl::KEEP, gl::KEEP, gl::REPLACE);
-        }
+        self.default_render_pipeline.shadow_map = Some(sm);
     }
 
 
@@ -630,91 +603,19 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
     pub fn render(&mut self) {
 
-        // TODO: Maybe have this on scene to reuse vector alloc
-        // Setup render meshes data
-        let mut render_meshes = vec![];
-        for (key, entity) in &self.entities.data {
-
-            let trans = Translation3::from(entity.pos + entity.root_motion);
-
-            let rotation = Rotation3::from_euler_angles(entity.side_pitch.angle(), entity.forward_pitch.angle(), entity.z_angle.angle());
-
-            render_meshes.push(RenderMesh {
-                model_mat: trans.to_homogeneous() * rotation.to_homogeneous(),
-                bones: self.bones.get(key).unwrap_or(&self.default_bones),
-                mesh: &self.mesh_data[entity.mesh_id].mesh,
-                texture: self.mesh_data[entity.mesh_id].texture_id,
-            });
-        }
 
 
-        // TODO: Allocate once and reuse a vec, maybe just on scene
-        let mut light_space_mats = vec![];
-
-        // RENDER TO SHADOW MAP
-        if let Some(sm) = &self.shadow_map {
-            // calc and set light_space_mats
-            sm.pre_render(&self.gl, self.light_pos,  &mut light_space_mats);
-
-            unsafe {
-                self.gl.Enable(gl::CULL_FACE);
-                self.gl.CullFace(gl::FRONT);
-            }
-            for rm in &render_meshes {
-                sm.shader.set_mat4(&self.gl, "model", rm.model_mat);
-                sm.shader.set_slice_mat4(&self.gl, "uBones", rm.bones);
-
-                rm.mesh.render(&self.gl);
-            }
-
-            unsafe {
-                self.gl.CullFace(gl::BACK);
-            }
-
-            sm.post_render(&self.gl, self.viewport.w, self.viewport.h);
-        }
-
-        if let Some(ref mut fbos) = self.fbos {
-            fbos.ui_fbo.unbind();
-
-            fbos.mesh_fbo.bind_and_clear(self.clear_buffer_bits);
-
-
-
-            render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
-                         &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
-                         &light_space_mats, self.light_pos, self.light_color);
-
-
-            fbos.mesh_fbo.unbind();
-
-
-            // Post process 2, render fbo color texture
-            // TODO: maybe add this to unbind?? since unbind is a frame buffer bind or screen buffer.
-            unsafe {
-                self.gl.Disable(gl::DEPTH_TEST);
-                self.gl.ClearColor(0.0, 0.0, 0.0, 0.0);
-                self.gl.Clear(gl::COLOR_BUFFER_BIT);
-            }
-
-            let w = self.viewport.w as f32;
-            let h = self.viewport.h as f32;
-
-            let size =  V2::new(w, h);
-
-            fbos.post_process_shader.shader.set_used();
-            (fbos.post_process_uniform_set)(&self.gl, &mut fbos.post_process_shader.shader, &fbos.post_process_data);
-
-            self.ui.drawer2D.render_img_custom_shader(fbos.mesh_fbo.color_tex, 0, 0, size, &fbos.post_process_shader);
-
-            // TODO: Handle this when using instanced ui rendering
-            // Draw ui on top at last
-            self.ui.drawer2D.render_img(fbos.ui_fbo.color_tex, 0, 0, size);
-        } else {
-            render_scene(&self.gl, &self.camera, &self.mesh_shader, &self.mesh_data, &self.bones, &self.default_bones,
-                         &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
-                         &light_space_mats, self.light_pos, self.light_color);
-        }
+        self.default_render_pipeline.render(
+            &self.mesh_data,
+            &self.camera,
+            self.light_pos,
+            self.light_color,
+            &mut self.ui,
+            &self.viewport,
+            &self.bones,
+            &self.default_bones,
+            &self.entities.data,
+        );
     }
 
 
