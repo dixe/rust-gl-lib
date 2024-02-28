@@ -37,9 +37,9 @@ pub type SkeletonIndex = usize;
 
 
 pub struct SceneMesh {
-    mesh: Mesh,
-    skeleton: Option<SkeletonIndex>,
-    texture_id: Option<texture::TextureId>
+    pub mesh: Mesh,
+    pub skeleton: Option<SkeletonIndex>,
+    pub texture_id: Option<texture::TextureId>
 }
 
 
@@ -230,7 +230,6 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
             sdl,
             ui_mode: true,
             shadow_map: Some(sm),
-            //render_meshes: vec![],
             ui,
             viewport,
             emitter: emitter::Emitter::new(1000, emitter::emit_1, emitter::update_1),
@@ -631,10 +630,10 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
     pub fn render(&mut self) {
 
-        // setup render meshes data
+        // TODO: Maybe have this on scene to reuse vector alloc
+        // Setup render meshes data
         let mut render_meshes = vec![];
         for (key, entity) in &self.entities.data {
-
 
             let trans = Translation3::from(entity.pos + entity.root_motion);
 

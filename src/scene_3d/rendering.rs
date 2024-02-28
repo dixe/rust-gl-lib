@@ -23,6 +23,9 @@ use crate::color::Color;
 use crate::particle_system::particle_circle::ParticleCircle;
 use core::convert::TryInto;
 use crate::scene_3d::scene_3d::{SceneMesh, EntityId};
+use crate::scene_3d::SceneEntity;
+use crate::scene_3d::Fbos;
+
 
 pub struct RenderMesh<'a> {
     pub model_mat: Mat4,
@@ -36,18 +39,18 @@ pub struct RenderMesh<'a> {
 // Can not be &scene, since then using fbo is not good, and we want a function,
 // since we want to call it from mutiple places
 pub fn render_scene(gl: &gl::Gl, camera: &Camera,
-                mesh_shader: &mesh_shader::MeshShader,
-                _mesh_data: &Vec::<SceneMesh>,
-                _bones: &HashMap::<EntityId, Bones>,
-                default_bones: &Bones,
-                cubemap_opt: &Option<Cubemap>,
-                cubemap_shader: &BaseShader,
-                stencil_shader: &Option<mesh_shader::MeshShader>,
-                _shadow_map: &Option<ShadowMap>,
-                render_meshes: &[RenderMesh],
-                light_space_mats: &Vec::<Mat4>,
-                light_pos: V3,
-                light_color: Color) {
+                    mesh_shader: &mesh_shader::MeshShader,
+                    _mesh_data: &Vec::<SceneMesh>,
+                    _bones: &HashMap::<EntityId, Bones>,
+                    default_bones: &Bones,
+                    cubemap_opt: &Option<Cubemap>,
+                    cubemap_shader: &BaseShader,
+                    stencil_shader: &Option<mesh_shader::MeshShader>,
+                    _shadow_map: &Option<ShadowMap>,
+                    render_meshes: &[RenderMesh],
+                    light_space_mats: &Vec::<Mat4>,
+                    light_pos: V3,
+                    light_color: Color) {
 
 
     let mut uniforms = mesh_shader::Uniforms {
@@ -129,5 +132,126 @@ pub fn render_scene(gl: &gl::Gl, camera: &Camera,
         cubemap_shader.set_mat4(gl, "projection", camera.projection());
         cubemap_shader.set_mat4(gl, "view", camera.view());
         cubemap.render(gl);
+    }
+}
+
+
+
+pub struct RenderPipeLine<UserPostProcessData> {
+
+    pub gl: gl::Gl,
+
+    pub clear_buffer_bits: u32,
+
+
+    // Should these be share?d
+    pub shadow_map: Option<ShadowMap>,
+    pub cubemap : Option::<Cubemap>,
+    pub fbos: Option::<Fbos<UserPostProcessData>>,
+
+
+    // SHADERS
+    pub cubemap_shader: BaseShader,
+    pub mesh_shader: mesh_shader::MeshShader,
+    pub stencil_shader: Option<mesh_shader::MeshShader>,
+}
+
+impl<UserPostProcessData> RenderPipeLine<UserPostProcessData> {
+
+    pub fn render(&mut self, mesh_data: &Vec::<SceneMesh>,
+                  camera: camera::Camera,
+                  light_pos: V3,
+                  light_color: Color,
+                  ui: &mut Ui,
+                  viewport: &gl::viewport::Viewport,
+                  bones: &HashMap::<EntityId, Bones>,
+                  default_bones: &Bones,
+                  entities: &HashMap::<usize, SceneEntity>) {
+
+        // TODO: Maybe have this on scene to reuse vector alloc
+        // Setup render meshes data
+        let mut render_meshes = vec![];
+        for (key, entity) in entities {
+
+            let trans = Translation3::from(entity.pos + entity.root_motion);
+
+            let rotation = Rotation3::from_euler_angles(entity.side_pitch.angle(), entity.forward_pitch.angle(), entity.z_angle.angle());
+
+            render_meshes.push(RenderMesh {
+                model_mat: trans.to_homogeneous() * rotation.to_homogeneous(),
+                bones: bones.get(key).unwrap_or(&default_bones),
+                mesh: &mesh_data[entity.mesh_id].mesh,
+                texture: mesh_data[entity.mesh_id].texture_id,
+            });
+        }
+
+
+        // TODO: Allocate once and reuse a vec, maybe just on scene
+        let mut light_space_mats = vec![];
+
+        // RENDER TO SHADOW MAP
+        if let Some(sm) = &self.shadow_map {
+            // calc and set light_space_mats
+            sm.pre_render(&self.gl, light_pos,  &mut light_space_mats);
+
+            unsafe {
+                self.gl.Enable(gl::CULL_FACE);
+                self.gl.CullFace(gl::FRONT);
+            }
+            for rm in &render_meshes {
+                sm.shader.set_mat4(&self.gl, "model", rm.model_mat);
+                sm.shader.set_slice_mat4(&self.gl, "uBones", rm.bones);
+
+                rm.mesh.render(&self.gl);
+            }
+
+            unsafe {
+                self.gl.CullFace(gl::BACK);
+            }
+
+            sm.post_render(&self.gl, viewport.w, viewport.h);
+        }
+
+        if let Some(ref mut fbos) = self.fbos {
+            fbos.ui_fbo.unbind();
+
+            fbos.mesh_fbo.bind_and_clear(self.clear_buffer_bits);
+
+
+
+            render_scene(&self.gl, &camera, &self.mesh_shader, &mesh_data, &bones, &default_bones,
+                         &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
+                         &light_space_mats, light_pos, light_color);
+
+
+            fbos.mesh_fbo.unbind();
+
+
+            // Post process 2, render fbo color texture
+            // TODO: maybe add this to unbind?? since unbind is a frame buffer bind or screen buffer.
+            unsafe {
+                self.gl.Disable(gl::DEPTH_TEST);
+                self.gl.ClearColor(0.0, 0.0, 0.0, 0.0);
+                self.gl.Clear(gl::COLOR_BUFFER_BIT);
+            }
+
+            let w = viewport.w as f32;
+            let h = viewport.h as f32;
+
+            let size =  V2::new(w, h);
+
+            fbos.post_process_shader.shader.set_used();
+            (fbos.post_process_uniform_set)(&self.gl, &mut fbos.post_process_shader.shader, &fbos.post_process_data);
+
+            ui.drawer2D.render_img_custom_shader(fbos.mesh_fbo.color_tex, 0, 0, size, &fbos.post_process_shader);
+
+            // TODO: Handle this when using instanced ui rendering
+            // Draw ui on top at last
+            ui.drawer2D.render_img(fbos.ui_fbo.color_tex, 0, 0, size);
+        } else {
+            render_scene(&self.gl, &camera, &self.mesh_shader, &mesh_data, &bones, &default_bones,
+                         &self.cubemap, &self.cubemap_shader, &self.stencil_shader, &self.shadow_map, &render_meshes,
+                         &light_space_mats, light_pos, light_color);
+        }
     }
 }
