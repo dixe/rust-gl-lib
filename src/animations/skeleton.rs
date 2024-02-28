@@ -22,7 +22,7 @@ pub struct Skins {
     pub mesh_to_skin: HashMap::<String, SkinId>,
     pub skin_to_mesh: HashMap::<SkinId, String>,
     pub skeletons: HashMap::<SkinId, Skeleton>,
-    pub index_maps: HashMap::<SkinId, HashMap::<u16, usize>>,
+    pub index_maps: HashMap::<SkinId, HashMap::<u16, usize>>, // In json the the joints have a order, where child bones can come before parents. This maps that order into the order we use for storing the joints, where parenets are always before children
     pub node_index_to_skin: HashMap::<usize, SkinId>, // for use when mapping animations to skin
 }
 
@@ -117,14 +117,21 @@ pub fn update_joint_matrices(joints: &mut Vec::<Joint>, joint: usize, rotation: 
     }
 }
 
+struct JointData<'a> {
+    children: Vec::<usize>,
+    name: &'a str,
+    original_child_index: u16,
+    transform: Transformation,
+}
 
-fn load_joints(skeleton: &mut Skeleton, joints: &std::collections::HashMap<usize, (Vec<usize>, &str, Transformation)>, index: usize, parent_index: usize, index_map: &mut std::collections::HashMap<u16,usize>) {
+fn load_joints(skeleton: &mut Skeleton, joints: &std::collections::HashMap<usize, JointData>, index: usize, parent_index: usize, index_map: &mut std::collections::HashMap<u16, usize>) {
 
     let mut joint = Joint::empty();
 
-    joint.rotation = joints[&index].2.rotation;
-    joint.translation = joints[&index].2.translation;
-    joint.name = joints[&index].1.to_string();
+    joint.rotation = joints[&index].transform.rotation;
+    joint.translation = joints[&index].transform.translation;
+    joint.name = joints[&index].name.to_string();
+
 
     joint.parent_index = parent_index;
 
@@ -132,8 +139,12 @@ fn load_joints(skeleton: &mut Skeleton, joints: &std::collections::HashMap<usize
 
     let this_idx = skeleton.joints.len() - 1;
 
-    index_map.insert(index as u16, this_idx);
-    for child_index in &joints[&index].0 {
+
+    // key is original index into
+    index_map.insert(joints[&index].original_child_index, this_idx);
+
+    //index_map.insert(index as u16, this_idx); // old where we used json node.index() as key, but it does not seem like i works with multiple armatures, also we needed the inter joint mapping,
+    for child_index in &joints[&index].children {
         load_joints(skeleton, joints, *child_index, this_idx, index_map);
     }
 
@@ -163,6 +174,7 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
             if let Some(skin) = node.skin() {
                 let mesh_name = mesh.name().unwrap().to_string();
 
+                println!("LOADING SKIN FOR {:?}\n\n",(&mesh_name, skin.name(), skin.index()));
                 skins.mesh_to_skin.insert(mesh_name.clone(), skin.index());
                 skins.skin_to_mesh.insert(skin.index(), mesh_name);
 
@@ -179,8 +191,11 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
 
         let mut joints_data = std::collections::HashMap::new();
 
+        println!("SKIN {:?}", skin.name());
+
         // fill the array with joints data
         let mut root_index = None;
+        let mut i = 0;
         for node in skin.joints() {
 
             let index = node.index();
@@ -204,11 +219,18 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
             let children: Vec::<usize> = node.children().map(|c| c.index()).collect();
 
 
-            joints_data.insert(index, (children, node.name().unwrap(), Transformation {
-                translation,
-                rotation
-            }));
+            joints_data.insert(index, JointData {
+                children,
+                name: node.name().unwrap(),
+                original_child_index: i,
+                transform:Transformation {
+                    translation,
+                    rotation
+                }});
+
+            i += 1;
         }
+
 
 
         // start from root index and create skeleton from there
@@ -218,25 +240,25 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
             joints: Vec::new(),
         };
 
-        let mut index_map = std::collections::HashMap::<u16,usize>::new();
+        let mut index_map = std::collections::HashMap::<u16, usize>::new();
         if let Some(root) = root_index {
             load_joints(&mut skeleton, &joints_data, root, 255, &mut index_map);
         } else {
             panic!("Could not find any bones with name root. Atm we assume the root is named root");
         }
 
-
-        // This create a mapping from hip bone (1) to index 0, so first bones in skeleton
-        // why is this not added in load bones??
-        if !index_map.contains_key(&0) {
-            index_map.insert(1, 0);
-        }
-
         //TODO: remove this hardcoded, and find a way to do it more generally
-
         skeleton.calc_t_pose();
 
         skins.skeletons.insert(skin.index(), skeleton);
+
+/*
+        println!("\n\n skin to idx map: {:?}", skin.name());
+
+        for (k,v) in &index_map {
+            println!("  {:?}", (k,v));
+        }
+*/
         skins.index_maps.insert(skin.index(), index_map);
     }
 

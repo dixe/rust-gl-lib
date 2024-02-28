@@ -87,7 +87,9 @@ fn main() -> Result<(), failure::Error> {
 
 
     // start idle animation for player
-    scene.action_queue.push_back(scene::Action::StartAnimationLooped(player_id, "idle".into(), 0.3));
+    scene.action_queue.push_back(scene::Action::StartAnimationLooped(player_id, "t_pose".into(), 0.3));
+
+    scene.action_queue.push_back(scene::Action::StartAnimationLooped(enemy_id, "dance".into(), 0.3));
 
 
     let mut game_data = GameData::default();
@@ -102,21 +104,34 @@ fn main() -> Result<(), failure::Error> {
 
         scene.frame_start(&mut sdl_setup.event_pump);
 
+        // could be system too??
         handle_input(&mut scene, &mut game.data);
 
 
         // GAME SYSTEMS
-
         for s in &game.systems {
             s(&mut game.data, &mut scene);
         }
-
 
 
         scene.render();
 
         // UI on top
         ui(&mut scene, &mut data);
+
+        scene.frame_end();
+    }
+}
+
+fn pre_load(scene: &mut Scene, sdl_setup: &mut helpers::BasicSetup) {
+
+    loop {
+        scene.frame_start(&mut sdl_setup.event_pump);
+
+        if scene.ui.button("start") {
+            return;
+        }
+
 
         scene.frame_end();
     }
@@ -149,6 +164,11 @@ fn ui(scene: &mut Scene, data : &mut Data) {
     } else {
         data.show_options = scene.ui.button("Options");
     }
+
+    if scene.ui.button("Reload") {
+        scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
+    }
+
 }
 
 
@@ -252,7 +272,7 @@ fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, _follow_came
     camera.look_at(entity.pos);
 }
 
-
+//
 // should this be in controlled entity controller_fn? Just requried us to also pass action_queue, for now
 // taking a scene here is the most "free" since we can look at enemies, use camera ect.
 fn handle_input(scene: &mut Scene, game: &mut GameData) {

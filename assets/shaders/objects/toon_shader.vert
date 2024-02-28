@@ -32,8 +32,7 @@ mat4 boneTransform() {
   mat4 ret;
 
   // Weight1 * Bone1 + Weight2 * Bone2
-  ret = BoneWeights.x * uBones[int(BoneIndices.x)]
-       + BoneWeights.y * uBones[int(BoneIndices.y)];
+  ret = BoneWeights.x * uBones[int(BoneIndices.x)] + BoneWeights.y * uBones[int(BoneIndices.y)];
 
   return ret;
 

@@ -20,16 +20,6 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
 
     let skins = load_skins(&gltf)?;
 
-
-    let mut inter_joint_index: Vec::<u16> = Vec::new();
-
-    for skin in gltf.skins() {
-        for node in skin.joints() {
-            let index = node.index();
-            inter_joint_index.push(index as u16);
-        }
-    }
-
     let mut res = GltfMeshes {
         meshes: std::collections::HashMap::new()
     };
@@ -60,7 +50,7 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
     for node in gltf.nodes() {
         match node.mesh() {
             Some(m) => {
-                let empty = HashMap::<u16,usize>::new();
+                let empty = HashMap::<u16, usize>::new();
                 let mesh_name = node.name().unwrap().to_string();
                 let index_map = if let Some(skin_id) = skins.mesh_to_skin.get(&mesh_name) {
                     match skins.index_maps.get(&skin_id) {
@@ -71,8 +61,8 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
                 else {
                     &empty
                 };
+                res.meshes.insert(mesh_name, load_gltf_mesh_data(&m, &buffers, &index_map)?);
 
-                res.meshes.insert(mesh_name, load_gltf_mesh_data(&m, &buffers, &index_map, &inter_joint_index)?);
             },
             _ => {}
         };
@@ -270,13 +260,19 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
 
     println!("Meshes loaded {:#?}", res.meshes.keys());
 
-    Ok(GltfData { meshes:res, skins, animations, images: loaded_images}) //
+    for skin_id in animations.keys() {
+        println!("Animations {:#?}", animations[skin_id].keys());
+    }
+    Ok(GltfData { meshes:res, skins, animations, images: loaded_images})
 
 }
 
-fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data>, index_map: &std::collections::HashMap<u16,usize>, inter_joint_index: &Vec::<u16>) -> Result<GltfMesh, failure::Error> {
+fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data>, index_map: &std::collections::HashMap<u16, usize>) -> Result<GltfMesh, failure::Error> {
+
 
     let name = mesh.name().unwrap().to_string();
+
+    println!("load data for {:?}", name);
 
     let mut pos_data = Vec::new();
 
@@ -337,24 +333,43 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
             }
         }
 
+
         if let Some(reader) = reader.read_joints(set) {
             let mut c = 0;
+
             for j in reader.into_u16() {
+
                 let mut data: [usize; 4] = [0; 4];
-                for (i, index) in j.iter().enumerate() {
+                'outer: for (i, index) in j.iter().enumerate() {
                     // index is into the skins.joints array, which has a list of node indexes
                     // so we have to map from index into joints to
-                    data[i] = match index_map.get(&inter_joint_index[*index as usize]) {
+
+
+                    data[i] = match index_map.get(index) {
                         Some(mapping) => {
                             *mapping
                         },
                         None => {
-                            println!("map:\n{:#?}", index_map);
-                            println!("inter_joint:\n{:#?}", (inter_joint_index, &inter_joint_index[*index as usize], index));
-                            println!("c={}, j={:?}\nWeight Data = {:?}", c, j, weights_data[c]);
-                            panic!("Non mapped bone has weights. Check weight paint for {}", *index)
+                            // When vertex < 4 weigts, the array is still 4 long, and it default to a 0.
+
+                            if *index == 0 {
+                                0
+                            } else {
+
+                                println!("ERROR");
+                                println!("map: {:#?}", index_map);
+                                println!("c={}, j={:?} Weight Data = {:?}", c, j, weights_data[c]);
+                                panic!("Non mapped bone has weights. Check weight paint for {}", *index);;
+                            }
+                            //println!("Non mapped bone has weights. Check weight paint for {} - {} - {:?}", *index, &inter_joint_index[*index as usize], index_map.get(index));
+
+                            //*index as usize
+
                         }
                     };
+                    //println!("i = {:?} index = {:?} data[i] = {:?}", i, index, data[i]);
+                    // assume that index is into list of joints
+                    //data[i] = *index as usize;
                 }
 
                 c += 1;
