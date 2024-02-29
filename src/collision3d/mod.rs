@@ -623,6 +623,10 @@ mod tests {
             v5: rot_mat * V3::new(1.0, 0.0, 1.0) + off_set,
             v6: rot_mat * V3::new(1.0, 1.0, 1.0) + off_set,
             v7: rot_mat * V3::new(0.0, 1.0, 1.0) + off_set,
+            center: off_set,
+            dir: V3::new(1.0, 0.0, 0.0),
+            length: 0.0,
+            side_len: 0.0
         }
     }
 
@@ -839,7 +843,7 @@ mod tests {
         let rotation = na::UnitQuaternion::<f32>::from_euler_angles(-0.0, -0.0, 3.028);
         let translation = V3::new(-18.63, -11.55, 0.0);
 
-        let trans = box_1.make_transformed(translation, rotation);
+        let trans = box_1.make_transformed(translation, rotation.into());
 
         println!("box_1 max_x, min_x, max_y, min_y, max_z, min_z {} {} {} {} {} {}",
                  box_1.max_x(), box_1.min_x(),

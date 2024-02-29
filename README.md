@@ -25,7 +25,7 @@ Run with `cargo t -- --test-threads=1` to only have 1 sdl instance at a time.
 
 
 # Features
-
+* [ ] Make cargo fix and cargo text run on all test and examples
 * [ ] Nav mesh
 * [x] Toon shader
 * [ ] Cascading shadow maps

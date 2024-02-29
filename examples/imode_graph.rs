@@ -5,21 +5,8 @@ use gl_lib::imode_gui::widgets::GraphInfo;
 use sdl2::audio::{AudioCallback, AudioDevice, AudioSpecDesired, AudioStatus};
 
 fn main() -> Result<(), failure::Error> {
-    let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
-    let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
-
-    let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
-    let mut ui = Ui::new(drawer_2d);
-
-    let mut event_pump = sdl.event_pump().unwrap();
-
-     // Set background color to white
-    unsafe {
-        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
-    }
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let mut ui = sdl_setup.ui();
 
     let mut fun : fn(f32) -> f32 = linear;
 
@@ -31,7 +18,6 @@ fn main() -> Result<(), failure::Error> {
     };
 
 
-
     let mut fs : Vec::<(&'static str, fn(f32) -> f32)> = Vec::new();
 
     add_fn(linear, &mut fs);
@@ -39,12 +25,7 @@ fn main() -> Result<(), failure::Error> {
 
     loop {
 
-        // Basic clear gl stuff and get events to UI
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
-
-
+        ui.start_frame(&mut sdl_setup.event_pump);
 
         for (name, f) in &fs {
             if ui.button(name) {
@@ -66,9 +47,7 @@ fn main() -> Result<(), failure::Error> {
         ui.slider(&mut info.end, 0.0, 200.0);
 
 
-
-        ui.consume_events(&mut event_pump);
-        window.gl_swap_window();
+        ui.end_frame();
     }
 }
 

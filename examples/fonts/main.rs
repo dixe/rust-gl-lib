@@ -7,23 +7,10 @@ use gl_lib::shader::BaseShader;
 
 fn main() -> Result<(), failure::Error> {
 
-    let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
-    let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
-
-    let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
-    let mut ui = Ui::new(drawer_2d);
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let mut ui = sdl_setup.ui();
 
     ui.drawer2D.font_cache.fonts_path = Some("assets/fonts/".to_string());
-
-    // Set background color to white
-    unsafe {
-        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
-    }
-
-    let mut event_pump = sdl.event_pump().unwrap();
 
 
     let mut amount = 1;
@@ -37,11 +24,7 @@ fn main() -> Result<(), failure::Error> {
     let mut current_font = fonts[0].name().to_string();
     loop {
 
-        // Basic clear gl stuff and get events to UI
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
-        ui.consume_events(&mut event_pump);
+        ui.start_frame(&mut sdl_setup.event_pump);
 
 
         ui.label("Amount");
@@ -106,8 +89,7 @@ fn main() -> Result<(), failure::Error> {
 
         ui.small_text(text);
 
-        ui.finalize_frame();
-        window.gl_swap_window();
+        ui.end_frame();
     }
 }
 

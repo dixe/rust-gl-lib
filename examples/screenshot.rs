@@ -1,6 +1,8 @@
 use failure;
 use gl_lib::{gl, objects::square, shader};
 use image::{Rgba, RgbaImage};
+use gl_lib::objects::RenderObject;
+
 
 fn main() -> Result<(), failure::Error> {
     // Init sdl to use opengl

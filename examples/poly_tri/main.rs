@@ -6,6 +6,7 @@ use gl_lib::shader::{ColorShader, TransformationShader, Shader};
 use gl_lib::{gl, na};
 use rand::Rng;
 use ttf_parser;
+use gl_lib::objects::RenderObject;
 
 
 mod triangulate;
