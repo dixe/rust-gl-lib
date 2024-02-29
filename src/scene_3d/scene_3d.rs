@@ -23,7 +23,9 @@ use crate::color::Color;
 use crate::particle_system::particle_circle::ParticleCircle;
 use crate::scene_3d::types::DataMap;
 use crate::scene_3d::actions::*;
-use crate::scene_3d::RenderPipeline;
+use crate::scene_3d::RenderPipelines;
+use crate::scene_3d::RenderPipelineId;
+
 
 
 pub type EntityId = usize;
@@ -155,7 +157,7 @@ pub struct Scene<UserPostProcessData, UserControllerData = ()> {
 
     pub viewport: gl::viewport::Viewport,
 
-    pub default_render_pipeline: RenderPipeline<UserPostProcessData>
+    pub render_pipelines: RenderPipelines<UserPostProcessData>,
 
 }
 
@@ -181,7 +183,14 @@ pub struct SceneEntity {
     // only really works for animations where we cannot change direction during animaiton,
     pub root_motion: V3,
     pub skeleton_id: Option::<SkeletonIndex>, // Is indirectly a duplicated data, since meshindex points to Scene mesh, which has skel_id. But lets keep it as a convinience
+
+    pub render_pipeline_id: RenderPipelineId
 }
+
+
+
+
+
 
 impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserControllerData> {
     pub fn new(sdl_setup: &mut helpers::BasicSetup) -> Result<Scene<UserPostProcessData, UserControllerData>, failure::Error> {
@@ -213,7 +222,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
 
         Ok(Self {
-            default_render_pipeline: RenderPipeline::new(gl.clone())?,
+            render_pipelines: RenderPipelines::new(gl.clone())?,
             gl,
             sdl,
             ui_mode: true,
@@ -270,7 +279,8 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
             velocity: V3::new(0.0, 0.0, 0.0),
             target_z_angle: Rotation2::identity(),
             root_motion: V3::new(0.0, 0.0, 0.0),
-            skeleton_id: self.mesh_data[mesh_id].skeleton
+            skeleton_id: self.mesh_data[mesh_id].skeleton,
+            render_pipeline_id: 0
         };
 
         let id = self.entities.insert(entity);
@@ -358,12 +368,6 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
     }
 
-    //TODO: Move to renderpipeline, but after we have mutiple and can access them easy
-    pub fn use_shadow_map(&mut self) {
-        let mut sm = ShadowMap::new(&self.gl);
-        sm.texture_offset = 1;
-        self.default_render_pipeline.shadow_map = Some(sm);
-    }
 
 
     pub fn controlled_data_mut(&mut self) -> Option<&mut UserControllerData> {
@@ -601,9 +605,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
     pub fn render(&mut self) {
 
-
-
-        self.default_render_pipeline.render(
+        self.render_pipelines.render(
             &self.mesh_data,
             &self.camera,
             self.light_pos,
@@ -614,6 +616,8 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
             &self.default_bones,
             &self.entities.data,
         );
+
+
     }
 
 

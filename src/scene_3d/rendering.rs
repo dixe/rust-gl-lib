@@ -13,7 +13,97 @@ use crate::color::Color;
 use crate::scene_3d::scene_3d::{SceneMesh, EntityId};
 use crate::scene_3d::SceneEntity;
 use crate::scene_3d::Fbos;
+use std::rc::Rc;
 
+
+pub type RenderPipelineId = usize;
+
+
+pub struct RenderPipelines<Data> {
+    pipelines: Vec::<RenderPipeline<Data>>
+}
+
+
+impl<Data> RenderPipelines<Data> {
+
+    pub fn new(gl: gl::Gl) -> Result::<Self, failure::Error> {
+        Ok(Self {
+            pipelines: vec![RenderPipeline::new(gl.clone(), "default".into(), 0)?]
+        })
+    }
+
+    pub fn default(&mut self) -> &mut RenderPipeline<Data> {
+        return self.pipeline("default".into()).expect("Default pipeline should be there, and if removed, don't query it!!");
+    }
+
+    pub fn pipeline(&mut self, name: Rc::<str>) ->  Option::<&mut RenderPipeline<Data>> {
+        for pipeline in &mut self.pipelines {
+            if name == pipeline.name {
+                return Some(pipeline);
+            }
+        }
+
+        return None;
+    }
+
+    pub fn mesh_shader(&mut self, name: Rc::<str>) -> Option::<&mut BaseShader> {
+        for pipeline in &mut self.pipelines {
+            if name == pipeline.name {
+                return Some(&mut pipeline.mesh_shader.shader);
+            }
+        }
+
+        return None;
+    }
+
+
+    pub fn use_shadow_map(&mut self, name: Rc::<str>) {
+        for pipeline in &mut self.pipelines {
+            if name == pipeline.name {
+
+                pipeline.use_shadow_map();
+
+                break;
+            }
+        }
+    }
+
+    pub fn use_stencil(&mut self, name: Rc::<str>) {
+        for pipeline in &mut self.pipelines {
+            if name == pipeline.name {
+
+                pipeline.use_stencil();
+
+                break;
+            }
+        }
+    }
+
+
+    pub fn render(&mut self, mesh_data: &Vec::<SceneMesh>,
+                  camera: &camera::Camera,
+                  light_pos: V3,
+                  light_color: Color,
+                  ui: &mut Ui,
+                  viewport: &gl::viewport::Viewport,
+                  bones: &HashMap::<EntityId, Bones>,
+                  default_bones: &Bones,
+                  entities: &HashMap::<usize, SceneEntity>) {
+
+        for render_pipeline in &mut self.pipelines {
+            render_pipeline.render(&mesh_data,
+                                   &camera,
+                                   light_pos,
+                                   light_color,
+                                   ui,
+                                   viewport,
+                                   bones,
+                                   default_bones,
+                                   entities,
+            );
+        }
+    }
+}
 
 pub struct RenderMesh<'a> {
     pub model_mat: Mat4,
@@ -124,10 +214,12 @@ pub fn render_scene(gl: &gl::Gl, camera: &Camera,
 
 pub struct RenderPipeline<UserPostProcessData> {
 
+    pub name: Rc::<str>,
+    pub id: RenderPipelineId,
+
     pub gl: gl::Gl,
 
     pub clear_buffer_bits: u32,
-
 
     // Should these be share?d
     pub shadow_map: Option<ShadowMap>,
@@ -144,7 +236,7 @@ pub struct RenderPipeline<UserPostProcessData> {
 impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
 
 
-    pub fn new(gl: gl::Gl) -> Result<Self,  failure::Error> {
+    pub fn new(gl: gl::Gl, name: Rc::<str>, id: RenderPipelineId) -> Result<Self,  failure::Error> {
 
         let mut sm = ShadowMap::new(&gl);
         sm.texture_offset = 1;
@@ -153,6 +245,8 @@ impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
 
         Ok(Self {
             gl,
+            name,
+            id,
             mesh_shader,
             cubemap_shader,
             cubemap: None,
@@ -161,6 +255,15 @@ impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
             clear_buffer_bits: gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT,
             shadow_map: Some(sm),
         })
+    }
+
+
+    pub fn use_shadow_map(&mut self) {
+        if self.shadow_map.is_none() {
+            let mut sm = ShadowMap::new(&self.gl);
+            sm.texture_offset = 1;
+            self.shadow_map = Some(sm);
+        }
     }
 
     pub fn use_stencil(&mut self) {

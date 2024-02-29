@@ -57,7 +57,7 @@ fn main() -> Result<(), failure::Error> {
     scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
     scene.load_sound("attack".into(), &"examples/pixel_sekiro/assets/audio/deflect_1.wav");
 
-    shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.default_render_pipeline.mesh_shader.shader);
+    shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.render_pipelines.default().mesh_shader.shader);
 
     let player_id = scene.create_entity("player");
     let _world_id = scene.create_entity("World");
@@ -82,13 +82,11 @@ fn main() -> Result<(), failure::Error> {
     scene::update_pos(&mut scene, sphere_id, V3::new(-1.0, 3.0, 3.0));
     scene::update_pos(&mut scene, sphere_1, V3::new(1.0, -3.0, 1.0));
 
-
-
-
     let lp = V3::new(1.0, -4.0, 3.0);
     scene::update_pos(&mut scene, light_id, lp);
 
-    scene.default_render_pipeline.use_stencil();
+
+    scene.render_pipelines.default().use_stencil();
 
     let mut data = Data {
         show_options: false,
@@ -99,8 +97,6 @@ fn main() -> Result<(), failure::Error> {
 
     // start idle animation for player
     scene.action_queue.push_back(actions::Action::StartAnimationLooped(player_id, "t_pose".into(), 0.3));
-
-
 
 
     let game_data = GameData::default();
@@ -152,23 +148,25 @@ fn pre_load(scene: &mut Scene, sdl_setup: &mut helpers::BasicSetup) {
 
 fn ui(scene: &mut Scene, data : &mut Data) {
     if scene.ui.button("MeshShader") {
-        shader::reload_object_shader("mesh_shader", &scene.gl, &mut scene.default_render_pipeline.mesh_shader.shader)
+        shader::reload_object_shader("mesh_shader", &scene.gl, &mut scene.render_pipelines.default().mesh_shader.shader)
     }
 
     if scene.ui.button("ToonShader") {
-        shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.default_render_pipeline.mesh_shader.shader)
+        shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.render_pipelines.default().mesh_shader.shader)
     }
 
     if scene.ui.button("use stencil") {
-        if scene.default_render_pipeline.stencil_shader.is_some() {
-            scene.default_render_pipeline.stencil_shader = None;
+        let default_pipeline =  scene.render_pipelines.default();
+
+        if default_pipeline.stencil_shader.is_some() {
+            default_pipeline.stencil_shader = None;
         } else {
-            scene.default_render_pipeline.use_stencil();
+            default_pipeline.use_stencil();
         }
     }
 
-    if scene.default_render_pipeline.stencil_shader.is_some() && scene.ui.button("stencil") {
-        shader::reload_object_shader("stencil", &scene.gl, &mut scene.default_render_pipeline.stencil_shader.as_mut().unwrap().shader)
+    if scene.render_pipelines.default().stencil_shader.is_some() && scene.ui.button("stencil") {
+        shader::reload_object_shader("stencil", &scene.gl, &mut scene.render_pipelines.default().stencil_shader.as_mut().unwrap().shader)
     }
 
     if data.show_options {
@@ -236,8 +234,8 @@ fn options(scene: &mut Scene, data : &mut Data) {
 
     }
 
-
-    if let Some(sm) = &mut scene.default_render_pipeline.shadow_map {
+    let default_pipeline = scene.render_pipelines.default();
+    if let Some(sm) = &mut default_pipeline.shadow_map {
         ui.newline();
         ui.body_text(&format!("z_near: {:.2?}, z_far: {:.2?}", sm.z_near, sm.z_far));
 
@@ -430,23 +428,31 @@ fn missile_system(game: &mut impl MissileSystem, scene: &mut Scene) {
 
         let missile = scene.entities.get(&m.id).unwrap();
         // TODO: this can fail, if the target is dead and gone
-        let target = scene.entities.get(&m.target_id).unwrap();
+        if let Some(target) = scene.entities.get(&m.target_id) {
 
-        let dir = target.pos - missile.pos;
 
-        let new_p = missile.pos + dir.normalize() * speed * dt;
+            let dir = target.pos - missile.pos;
 
-        scene::update_dir(scene, m.id, dir);
-        scene::update_pos(scene, m.id, new_p);
+            let new_p = missile.pos + dir.normalize() * speed * dt;
 
-        // fake some collision, maybe have missile system call back to impl for hit
-        let mut update = true;
-        if dir.xy().magnitude() < 0.2 {
-            update = game.on_missile_hit(i, scene);
-        }
-        if update {
+            scene::update_dir(scene, m.id, dir);
+            scene::update_pos(scene, m.id, new_p);
+
+            // fake some collision, maybe have missile system call back to impl for hit
+            let mut update = true;
+            if dir.xy().magnitude() < 0.2 {
+                update = game.on_missile_hit(i, scene);
+            }
+            if update {
+                i += 1;
+            }
+        } else {
+
             i += 1;
+            // remove missile;
         }
+
+
     }
 }
 

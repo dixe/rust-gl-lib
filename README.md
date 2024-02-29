@@ -30,7 +30,8 @@ Run with `cargo t -- --test-threads=1` to only have 1 sdl instance at a time.
 * [x] Toon shader
 * [ ] Cascading shadow maps
 * [ ] Mutiple different render pipelines, basically different shaders and enable/disable shadows, post process ect for each pipeline
-* [ ] Death system handle death animation before removing. Simple solution is vec of death objects ids, where we can wait until the last animation has expired. We can already get that using the inputs, or the scene maybe
+* [x] Death system handle death animation before removing. Simple solution where we have on death and death update, Unit has a alive/death property we use.
+
 
 
 # Component System
