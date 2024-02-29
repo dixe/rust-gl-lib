@@ -43,10 +43,8 @@ impl<TParticle: std::default::Default + Particle + Sized> Emitter<TParticle> {
         let mut i = 0;
         let max_particles = self.particles.len() - 1;
         while i < self.next_alive {
-
             // update
-
-            self.particles[i].update_life(-dt);
+            self.particles[i].update_life(dt);
 
             if self.particles[i].life() < 0.0 {
                 self.particles.swap(i, self.next_alive.min(max_particles));
@@ -79,11 +77,51 @@ impl<TParticle: std::default::Default + Particle + Sized> Emitter<TParticle> {
     }
 
 
+    pub fn emit_new(&mut self, particle: TParticle) {
+        if self.next_alive >= self.particles.len() {
+            return; // silently just not emit particle
+        }
+        self.particles[self.next_alive] = particle;
+        self.next_alive += 1;
+    }
+
+
     pub fn draw_all(&self, mut render_fn: impl FnMut(&TParticle)) {
         for i in (0..self.next_alive).rev() {
             let p = &self.particles[i];
             render_fn(p)
         }
+    }
+
+    pub fn iter(&self) -> EmitterIter<TParticle>  {
+        EmitterIter {
+            next_alive: self.next_alive,
+            current: 0,
+            particles: &self.particles
+        }
+    }
+
+}
+
+pub struct EmitterIter<'a, T> {
+    next_alive: usize,
+    current: usize,
+    particles: &'a Vec::<T>,
+}
+
+
+impl<'a, T> Iterator for EmitterIter<'a, T> {
+    // We can refer to this type using Self::Item
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+
+        self.current += 1;
+        if self.current > self.next_alive {
+            return None;
+        }
+
+        Some(&self.particles[self.current-1])
     }
 }
 

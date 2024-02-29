@@ -10,6 +10,8 @@ use gl_lib::na::{Rotation2};
 use gl_lib::scene_3d::actions;
 use sdl2::event::Event;
 use gl_lib::scene_3d::RenderPipeline;
+use gl_lib::scene_3d::ParticleScene;
+
 
 pub struct PostPData {
     time: f32
@@ -287,7 +289,7 @@ fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, _follow_came
     camera.look_at(entity.pos);
 }
 
-//
+
 // should this be in controlled entity controller_fn? Just requried us to also pass action_queue, for now
 // taking a scene here is the most "free" since we can look at enemies, use camera ect.
 fn handle_input(scene: &mut Scene, game: &mut GameData) {
@@ -329,13 +331,15 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
             scene.action_queue.push_back(actions::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
             scene.action_queue.push_back(actions::Action::PlaySound("attack".into()));
 
-            // spawn damage ring
-            let effect_id = scene.create_entity("Damage");
-            scene::update_pos(scene, effect_id, player_pos + V3::new(0.0, 0.0, 1.5));
-            // set render_pipeline to be
-            scene.set_entity_render_pipeline(effect_id, "damage".into());
 
-            // this is a particle like thing
+            // damage mesh
+            scene.emitter.emit_new(ParticleScene {
+                life: 3.0,
+                total_life: 3.0,
+                pos: player_pos,
+                mesh_id: *scene.meshes.get("Damage".into()).unwrap(),
+                render_pipeline_id: 1
+            });
 
 
             // find enemy

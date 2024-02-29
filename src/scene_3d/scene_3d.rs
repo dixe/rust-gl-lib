@@ -20,12 +20,11 @@ use crate::helpers;
 use sdl2::event::{Event, WindowEvent};
 use crate::collision3d::CollisionBox;
 use crate::color::Color;
-use crate::particle_system::particle_circle::ParticleCircle;
 use crate::scene_3d::types::DataMap;
 use crate::scene_3d::actions::*;
 use crate::scene_3d::RenderPipelines;
 use crate::scene_3d::RenderPipelineId;
-
+use crate::scene_3d::ParticleScene;
 
 
 pub type EntityId = usize;
@@ -145,7 +144,7 @@ pub struct Scene<UserPostProcessData, UserControllerData = ()> {
     //pub animation_ids: HashMap::<EntityId, EntityId>, // Kinda want to get rid of this, and maybe just use entityId as key to animaiton player. Maybe the player should just take an id in Start. This is already out of sync and make root motion buggy;
     pub entities: DataMap::<SceneEntity>,
 
-    pub emitter: emitter::Emitter<ParticleCircle>,
+    pub emitter: emitter::Emitter<ParticleScene>,
 
     default_bones: Bones,
 
@@ -224,7 +223,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
             ui_mode: true,
             ui,
             viewport,
-            emitter: emitter::Emitter::new(1000, emitter::emit_1, emitter::update_1),
+            emitter: emitter::Emitter::new(1000, |_, _, _| {}, |_, _,| {}),
             camera,
             light_pos: V3::new(0.0, 10.0, 30.0),
             light_color: Color::Rgb(255, 255, 255),
@@ -575,6 +574,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
     pub fn render(&mut self) {
 
+
         self.render_pipelines.render(
             &self.mesh_data,
             &self.camera,
@@ -585,6 +585,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
             &self.bones,
             &self.default_bones,
             &self.entities.data,
+            &self.emitter
         );
 
 

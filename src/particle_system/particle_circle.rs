@@ -1,9 +1,7 @@
-
 use crate::color::Color;
 use crate::typedef::*;
 use crate::imode_gui::drawer2d::Drawer2D;
 use crate::particle_system::particle::Particle;
-
 
 pub struct ParticleCircle {
     pub pos: V3,
