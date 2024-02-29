@@ -42,10 +42,6 @@ pub struct SceneMesh {
 
 pub type PostProcessUniformSet<T> = fn(&gl::Gl, &mut BaseShader, &T);
 
-fn default_uniform_set<T>(_ :&gl::Gl, _: &mut BaseShader, _ : &T) {
-
-}
-
 pub struct Fbos<UserPostprocesData> {
     pub mesh_fbo: buffer::FrameBuffer,
     pub ui_fbo: buffer::FrameBuffer,
@@ -308,7 +304,13 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
         self.audio_player.add_sound(name.clone(), path);
     }
 
-
+    pub fn set_entity_render_pipeline(&mut self, id: EntityId, name: Rc::<str>) {
+        if let Some(entity) = self.entities.get_mut(&id) {
+            if let Some(pipe_id) = self.render_pipelines.id(name) {
+                entity.render_pipeline_id = pipe_id;
+            }
+        }
+    }
 
     pub fn load_all_meshes(&mut self, path: &str, root_motion: bool) {
 
@@ -368,39 +370,8 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
     }
 
-
-
     pub fn controlled_data_mut(&mut self) -> Option<&mut UserControllerData> {
         self.controlled_entity.as_mut().map(|data| &mut data.user_data)
-    }
-
-
-
-    pub fn use_fbos(&mut self, data: UserPostProcessData, fun: Option<PostProcessUniformSet<UserPostProcessData>>) {
-
-        // frame buffer to render to
-        let mesh_fbo = buffer::FrameBuffer::new(&self.gl, &self.ui.drawer2D.viewport);
-
-        let mut ui_fbo = buffer::FrameBuffer::new(&self.gl, &self.ui.drawer2D.viewport);
-
-        // all has to be 0, since opengl works with premultiplied alphas, so if a is 0, all others have to be 0
-        ui_fbo.r = 0.0;
-        ui_fbo.g = 0.0;
-        ui_fbo.b = 0.0;
-        ui_fbo.a = 0.0;
-
-
-        let mut post_process_shader = texture_shader::TextureShader::new(&self.gl).unwrap();
-
-        reload_object_shader("postprocess", &self.gl, &mut post_process_shader.shader);
-
-        self.fbos = Some(Fbos {
-            mesh_fbo,
-            ui_fbo,
-            post_process_shader,
-            post_process_uniform_set: fun.unwrap_or(default_uniform_set),
-            post_process_data: data
-        });
     }
 
     pub fn set_skybox(&mut self, path: String) {
@@ -421,7 +392,6 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
     pub fn camera_follow(&mut self, pos: V3) {
         self.follow_controller.update_camera_target(pos);
     }
-
 
     pub fn change_camera(&mut self) {
         self.inputs.selected = match self.inputs.selected {

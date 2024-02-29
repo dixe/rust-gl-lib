@@ -132,7 +132,7 @@ impl ShadowMap {
         unsafe {
             gl.BindFramebuffer(gl::FRAMEBUFFER, 0);
             gl.Viewport(0, 0, width, height);
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+
             gl.Enable(gl::DEPTH_TEST);
             gl.ActiveTexture(gl::TEXTURE0 + self.texture_offset);
             gl.BindTexture(gl::TEXTURE_2D, self.depth_map);

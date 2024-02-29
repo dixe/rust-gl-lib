@@ -14,22 +14,60 @@ use crate::scene_3d::scene_3d::{SceneMesh, EntityId};
 use crate::scene_3d::SceneEntity;
 use crate::scene_3d::Fbos;
 use std::rc::Rc;
+use crate::shader::reload_object_shader;
+use crate::shader::texture_shader;
+use crate::scene_3d::PostProcessUniformSet;
+use crate::buffer;
 
 
 pub type RenderPipelineId = usize;
 
 
+fn default_uniform_set<T>(_ :&gl::Gl, _: &mut BaseShader, _ : &T) {
+
+}
+
+// where to keep ids? on scene?
 pub struct RenderPipelines<Data> {
+    gl: gl::Gl,
     pipelines: Vec::<RenderPipeline<Data>>
 }
+
 
 
 impl<Data> RenderPipelines<Data> {
 
     pub fn new(gl: gl::Gl) -> Result::<Self, failure::Error> {
         Ok(Self {
-            pipelines: vec![RenderPipeline::new(gl.clone(), "default".into(), 0)?]
+            gl: gl.clone(),
+            pipelines: vec![RenderPipeline::new(gl, "default".into(), 0)?]
         })
+    }
+
+
+    pub fn add(&mut self, name: Rc::<str>) -> &mut RenderPipeline<Data> {
+
+        // find max_id
+        let mut max_id = 0;
+        for pipeline in &self.pipelines {
+            max_id = max_id.max(pipeline.id);
+        }
+
+
+        // create new pipeline
+        self.pipelines.push(RenderPipeline::new(self.gl.clone(), name.clone(), max_id + 1).unwrap());
+
+        return self.pipeline(name).unwrap();
+    }
+
+    pub fn id(&self, name: Rc::<str>) -> Option::<RenderPipelineId> {
+        for pipeline in &self.pipelines {
+            if name == pipeline.name {
+                return Some(pipeline.id);
+            }
+        }
+
+        return None;
     }
 
     pub fn default(&mut self) -> &mut RenderPipeline<Data> {
@@ -91,6 +129,10 @@ impl<Data> RenderPipelines<Data> {
                   entities: &HashMap::<usize, SceneEntity>) {
 
         for render_pipeline in &mut self.pipelines {
+            let id = render_pipeline.id;
+
+            println!("{:?}", id);
+
             render_pipeline.render(&mesh_data,
                                    &camera,
                                    light_pos,
@@ -257,6 +299,35 @@ impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
         })
     }
 
+    pub fn use_fbos(&mut self,
+                    data: UserPostProcessData,
+                    fun: Option<PostProcessUniformSet<UserPostProcessData>>,
+                    viewport: &gl::viewport::Viewport) {
+
+        // frame buffer to render to
+        let mesh_fbo = buffer::FrameBuffer::new(&self.gl, &viewport);
+
+        let mut ui_fbo = buffer::FrameBuffer::new(&self.gl, &viewport);
+
+        // all has to be 0, since opengl works with premultiplied alphas, so if a is 0, all others have to be 0
+        ui_fbo.r = 0.0;
+        ui_fbo.g = 0.0;
+        ui_fbo.b = 0.0;
+        ui_fbo.a = 0.0;
+
+
+        let mut post_process_shader = texture_shader::TextureShader::new(&self.gl).unwrap();
+
+        reload_object_shader("postprocess", &self.gl, &mut post_process_shader.shader);
+
+        self.fbos = Some(Fbos {
+            mesh_fbo,
+            ui_fbo,
+            post_process_shader,
+            post_process_uniform_set: fun.unwrap_or(default_uniform_set),
+            post_process_data: data
+        });
+    }
 
     pub fn use_shadow_map(&mut self) {
         if self.shadow_map.is_none() {
@@ -280,6 +351,32 @@ impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
         }
     }
 
+    fn setup_gl_state(&self) {
+
+        // setup state for this pipeline. Settings like depth and stencil can change from pipeline to pipeline
+        // so we cannot assume anything between frames
+        unsafe {
+            // enable/disable stencil buffer. can be enabled/disabled by another renderpipeline
+            if self.stencil_shader.is_some() {
+                self.gl.Enable(gl::STENCIL_TEST);
+            }
+            else {
+                self.gl.Disable(gl::STENCIL_TEST);
+            }
+
+
+            // check if we should disable depth test
+            if self.clear_buffer_bits & gl::DEPTH_BUFFER_BIT == 0 {
+                println!("Disable depth");
+                self.gl.Disable(gl::DEPTH_TEST);
+            }
+            else {
+                self.gl.Enable(gl::DEPTH_TEST);
+            }
+        }
+
+    }
+
     pub fn render(&mut self, mesh_data: &Vec::<SceneMesh>,
                   camera: &camera::Camera,
                   light_pos: V3,
@@ -288,13 +385,18 @@ impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
                   viewport: &gl::viewport::Viewport,
                   bones: &HashMap::<EntityId, Bones>,
                   default_bones: &Bones,
-                  entities: &HashMap::<usize, SceneEntity>) {
+                  entities: &HashMap<EntityId, SceneEntity>) {
 
+
+
+        self.setup_gl_state();
         // TODO: Maybe have this on scene to reuse vector alloc
         // Setup render meshes data
         let mut render_meshes = vec![];
-        for (key, entity) in entities {
+        let id = self.id;
 
+        for (key, entity) in entities.iter().filter(|(_,e)| e.render_pipeline_id == id) {
+            println!("  {:?}", key);
             let trans = Translation3::from(entity.pos + entity.root_motion);
 
             let rotation = Rotation3::from_euler_angles(entity.side_pitch.angle(), entity.forward_pitch.angle(), entity.z_angle.angle());
@@ -306,7 +408,6 @@ impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
                 texture: mesh_data[entity.mesh_id].texture_id,
             });
         }
-
 
         // TODO: Allocate once and reuse a vec, maybe just on scene
         let mut light_space_mats = vec![];
@@ -320,6 +421,8 @@ impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
                 self.gl.Enable(gl::CULL_FACE);
                 self.gl.CullFace(gl::FRONT);
             }
+
+
             for rm in &render_meshes {
                 sm.shader.set_mat4(&self.gl, "model", rm.model_mat);
                 sm.shader.set_slice_mat4(&self.gl, "uBones", rm.bones);
@@ -332,7 +435,9 @@ impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
             }
 
             sm.post_render(&self.gl, viewport.w, viewport.h);
+
         }
+
 
         if let Some(ref mut fbos) = self.fbos {
             fbos.ui_fbo.unbind();

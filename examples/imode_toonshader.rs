@@ -9,7 +9,7 @@ use gl_lib::movement::Inputs;
 use gl_lib::na::{Rotation2};
 use gl_lib::scene_3d::actions;
 use sdl2::event::Event;
-
+use gl_lib::scene_3d::RenderPipeline;
 
 pub struct PostPData {
     time: f32
@@ -58,6 +58,13 @@ fn main() -> Result<(), failure::Error> {
     scene.load_sound("attack".into(), &"examples/pixel_sekiro/assets/audio/deflect_1.wav");
 
     shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.render_pipelines.default().mesh_shader.shader);
+
+    let new_pipe = scene.render_pipelines.add("damage".into());
+    new_pipe.clear_buffer_bits = gl::COLOR_BUFFER_BIT;
+    new_pipe.shadow_map = None;
+
+    shader::reload_object_shader("damage_shader", &scene.gl, &mut new_pipe.mesh_shader.shader);
+
 
     let player_id = scene.create_entity("player");
     let _world_id = scene.create_entity("World");
@@ -121,7 +128,6 @@ fn main() -> Result<(), failure::Error> {
             s(&mut game.data, &mut scene);
         }
 
-
         scene.render();
 
         // UI on top
@@ -156,8 +162,9 @@ fn ui(scene: &mut Scene, data : &mut Data) {
     }
 
     if scene.ui.button("use stencil") {
-        let default_pipeline =  scene.render_pipelines.default();
 
+        let default_pipeline = scene.render_pipelines.default();
+        println!("stencil use pressed {:?}", default_pipeline.stencil_shader.is_some());
         if default_pipeline.stencil_shader.is_some() {
             default_pipeline.stencil_shader = None;
         } else {
@@ -223,7 +230,6 @@ fn options(scene: &mut Scene, data : &mut Data) {
         data.wire_mode = !data.wire_mode;
 
         unsafe {
-
             if data.wire_mode {
                 scene.gl.PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
             }
@@ -231,7 +237,6 @@ fn options(scene: &mut Scene, data : &mut Data) {
                 scene.gl.PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
             }
         }
-
     }
 
     let default_pipeline = scene.render_pipelines.default();
@@ -327,6 +332,9 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
             // spawn damage ring
             let effect_id = scene.create_entity("Damage");
             scene::update_pos(scene, effect_id, player_pos + V3::new(0.0, 0.0, 1.5));
+            // set render_pipeline to be
+            scene.set_entity_render_pipeline(effect_id, "damage".into());
+
             // this is a particle like thing
 
 
