@@ -16,18 +16,13 @@ fn post_process_uniform_set(gl: &gl::Gl, shader: &mut BaseShader, data : &PostPD
 }
 
 fn main() -> Result<(), failure::Error> {
+
     let mut sdl_setup = helpers::setup_sdl()?;
-    let mut ui = sdl_setup.ui();
-    let gl = &sdl_setup.gl;
-    let viewport = sdl_setup.viewport;
-
-    // disable v-sync
-    let _ = sdl_setup.video_subsystem.gl_set_swap_interval(0);
-
-    let mut scene = scene::Scene::<PostPData, ControlledData>::new(gl.clone(), viewport, ui, sdl_setup.sdl)?;
+    //let mut scene = scene::Scene::<PostPData>::new(sld_setugl.clone(), viewport, sdl_setup.ui(), sdl_setup.sdl)?;
+    let mut scene = scene::Scene::<PostPData, ControlledData>::new(&mut sdl_setup)?;
 
     loop {
-        let _ = run_scene(gl, &mut scene, &mut sdl_setup.event_pump)?;
+        let _ = run_scene(&mut scene, &mut sdl_setup.event_pump)?;
     }
 }
 
@@ -36,7 +31,7 @@ enum PlayerState {
     Movable,
 }
 
-fn run_scene(gl: &gl::Gl, scene: &mut scene::Scene<PostPData, ControlledData>, event_pump: &mut sdl2::EventPump) -> Result<(), failure::Error> {
+fn run_scene(scene: &mut scene::Scene<PostPData, ControlledData>, event_pump: &mut sdl2::EventPump) -> Result<(), failure::Error> {
 
 
     let mut cont = true;
@@ -105,8 +100,8 @@ fn run_scene(gl: &gl::Gl, scene: &mut scene::Scene<PostPData, ControlledData>, e
     scene.skeleton_hit_boxes.insert(player_id, vec![]);
 
     // TODO: Tmp data for hitboxes should live in scene so we can easy render hitboxes for debug
-    let mut hitbox_shader = shader::hitbox_shader::HitboxShader::new(gl).unwrap();
-    let base_cube = cube::Cube::new(gl); // base cube used to display hitboxes
+    let mut hitbox_shader = shader::hitbox_shader::HitboxShader::new(&scene.gl).unwrap();
+    let base_cube = cube::Cube::new(&scene.gl); // base cube used to display hitboxes
 
     loop {
 

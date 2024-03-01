@@ -17,21 +17,9 @@ sheet_assets!{SkeletonAssets "examples/2d_animation_player/assets/player/"}
 
 
 fn main() -> Result<(), failure::Error> {
-    let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
-    let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
 
-    let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
-    let mut ui = Ui::new(drawer_2d);
-
-    // Set background color to white
-    unsafe {
-        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
-    }
-
-    let mut event_pump = sdl.event_pump().unwrap();
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let mut ui = sdl_setup.ui();
 
     let path = "examples/pixel_sekiro/assets/";
     let assets = load_folder(&gl, &path, |s| s.to_string());
@@ -63,11 +51,7 @@ fn main() -> Result<(), failure::Error> {
 
     loop {
 
-        // Basic clear gl stuff and get events to UI
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
-        ui.consume_events(&mut event_pump);
+        ui.start_frame(&mut sdl_setup.event_pump);
         let dt = ui.dt() * time_scale;;
 
         for (folder_name, map) in assets.iter().sorted_by_key(|x| x.0) {
@@ -139,7 +123,6 @@ fn main() -> Result<(), failure::Error> {
                 }
             }
         }
-
-        window.gl_swap_window();
+        ui.end_frame();
     }
 }

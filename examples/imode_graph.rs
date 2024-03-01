@@ -1,8 +1,8 @@
-use gl_lib::{gl, helpers};
-use gl_lib::imode_gui::drawer2d::*;
-use gl_lib::imode_gui::ui::*;
+use gl_lib::{helpers};
+
+
 use gl_lib::imode_gui::widgets::GraphInfo;
-use sdl2::audio::{AudioCallback, AudioDevice, AudioSpecDesired, AudioStatus};
+
 
 fn main() -> Result<(), failure::Error> {
     let mut sdl_setup = helpers::setup_sdl()?;
@@ -71,6 +71,6 @@ fn linear(x: f32) -> f32 {
 
 
 
-fn zero(x: f32) -> f32 {
+fn zero(_x: f32) -> f32 {
     0.0
 }

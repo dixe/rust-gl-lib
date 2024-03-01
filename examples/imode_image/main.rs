@@ -1,7 +1,7 @@
-use gl_lib::{gl, na, helpers, shader};
+use gl_lib::{na, helpers, shader};
 use gl_lib::image::*;
-use gl_lib::imode_gui::drawer2d::*;
-use gl_lib::imode_gui::ui::*;
+
+
 
 
 

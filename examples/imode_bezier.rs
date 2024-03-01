@@ -6,21 +6,9 @@ use gl_lib::imode_gui::Pos;
 
 
 fn main() -> Result<(), failure::Error> {
-    let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
-    let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
 
-    let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
-    let mut ui = Ui::new(drawer_2d);
-
-    // Set background color to white
-    unsafe {
-        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
-    }
-
-    let mut event_pump = sdl.event_pump().unwrap();
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let mut ui = sdl_setup.ui();
 
     let mut curve = Curve {
         samples: 50,
@@ -38,11 +26,7 @@ fn main() -> Result<(), failure::Error> {
 
     loop {
 
-        // Basic clear gl stuff and get events to UI
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
-        ui.consume_events(&mut event_pump);
+        ui.start_frame(&mut sdl_setup.event_pump);i
 
         ui.slider(&mut curve.samples, 2, 50);
 
@@ -62,7 +46,7 @@ fn main() -> Result<(), failure::Error> {
 
         draw_curve(&mut curve, &mut ui);
 
-        window.gl_swap_window();
+        ui.end_frame();
     }
 }
 

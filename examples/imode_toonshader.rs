@@ -9,7 +9,7 @@ use gl_lib::movement::Inputs;
 use gl_lib::na::{Rotation2};
 use gl_lib::scene_3d::actions;
 use sdl2::event::Event;
-use gl_lib::scene_3d::RenderPipeline;
+
 use gl_lib::scene_3d::ParticleScene;
 
 

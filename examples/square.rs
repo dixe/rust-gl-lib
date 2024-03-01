@@ -1,6 +1,6 @@
 use gl_lib::{gl, objects::square, shader::{self, Shader}};
 use failure;
-
+use gl_lib::objects::RenderObject;
 
 fn main() -> Result<(), failure::Error> {
     // Init sdl to use opengl

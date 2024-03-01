@@ -38,27 +38,15 @@ enum LimbState {
 
 
 
-fn main() {
+fn main() -> Result<(), failure::Error> {
 
-    let sdl_setup = helpers::setup_sdl().unwrap();
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
+    let mut sdl_setup = helpers::setup_sdl()?;
     let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
-
-    let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
-
-    let mut ui = Ui::new(drawer_2d);
+    let mut ui = sdl_setup.ui();
 
     let y_center = (viewport.h  / 2 - 30) as f64;
 
     let mut body = create_body(50.0, 40.0, y_center);
-    let mut event_pump = sdl.event_pump().unwrap();
-
-
-    unsafe {
-        gl.ClearColor(1.0, 1.0, 1.0, 1.0);
-    }
 
     let mut sim = true;
     let mut update = true;
@@ -67,26 +55,21 @@ fn main() {
     let mut hip_angle = 0.55;
     let mut knee_angle = 1.45;
 
-
-    let mut delta_time = Deltatime::default();
     loop {
 
-        delta_time.update();
-        // rendering
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
+        ui.start_frame(&mut sdl_setup.event_pump);
+
 
         // this is unit(px) / sec
         let vel = V2::new(30.0, 0.0);
 
-        let dt = delta_time.time() as f64;
+        let dt = ui.dt();
         if sim {
-            simulate(&mut body, vel, dt);
+            simulate(&mut body, vel, dt.into());
         }
 
         if update {
-            update_limbs(&mut body, dt, hip_angle, knee_angle);
+            update_limbs(&mut body, dt.into(), hip_angle, knee_angle);
         }
 
         handle_ui(&mut ui, &mut event_pump);
@@ -132,7 +115,9 @@ fn main() {
 
         draw_body(&mut ui, &body);
 
-        window.gl_swap_window();
+
+        ui.end_frame();
+
 
     }
 }

@@ -12,23 +12,9 @@ use gl_lib::na::{Translation3};
 
 
 fn main() -> Result<(), failure::Error> {
-    let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
-    let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
-    let _audio_subsystem = sdl.audio().unwrap();
-    let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
 
-    println!("{:?}", viewport);
-    let mut ui = Ui::new(drawer_2d);
-
-    // Set background color to white
-    unsafe {
-        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
-    }
-
-    let mut event_pump = sdl.event_pump().unwrap();
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let mut ui = sdl_setup.ui();
 
     let glp_path = "E:/repos/Game-in-rust/blender_models/Animation_test.glb";
     //let glp_path = "E:/repos/Game-in-rust/blender_models/enemy1.glb";
@@ -82,12 +68,8 @@ fn main() -> Result<(), failure::Error> {
     let mut s = 1.0;
     let _animation : Option<&Animation> = None;
     loop {
-        // Basic clear gl stuff and get events to UI
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT | gl::STENCIL_BUFFER_BIT);
-        }
 
-        ui.consume_events(&mut event_pump);
+        ui.start_frame(&mut sdl_setup.event_pump);
 
         let dt = ui.dt();
 
@@ -129,7 +111,8 @@ fn main() -> Result<(), failure::Error> {
 
         draw(&gl, &camera, &bones, &shader, &stencil_shader, &mesh, s);
 
-        window.gl_swap_window();
+        ui.end_frame();
+
     }
 }
 

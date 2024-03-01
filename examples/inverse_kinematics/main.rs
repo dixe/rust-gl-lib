@@ -13,18 +13,9 @@ fn post_process_uniform_set(gl: &gl::Gl, shader: &mut BaseShader, data : &PostPD
 }
 
 fn main() -> Result<(), failure::Error> {
+    let mut sdl_setup = helpers::setup_sdl()?;
 
-    let sdl_setup = helpers::setup_sdl()?;
-    let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
-
-    // disable v-sync
-    sdl_setup.video_subsystem.gl_set_swap_interval(0);
-
-    let mut ui = sdl_setup.ui();
-    let mut scene = scene::Scene::<PostPData>::new(gl.clone(), viewport, ui, sdl_setup.sdl)?;
-
-    let mut event_pump = sdl_setup.event_pump;
+    let mut scene =  scene::Scene::<PostPData>::new(&mut sdl_setup)?;
 
     scene.set_skybox("assets/cubemap/skybox/".to_string());
     scene.load_all_meshes("E:/repos/Game-in-rust/blender_models/player.glb", true);
@@ -64,7 +55,7 @@ fn main() -> Result<(), failure::Error> {
     loop {
 
         // set ui framebuffer, consume sdl events, increment dt ect.
-        scene.frame_start(&mut event_pump);
+        scene.frame_start(&mut sdl_setup.event_pump);
 
         let dt = scene.dt();
 
@@ -74,14 +65,14 @@ fn main() -> Result<(), failure::Error> {
         }
 
         if scene.ui.button("Reload") {
-            reload_object_shader("mesh_shader", &gl, &mut scene.mesh_shader.shader);
+            reload_object_shader("mesh_shader", &scene.gl, &mut scene.mesh_shader.shader);
             if let Some(ref mut fbos) = scene.fbos {
-                reload_object_shader("postprocess", &gl, &mut fbos.post_process_shader.shader);
+                reload_object_shader("postprocess", &scene.gl, &mut fbos.post_process_shader.shader);
             }
             if let Some(ref mut stencil) = scene.stencil_shader {
-                reload_object_shader("stencil", &gl, &mut stencil.shader);
+                reload_object_shader("stencil", &scene.gl, &mut stencil.shader);
             }
-            reload_object_shader("cubemap", &gl, &mut scene.cubemap_shader);
+            reload_object_shader("cubemap", &scene.gl, &mut scene.cubemap_shader);
         }
 
 

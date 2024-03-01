@@ -6,40 +6,16 @@ use gl_lib::color::Color;
 
 
 fn main() -> Result<(), failure::Error> {
-    let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
-    let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let mut ui = sdl_setup.ui();
 
-    let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
-    let mut ui = Ui::new(drawer_2d);
-
-    let mut event_pump = sdl.event_pump().unwrap();
     let mut onoff = false;
     let mut color = Color::Rgb(0,0,0);
-
-     // Set background color to white
-    unsafe {
-        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
-    }
-
 
     let mut show = true;
     loop {
 
-        let _c_vec = color.as_vec4();
-        unsafe {
-            // gl.ClearColor(c_vec.x, c_vec.y, c_vec.z, c_vec.w);
-
-        }
-
-        // Basic clear gl stuff and get events to UI
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
-
-        ui.consume_events(&mut event_pump);
+        ui.start_frame(&mut sdl_setup.event_pump);
 
         ui.heading_text("Not in a window");
 
@@ -81,6 +57,6 @@ fn main() -> Result<(), failure::Error> {
         ui.color_picker(&mut color);
         ui.color_picker(&mut color);
 
-        window.gl_swap_window();
+        ui.end_frame();
     }
 }

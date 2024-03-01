@@ -1,6 +1,6 @@
-use gl_lib::{gl, helpers};
-use gl_lib::imode_gui::drawer2d::*;
-use gl_lib::imode_gui::ui::*;
+use gl_lib::{helpers};
+
+
 
 use gl_lib::color::Color;
 

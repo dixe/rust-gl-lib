@@ -12,39 +12,25 @@ mod scene;
 
 
 fn main() -> Result<(), failure::Error> {
-    let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
-    let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
-    let audio_subsystem = sdl.audio().unwrap();
-    let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
-
-    let mut ui = Ui::new(drawer_2d);
-
-    // Set background color to white
-    unsafe {
-        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
-    }
-
-    let mut event_pump = sdl.event_pump().unwrap();
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let mut ui = sdl_setup.ui();
 
     let mut audio_player = audio_player::AudioPlayer::new(audio_subsystem);
+
     loop {
-        audio_player = load_and_run(&gl, audio_player, &mut ui, &window, &mut event_pump)?;
+        audio_player = load_and_run(audio_player, &mut ui, &window, &mut event_pump)?;
     }
 }
 
 
-pub fn load_and_run(gl: &gl::Gl,
-                    mut audio_player: audio_player::AudioPlayer,
+pub fn load_and_run(mut audio_player: audio_player::AudioPlayer,
                     ui: &mut Ui,
                     window: &sdl2::video::Window,
                     event_pump: &mut sdl2::EventPump) -> Result<audio_player::AudioPlayer, failure::Error> {
 
     let mut pos2 = V2i::new(500, 600);
     let mut animation_player = SheetAnimationPlayer::new();
-    let assets = load_folder(gl, &"examples/pixel_sekiro/assets/", scene::frame_data_mapper);
+    let assets = load_folder(&ui.gl, &"examples/pixel_sekiro/assets/", scene::frame_data_mapper);
 
 
     audio_player.clear();
@@ -59,12 +45,7 @@ pub fn load_and_run(gl: &gl::Gl,
 
     loop {
 
-        // Basic clear gl stuff and get events to UI
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
-
-        ui.consume_events(event_pump);
+        ui.start_frame(&mut sdl_setup.event_pump);
 
         let dt = ui.dt() * time_scale;
 
@@ -115,6 +96,6 @@ pub fn load_and_run(gl: &gl::Gl,
             let _a = 2;
         }
 
-        window.gl_swap_window();
+        ui.end_frame();
     }
 }

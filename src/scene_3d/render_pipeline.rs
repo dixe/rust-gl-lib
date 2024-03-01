@@ -3,15 +3,15 @@ use crate::imode_gui::ui::*;
 use crate::animations::skeleton::{Bones};
 use crate::shader::{mesh_shader, BaseShader, load_object_shader};
 use crate::typedef::*;
-use crate::texture;
-use crate::objects::{shadow_map::ShadowMap, mesh::Mesh, cubemap::{Cubemap}};
-use crate::camera::{self, Camera};
-use crate::na::{Translation3, Rotation3};
+
+use crate::objects::{shadow_map::ShadowMap, cubemap::{Cubemap}};
+use crate::camera::{self};
+
 use crate::shader::Shader;
 use std::collections::{HashMap};
 use crate::color::Color;
 use crate::scene_3d::scene_3d::{SceneMesh, EntityId};
-use crate::scene_3d::SceneEntity;
+
 use crate::scene_3d::Fbos;
 use crate::scene_3d::render_scene;
 use std::rc::Rc;
@@ -151,13 +151,13 @@ impl<UserPostProcessData> RenderPipeline<UserPostProcessData> {
 
     }
 
-    pub fn render(&mut self, mesh_data: &Vec::<SceneMesh>,
+    pub fn render(&mut self, _mesh_data: &Vec::<SceneMesh>,
                   camera: &camera::Camera,
                   light_pos: V3,
                   light_color: Color,
                   ui: &mut Ui,
                   viewport: &gl::viewport::Viewport,
-                  bones: &HashMap::<EntityId, Bones>,
+                  _bones: &HashMap::<EntityId, Bones>,
                   default_bones: &Bones,
                   render_meshes: &[RenderMesh],) {
 

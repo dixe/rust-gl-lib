@@ -1,22 +1,16 @@
 use gl_lib::goap::*;
-use gl_lib::{gl, helpers};
-use gl_lib::imode_gui::drawer2d::*;
-use gl_lib::imode_gui::ui::*;
+use gl_lib::{helpers};
+
 
 use std::rc::Rc;
 use std::fs;
 use toml;
-
 use std::collections::HashMap;
 
 
 fn main() -> Result<(), failure::Error> {
-    let sdl_setup = helpers::setup_sdl()?;
-    let gl = &sdl_setup.gl;
-    let drawer_2d = Drawer2D::new(&gl, sdl_setup.viewport).unwrap();
-    let mut ui = Ui::new(drawer_2d);
-
-    let mut event_pump = sdl_setup.sdl.event_pump().unwrap();
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let mut ui = sdl_setup.ui();
 
 
     let _axe_goal = Goal {
@@ -24,7 +18,6 @@ fn main() -> Result<(), failure::Error> {
         desired_state: HashMap::from([("HasAxe".into(),true)]),
         is_valid: HashMap::from([("HasAxe".into(), false)]),
     };
-
 
 
     let _chill_goal = Goal {
@@ -36,7 +29,6 @@ fn main() -> Result<(), failure::Error> {
 
     let mut world_state = State::default();
 
-
     let mut goals = load_goals().unwrap();
 
     let mut actions = load_actions().unwrap();
@@ -44,12 +36,7 @@ fn main() -> Result<(), failure::Error> {
     let mut rm: Vec::<Rc::<str>> = vec![];
     loop {
 
-        // Basic clear gl stuff and get events to UI
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
-
-        ui.consume_events(&mut event_pump);
+        ui.start_frame(&mut sdl_setup.event_pump);
 
         if ui.button("Plan") {
             if let Some((goal, p)) = plan(&goals, &actions, &world_state) {
@@ -114,7 +101,8 @@ fn main() -> Result<(), failure::Error> {
         }
         rm.clear();
 
-        sdl_setup.window.gl_swap_window();
+
+        ui.end_frame();
     }
 }
 

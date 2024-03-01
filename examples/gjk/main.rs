@@ -41,23 +41,10 @@ fn load(path: &str, frame: usize, name: &str) -> Polygon {
 
 fn main() -> Result<(), failure::Error> {
 
-    let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
-    let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
-
-    let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
-    let mut ui = Ui::new(drawer_2d);
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let mut ui = sdl_setup.ui();
 
     ui.drawer2D.font_cache.fonts_path = Some("assets/fonts/".to_string());
-
-    // Set background color to white
-    unsafe {
-        gl.ClearColor(0.9, 0.9, 0.9, 1.0);
-    }
-
-    let mut event_pump = sdl.event_pump().unwrap();
 
     let mut options = options::Options::default();
 
@@ -67,18 +54,14 @@ fn main() -> Result<(), failure::Error> {
 
     p1.polygon = load("examples/gjk/error.json", 0, "body");
 
-
-
     p1.transform.scale = 10.0;
     p1.transform.translation.x = 500.0;
     p1.transform.translation.y = 600.0;
     p1.transform.flip_y = false;
 
 
-
     p2.polygon = load("examples/pixel_sekiro/assets/player/attack_1_polygons.json", 2, "attack");
     p2.polygon = load("examples/pixel_sekiro/assets/player/attack_1_polygons.json", 3, "body");
-
 
 
     p2.transform.scale = 10.0;
@@ -100,12 +83,8 @@ fn main() -> Result<(), failure::Error> {
 
     loop {
 
-        // Basic clear gl stuff and get events to UI
-        unsafe {
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
+        ui.start_frame(&mut sdl_setup.event_pump);
 
-        ui.consume_events(&mut event_pump);
         handle_inputs(&mut ui, &mut state);
 
         ui.small_text("Tab to toggle vertices info");
@@ -212,7 +191,7 @@ fn main() -> Result<(), failure::Error> {
             }
         }
         render_mode(&mut ui, &state.mode);
-        window.gl_swap_window();
+        ui.end_frame();
     }
 }
 

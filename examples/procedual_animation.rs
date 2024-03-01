@@ -26,17 +26,9 @@ fn post_process_uniform_set(gl: &gl::Gl, shader: &mut BaseShader, data : &PostPD
 fn main() -> Result<(), failure::Error> {
 
     let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
-    let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
-    let _audio_subsystem = sdl.audio().unwrap();
-    let mut event_pump = sdl.event_pump().unwrap();
 
-    // disable v-sync
-    let _ = sdl_setup.video_subsystem.gl_set_swap_interval(0);
     loop {
-        let _ = run_scene(gl, &mut event_pump, viewport, &window, sdl.clone())?;
+        let _ = run_scene(gl, sdl_setup)?;
     }
 }
 
@@ -68,12 +60,9 @@ fn select(ui: &mut Ui, animation: &mut Rc::<Animation>, animations: &HashMap::<R
 }
 
 
-fn run_scene(gl: &gl::Gl, event_pump: &mut sdl2::EventPump,
-             viewport: gl::viewport::Viewport,
-             window: &sdl2::video::Window,
-             sdl: sdl2::Sdl) -> Result<(), failure::Error> {
+fn run_scene(gl: &gl::Gl, sdl_setup: &mut helpers::BasicSetup) -> Result<(), failure::Error> {
 
-    let mut scene = scene::Scene::<PostPData, ()>::new(gl.clone(), viewport, sdl)?;
+    let mut scene = scene::Scene::<PostPData, ()>::new(sdl_setup)?;
 
     let mut cont = true;
 

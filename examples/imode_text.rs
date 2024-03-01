@@ -1,6 +1,6 @@
-use gl_lib::{gl, ScreenBox, helpers};
-use gl_lib::imode_gui::drawer2d::*;
-use gl_lib::imode_gui::ui::*;
+use gl_lib::{ScreenBox, helpers};
+
+
 use gl_lib::text_rendering::text_renderer::TextAlignment;
 
 
@@ -8,25 +8,19 @@ use gl_lib::color::Color;
 
 
 fn main() -> Result<(), failure::Error> {
-    let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
+
+    let mut sdl_setup = helpers::setup_sdl()?;
+    let gl = sdl_setup.gl.clone();
     let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
+    let mut ui = sdl_setup.ui();
 
-    let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
-    let mut ui = Ui::new(drawer_2d);
-
-    let mut event_pump = sdl.event_pump().unwrap();
     let mut onoff = false;
     let mut color = Color::Rgb(27, 27, 27);
 
-
-
     let mut show = false;
 
-    let mut input = "".to_string();
-    let offset = 0.0;
+    let input = "".to_string();
+    let _offset = 0.0;
     ui.drawer2D.tr.set_text_color(Color::Rgb(240, 240, 240));
     ui.drawer2D.font_cache.fonts_path = Some("assets\\fonts\\".to_string());
     let mut text_color = ui.drawer2D.tr.color;
@@ -35,22 +29,7 @@ fn main() -> Result<(), failure::Error> {
     let mut x_off = 0.0;
     loop {
 
-        // Basic clear gl stuff and get events to UI
-        unsafe {
-            gl.Enable(gl::DEPTH_TEST); // for stuff we need this with instanced rendering of quads, so we still can see text on top
-
-            let cc = color.as_vec4();
-
-            gl.ClearColor(cc.x, cc.y, cc.z, cc.w);
-
-            gl.Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
-
-        ui.consume_events(&mut event_pump);
-
-        //ui.heading_text("Not in a window");
-
-        ui.newline();
+        ui.start_frame(&mut sdl_setup.event_pump);
 
         //ui.textbox(&mut input);
         ui.body_text("Body text beloiong to the main windows in the app");
@@ -109,8 +88,6 @@ fn main() -> Result<(), failure::Error> {
         ui.color_picker(&mut color);
         ui.color_picker(&mut color);
 
-        ui.finalize_frame();
-
-        window.gl_swap_window();
+        ui.end_frame();
     }
 }
