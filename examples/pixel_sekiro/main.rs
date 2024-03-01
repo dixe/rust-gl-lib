@@ -14,24 +14,24 @@ mod scene;
 fn main() -> Result<(), failure::Error> {
     let mut sdl_setup = helpers::setup_sdl()?;
     let mut ui = sdl_setup.ui();
+    let audio_subsystem = sdl_setup.sdl.audio().unwrap();;
 
     let mut audio_player = audio_player::AudioPlayer::new(audio_subsystem);
 
     loop {
-        audio_player = load_and_run(audio_player, &mut ui, &window, &mut event_pump)?;
+        audio_player = load_and_run(audio_player, &mut ui, &mut sdl_setup)?;
     }
 }
 
 
 pub fn load_and_run(mut audio_player: audio_player::AudioPlayer,
                     ui: &mut Ui,
-                    window: &sdl2::video::Window,
-                    event_pump: &mut sdl2::EventPump) -> Result<audio_player::AudioPlayer, failure::Error> {
+                    sdl_setup: &mut helpers::BasicSetup) -> Result<audio_player::AudioPlayer, failure::Error> {
 
     let mut pos2 = V2i::new(500, 600);
     let mut animation_player = SheetAnimationPlayer::new();
-    let assets = load_folder(&ui.gl, &"examples/pixel_sekiro/assets/", scene::frame_data_mapper);
 
+    let assets = load_folder(&ui.drawer2D.gl, &"examples/pixel_sekiro/assets/", scene::frame_data_mapper);
 
     audio_player.clear();
     audio_player.add_sound("deflect".into(), &"examples/pixel_sekiro/assets/audio/deflect_1.wav");

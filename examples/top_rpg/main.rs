@@ -140,7 +140,7 @@ fn edit_vertex_data(ui: &mut Ui, data: &mut VertexData, offset: V2, sprite: &Spr
 fn save(animation: &Animation<VertexData>, path: &str) {
     match serde_json::to_string(animation) {
         Ok(json) => {
-            std::fs::write(path, json);
+            let _ = std::fs::write(path, json);
         },
         Err(err) => {
             println!("Fail to save\n{:?}", err);
@@ -209,7 +209,7 @@ impl Sprite {
         drawer2D.render_img_rot(self.texture_id,
                                 p.x as i32,
                                 p.y as i32,
-                                transform.rotation,
+                                gl_lib::imode_gui::drawer2d::RotationWithOrigin::Center(transform.rotation),
                                 V2::new(64.0, 64.0) * transform.scale);
     }
 }

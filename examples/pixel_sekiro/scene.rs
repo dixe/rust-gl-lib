@@ -143,9 +143,20 @@ impl<'a: 'b, 'b> Scene<'a, 'b> {
 
     pub fn draw(&self, drawer_2d: &mut Drawer2D) {
         self.animation_player.draw(drawer_2d, self.player.pos, self.player.state.animation_id());
+
+        // TODO: ui enabled gl_depth_test and that makes our images not render correctly. most likely because they all gets rendered
+        // at the same depth. and event if the color alrady there was alpha 0, we still discard the new framegment at same depth,
+        // since we cannot know this.
+
+        // This is a fix so each sprite always get drawn on top, we stil respect new sprites alpha 0.
+
+        // Correct fix is either to do this, or to disable depthtest in ui, using atm non existing flags
+
+        drawer_2d.z += 0.1;
         if let Some(enemy) = &self.enemy {
             self.animation_player.draw(drawer_2d, enemy.pos, enemy.state.animation_id());
         }
+        drawer_2d.z -= 0.1;
     }
 
 

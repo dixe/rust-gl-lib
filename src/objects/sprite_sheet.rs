@@ -2,12 +2,6 @@ use crate::buffer;
 use crate::gl;
 
 
-
-
-
-
-
-
 pub struct SpriteSheetSquare {
     vao: buffer::VertexArray,
     vbo: buffer::ArrayBuffer,

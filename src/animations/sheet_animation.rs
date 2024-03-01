@@ -240,7 +240,6 @@ impl<'a, FrameDataT> SheetAnimationPlayer<'a, FrameDataT> {
     pub fn draw<T : Numeric + std::fmt::Debug>(&self, drawer_2d: &mut Drawer2D, pos: na::Vector2::<T>, anim_id: AnimationId) {
         if let Some(anim) = self.animations.get(&anim_id) {
 
-
             let sprite = SheetSubSprite {
                 sheet_size: anim.sheet.size,
                 pixel_l: anim.sprite.x,
