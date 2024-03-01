@@ -41,13 +41,16 @@ impl<TParticle: std::default::Default + Particle + Sized> Emitter<TParticle> {
     pub fn update(&mut self, dt: f32) {
 
         let mut i = 0;
-        let max_particles = self.particles.len() - 1;
+        let max_particle_index = self.particles.len() - 1;
         while i < self.next_alive {
             // update
             self.particles[i].update_life(dt);
-
             if self.particles[i].life() < 0.0 {
-                self.particles.swap(i, self.next_alive.min(max_particles));
+                // if this is not the last particle to be checked, then swap with last, and decrement next_alive
+                // bound to max_particle_index to avoid out of index error/panic
+                let swap_idx = (if self.next_alive > 0 { self.next_alive - 1 } else { 0 }).min(max_particle_index);
+
+                self.particles.swap(i, swap_idx);
                 self.next_alive -= 1;
             } else {
                 (self.update_fn)(&mut self.particles[i], dt);

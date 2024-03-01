@@ -95,6 +95,7 @@ fn main() -> Result<(), failure::Error> {
     scene::update_pos(&mut scene, light_id, lp);
 
 
+    scene.follow_controller.desired_distance = 15.0;
     scene.render_pipelines.default().use_stencil();
 
     let mut data = Data {
@@ -270,7 +271,7 @@ fn options(scene: &mut Scene, data : &mut Data) {
 
 
 
-fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, _follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, _user_data: &PlayerData) {
+fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, _user_data: &PlayerData) {
 
     // update entity.pos
     let m = inputs.movement;
@@ -284,8 +285,16 @@ fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, _follow_came
         entity.z_angle =  Rotation2::new(new_angle);
     }
 
-    let offset = V3::new(10.0, -3.5, 12.0);
-    camera.pos = entity.pos + offset;
+    let scroll_speed = 20.0;
+    follow_camera.desired_distance += dt * inputs.mouse_wheel * scroll_speed;
+
+
+    // limit dist to [5.0; 25.0]
+    follow_camera.desired_distance = follow_camera.desired_distance.max(5.0).min(25.0);
+
+    let offset_dir = V3::new(10.0, -3.5, 12.0).normalize();
+
+    camera.pos = entity.pos + offset_dir * follow_camera.desired_distance;
     camera.look_at(entity.pos);
 }
 
@@ -332,16 +341,6 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
             scene.action_queue.push_back(actions::Action::PlaySound("attack".into()));
 
 
-            // damage mesh
-            scene.emitter.emit_new(ParticleScene {
-                life: 3.0,
-                total_life: 3.0,
-                pos: player_pos,
-                mesh_id: *scene.meshes.get("Damage".into()).unwrap(),
-                render_pipeline_id: 1
-            });
-
-
             // find enemy
             if game.enemies.len() > 0 {
 
@@ -351,7 +350,6 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
                 let id = scene.create_entity("arrow");
                 scene::update_pos(scene, id, player_pos + V3::new(0.0, 0.0, 1.0));
                 game.missiles.push(Missile {id, target_id: enemy.id });
-
             }
         }
     }
@@ -417,9 +415,21 @@ impl MissileSystem for GameData {
         scene.remove_entity(&m.id);
 
 
-        // apply damage
+        // apply damage, if enemy dies, it will get handled by the death system.
         if let Some(enemy) = self.enemies.iter_mut().find(|e| e.id == m.target_id) {
             enemy.hp -= 1.0;
+        }
+
+        // damage particle on enemy on hit
+        if let Some(target) = scene.entities.get_mut(&m.target_id) {
+            // damage mesh
+            scene.emitter.emit_new(ParticleScene {
+                life: 0.3,
+                total_life: 0.3,
+                pos: target.pos,
+                mesh_id: *scene.meshes.get("Damage".into()).unwrap(),
+                render_pipeline_id: 1
+            });
         }
 
         // maybe a missile bounces to next target,
@@ -463,10 +473,19 @@ fn missile_system(game: &mut impl MissileSystem, scene: &mut Scene) {
             i += 1;
             // remove missile;
         }
-
-
     }
 }
+
+
+
+
+trait DeathSystem {
+    fn units(&self) -> usize;
+    fn unit(&mut self, idx: usize) -> &mut Unit; // should be some kind of Hp trait impl
+    fn on_death(&mut self, idx: usize, scene: &mut Scene) -> bool;
+    fn update_dead(&mut self, idx: usize, scene: &mut Scene) -> bool;
+}
+
 
 fn death_system(game: &mut impl DeathSystem, scene: &mut Scene) {
 
@@ -475,7 +494,6 @@ fn death_system(game: &mut impl DeathSystem, scene: &mut Scene) {
         let unit = game.unit(i);
 
         let mut update = true;
-
 
         // if alive and get lower than 0 hp play dead anim
         if !unit.dead && unit.hp <= 0.0 {
@@ -488,14 +506,6 @@ fn death_system(game: &mut impl DeathSystem, scene: &mut Scene) {
             i += 1;
         }
     }
-}
-
-
-trait DeathSystem {
-    fn units(&self) -> usize;
-    fn unit(&mut self, idx: usize) -> &mut Unit; // should be some kind of Hp trait impl
-    fn on_death(&mut self, idx: usize, scene: &mut Scene) -> bool;
-    fn update_dead(&mut self, idx: usize, scene: &mut Scene) -> bool;
 }
 
 

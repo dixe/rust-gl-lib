@@ -29,7 +29,7 @@ Run with `cargo t -- --test-threads=1` to only have 1 sdl instance at a time.
 * [ ] Nav mesh
 * [x] Toon shader
 * [ ] Cascading shadow maps
-* [ ] Mutiple different render pipelines, basically different shaders and enable/disable shadows, post process ect for each pipeline
+* [x] Mutiple different render pipelines, basically different shaders and enable/disable shadows, post process ect for each pipeline
 * [x] Death system handle death animation before removing. Simple solution where we have on death and death update, Unit has a alive/death property we use.
 
 
