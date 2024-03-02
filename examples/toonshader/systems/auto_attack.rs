@@ -9,6 +9,9 @@ use gl_lib::typedef::V3;
 use gl_lib::scene_3d::actions;
 use crate::missile;
 use crate::missile::MissileSystem;
+use gl_lib::scene_3d::SceneEntity;
+use gl_lib::scene_3d::DataMap;
+
 
 pub trait AutoAttackSystem {
     fn start_attack_animation(&self, entity_id: &EntityId, scene: &mut Scene) ;
@@ -20,7 +23,7 @@ pub fn auto_attack_system(game: &mut (impl UnitSystem + MissileSystem + AutoAtta
     while i < game.units() { // use while loop so we can modify during loop
         let this = game.unit(i);
 
-        if let Some(closest) = find_closest_enemy(&this, game, scene) {
+        if let Some(closest) = find_closest_enemy(&this, game, &scene.entities) {
             if closest.dist < this.range {
 
                 //println!("{:?} auto attack {:?} at range: {:?}", this.id, closest.target.id, closest.dist);
@@ -55,7 +58,7 @@ impl AutoAttackSystem for GameData {
     }
 }
 
-struct ClosestEnemy {
+pub struct ClosestEnemy {
     target: Unit,
     dist: f32,
     this_pos: V3,
@@ -64,18 +67,17 @@ struct ClosestEnemy {
 }
 
 // this is a general function, that can be usefull in many systems
-fn find_closest_enemy(this: &Unit, game: &impl UnitSystem, scene: &Scene) -> Option::<ClosestEnemy> {
-
+pub fn find_closest_enemy(this: &Unit, game: &impl UnitSystem, entities: &DataMap::<SceneEntity>) -> Option::<ClosestEnemy> {
     let mut closest = None;
     let mut min = f32::MAX;
     let mut i = 0;
-    let this_pos = scene.entities.get(&this.id).expect("unit from trait UnitSystem should exist in scene").pos;
+    let this_pos = entities.get(&this.id).expect("unit from trait UnitSystem should exist in scene").pos;
 
     while i < game.units() { // use while loop so we can modify during loop
         let unit = game.unit(i);
 
         if unit.team != this.team {
-            let unit_pos = scene.entities.get(&unit.id).expect("unit from trait UnitSystem should exist in scene").pos;
+            let unit_pos = entities.get(&unit.id).expect("unit from trait UnitSystem should exist in scene").pos;
             let mut dir = this_pos - unit_pos;
             let dist = dir.magnitude();
             if dist > 0.0 {
@@ -93,14 +95,10 @@ fn find_closest_enemy(this: &Unit, game: &impl UnitSystem, scene: &Scene) -> Opt
                 });
             }
         }
-
         i += 1;
 
     }
-
-
     return closest;
-
 }
 
 

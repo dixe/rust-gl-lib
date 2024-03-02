@@ -9,7 +9,7 @@ use gl_lib::movement::Inputs;
 use gl_lib::na::{Rotation2};
 use gl_lib::scene_3d::actions;
 use sdl2::event::Event;
-use crate::systems::{missile, GameData, setup_systems, SystemFn};
+use crate::systems::{missile, GameData, setup_systems, SystemFn, auto_attack};
 use gl_lib::goap;
 
 mod systems;
@@ -328,7 +328,12 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
     }
 
     if let Some(ref mut c_ent) = &mut scene.controlled_entity {
-        let player = scene.entities.get_mut(&c_ent.id).unwrap();
+        let player_id = c_ent.id;
+        let player = match scene.entities.get_mut(&c_ent.id) {
+            Some(p) => p,
+            None => {return;}
+        };
+
         let player_data = &mut c_ent.user_data;
 
         let player_pos = player.pos;
@@ -339,28 +344,34 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
         }
 
 
+
+        let player_unit = game.units.iter().filter(|u| u.id == player_id).nth(0).unwrap();
         if !player_data.attacking && scene.inputs.current().left_mouse {
-            // set attack state and start animation
-            player_data.attacking = true;
-            scene.action_queue.push_back(actions::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
-            scene.action_queue.push_back(actions::Action::PlaySound("attack".into()));
+
+            if let Some(enemy) = auto_attack::find_closest_enemy(player_unit, game, &scene.entities) {
+
+                // set attack state and start animation
+                player_data.attacking = true;
+                scene.action_queue.push_back(actions::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
+                scene.action_queue.push_back(actions::Action::PlaySound("attack".into()));
 
 
-            // find enemy
-            if game.units.len() > 0 {
+                // find enemy
+                if game.units.len() > 0 {
 
-                let enemy = &game.units[0];
+                    let enemy = &game.units[0];
 
-                // spawn an arrow that homes to enemy
-                let id = scene.create_entity("arrow");
-                scene::update_pos(scene, id, player_pos + V3::new(0.0, 0.0, 1.0));
-                game.missiles.push(missile::Missile {id, target_id: enemy.id });
+                    // spawn an arrow that homes to enemy
+                    let id = scene.create_entity("arrow");
+                    scene::update_pos(scene, id, player_pos + V3::new(0.0, 0.0, 1.0));
+                    game.missiles.push(missile::Missile {id, target_id: enemy.id });
+                }
             }
         }
     }
-
-
 }
+
+
 
 fn spawn_enemy(scene: &mut Scene, game_data: &mut GameData) {
 

@@ -468,10 +468,10 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
                 // when fx roll animation is playing
                 // but not camera input
 
-
                 if let Some(entity) = &self.controlled_entity {
-                    let e = self.entities.get_mut(&entity.id).unwrap();
-                    (entity.control_fn)(e, &mut self.camera, &mut self.follow_controller, &self.inputs.follow, dt, &entity.user_data);
+                    if let Some(e) = self.entities.get_mut(&entity.id) {
+                        (entity.control_fn)(e, &mut self.camera, &mut self.follow_controller, &self.inputs.follow, dt, &entity.user_data);
+                    }
                 }
             }
         }
@@ -512,10 +512,10 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
                     play_animation(anim.clone(), false, &e_id, &mut self.player, &mut self.entities, Some(trans_time));
                 },
                 Action::StartAnimationLooped(e_id, name, trans_time) => {
-
-                    let skel = self.entity(&e_id).unwrap().skeleton_id.unwrap();
-                    let anim = self.animations.get(&skel).unwrap().get(&name).unwrap();
-                    play_animation(anim.clone(), true, &e_id, &mut self.player, &mut self.entities, Some(trans_time));
+                    if let Some(skel) = self.entity(&e_id).and_then(|x| x.skeleton_id) {
+                        let anim = self.animations.get(&skel).unwrap().get(&name).unwrap();
+                        play_animation(anim.clone(), true, &e_id, &mut self.player, &mut self.entities, Some(trans_time));
+                    }
                 },
                 Action::PlaySound(name) => {
                     self.audio_player.play_sound(&name)
