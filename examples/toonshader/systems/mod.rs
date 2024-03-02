@@ -9,7 +9,7 @@ pub mod unit;
 pub mod auto_attack;
 pub mod death;
 pub mod goap_ai;
-
+pub mod cooldown;
 
 pub type SystemFn = fn(&mut GameData, &mut Scene);
 
@@ -23,5 +23,5 @@ pub struct GameData {
 
 
 pub fn setup_systems() -> Vec::<SystemFn> {
-    vec![auto_attack::auto_attack_system, missile::missile_system, death::death_system]
+    vec![cooldown::cooldown_system, auto_attack::auto_attack_system, missile::missile_system, death::death_system]
 }

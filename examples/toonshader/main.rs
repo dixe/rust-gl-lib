@@ -45,6 +45,7 @@ pub struct Unit {
     dead: bool,
     team: TeamId,
     range: f32,
+    cooldown: f32
 }
 
 
@@ -116,7 +117,7 @@ fn setup(scene: &mut Scene, data: &mut GameData) {
 
     // PLAYER INITIAL SETUP
     let player_id = scene.create_entity("player");
-    data.units.push(Unit { id: player_id, hp: 5.0, dead: false, team: 0, range: 10.0 });
+    data.units.push(Unit { id: player_id, hp: 5.0, dead: false, team: 0, range: 10.0, cooldown: 0.0 });
 
     // start idle animation for player
     scene.action_queue.push_back(actions::Action::StartAnimationLooped(player_id, "t_pose".into(), 0.3));
@@ -349,28 +350,21 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
         if !player_data.attacking && scene.inputs.current().left_mouse {
 
             if let Some(enemy) = auto_attack::find_closest_enemy(player_unit, game, &scene.entities) {
-
-                // set attack state and start animation
-                player_data.attacking = true;
-                scene.action_queue.push_back(actions::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
-                scene.action_queue.push_back(actions::Action::PlaySound("attack".into()));
-
-
-                // find enemy
-                if game.units.len() > 0 {
-
-                    let enemy = &game.units[0];
+                if enemy.dist < player_unit.range {
+                    // set attack state and start animation
+                    player_data.attacking = true;
+                    scene.action_queue.push_back(actions::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
+                    scene.action_queue.push_back(actions::Action::PlaySound("attack".into()));
 
                     // spawn an arrow that homes to enemy
                     let id = scene.create_entity("arrow");
                     scene::update_pos(scene, id, player_pos + V3::new(0.0, 0.0, 1.0));
-                    game.missiles.push(missile::Missile {id, target_id: enemy.id });
+                    game.missiles.push(missile::Missile {id, target_id: enemy.target.id });
                 }
             }
         }
     }
 }
-
 
 
 fn spawn_enemy(scene: &mut Scene, game_data: &mut GameData) {
@@ -381,5 +375,5 @@ fn spawn_enemy(scene: &mut Scene, game_data: &mut GameData) {
 
     scene.action_queue.push_back(actions::Action::StartAnimationLooped(enemy_id, "dance".into(), 0.3));
 
-    game_data.units.push(Unit { id: enemy_id, hp: 5.0, dead: false, team: 1, range: 5.0 });
+    game_data.units.push(Unit { id: enemy_id, hp: 5.0, dead: false, team: 1, range: 5.0, cooldown: 0.0 });
 }
