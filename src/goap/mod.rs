@@ -2,10 +2,7 @@ use std::rc::Rc;
 use std::collections::{BinaryHeap, HashMap};
 use core::cmp::Ordering;
 use serde::{Deserialize, Serialize};
-
 pub type Conditions = HashMap::<Rc::<str>, bool>;
-
-
 
 
 #[derive(Clone, Debug, Deserialize)]
@@ -24,7 +21,6 @@ pub struct Goal {
 
 
 fn is_goal_valid(conditions: &Conditions, state: &State) -> bool {
-
 
     // all values in conditions has to be the same in state.
     // false conditions are also satisfied when variable is not in state
@@ -181,8 +177,8 @@ fn push_node(heap: &mut BinaryHeap::<Node>, req_conds: &Conditions, act: Option<
     }
 
     heap.push(node);
-
 }
+
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 struct Node {

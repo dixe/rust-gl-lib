@@ -8,14 +8,15 @@ use gl_lib::typedef::*;
 fn main() -> Result<(), failure::Error> {
     let mut sdl_setup = helpers::setup_sdl()?;
     let mut ui = sdl_setup.ui();
-
+    let viewport = sdl_setup.viewport;
     let gl = sdl_setup.gl.clone();
+
     let mut camera = camera::Camera::new(viewport.w as f32, viewport.h as f32);
     let mut shader = shader::hitbox_shader::HitboxShader::new(gl).unwrap();
     let cube = cube::Cube::new(gl);
 
     loop {
-        ui.start_frame(&mut sdl_setup.event_pump);i
+        ui.start_frame(&mut sdl_setup.event_pump);
 
         if ui.button("Reload") {
             shader::reload_object_shader("hitbox", &gl, &mut shader.shader);

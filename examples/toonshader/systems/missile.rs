@@ -1,20 +1,8 @@
-use gl_lib::{gl, helpers};
 use gl_lib::scene_3d as scene;
-use gl_lib::color::Color;
-use gl_lib::typedef::V3;
-use gl_lib::shader;
 use gl_lib::scene_3d::EntityId;
-use gl_lib::camera::{follow_camera, Camera};
-use gl_lib::movement::Inputs;
-use gl_lib::na::{Rotation2};
-use gl_lib::scene_3d::actions;
-use sdl2::event::Event;
 use gl_lib::scene_3d::ParticleScene;
 use crate::Scene;
-use crate::Unit;
 use crate::GameData;
-
-
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Missile {
@@ -31,6 +19,8 @@ pub trait MissileSystem {
     /// Return mut missile for given index in loop
     fn missile(&mut self, idx: usize) -> &mut Missile; // should be some kind of missile trait
 
+    fn spawn_missile(&mut self, missile: Missile);
+
     /// Call impl for on hit for given missile idx, return bool indicating whether the missile was remove or not.
     /// Used to continue loop correctly
     fn on_missile_hit(&mut self, idx: usize, scene: &mut Scene) -> bool;
@@ -46,6 +36,10 @@ impl MissileSystem for GameData {
         self.missiles.get_mut(idx).expect("Death system should not have called with idx outside scope")
     }
 
+    fn spawn_missile(&mut self, missile: Missile) {
+        self.missiles.push(missile);
+    }
+
     fn on_missile_hit(&mut self, idx: usize, scene: &mut Scene) -> bool {
         let m = self.missiles[idx];
 
@@ -56,7 +50,7 @@ impl MissileSystem for GameData {
 
 
         // apply damage, if enemy dies, it will get handled by the death system.
-        if let Some(enemy) = self.enemies.iter_mut().find(|e| e.id == m.target_id) {
+        if let Some(enemy) = self.units.iter_mut().find(|e| e.id == m.target_id) {
             enemy.hp -= 1.0;
         }
 
@@ -109,7 +103,10 @@ pub fn missile_system(game: &mut impl MissileSystem, scene: &mut Scene) {
                 i += 1;
             }
         } else {
-
+            // this is kinda wonky, maybe just have a remove on missile system.
+            // We call on hit since that also removes missile. And when we are here, the target is gone,
+            // so we want to remove it, well maybe we want to change target, but on_missile_hit should handle that
+            game.on_missile_hit(i, scene);
             i += 1;
             // remove missile;
         }

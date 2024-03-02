@@ -15,24 +15,9 @@ use std::{thread, sync::{Arc, Mutex}};
 
 
 fn main() -> Result<(), failure::Error> {
-    let sdl_setup = helpers::setup_sdl()?;
-    let window = sdl_setup.window;
-    let sdl = sdl_setup.sdl;
-    let viewport = sdl_setup.viewport;
-    let gl = &sdl_setup.gl;
-    let _audio_subsystem = sdl.audio().unwrap();
-    let drawer_2d = Drawer2D::new(&gl, viewport).unwrap();
+        let mut sdl_setup = helpers::setup_sdl()?;
+    let mut ui = sdl_setup.ui();
 
-
-    println!("gl={:?}", std::mem::size_of::<gl::Gl>());
-    let mut ui = Ui::new(drawer_2d);
-
-    // Set background color to white
-    unsafe {
-        gl.ClearColor(0.0, 0.0, 0.0, 0.0);
-    }
-
-    let mut event_pump = sdl.event_pump().unwrap();
 
     let glp_path = "E:/repos/Game-in-rust/blender_models/Animation_test.glb";
     //let glp_path = "E:/repos/Game-in-rust/blender_models/enemy1.glb";
@@ -108,7 +93,7 @@ fn main() -> Result<(), failure::Error> {
         // Setup to use Ui fbo so all ui is drawn to its own frame buffer
         ui_fbo.bind_and_clear(clear_bits);
 
-        ui.consume_events(&mut event_pump);
+        ui.start_frame(&mut sdl_setup.event_pump);
 
         let dt = ui.dt();
 
@@ -178,7 +163,8 @@ fn main() -> Result<(), failure::Error> {
 
         // render ui on top of frame buffer
         ui.drawer2D.render_img(ui_fbo.color_tex, 0, 0, V2::new(1200.0, 800.0));
-        window.gl_swap_window();
+
+        ui.end_frame();
     }
 }
 

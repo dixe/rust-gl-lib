@@ -9,12 +9,13 @@ use gl_lib::movement::Inputs;
 use gl_lib::na::{Rotation2};
 use gl_lib::scene_3d::actions;
 use sdl2::event::Event;
-use gl_lib::scene_3d::ParticleScene;
 use crate::systems::{missile, GameData, setup_systems, SystemFn};
-
+use gl_lib::goap;
 
 mod systems;
 
+
+pub type TeamId = i8;
 pub struct PostPData {
     time: f32
 }
@@ -22,7 +23,6 @@ pub struct PostPData {
 type Scene = scene::Scene::<PostPData, PlayerData>;
 
 struct UiData {
-    light_id: EntityId,
     show_options: bool,
     wire_mode: bool
 }
@@ -32,18 +32,21 @@ pub struct PlayerData {
     attacking: bool
 }
 
-
 pub struct Game {
     data: GameData,
     systems: Vec::<SystemFn>
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Unit {
     id: EntityId,
+    // fields below could be Datamap/hashmap/vec to be a more struct of arrays instead of array of struct
     hp: f32,
-    dead: bool
+    dead: bool,
+    team: TeamId,
+    range: f32,
 }
+
 
 
 fn main() -> Result<(), failure::Error> {
@@ -52,71 +55,23 @@ fn main() -> Result<(), failure::Error> {
     //let mut scene = scene::Scene::<PostPData>::new(sld_setugl.clone(), viewport, sdl_setup.ui(), sdl_setup.sdl)?;
     let mut scene = Scene::new(&mut sdl_setup)?;
 
-    scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
-    scene.load_sound("attack".into(), &"examples/pixel_sekiro/assets/audio/deflect_1.wav");
-
-    shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.render_pipelines.default().mesh_shader.shader);
-
-    let new_pipe = scene.render_pipelines.add("damage".into());
-    new_pipe.clear_buffer_bits = gl::COLOR_BUFFER_BIT;
-    new_pipe.shadow_map = None;
-
-    shader::reload_object_shader("damage_shader", &scene.gl, &mut new_pipe.mesh_shader.shader);
-
-
-    let player_id = scene.create_entity("player");
-    let _world_id = scene.create_entity("World");
-
-    let rock_id = scene.create_entity("Rock");
-    let sphere_id = scene.create_entity("Sphere");
-    let sphere_1 = scene.create_entity("Sphere");
-    let light_id = scene.create_entity("Light");
-
-
-    scene.light_pos = V3::new(-10.0, -5.0, 30.0);
-
-    scene.ui.style.clear_color = Color::Rgb(100, 100, 100);
-
-    scene.controlled_entity = Some(scene::ControlledEntity {
-        id: player_id,
-        user_data: PlayerData::default(),
-        control_fn: controller
-    });
-
-    scene::update_pos(&mut scene, rock_id, V3::new(00.0, 5.0, 0.0));
-    scene::update_pos(&mut scene, sphere_id, V3::new(-1.0, 3.0, 3.0));
-    scene::update_pos(&mut scene, sphere_1, V3::new(1.0, -3.0, 1.0));
-
-    let lp = V3::new(1.0, -4.0, 3.0);
-    scene::update_pos(&mut scene, light_id, lp);
-
-
-    scene.follow_controller.desired_distance = 15.0;
-    scene.render_pipelines.default().use_stencil();
-
-    let mut ui_data = UiData {
-        show_options: false,
-        wire_mode: false,
-        light_id
-    };
-
-
-    // start idle animation for player
-    scene.action_queue.push_back(actions::Action::StartAnimationLooped(player_id, "t_pose".into(), 0.3));
-
 
     let game_data = GameData::default();
-
 
     let mut game = Game {
         data: game_data,
         systems: setup_systems(),
     };
 
+    let mut ui_data = UiData {
+        show_options: false,
+        wire_mode: false,
+    };
 
 
-
+    setup(&mut scene, &mut game.data);
     spawn_enemy(&mut scene, &mut game.data);
+
     loop {
 
         scene.frame_start(&mut sdl_setup.event_pump);
@@ -139,6 +94,64 @@ fn main() -> Result<(), failure::Error> {
     }
 }
 
+
+fn setup(scene: &mut Scene, data: &mut GameData) {
+
+    // SCENE MODELS AND RENDERING SETUP
+    scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
+    scene.load_sound("attack".into(), &"examples/pixel_sekiro/assets/audio/deflect_1.wav");
+    // setup default shader
+    shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.render_pipelines.default().mesh_shader.shader);
+    scene.render_pipelines.default().use_stencil();
+
+
+    // DAMAGE RENDERING SETUP
+    let new_pipe = scene.render_pipelines.add("damage".into());
+    new_pipe.clear_buffer_bits = gl::COLOR_BUFFER_BIT;
+    new_pipe.shadow_map = None;
+    shader::reload_object_shader("damage_shader", &scene.gl, &mut new_pipe.mesh_shader.shader);
+
+
+
+
+    // PLAYER INITIAL SETUP
+    let player_id = scene.create_entity("player");
+    data.units.push(Unit { id: player_id, hp: 5.0, dead: false, team: 0, range: 10.0 });
+
+    // start idle animation for player
+    scene.action_queue.push_back(actions::Action::StartAnimationLooped(player_id, "t_pose".into(), 0.3));
+    scene.controlled_entity = Some(scene::ControlledEntity {
+        id: player_id,
+        user_data: PlayerData::default(),
+        control_fn: controller
+    });
+
+
+
+    // WORLD LAYOUT
+    let _world_id = scene.create_entity("World");
+    let rock_id = scene.create_entity("Rock");
+    let sphere_id = scene.create_entity("Sphere");
+    let sphere_1 = scene.create_entity("Sphere");
+
+    scene::update_pos(scene, rock_id, V3::new(00.0, 5.0, 0.0));
+    scene::update_pos(scene, sphere_id, V3::new(-1.0, 3.0, 3.0));
+    scene::update_pos(scene, sphere_1, V3::new(1.0, -3.0, 1.0));
+
+
+    scene.follow_controller.desired_distance = 15.0;
+
+
+    // LIGHT
+    // Light pos, clear color and player as controlled entity
+    scene.light_pos = V3::new(-10.0, -5.0, 30.0);
+    scene.ui.style.clear_color = Color::Rgb(100, 100, 100);
+}
+
+
+// used when we want to attach process in vs before loading models, so we can debug it.
+// otherwise is is done before we can attach, so this just pauses the start of program
+// unit the button is pressed
 fn pre_load(scene: &mut Scene, sdl_setup: &mut helpers::BasicSetup) {
 
     loop {
@@ -147,7 +160,6 @@ fn pre_load(scene: &mut Scene, sdl_setup: &mut helpers::BasicSetup) {
         if scene.ui.button("start") {
             return;
         }
-
 
         scene.frame_end();
     }
@@ -262,10 +274,6 @@ fn options(scene: &mut Scene, data : &mut UiData) {
 
     ui.window_end("Options");
 
-    // update light cube to follow the light
-    let _lp = scene.light_pos + V3::new(0.0, 0.0, 2.0);
-    //update_pos(scene, data.light_id, lp);
-
 }
 
 
@@ -319,10 +327,8 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
         return;
     }
 
-    let _dt = scene.dt();
     if let Some(ref mut c_ent) = &mut scene.controlled_entity {
         let player = scene.entities.get_mut(&c_ent.id).unwrap();
-        let _player_id = c_ent.id;
         let player_data = &mut c_ent.user_data;
 
         let player_pos = player.pos;
@@ -341,9 +347,9 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
 
 
             // find enemy
-            if game.enemies.len() > 0 {
+            if game.units.len() > 0 {
 
-                let enemy = &game.enemies[0];
+                let enemy = &game.units[0];
 
                 // spawn an arrow that homes to enemy
                 let id = scene.create_entity("arrow");
@@ -364,5 +370,5 @@ fn spawn_enemy(scene: &mut Scene, game_data: &mut GameData) {
 
     scene.action_queue.push_back(actions::Action::StartAnimationLooped(enemy_id, "dance".into(), 0.3));
 
-    game_data.enemies.push(Unit { id: enemy_id, hp: 5.0, dead: false });
+    game_data.units.push(Unit { id: enemy_id, hp: 5.0, dead: false, team: 1, range: 5.0 });
 }

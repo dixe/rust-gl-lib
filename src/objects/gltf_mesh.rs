@@ -13,6 +13,9 @@ pub struct GltfData {
     pub images: Vec::<image::RgbaImage>
 }
 
+fn format_name(name: String, arm_name: &str) -> String {
+    name.replace(&format!("_{}", &arm_name), "")
+}
 
 pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, failure::Error> {
 
@@ -250,7 +253,8 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
                     frames[i].joints[0].translation = na::Vector3::<f32>::new(0.0, 0.0, 0.0);
                 }
 
-                map.insert(Rc::from(name.clone()), Rc::from(Animation {frames: frames.into(), total_secs, root_motion: Some(rm)}));
+                // bound to skin, reformat name
+                map.insert(Rc::from(format_name(name, skins.skin_to_name.get(&s_id).unwrap())), Rc::from(Animation {frames: frames.into(), total_secs, root_motion: Some(rm)}));
             } else {
                 map.insert(Rc::from(name.clone()), Rc::from(Animation {frames: frames.into(), total_secs, root_motion: None }));
             }
@@ -261,7 +265,8 @@ pub fn meshes_from_gltf(file_path: &str, root_motion: bool) -> Result<GltfData, 
     println!("Meshes loaded {:#?}", res.meshes.keys());
 
     for skin_id in animations.keys() {
-        println!("Animations {:#?}", animations[skin_id].keys());
+
+        println!("Animations {:?} {:#?}", skins.skin_to_name.get(skin_id), animations[skin_id].keys());
     }
     Ok(GltfData { meshes:res, skins, animations, images: loaded_images})
 

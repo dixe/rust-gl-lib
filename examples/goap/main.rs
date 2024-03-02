@@ -1,7 +1,5 @@
 use gl_lib::goap::*;
 use gl_lib::{helpers};
-
-
 use std::rc::Rc;
 use std::fs;
 use toml;
@@ -11,20 +9,6 @@ use std::collections::HashMap;
 fn main() -> Result<(), failure::Error> {
     let mut sdl_setup = helpers::setup_sdl()?;
     let mut ui = sdl_setup.ui();
-
-
-    let _axe_goal = Goal {
-        name: "GetAxe".into(),
-        desired_state: HashMap::from([("HasAxe".into(),true)]),
-        is_valid: HashMap::from([("HasAxe".into(), false)]),
-    };
-
-
-    let _chill_goal = Goal {
-        name: "Chill".into(),
-        desired_state: HashMap::from([]),
-        is_valid: HashMap::from([]),
-    };
 
 
     let mut world_state = State::default();

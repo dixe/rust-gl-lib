@@ -280,7 +280,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
 
         let id = self.entities.insert(entity);
 
-        println!("Added entity {:?} - {} tex={:?}", id, mesh_name, self.mesh_data[mesh_id].texture_id);
+        //println!("Added entity {:?} - {} tex={:?}", id, mesh_name, self.mesh_data[mesh_id].texture_id);
 
         if let Some(s_id) = skeleton_id {
             // set bones
@@ -507,9 +507,8 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
         while let Some(action) = self.action_queue.pop_front() {
             match action {
                 Action::StartAnimation(e_id, name, trans_time) => {
-
                     let skel = self.entity(&e_id).unwrap().skeleton_id.unwrap();
-                    let anim = self.animations.get(&skel).unwrap().get(&name).unwrap();
+                    let anim = self.animations.get(&skel).unwrap().get(&name).expect(&format!("Animation {:?} was expected for {:?}", name, e_id));
                     play_animation(anim.clone(), false, &e_id, &mut self.player, &mut self.entities, Some(trans_time));
                 },
                 Action::StartAnimationLooped(e_id, name, trans_time) => {

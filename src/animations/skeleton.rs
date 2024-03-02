@@ -4,6 +4,8 @@ use crate::collision3d;
 use std::collections::HashMap;
 use crate::typedef::*;
 use crate::collision3d::CollisionBox;
+use std::rc::Rc;
+
 
 pub type Bones = Vec::<na::Matrix4::<f32>>;
 
@@ -24,6 +26,7 @@ pub struct Skins {
     pub skeletons: HashMap::<SkinId, Skeleton>,
     pub index_maps: HashMap::<SkinId, HashMap::<u16, usize>>, // In json the the joints have a order, where child bones can come before parents. This maps that order into the order we use for storing the joints, where parenets are always before children
     pub node_index_to_skin: HashMap::<usize, SkinId>, // for use when mapping animations to skin
+    pub skin_to_name: HashMap::<SkinId, Rc::<str>>, // use to rename animations, in blender we can only use the same name once, we want each skin to have fx death, attack, ect, so we can use the same string to trigger for different entities/meshes
 }
 
 
@@ -177,6 +180,8 @@ pub fn load_skins(gltf: &gltf::Document) -> Result<Skins, failure::Error> {
                 println!("LOADING SKIN FOR {:?}\n\n",(&mesh_name, skin.name(), skin.index()));
                 skins.mesh_to_skin.insert(mesh_name.clone(), skin.index());
                 skins.skin_to_mesh.insert(skin.index(), mesh_name);
+                skins.skin_to_name.insert(skin.index(), skin.name().unwrap().into());
+
 
                 let node_indexes = load_skin_nodes(&gltf, skin.name().unwrap());
                 for &node_index in &node_indexes {

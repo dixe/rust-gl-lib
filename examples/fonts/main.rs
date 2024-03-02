@@ -8,6 +8,7 @@ use gl_lib::shader::BaseShader;
 fn main() -> Result<(), failure::Error> {
 
     let mut sdl_setup = helpers::setup_sdl()?;
+    let gl = sdl_setup.gl.clone();
     let mut ui = sdl_setup.ui();
 
     ui.drawer2D.font_cache.fonts_path = Some("assets/fonts/".to_string());
