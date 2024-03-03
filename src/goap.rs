@@ -177,7 +177,7 @@ fn push_node(heap: &mut BinaryHeap::<Node>, action: Rc::<Action>, mut node: Node
 
 
     // remove actions.post from node requried
-    for (name, val) in &action.post {
+    for (name, _val) in &action.post {
 
         if node.required.get(name).is_some() {
 
