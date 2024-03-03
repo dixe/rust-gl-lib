@@ -3,8 +3,7 @@ use gl_lib::scene_3d::EntityId;
 use gl_lib::scene_3d::ParticleScene;
 use crate::Scene;
 use crate::GameData;
-use crate::Unit;
-use crate::systems::unit::UnitSystem;
+use crate::systems::unit::{self, UnitSystem};
 use gl_lib::typedef::V3;
 use gl_lib::scene_3d::actions;
 use crate::missile;
@@ -19,16 +18,14 @@ pub fn auto_attack_system(game: &mut (impl UnitSystem + MissileSystem), scene: &
     while i < game.units() { // use while loop so we can modify during loop
         let this = game.unit(i);
 
-        if this.cooldown > 0.0 {
+        if this.cooldown > 0.0 || this.dead {
             i += 1;
             continue;
         }
 
         if let Some(closest) = find_closest_enemy(&this, game, &scene.entities) {
             if closest.dist < this.range {
-
                 //println!("{:?} auto attack {:?} at range: {:?}", this.id, closest.target.id, closest.dist);
-
 
                 scene.action_queue.push_back(actions::Action::StartAnimation(this.id, "attack".into(), 0.0));
                 scene.action_queue.push_back(actions::Action::PlaySound("attack".into()));
@@ -52,7 +49,7 @@ pub fn auto_attack_system(game: &mut (impl UnitSystem + MissileSystem), scene: &
 
 
 pub struct ClosestEnemy {
-    pub target: Unit,
+    pub target: unit::Unit,
     pub dist: f32,
     pub this_pos: V3,
     pub target_pos: V3,
@@ -61,7 +58,7 @@ pub struct ClosestEnemy {
 
 // this is a general function, that can be usefull in many systems
 /// Find closest enemy that is not dead. But it might not be in range
-pub fn find_closest_enemy(this: &Unit, game: &impl UnitSystem, entities: &DataMap::<SceneEntity>) -> Option::<ClosestEnemy> {
+pub fn find_closest_enemy(this: &unit::Unit, game: &impl UnitSystem, entities: &DataMap::<SceneEntity>) -> Option::<ClosestEnemy> {
     let mut closest = None;
     let mut min = f32::MAX;
     let mut i = 0;
@@ -72,7 +69,7 @@ pub fn find_closest_enemy(this: &Unit, game: &impl UnitSystem, entities: &DataMa
 
         if unit.hp > 0.0 && unit.team != this.team {
             let unit_pos = entities.get(&unit.id).expect("unit from trait UnitSystem should exist in scene").pos;
-            let mut dir = this_pos - unit_pos;
+            let mut dir = unit_pos - this_pos;
             let dist = dir.magnitude();
             if dist > 0.0 {
                 dir = dir.normalize();

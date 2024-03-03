@@ -12,6 +12,7 @@ pub struct Goals {
 }
 
 
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct Goal {
     pub name: Rc::<str>,
@@ -20,11 +21,12 @@ pub struct Goal {
 }
 
 
-fn is_goal_valid(conditions: &Conditions, state: &State) -> bool {
+pub fn is_valid(conditions: &Conditions, state: &State) -> bool {
 
     // all values in conditions has to be the same in state.
     // false conditions are also satisfied when variable is not in state
     for (name, val) in conditions {
+        println!("req {:?}",(&name, val));
         let state_val = state.get(name).unwrap_or(&false);
         if state_val != val {
             return false;
@@ -70,10 +72,10 @@ pub type State = HashMap::<Rc::<str>, bool>;
 impl Action {
 
     fn satisfy_name(&self, cond: &Rc::<str>, val: bool) -> bool {
-
-        // might only work when conditions in post are always true
+        // might only work when conditions in post are always true, which they might not be
         for (name, post_val) in &self.post {
             if name == cond {
+                println!("{:?} Post condition = {:?} is required to be {:?}", cond, post_val, val);
                 return *post_val == val;
             }
         }
@@ -87,14 +89,15 @@ impl Action {
 // assume goals are ordered by priority
 pub fn plan(goals: &Goals, actions: &Actions, state: &State) -> Option<(Goal, Vec<Rc::<Action>>)> {
     for goal in &goals.goal {
-        if is_goal_valid(&goal.is_valid, state) {
-
-
+        if is_valid(&goal.is_valid, state) {
+            println!("Goal {:?} is valid", goal.name);
             // try to make a plan
 
             // if we got a plan return it
 
             if let Some(plan) = plan_goal(&goal.desired_state, actions, state) {
+
+                println!("Found plan  for Goal {:?}", goal.name);
                 return Some((goal.clone(), plan.actions));
             }
         }
@@ -105,13 +108,22 @@ pub fn plan(goals: &Goals, actions: &Actions, state: &State) -> Option<(Goal, Ve
 
 fn plan_goal(conditions: &Conditions, actions: &Actions, state: &State) -> Option<Node> {
 
+    println!("\n\nPLAN GOAL WITH {:#?}",conditions);
+
     let mut plans = BinaryHeap::new();
 
     let mut first_node = Node::default();
 
-    first_node.conditions = state.clone();
 
-    push_node(&mut plans, &conditions, None, first_node);
+    //setup first node with all conditions and state
+    first_node.state = state.clone();
+
+    for (name, v) in conditions {
+        first_node.required.insert(name.clone(), *v);
+    }
+
+    plans.push(first_node);
+
 
     while let Some(node) = plans.pop() {
         // find all actions that satisfied one of the required conditions and push action if possible
@@ -121,16 +133,25 @@ fn plan_goal(conditions: &Conditions, actions: &Actions, state: &State) -> Optio
         }
 
 
-        for (cond, val) in &node.conditions {
-
+        for (cond, required_val) in &node.required {
             // skip satisfied conditions
-            if *val {
+            let state_val = node.state.get(cond).unwrap_or(&false);
+            if required_val  == state_val {
                 continue;
             }
 
+            // TODO: find action that satisfy the most required condition, with the lowest cost
+
+            // TODO: Also only choose actions which has all its pre satisfied, by the current state
             for action in &actions.action {
-                if action.satisfy_name(cond, !val) {
-                    push_node(&mut plans, &conditions, Some(action.clone()), node.clone());
+                if action.satisfy_name(cond, *required_val) {
+                    println!("NODE {:?}", node);
+
+                    println!("\n\n\nPUSHING ACTION {:#?}", action);
+                    push_node(&mut plans, action.clone(), node.clone());
+
+                    // we found and action, so break
+                    break;
 
                 }
             }
@@ -141,40 +162,32 @@ fn plan_goal(conditions: &Conditions, actions: &Actions, state: &State) -> Optio
     None
 }
 
-fn push_node(heap: &mut BinaryHeap::<Node>, req_conds: &Conditions, act: Option<Rc::<Action>>, mut node: Node) {
+fn push_node(heap: &mut BinaryHeap::<Node>, action: Rc::<Action>, mut node: Node) {
 
-    if let Some(action) = act {
-        node.cost += action.cost;
-        node.actions.push(action.clone());
+    node.cost += action.cost;
+    node.actions.push(action.clone());
 
-        for (name, _) in &action.pre {
+    // loop over pre and as a required
+    for (name, val) in &action.pre {
 
-            // if we don't have condition insert as false to indicate
-            // that we need it
-            // if we have it, it is either false, and we don't want to do anything
-            // or it is true and we stil don't want to do anything
-            if !node.conditions.contains_key(name) {
-                node.conditions.insert(name.clone(), false);
-            }
-        }
+        // TODO: if we don't have condition should insert as inverse of pre.val or as false?
+        // Inserver of pre.val assumes that the condition is not satisfied, false assumes that conditions
+        // need something active to trigger, and thus false is always the default
+        // We could have a condition with MissingDance, that should be false, and default is true,
+        // But on the other hand is could be setup as HasDanced and flip all pre and post and have it be the same
+        // Its better to assume that if we don't have a conditions yet, it is false.
+        // This required the design of actions and goals to work that way, but it should be possible, to do
+        // by negating the expression, if the default value is true. Fx MissingDance -> HasDanced
 
-        // set all action post to true, since we know that after this action
-        // they will be true
-        for (name, val) in &action.post {
-            node.conditions.insert(name.clone(), *val);
-        }
+        println!("Adding {:?} = {} to required", name, val);
+        node.required.insert(name.clone(), *val);
+
     }
 
-
-    // insert require conditions last, since some might be satisfied by the action
-    for (name, _) in req_conds {
-        // if we don't have condition insert as false to indicate
-        // that we need it
-        // if we have it, it is either false, and we don't want to do anything
-        // or it is true and we stil don't want to do anything
-        if !node.conditions.contains_key(name) {
-            node.conditions.insert(name.clone(), false);
-        }
+    // Update state with post, to simulate that the action is done.
+    for (name, val) in &action.post {
+        println!("updating state with {:?} = {}", name, val);
+        node.state.insert(name.clone(), *val);
     }
 
     heap.push(node);
@@ -185,7 +198,12 @@ fn push_node(heap: &mut BinaryHeap::<Node>, req_conds: &Conditions, act: Option<
 struct Node {
     cost: i32,
     actions : Vec::<Rc::<Action>>,
-    conditions: HashMap<Rc::<str>, bool>
+
+    // gets updated when nodes are pushed, by their post
+    state: HashMap<Rc::<str>, bool>,
+
+    // required conditions to be in a specific true or false state. For the goal/node to be presented as a plan
+    required: HashMap<Rc::<str>, bool>
 }
 
 impl Node {
@@ -193,8 +211,10 @@ impl Node {
     /// Check if all conditions are satisfied in node
     /// if they are then it is a valid "path" for the goal
     fn finished(&self) -> bool {
-        for (_, val) in &self.conditions {
-            if ! val {
+        for (name, val) in &self.required {
+            let state_val = self.state.get(name).unwrap_or(&false);
+            println!("req {:?}",(&name, val, state_val));
+            if val != state_val {
                 return false;
             }
         }

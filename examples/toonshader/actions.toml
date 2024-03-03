@@ -1,0 +1,17 @@
+[[action]]
+name = "GoToPlayer"
+cost = 2
+
+[action.pre]
+[action.post]
+InRangeOfPlayer = true
+
+
+[[action]]
+name = "Attack"
+cost = 1
+
+[action.pre]
+InRangeOfPlayer = true
+[action.post]
+EnemyDead = true

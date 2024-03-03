@@ -1,0 +1,15 @@
+[[goal]]
+name = "Attack"
+
+[goal.desired_state]
+EnemyDead = true
+
+[goal.is_valid]
+InRangeOfPlayer = true
+
+[[goal]]
+name = "GoToPlayer"
+
+[goal.desired_state]
+InRangeOfPlayer = true
+[goal.is_valid]

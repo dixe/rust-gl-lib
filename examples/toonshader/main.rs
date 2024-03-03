@@ -9,13 +9,14 @@ use gl_lib::movement::Inputs;
 use gl_lib::na::{Rotation2};
 use gl_lib::scene_3d::actions;
 use sdl2::event::Event;
-use crate::systems::{missile, GameData, setup_systems, SystemFn, auto_attack};
 use gl_lib::goap;
+use std::fs;
+use std::rc::Rc;
+use crate::systems::{goap_ai, missile, GameData, setup_systems, SystemFn, auto_attack, unit};
 
 mod systems;
 
 
-pub type TeamId = i8;
 pub struct PostPData {
     time: f32
 }
@@ -34,20 +35,11 @@ pub struct PlayerData {
 
 pub struct Game {
     data: GameData,
-    systems: Vec::<SystemFn>
-}
+    systems: Vec::<SystemFn>,
+    actions: Rc::<goap::Actions>,
+    goals: Rc::<goap::Goals>,
 
-#[derive(Debug, Default, Copy, Clone)]
-pub struct Unit {
-    id: EntityId,
-    // fields below could be Datamap/hashmap/vec to be a more struct of arrays instead of array of struct
-    hp: f32,
-    dead: bool,
-    team: TeamId,
-    range: f32,
-    cooldown: f32
 }
-
 
 
 fn main() -> Result<(), failure::Error> {
@@ -57,11 +49,19 @@ fn main() -> Result<(), failure::Error> {
     let mut scene = Scene::new(&mut sdl_setup)?;
 
 
-    let game_data = GameData::default();
+    let mut game_data = GameData::default();
+    game_data.goap_action_to_fn.insert("GoToPlayer".into(), goap_ai::action_functions::go_to_player);
+    game_data.goap_action_to_fn.insert("Attack".into(), goap_ai::action_functions::attack);
+
+    let goals : Rc::<goap::Goals> = load_goals().unwrap().into();
+    let actions : Rc::<goap::Actions>= load_actions().unwrap().into();
+
 
     let mut game = Game {
         data: game_data,
         systems: setup_systems(),
+        goals,
+        actions
     };
 
     let mut ui_data = UiData {
@@ -69,16 +69,16 @@ fn main() -> Result<(), failure::Error> {
         wire_mode: false,
     };
 
-
     setup(&mut scene, &mut game.data);
-    spawn_enemy(&mut scene, &mut game.data);
+    let enemy_id = spawn_enemy(&mut scene, &mut game);
+
 
     loop {
 
         scene.frame_start(&mut sdl_setup.event_pump);
 
         // could be system too??
-        handle_input(&mut scene, &mut game.data);
+        handle_input(&mut scene, &mut game);
 
 
         // GAME SYSTEMS
@@ -117,7 +117,7 @@ fn setup(scene: &mut Scene, data: &mut GameData) {
 
     // PLAYER INITIAL SETUP
     let player_id = scene.create_entity("player");
-    data.units.push(Unit { id: player_id, hp: 5.0, dead: false, team: 0, range: 10.0, cooldown: 0.0 });
+    data.units.push(unit::Unit { id: player_id, hp: 5.0, dead: false, team: 0, range: 10.0, cooldown: 0.0 });
 
     // start idle animation for player
     scene.action_queue.push_back(actions::Action::StartAnimationLooped(player_id, "t_pose".into(), 0.3));
@@ -309,7 +309,7 @@ fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camer
 
 // should this be in controlled entity controller_fn? Just requried us to also pass action_queue, for now
 // taking a scene here is the most "free" since we can look at enemies, use camera ect.
-fn handle_input(scene: &mut Scene, game: &mut GameData) {
+fn handle_input(scene: &mut Scene, game: &mut Game) {
 
     // commands like R to spawn new enemy
     // TODO: Find a way to not clone here
@@ -346,10 +346,10 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
 
 
 
-        let player_unit = game.units.iter().filter(|u| u.id == player_id).nth(0).unwrap();
+        let player_unit = game.data.units.iter().filter(|u| u.id == player_id).nth(0).unwrap().clone();
         if !player_data.attacking && scene.inputs.current().left_mouse {
 
-            if let Some(enemy) = auto_attack::find_closest_enemy(player_unit, game, &scene.entities) {
+            if let Some(enemy) = auto_attack::find_closest_enemy(&player_unit, &mut game.data, &scene.entities) {
                 if enemy.dist < player_unit.range {
                     // set attack state and start animation
                     player_data.attacking = true;
@@ -359,7 +359,7 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
                     // spawn an arrow that homes to enemy
                     let id = scene.create_entity("arrow");
                     scene::update_pos(scene, id, player_pos + V3::new(0.0, 0.0, 1.0));
-                    game.missiles.push(missile::Missile {id, target_id: enemy.target.id });
+                    game.data.missiles.push(missile::Missile {id, target_id: enemy.target.id });
                 }
             }
         }
@@ -367,7 +367,7 @@ fn handle_input(scene: &mut Scene, game: &mut GameData) {
 }
 
 
-fn spawn_enemy(scene: &mut Scene, game_data: &mut GameData) {
+fn spawn_enemy(scene: &mut Scene, game: &mut Game) -> EntityId {
 
     let enemy_id = scene.create_entity("enemy");
 
@@ -375,5 +375,30 @@ fn spawn_enemy(scene: &mut Scene, game_data: &mut GameData) {
 
     scene.action_queue.push_back(actions::Action::StartAnimationLooped(enemy_id, "dance".into(), 0.3));
 
-    game_data.units.push(Unit { id: enemy_id, hp: 5.0, dead: false, team: 1, range: 5.0, cooldown: 0.0 });
+    game.data.units.push(unit::Unit { id: enemy_id, hp: 5.0, dead: false, team: 1, range: 5.0, cooldown: 0.0 });
+
+    game.data.goap_datas.push(goap_ai::GoapData {
+        id: enemy_id,
+        state: goap::State::default(),
+        goals: game.goals.clone(),
+        actions: game.actions.clone(),
+        goal: None,
+        next_action: None
+    });
+
+
+    enemy_id
+}
+
+
+
+fn load_goals() -> Result::<goap::Goals, toml::de::Error> {
+    let goal_str = fs::read_to_string("examples/toonshader/goals.toml").unwrap();
+    toml::from_str(&goal_str)
+}
+
+
+fn load_actions() -> Result::<goap::Actions, toml::de::Error> {
+    let action_str = fs::read_to_string("examples/toonshader/actions.toml").unwrap();
+    toml::from_str(&action_str)
 }

@@ -61,7 +61,7 @@ impl MissileSystem for GameData {
                 life: 0.3,
                 total_life: 0.3,
                 pos: target.pos,
-                mesh_id: *scene.meshes.get("Damage".into()).unwrap(),
+                mesh_id: *scene.meshes.get("Damage").unwrap(),
                 render_pipeline_id: 1
             });
         }

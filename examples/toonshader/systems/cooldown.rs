@@ -3,7 +3,6 @@ use gl_lib::scene_3d::EntityId;
 use gl_lib::scene_3d::ParticleScene;
 use crate::Scene;
 use crate::GameData;
-use crate::Unit;
 use crate::systems::unit::UnitSystem;
 use gl_lib::typedef::V3;
 use gl_lib::scene_3d::actions;
