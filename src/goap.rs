@@ -25,8 +25,9 @@ pub fn is_valid(conditions: &Conditions, state: &State) -> bool {
 
     // all values in conditions has to be the same in state.
     // false conditions are also satisfied when variable is not in state
+    //println!("\n\n{:#?}", state);
     for (name, val) in conditions {
-        println!("req {:?}",(&name, val));
+        //println!("req {:?}",(&name, val));
         let state_val = state.get(name).unwrap_or(&false);
         if state_val != val {
             return false;
@@ -75,7 +76,7 @@ impl Action {
         // might only work when conditions in post are always true, which they might not be
         for (name, post_val) in &self.post {
             if name == cond {
-                println!("{:?} Post condition = {:?} is required to be {:?}", cond, post_val, val);
+                //println!("{:?} Post condition = {:?} is required to be {:?}", cond, post_val, val);
                 return *post_val == val;
             }
         }
@@ -90,14 +91,14 @@ impl Action {
 pub fn plan(goals: &Goals, actions: &Actions, state: &State) -> Option<(Goal, Vec<Rc::<Action>>)> {
     for goal in &goals.goal {
         if is_valid(&goal.is_valid, state) {
-            println!("Goal {:?} is valid", goal.name);
+            //println!("Goal {:?} is valid", goal.name);
             // try to make a plan
 
             // if we got a plan return it
 
             if let Some(plan) = plan_goal(&goal.desired_state, actions, state) {
 
-                println!("Found plan  for Goal {:?}", goal.name);
+                //println!("Found plan  for Goal {:?}", goal.name);
                 return Some((goal.clone(), plan.actions));
             }
         }
@@ -108,7 +109,7 @@ pub fn plan(goals: &Goals, actions: &Actions, state: &State) -> Option<(Goal, Ve
 
 fn plan_goal(conditions: &Conditions, actions: &Actions, state: &State) -> Option<Node> {
 
-    println!("\n\nPLAN GOAL WITH {:#?}",conditions);
+    //println!("\n\nPLAN GOAL WITH {:#?}",conditions);
 
     let mut plans = BinaryHeap::new();
 
@@ -145,9 +146,9 @@ fn plan_goal(conditions: &Conditions, actions: &Actions, state: &State) -> Optio
             // TODO: Also only choose actions which has all its pre satisfied, by the current state
             for action in &actions.action {
                 if action.satisfy_name(cond, *required_val) {
-                    println!("NODE {:?}", node);
+                    //println!("NODE {:?}", node);
 
-                    println!("\n\n\nPUSHING ACTION {:#?}", action);
+                    //println!("\n\n\nPUSHING ACTION {:#?}", action);
                     push_node(&mut plans, action.clone(), node.clone());
 
                     // we found and action, so break
@@ -167,28 +168,32 @@ fn push_node(heap: &mut BinaryHeap::<Node>, action: Rc::<Action>, mut node: Node
     node.cost += action.cost;
     node.actions.push(action.clone());
 
-    // loop over pre and as a required
+    // hmm, this seems like we are going in both directions.
+    // adding pre to get preconditions
+    // and adding post to simulate action done.
+
+    //I don't think adding post is correct, but we still need to update the state some how
+    // maybe what we should do is remove the actions.post, from the node required??
+
+
+    // remove actions.post from node requried
+    for (name, val) in &action.post {
+
+        if node.required.get(name).is_some() {
+
+            node.required.remove(name);
+        }
+    }
+
+
+    // add actions pre conditon to update the required state
     for (name, val) in &action.pre {
-
-        // TODO: if we don't have condition should insert as inverse of pre.val or as false?
-        // Inserver of pre.val assumes that the condition is not satisfied, false assumes that conditions
-        // need something active to trigger, and thus false is always the default
-        // We could have a condition with MissingDance, that should be false, and default is true,
-        // But on the other hand is could be setup as HasDanced and flip all pre and post and have it be the same
-        // Its better to assume that if we don't have a conditions yet, it is false.
-        // This required the design of actions and goals to work that way, but it should be possible, to do
-        // by negating the expression, if the default value is true. Fx MissingDance -> HasDanced
-
-        println!("Adding {:?} = {} to required", name, val);
+        //println!("Adding {:?} = {} to required", name, val);
         node.required.insert(name.clone(), *val);
 
     }
 
-    // Update state with post, to simulate that the action is done.
-    for (name, val) in &action.post {
-        println!("updating state with {:?} = {}", name, val);
-        node.state.insert(name.clone(), *val);
-    }
+
 
     heap.push(node);
 }
@@ -213,7 +218,7 @@ impl Node {
     fn finished(&self) -> bool {
         for (name, val) in &self.required {
             let state_val = self.state.get(name).unwrap_or(&false);
-            println!("req {:?}",(&name, val, state_val));
+            //println!("req {:?}",(&name, val, state_val));
             if val != state_val {
                 return false;
             }
