@@ -19,7 +19,8 @@ pub fn cooldown_system(game: &mut impl UnitSystem, scene: &mut Scene) {
     let dt = scene.dt();
     let mut i = 0;
     while i < game.units() { // use while loop so we can modify during loop
-        let unit = game.unit_mut(i);
+        let u = game.unit(i);
+        let unit = game.unit_data_mut(u.id);
 
         if unit.cooldown > 0.0 {
             unit.cooldown -= dt;

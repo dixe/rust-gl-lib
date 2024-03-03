@@ -13,9 +13,10 @@ use gl_lib::goap;
 use std::fs;
 use std::rc::Rc;
 use crate::systems::{goap_ai, missile, GameData, setup_systems, SystemFn, auto_attack, unit};
+use crate::systems::goap_ai::GoapSystem;
+
 
 mod systems;
-
 
 pub struct PostPData {
     time: f32
@@ -25,7 +26,8 @@ type Scene = scene::Scene::<PostPData, PlayerData>;
 
 struct UiData {
     show_options: bool,
-    wire_mode: bool
+    show_goap: bool,
+    wire_mode: bool,
 }
 
 #[derive(Default)]
@@ -38,6 +40,7 @@ pub struct Game {
     systems: Vec::<SystemFn>,
     actions: Rc::<goap::Actions>,
     goals: Rc::<goap::Goals>,
+    paused: bool
 
 }
 
@@ -50,22 +53,24 @@ fn main() -> Result<(), failure::Error> {
 
 
     let mut game_data = GameData::default();
-    game_data.goap_action_to_fn.insert("GoToPlayer".into(), goap_ai::action_functions::go_to_player);
+    game_data.goap_action_to_fn.insert("GoToTarget".into(), goap_ai::action_functions::go_to_target);
+    game_data.goap_action_to_fn.insert("AcquireTarget".into(), goap_ai::action_functions::acquire_target);
     game_data.goap_action_to_fn.insert("Attack".into(), goap_ai::action_functions::attack);
 
     let goals : Rc::<goap::Goals> = load_goals().unwrap().into();
     let actions : Rc::<goap::Actions>= load_actions().unwrap().into();
 
-
     let mut game = Game {
         data: game_data,
         systems: setup_systems(),
         goals,
-        actions
+        actions,
+        paused: true
     };
 
     let mut ui_data = UiData {
         show_options: false,
+        show_goap: true,
         wire_mode: false,
     };
 
@@ -81,15 +86,17 @@ fn main() -> Result<(), failure::Error> {
         handle_input(&mut scene, &mut game);
 
 
-        // GAME SYSTEMS
-        for s in &game.systems {
-            s(&mut game.data, &mut scene);
+        if !game.paused {
+            // GAME SYSTEMS
+            for s in &game.systems {
+                s(&mut game.data, &mut scene);
+            }
         }
 
         scene.render();
 
         // UI on top
-        ui(&mut scene, &mut ui_data);
+        ui(&mut scene, &mut ui_data, &mut game);
 
         scene.frame_end();
     }
@@ -117,7 +124,8 @@ fn setup(scene: &mut Scene, data: &mut GameData) {
 
     // PLAYER INITIAL SETUP
     let player_id = scene.create_entity("player");
-    data.units.push(unit::Unit { id: player_id, hp: 5.0, dead: false, team: 0, range: 10.0, cooldown: 0.0 });
+    data.units.push(unit::Unit { id: player_id} );
+    data.units_data.insert(player_id, unit::UnitData {id: player_id,  hp: 5.0, dead: false, team: 0, range: 10.0, cooldown: 0.0 });
 
     // start idle animation for player
     scene.action_queue.push_back(actions::Action::StartAnimationLooped(player_id, "t_pose".into(), 0.3));
@@ -167,7 +175,12 @@ fn pre_load(scene: &mut Scene, sdl_setup: &mut helpers::BasicSetup) {
 }
 
 
-fn ui(scene: &mut Scene, data : &mut UiData) {
+fn ui(scene: &mut Scene, data : &mut UiData, game: &mut Game) {
+
+    if scene.ui.button("Play/pause") {
+        game.paused = ! game.paused;
+    }
+
     if scene.ui.button("MeshShader") {
         shader::reload_object_shader("mesh_shader", &scene.gl, &mut scene.render_pipelines.default().mesh_shader.shader)
     }
@@ -197,9 +210,53 @@ fn ui(scene: &mut Scene, data : &mut UiData) {
         data.show_options = scene.ui.button("Options");
     }
 
+    if data.show_goap {
+        show_goap(scene, data, game);
+    } else {
+        data.show_goap = scene.ui.button("Show Goap");
+    }
+
     if scene.ui.button("Reload") {
         scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
     }
+
+}
+
+fn show_goap(scene: &mut Scene, data : &mut UiData, game: &mut Game) {
+    let ui = &mut scene.ui;
+    data.show_goap = !ui.window_begin("Show Goap").closed;
+
+    // find enemy_id
+
+
+    // could be a loop that just breaks in 1 iter
+    if let Some((enemy_id, enemy_unit)) = game.data.units_data.iter().filter(|(id, x)| x.team == 1).nth(0) {
+        if let Some(goap) = game.data.goap_data_by_entity_id(*enemy_id) {
+
+            ui.label("Goal:");
+            ui.body_text(&format!("{:?}", goap.goal.as_ref().map(|g| g.name.clone())));
+            ui.newline();
+
+
+            ui.label("Plan:");
+
+            let mut plan_str : Vec<Rc::<str>> = goap.plan.iter().map(|a| a.name.clone()).collect();
+            plan_str.reverse();
+            ui.body_text(&format!("{:?}", plan_str));
+            ui.newline();
+
+
+
+            // show all true/false states
+            for (k, v) in &goap.state {
+                ui.label(k);
+                ui.body_text(&format!(": {:?}", v));
+                ui.newline();
+            }
+        }
+    }
+
+    ui.window_end("Show Goap");
 
 }
 
@@ -318,6 +375,9 @@ fn handle_input(scene: &mut Scene, game: &mut Game) {
             Event::KeyUp{keycode: Some(sdl2::keyboard::Keycode::R), .. } => {
                 spawn_enemy(scene, game);
             },
+            Event::KeyUp{keycode: Some(sdl2::keyboard::Keycode::P), .. } => {
+                game.paused = ! game.paused;
+            },
             _ => {},
 
         }
@@ -346,10 +406,11 @@ fn handle_input(scene: &mut Scene, game: &mut Game) {
 
 
 
-        let player_unit = game.data.units.iter().filter(|u| u.id == player_id).nth(0).unwrap().clone();
+
         if !player_data.attacking && scene.inputs.current().left_mouse {
 
-            if let Some(enemy) = auto_attack::find_closest_enemy(&player_unit, &mut game.data, &scene.entities) {
+            if let Some(enemy) = auto_attack::find_closest_enemy(player_id, &mut game.data, &scene.entities) {
+                let player_unit = game.data.units_data.get(&player_id).unwrap();
                 if enemy.dist < player_unit.range {
                     // set attack state and start animation
                     player_data.attacking = true;
@@ -359,7 +420,7 @@ fn handle_input(scene: &mut Scene, game: &mut Game) {
                     // spawn an arrow that homes to enemy
                     let id = scene.create_entity("arrow");
                     scene::update_pos(scene, id, player_pos + V3::new(0.0, 0.0, 1.0));
-                    game.data.missiles.push(missile::Missile {id, target_id: enemy.target.id });
+                    game.data.missiles.push(missile::Missile {id, target_id: enemy.target });
                 }
             }
         }
@@ -371,20 +432,12 @@ fn spawn_enemy(scene: &mut Scene, game: &mut Game) -> EntityId {
 
     let enemy_id = scene.create_entity("enemy");
 
-    scene::update_pos(scene, enemy_id, V3::new(5.0, 5.0, 0.0));
+    scene::update_pos(scene, enemy_id, V3::new(10.0, 10.0, 0.0));
 
-    scene.action_queue.push_back(actions::Action::StartAnimationLooped(enemy_id, "dance".into(), 0.3));
+    game.data.units.push(unit::Unit { id: enemy_id});
+    game.data.units_data.insert(enemy_id, unit::UnitData {id: enemy_id, hp: 5.0, dead: false, team: 1, range: 5.0, cooldown: 0.0 });
 
-    game.data.units.push(unit::Unit { id: enemy_id, hp: 5.0, dead: false, team: 1, range: 5.0, cooldown: 0.0 });
-
-    game.data.goap_datas.push(goap_ai::GoapData {
-        id: enemy_id,
-        state: goap::State::default(),
-        goals: game.goals.clone(),
-        actions: game.actions.clone(),
-        goal: None,
-        next_action: None
-    });
+    game.data.goap_datas.push(goap_ai::GoapData::new(enemy_id, game.goals.clone(), game.actions.clone()));
 
 
     enemy_id

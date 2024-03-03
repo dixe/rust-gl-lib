@@ -16,28 +16,31 @@ pub fn auto_attack_system(game: &mut (impl UnitSystem + MissileSystem), scene: &
 
     let mut i = 0;
     while i < game.units() { // use while loop so we can modify during loop
-        let this = game.unit(i);
+        let u = game.unit(i);
+        let unit = game.unit_data(u.id);
 
-        if this.cooldown > 0.0 || this.dead {
+        if unit.cooldown > 0.0 || unit.dead {
             i += 1;
             continue;
         }
 
-        if let Some(closest) = find_closest_enemy(&this, game, &scene.entities) {
-            if closest.dist < this.range {
-                //println!("{:?} auto attack {:?} at range: {:?}", this.id, closest.target.id, closest.dist);
+        let id = u.id;
 
-                scene.action_queue.push_back(actions::Action::StartAnimation(this.id, "attack".into(), 0.0));
+        if let Some(closest) = find_closest_enemy(id, game, &scene.entities) {
+            if closest.dist < unit.range {
+                //println!("{:?} auto attack {:?} at range: {:?}", unit.id, closest.target.id, closest.dist);
+
+                scene.action_queue.push_back(actions::Action::StartAnimation(unit.id, "attack".into(), 0.0));
                 scene.action_queue.push_back(actions::Action::PlaySound("attack".into()));
 
                 let id = scene.create_entity("arrow");
                 scene::update_pos(scene, id, closest.this_pos + closest.dir * 0.1);
 
-                game.spawn_missile(missile::Missile {id, target_id: closest.target.id });
+                game.spawn_missile(missile::Missile {id, target_id: closest.target });
 
 
                 // set cool down
-                let unit = game.unit_mut(i);
+                let unit = game.unit_data_mut(id);
                 unit.cooldown = 5.0;
 
             }
@@ -49,7 +52,7 @@ pub fn auto_attack_system(game: &mut (impl UnitSystem + MissileSystem), scene: &
 
 
 pub struct ClosestEnemy {
-    pub target: unit::Unit,
+    pub target: EntityId,
     pub dist: f32,
     pub this_pos: V3,
     pub target_pos: V3,
@@ -58,14 +61,19 @@ pub struct ClosestEnemy {
 
 // this is a general function, that can be usefull in many systems
 /// Find closest enemy that is not dead. But it might not be in range
-pub fn find_closest_enemy(this: &unit::Unit, game: &impl UnitSystem, entities: &DataMap::<SceneEntity>) -> Option::<ClosestEnemy> {
+pub fn find_closest_enemy(id: EntityId, game: &impl UnitSystem, entities: &DataMap::<SceneEntity>) -> Option::<ClosestEnemy> {
     let mut closest = None;
     let mut min = f32::MAX;
     let mut i = 0;
-    let this_pos = entities.get(&this.id).expect("unit from trait UnitSystem should exist in scene").pos;
+
+    let this_pos = entities.get(&id).expect("unit from trait UnitSystem should exist in scene").pos;
+
+    let this = game.unit_data(id).clone();
 
     while i < game.units() { // use while loop so we can modify during loop
-        let unit = game.unit(i);
+        let u = game.unit(i);
+        let unit = game.unit_data(u.id);
+
 
         if unit.hp > 0.0 && unit.team != this.team {
             let unit_pos = entities.get(&unit.id).expect("unit from trait UnitSystem should exist in scene").pos;
@@ -78,7 +86,7 @@ pub fn find_closest_enemy(this: &unit::Unit, game: &impl UnitSystem, entities: &
             if dist < min {
                 min = dist;
                 closest = Some(ClosestEnemy{
-                    target: *unit,
+                    target: id,
                     dist,
                     this_pos,
                     target_pos: unit_pos,

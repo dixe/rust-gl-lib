@@ -1,15 +1,7 @@
 [[goal]]
 name = "Attack"
-
 [goal.desired_state]
 EnemyDead = true
-
 [goal.is_valid]
-InRangeOfPlayer = true
-
-[[goal]]
-name = "GoToPlayer"
-
-[goal.desired_state]
-InRangeOfPlayer = true
-[goal.is_valid]
+# is_valid should not be stuff like in range or has target. The planner should add the required actions for that to happen
+# is_valid could be only attack when has weapon, or in range of defence point. Or has been provoked/attacked

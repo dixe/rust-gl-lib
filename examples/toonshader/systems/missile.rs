@@ -48,9 +48,9 @@ impl MissileSystem for GameData {
         // remove from scene
         scene.remove_entity(&m.id);
 
-
         // apply damage, if enemy dies, it will get handled by the death system.
-        if let Some(enemy) = self.units.iter_mut().find(|e| e.id == m.target_id) {
+
+        if let Some(enemy) = self.units_data.get_mut(&m.target_id) {
             enemy.hp -= 1.0;
         }
 

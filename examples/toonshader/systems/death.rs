@@ -2,9 +2,11 @@ use gl_lib::scene_3d::actions;
 use crate::Scene;
 use crate::GameData;
 use crate::systems::unit::UnitSystem;
+use gl_lib::scene_3d::EntityId;
+
 
 pub trait DeathSystem {
-    fn on_death(&mut self, idx: usize, scene: &mut Scene) -> bool;
+    fn on_death(&mut self, id: EntityId, scene: &mut Scene) -> bool;
     fn update_dead(&mut self, idx: usize, scene: &mut Scene) -> bool;
 }
 
@@ -13,7 +15,8 @@ pub fn death_system(game: &mut (impl DeathSystem + UnitSystem), scene: &mut Scen
 
     let mut i = 0;
     while i < game.units() { // use while loop so we can modify during loop
-        let unit = game.unit(i);
+        let u = game.unit(i);
+        let unit = game.unit_data_mut(u.id);
 
         let mut update = true;
 
@@ -34,12 +37,20 @@ pub fn death_system(game: &mut (impl DeathSystem + UnitSystem), scene: &mut Scen
 impl DeathSystem for GameData {
 
     fn update_dead(&mut self, idx: usize, scene: &mut Scene) -> bool {
-        let unit = self.units.get_mut(idx).expect("Death system should not have called with idx outside scope");
 
-        if scene.player.expired(&unit.id) {
+        let unit = self.unit(idx);
+
+        let id = unit.id;
+
+        // wait for animation to be done.
+        if scene.player.expired(&id) {
             // remove unit
-            scene.remove_entity(&unit.id);
+            scene.remove_entity(&id);
             self.units.swap_remove(idx);
+
+            // remove unit data
+            self.units_data.remove(&id);
+
             return false;
         }
 
@@ -47,8 +58,8 @@ impl DeathSystem for GameData {
     }
 
 
-    fn on_death(&mut self, idx: usize, scene: &mut Scene) -> bool {
-        let unit = self.units.get_mut(idx).expect("Death system should not have called with idx outside scope");
+    fn on_death(&mut self, id: EntityId, scene: &mut Scene) -> bool {
+        let unit = self.units_data.get_mut(&id).expect("Death system should not have called with idx outside scope");
 
         // set dead
         unit.dead = true;

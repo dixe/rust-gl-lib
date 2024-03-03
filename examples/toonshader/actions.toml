@@ -1,17 +1,38 @@
 [[action]]
-name = "GoToPlayer"
-cost = 2
-
+name = "AcquireTarget"
+cost = 1
 [action.pre]
+HasTarget = false
 [action.post]
-InRangeOfPlayer = true
+HasTarget = true
+HasDanced = false
+
+
+[[action]]
+name = "GoToTarget"
+cost = 1
+[action.pre]
+HasTarget = true
+[action.post]
+InRangeOfTarget = true
 
 
 [[action]]
 name = "Attack"
 cost = 1
-
 [action.pre]
-InRangeOfPlayer = true
+InRangeOfTarget = true
+HasTarget = true
+HasDanced = true
 [action.post]
 EnemyDead = true
+
+
+[[action]]
+name = "Dance"
+cost = 1
+[action.pre]
+InRangeOfTarget = true
+HasTarget = true
+[action.post]
+HasDanced = true

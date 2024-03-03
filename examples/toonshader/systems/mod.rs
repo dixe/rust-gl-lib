@@ -17,6 +17,7 @@ pub type SystemFn = fn(&mut GameData, &mut Scene);
 #[derive(Debug, Default)]
 pub struct GameData {
     pub units: Vec::<unit::Unit>,
+    pub units_data: HashMap::<EntityId, unit::UnitData>,
     pub missiles: Vec::<missile::Missile>,
     pub goap_datas: Vec::<goap_ai::GoapData>,
     pub mesh_index_to_attack_name: HashMap::<MeshIndex, Rc::<str>>,
@@ -26,7 +27,8 @@ pub struct GameData {
 
 pub fn setup_systems() -> Vec::<SystemFn> {
     vec![cooldown::cooldown_system,
-         goap_ai::goap_data_system,
+         goap_ai::check_current_plan,
+         goap_ai::goap_plan_system,
          goap_ai::execute_goal_system,
          //auto_attack::auto_attack_system,
          missile::missile_system,
