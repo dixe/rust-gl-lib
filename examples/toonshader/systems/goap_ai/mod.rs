@@ -76,6 +76,7 @@ pub fn update_senses(game: &mut GameData, scene: &mut Scene) {
 
         // TARGET SENSES
         if let Some(entity_self) = scene.entity(&goap_data.id) {
+            panic!("It this correct");
             goap_data.senses.pos_self = entity_self.pos;
         } else {
             panic!();
@@ -88,13 +89,14 @@ pub fn update_senses(game: &mut GameData, scene: &mut Scene) {
                 target.pos = target_entity.pos;
                 let dist = target.pos - goap_data.senses.pos_self;
 
+                // TODO: calc from
+                let in_range = dist < 10.0;
 
-
-
-                goap_data.state.insert("InRangeOfTarget".into(), false);
+                goap_data.state.insert("InRangeOfTarget".into(), in_range);
             } else {
                 goap_data.senses.target = None;
                 goap_data.state.insert("HasTarget".into(), false);
+                goap_data.state.insert("InRangeOfTarget".into(), false);
             }
         }
 
@@ -170,7 +172,7 @@ pub fn goap_plan_system(game: &mut impl GoapSystem, scene: &mut Scene) {
 
         if let Some((goal, plan)) = goap::plan(&goap_data.goals, &goap_data.actions, &goap_data.state) {
             // TODO: Maybe have a vec, and pass as mut to goap::plan, so we don't have to clone it all the time
-            println!("{:#?}", plan);
+            println!("Found plan for {:#?}, {:#?}", goal, plan);
             goap_data.plan = plan.clone();
             goap_data.goal = Some(goal);
         }

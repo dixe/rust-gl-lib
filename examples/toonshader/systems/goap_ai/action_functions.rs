@@ -9,7 +9,7 @@ use gl_lib::typedef::V3;
 use gl_lib::scene_3d::actions;
 use gl_lib::goap;
 use std::rc::Rc;
-use crate::systems::goap_ai::{GoapData, GoapSystem};
+use crate::systems::goap_ai::{self, GoapData, GoapSystem};
 use crate::systems::missile::{self, MissileSystem};
 
 
@@ -24,7 +24,6 @@ pub fn attack(id: EntityId, game: &mut GameData, scene: &mut Scene) -> Option<()
         //invalidate_action(goap);
         return None;
     }
-
 
 
     // find nearet enemy
@@ -59,6 +58,7 @@ pub fn attack(id: EntityId, game: &mut GameData, scene: &mut Scene) -> Option<()
 
 
 fn invalidate_action(goap: &mut GoapData) {
+
     goap.goal = None;
     goap.plan.clear();
 }
@@ -87,6 +87,11 @@ pub fn acquire_target(id: EntityId, game: &mut GameData, scene: &mut Scene) -> O
     let dt = scene.dt();
     if let Some(closest) = auto_attack::find_closest_enemy(id, game, &scene.entities) {
         // update senses and complete action
+
+        if let Some(goap) = game.goap_data_by_entity_id(id) {
+            goap.senses.target = Some(goap_ai::Target{ id: closest.target, pos: closest.target_pos} );
+        }
+
         set_action_complete(id, game);
     }
 
@@ -95,27 +100,29 @@ pub fn acquire_target(id: EntityId, game: &mut GameData, scene: &mut Scene) -> O
 
 pub fn go_to_target(id: EntityId, game: &mut GameData, scene: &mut Scene) -> Option<()> {
 
-    panic!("Should not look for closest enemy");
     let dt = scene.dt();
-    if let Some(closest) = auto_attack::find_closest_enemy(id, game, &scene.entities) {
+    if let Some(goap) = game.goap_data_by_entity_id(id) {
         // move to target
 
+        if let Some(target) = &goap.senses.target {
 
-        // TODO: This updates entity pos. maybe should update vel and have a physics system move entities??
-        // Maybe this is ok
+            println!("{:?}", (goap.senses.pos_self, target.pos));
+            let mut dir = goap.senses.pos_self - target.pos;
 
-        let inc = dt * 5.0;
-        let _ = scene.entities.get_mut(&id).map(|e| {
-            e.pos += closest.dir * inc;
-        });
+            if dir.magnitude() > 0.0 {
+                dir = dir.normalize();
+            }
 
-        let dist = closest.dist - inc;
+            // TODO: This updates entity pos. maybe should update vel and have a physics system move entities??
+            // Maybe this is ok
+            let inc = dt * 5.0;
+            let _ = scene.entities.get_mut(&id).map(|e| {
+                println!("{:?}", e.pos);
+                e.pos += dir * inc;
+            });
 
-
-        // update if in range, remove action, since it is complete
-        let unit = game.units_data.get(&id).unwrap();
-        if dist <= unit.range {
-            set_action_complete(id, game);
+        } else {
+            invalidate_action(goap)
         }
     }
 
