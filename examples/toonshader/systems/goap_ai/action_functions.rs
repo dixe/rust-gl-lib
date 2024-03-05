@@ -13,7 +13,6 @@ use crate::systems::goap_ai::{self, GoapData, GoapSystem};
 use crate::systems::missile::{self, MissileSystem};
 
 
-
 pub fn attack(id: EntityId, game: &mut GameData, scene: &mut Scene) -> Option<()> {
     let goap = game.goap_data_by_entity_id(id)?;
 
@@ -57,19 +56,19 @@ pub fn attack(id: EntityId, game: &mut GameData, scene: &mut Scene) -> Option<()
 }
 
 
-fn invalidate_action(goap: &mut GoapData) {
+pub fn invalidate_action(goap: &mut GoapData) {
 
     goap.goal = None;
     goap.plan.clear();
 }
 
 fn set_action_complete(id: EntityId, game: &mut GameData) -> Option<()> {
-    let goap = game.goap_data_by_entity_id(id)?;
+    let goap = game.goap_data_by_entity_id_mut(id)?;
 
     let action = &goap.plan.last().unwrap(); // Do we know that we have atleast 1 action in our plan?
-    println!("Completed {:?}", action.name);
+
     for (post, val) in &action.post {
-        println!("setting {:?} = {:?}", post, val);
+
         goap.state.insert(post.clone(), *val);
     }
 
@@ -88,7 +87,7 @@ pub fn acquire_target(id: EntityId, game: &mut GameData, scene: &mut Scene) -> O
     if let Some(closest) = auto_attack::find_closest_enemy(id, game, &scene.entities) {
         // update senses and complete action
 
-        if let Some(goap) = game.goap_data_by_entity_id(id) {
+        if let Some(goap) = game.goap_data_by_entity_id_mut(id) {
             goap.senses.target = Some(goap_ai::Target{ id: closest.target, pos: closest.target_pos} );
         }
 
@@ -101,25 +100,32 @@ pub fn acquire_target(id: EntityId, game: &mut GameData, scene: &mut Scene) -> O
 pub fn go_to_target(id: EntityId, game: &mut GameData, scene: &mut Scene) -> Option<()> {
 
     let dt = scene.dt();
-    if let Some(goap) = game.goap_data_by_entity_id(id) {
+    if let Some(goap) = game.goap_data_by_entity_id_mut(id) {
         // move to target
 
         if let Some(target) = &goap.senses.target {
+            let mut dir = target.pos - goap.senses.pos_self;
 
-            println!("{:?}", (goap.senses.pos_self, target.pos));
-            let mut dir = goap.senses.pos_self - target.pos;
+            let dist = dir.magnitude();
 
-            if dir.magnitude() > 0.0 {
+            if dist > 0.0 {
                 dir = dir.normalize();
+            }
+
+            let unit_data = game.unit_data(id);
+
+            if dist < unit_data.range {
+                set_action_complete(id, game);
             }
 
             // TODO: This updates entity pos. maybe should update vel and have a physics system move entities??
             // Maybe this is ok
             let inc = dt * 5.0;
             let _ = scene.entities.get_mut(&id).map(|e| {
-                println!("{:?}", e.pos);
                 e.pos += dir * inc;
             });
+
+
 
         } else {
             invalidate_action(goap)

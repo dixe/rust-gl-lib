@@ -50,7 +50,6 @@ impl GoapData {
             goal: None,
             plan: vec![]
         }
-
     }
 }
 
@@ -61,7 +60,9 @@ pub trait GoapSystem {
     /// Return mut goap_data for given index in loop
     fn goap_data(&mut self, idx: usize) -> &mut GoapData;
 
-    fn goap_data_by_entity_id(&mut self, entity_id: EntityId) -> Option::<&mut GoapData>;
+    fn goap_data_by_entity_id(&self, entity_id: EntityId) -> Option::<&GoapData>;
+
+    fn goap_data_by_entity_id_mut(&mut self, entity_id: EntityId) -> Option::<&mut GoapData>;
 
     fn get_action_fun(&self, action_name: Rc::<str>) -> EntityAiFn;
 }
@@ -71,13 +72,18 @@ pub fn update_senses(game: &mut GameData, scene: &mut Scene) {
     let mut i = 0;
     while i < game.goap_datas.len() { // use while loop so we can modify during loop
 
-
         let goap_data = &mut game.goap_datas[i];
+        let unit_data = match game.units_data.get(&goap_data.id)  {
+            Some(ud) => ud,
+            None => {
+                return;
+            }
+        };
+
 
         // TARGET SENSES
         if let Some(entity_self) = scene.entity(&goap_data.id) {
-            panic!("It this correct");
-            goap_data.senses.pos_self = entity_self.pos;
+             goap_data.senses.pos_self = entity_self.pos;
         } else {
             panic!();
             // maybe set is dead? or remove the goap_data
@@ -87,11 +93,11 @@ pub fn update_senses(game: &mut GameData, scene: &mut Scene) {
             //check if we are still in range
             if let Some(target_entity) = scene.entity(&target.id) {
                 target.pos = target_entity.pos;
-                let dist = target.pos - goap_data.senses.pos_self;
 
-                // TODO: calc from
-                let in_range = dist < 10.0;
+                let dir = target.pos - goap_data.senses.pos_self;
+                let dist = dir.magnitude();
 
+                let in_range = dist < unit_data.range;
                 goap_data.state.insert("InRangeOfTarget".into(), in_range);
             } else {
                 goap_data.senses.target = None;
@@ -114,9 +120,8 @@ pub fn check_current_plan(game: &mut GameData, scene: &mut Scene) {
         // check that the current plan is stil valid
 
         if let Some(next_action) = goap_data.plan.last() {
-
             if !goap::is_valid(&next_action.pre, &goap_data.state)  {
-                println!("invalid {:?}", next_action.name);
+                action_functions::invalidate_action(goap_data)
             }
         }
 
@@ -134,19 +139,18 @@ pub fn execute_goal_system(game: &mut GameData, scene: &mut Scene) {
         let unit = game.unit_data(u.id);
 
         let id = u.id;
-        //TODO: Should be moved to be part of goal/plan as an is_alive state
+        //TODO: Should be moved to be part of goal/plan as an is_alive state? Does save a lot of computation
         if unit.dead {
             i += 1;
             continue;
         }
 
-
-        if let Some(goap_data) = game.goap_data_by_entity_id(unit.id) {
+        if let Some(goap_data) = game.goap_data_by_entity_id_mut(unit.id) {
             if goap_data.plan.len() == 0 {
                 // no plan found? can this be, either set goal to none, so we will find a new goal,
                 // or panic since we don't allow goal without a plan!!
 
-                println!("No plan found for {:?}, resetting goal to plan new one", goap_data.goal);
+                //println!("No plan found for {:?}, resetting goal to plan new one", goap_data.goal);
                 goap_data.goal = None;
             } else {
                 let next_action = goap_data.plan.last().unwrap().name.clone();
@@ -172,7 +176,7 @@ pub fn goap_plan_system(game: &mut impl GoapSystem, scene: &mut Scene) {
 
         if let Some((goal, plan)) = goap::plan(&goap_data.goals, &goap_data.actions, &goap_data.state) {
             // TODO: Maybe have a vec, and pass as mut to goap::plan, so we don't have to clone it all the time
-            println!("Found plan for {:#?}, {:#?}", goal, plan);
+            //println!("Found plan for {:#?}, {:#?}", goal, plan);
             goap_data.plan = plan.clone();
             goap_data.goal = Some(goal);
         }
@@ -192,7 +196,19 @@ impl GoapSystem for GameData {
         self.goap_datas.get_mut(idx).expect("Goap system should not have called with idx outside scope")
     }
 
-    fn goap_data_by_entity_id(&mut self, entity_id: EntityId) -> Option::<&mut GoapData> {
+
+    fn goap_data_by_entity_id(&self, entity_id: EntityId) -> Option::<&GoapData> {
+        let mut i = 0;
+        while i < self.goap_datas.len() {
+            if self.goap_datas[i].id == entity_id {
+                return Some(&self.goap_datas[i]);
+            }
+            i+= 1;
+        }
+
+        None
+    }
+    fn goap_data_by_entity_id_mut(&mut self, entity_id: EntityId) -> Option::<&mut GoapData> {
         let mut i = 0;
         while i < self.goap_datas.len() {
             if self.goap_datas[i].id == entity_id {

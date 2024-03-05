@@ -14,26 +14,16 @@ use std::fs;
 use std::rc::Rc;
 use crate::systems::{goap_ai, missile, GameData, setup_systems, SystemFn, auto_attack, unit};
 use crate::systems::goap_ai::GoapSystem;
-
+use crate::ui::{UiData, ui};
 
 mod systems;
+mod ui;
 
 pub struct PostPData {
     time: f32
 }
 
-type Scene = scene::Scene::<PostPData, PlayerData>;
-
-struct UiData {
-    show_options: bool,
-    show_goap: bool,
-    wire_mode: bool,
-}
-
-#[derive(Default)]
-pub struct PlayerData {
-    attacking: bool
-}
+type Scene = scene::Scene::<PostPData, ()>;
 
 pub struct Game {
     data: GameData,
@@ -68,23 +58,21 @@ fn main() -> Result<(), failure::Error> {
         paused: true
     };
 
-    let mut ui_data = UiData {
+    let mut ui_data = ui::UiData {
         show_options: false,
         show_goap: true,
+        show_player_data: true,
         wire_mode: false,
     };
 
     setup(&mut scene, &mut game.data);
     let enemy_id = spawn_enemy(&mut scene, &mut game);
 
-
     loop {
-
         scene.frame_start(&mut sdl_setup.event_pump);
 
         // could be system too??
         handle_input(&mut scene, &mut game);
-
 
         if !game.paused {
             // GAME SYSTEMS
@@ -131,7 +119,7 @@ fn setup(scene: &mut Scene, data: &mut GameData) {
     scene.action_queue.push_back(actions::Action::StartAnimationLooped(player_id, "t_pose".into(), 0.3));
     scene.controlled_entity = Some(scene::ControlledEntity {
         id: player_id,
-        user_data: PlayerData::default(),
+        user_data: (),
         control_fn: controller
     });
 
@@ -175,168 +163,9 @@ fn pre_load(scene: &mut Scene, sdl_setup: &mut helpers::BasicSetup) {
 }
 
 
-fn ui(scene: &mut Scene, data : &mut UiData, game: &mut Game) {
-
-    if scene.ui.button("Play/pause") {
-        game.paused = ! game.paused;
-    }
-
-    if scene.ui.button("MeshShader") {
-        shader::reload_object_shader("mesh_shader", &scene.gl, &mut scene.render_pipelines.default().mesh_shader.shader)
-    }
-
-    if scene.ui.button("ToonShader") {
-        shader::reload_object_shader("toon_shader", &scene.gl, &mut scene.render_pipelines.default().mesh_shader.shader)
-    }
-
-    if scene.ui.button("use stencil") {
-
-        let default_pipeline = scene.render_pipelines.default();
-        println!("stencil use pressed {:?}", default_pipeline.stencil_shader.is_some());
-        if default_pipeline.stencil_shader.is_some() {
-            default_pipeline.stencil_shader = None;
-        } else {
-            default_pipeline.use_stencil();
-        }
-    }
-
-    if scene.render_pipelines.default().stencil_shader.is_some() && scene.ui.button("stencil") {
-        shader::reload_object_shader("stencil", &scene.gl, &mut scene.render_pipelines.default().stencil_shader.as_mut().unwrap().shader)
-    }
-
-    if data.show_options {
-        options(scene, data);
-    } else {
-        data.show_options = scene.ui.button("Options");
-    }
-
-    if data.show_goap {
-        show_goap(scene, data, game);
-    } else {
-        data.show_goap = scene.ui.button("Show Goap");
-    }
-
-    if scene.ui.button("Reload") {
-        scene.load_all_meshes("examples/assets/blender_models/player.glb", true);
-    }
-
-}
-
-fn show_goap(scene: &mut Scene, data : &mut UiData, game: &mut Game) {
-    let ui = &mut scene.ui;
-    data.show_goap = !ui.window_begin("Show Goap").closed;
-
-    // find enemy_id
 
 
-    // could be a loop that just breaks in 1 iter
-    if let Some((enemy_id, enemy_unit)) = game.data.units_data.iter().filter(|(id, x)| x.team == 1).nth(0) {
-        if let Some(goap) = game.data.goap_data_by_entity_id(*enemy_id) {
-
-            ui.label("Goal:");
-            ui.body_text(&format!("{:?}", goap.goal.as_ref().map(|g| g.name.clone())));
-            ui.newline();
-
-
-            ui.label("Plan:");
-
-            let mut plan_str : Vec<Rc::<str>> = goap.plan.iter().map(|a| a.name.clone()).collect();
-            plan_str.reverse();
-            ui.body_text(&format!("{:?}", plan_str));
-            ui.newline();
-
-
-
-            // show all true/false states
-            for (k, v) in &goap.state {
-                ui.label(k);
-                ui.body_text(&format!(": {:?}", v));
-                ui.newline();
-            }
-        }
-    }
-
-    ui.window_end("Show Goap");
-
-}
-
-
-fn options(scene: &mut Scene, data : &mut UiData) {
-
-    let ui = &mut scene.ui;
-
-    data.show_options = !ui.window_begin("Options").closed;
-
-    ui.label("Sens");
-    let inputs = scene.inputs.current_mut();
-    ui.combo_box(&mut inputs.sens, 0.01, 1.0);
-    ui.slider(&mut inputs.sens, 0.01, 1.0);
-
-    ui.newline();
-
-    ui.label("Speed");
-    ui.combo_box(&mut inputs.speed, 0.01, 20.0);
-    ui.slider(&mut inputs.speed, 0.01, 20.0);
-
-
-    ui.newline();
-    ui.body_text(&format!("light_pos {:.2?}", scene.light_pos));
-
-    ui.newline();
-    ui.body_text("x:");
-    ui.slider(&mut scene.light_pos.x, -30.0, 30.0 );
-
-    ui.newline();
-    ui.body_text("y:");
-    ui.slider(&mut scene.light_pos.y, -30.0, 30.0 );
-
-    ui.newline();
-    ui.body_text("z:");
-    ui.slider(&mut scene.light_pos.z, 0.0, 100.0 );
-
-    ui.newline();
-    ui.color_picker(&mut scene.light_color);
-
-    ui.newline();
-    if ui.button("Wire Mode") {
-        data.wire_mode = !data.wire_mode;
-
-        unsafe {
-            if data.wire_mode {
-                scene.gl.PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-            }
-            else {
-                scene.gl.PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
-            }
-        }
-    }
-
-    let default_pipeline = scene.render_pipelines.default();
-    if let Some(sm) = &mut default_pipeline.shadow_map {
-        ui.newline();
-        ui.body_text(&format!("z_near: {:.2?}, z_far: {:.2?}", sm.z_near, sm.z_far));
-
-        ui.newline();
-        ui.body_text("z_near:");
-        ui.slider(&mut sm.z_near, 0.0, 10.0);
-
-        ui.newline();
-        ui.body_text("z_far:");
-        ui.slider(&mut sm.z_far, 0.0, 50.0);
-
-        ui.newline();
-        ui.body_text("size:");
-        ui.slider(&mut sm.size, 1.0, 50.0);
-    }
-
-
-    ui.window_end("Options");
-
-}
-
-
-
-fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, _user_data: &PlayerData) {
+fn controller(entity: &mut scene::SceneEntity, camera: &mut Camera, follow_camera: &mut follow_camera::Controller, inputs: &Inputs, dt: f32, _user_data: &()) {
 
     // update entity.pos
     let m = inputs.movement;
@@ -400,23 +229,23 @@ fn handle_input(scene: &mut Scene, game: &mut Game) {
         let player_pos = player.pos;
         // play idle
         if scene.inputs.current().animation_expired {
-            player_data.attacking = false;
             scene.action_queue.push_back(actions::Action::StartAnimationLooped(c_ent.id, "idle".into(), 0.3));
         }
 
 
 
 
-        if !player_data.attacking && scene.inputs.current().left_mouse {
-
+        if scene.inputs.current().left_mouse {
             if let Some(enemy) = auto_attack::find_closest_enemy(player_id, &mut game.data, &scene.entities) {
-                let player_unit = game.data.units_data.get(&player_id).unwrap();
-                if enemy.dist < player_unit.range {
+                let player_unit = game.data.units_data.get_mut(&player_id).unwrap();
+
+
+                if player_unit.cooldown <= 0.0 && enemy.dist < player_unit.range {
                     // set attack state and start animation
-                    player_data.attacking = true;
                     scene.action_queue.push_back(actions::Action::StartAnimation(c_ent.id, "attack".into(), 0.0));
                     scene.action_queue.push_back(actions::Action::PlaySound("attack".into()));
 
+                    player_unit.cooldown = 1.0;
                     // spawn an arrow that homes to enemy
                     let id = scene.create_entity("arrow");
                     scene::update_pos(scene, id, player_pos + V3::new(0.0, 0.0, 1.0));

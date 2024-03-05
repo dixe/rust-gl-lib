@@ -27,6 +27,7 @@ pub struct GameData {
 
 pub fn setup_systems() -> Vec::<SystemFn> {
     vec![cooldown::cooldown_system,
+         goap_ai::update_senses,
          goap_ai::check_current_plan,
          goap_ai::goap_plan_system,
          goap_ai::execute_goal_system,

@@ -86,7 +86,7 @@ pub fn find_closest_enemy(id: EntityId, game: &impl UnitSystem, entities: &DataM
             if dist < min {
                 min = dist;
                 closest = Some(ClosestEnemy{
-                    target: id,
+                    target: u.id,
                     dist,
                     this_pos,
                     target_pos: unit_pos,
