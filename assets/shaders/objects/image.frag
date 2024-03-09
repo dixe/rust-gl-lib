@@ -11,5 +11,11 @@ void main()
 {
   vec4 col = texture2D(text_map, IN.TexCoords);
 
-  FragColor = col;
+  FragColor = vec4(col.xyz, 1.0);
+
+  //FragColor = vec4(vec3(1.0, 1.0, 1.0) - col.xyz, 1.0);
+
+
+  //FragColor = vec4(IN.TexCoords, 0.0, 1.0);
+
 }

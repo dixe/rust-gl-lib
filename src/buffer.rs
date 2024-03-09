@@ -8,6 +8,32 @@ pub struct Buffer<B> where B: BufferType {
 }
 
 
+// PBO
+pub struct PixelBuffer {
+    gl: gl::Gl,
+    pbo: gl::types::GLuint
+}
+
+impl PixelBuffer {
+    pub fn new(gl: &gl::Gl, size: usize) -> Self {
+
+        let mut pbo: gl::types::GLuint = 0;
+
+        unsafe {
+            gl.GenBuffers(1, &mut pbo);
+            gl.BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
+            gl.BufferData(gl::PIXEL_UNPACK_BUFFER, size as isize, std::ptr::null(), gl::STREAM_DRAW);
+        }
+
+        Self {
+            gl: gl.clone(),
+            pbo
+        }
+
+
+    }
+}
+
 pub struct FrameBuffer {
     gl: gl::Gl,
     fbo: gl::types::GLuint,
@@ -29,7 +55,7 @@ impl FrameBuffer {
         let mut fbo: gl::types::GLuint = 0;
 
         // gen a texture to render to and a depth/stencil buffer
-        let color_tex = texture::gen_texture_framebuffer(&gl, viewport);
+        let color_tex = texture::gen_texture_framebuffer(&gl, viewport.w, viewport.h);
         let depth_stencil_tex = texture::gen_texture_depth_and_stencil(&gl, viewport);
 
 
@@ -70,7 +96,7 @@ impl FrameBuffer {
     pub fn update_viewport(&mut self, gl: &gl::Gl, viewport: &gl::viewport::Viewport) {
         // update textures
 
-        self.color_tex = texture::gen_texture_framebuffer(&gl, viewport);
+        self.color_tex = texture::gen_texture_framebuffer(&gl, viewport.w, viewport.h);
         self.depth_stencil_tex = texture::gen_texture_depth_and_stencil(&gl, viewport);
         unsafe {
 

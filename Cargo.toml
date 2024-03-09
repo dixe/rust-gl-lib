@@ -28,6 +28,8 @@ toml = "0.7.6"
 path-absolutize = "3.1.1"
 enum_dispatch = "0.3.12"
 enum_delegate = "0.2.0"
+noise = "0.8.2"
+rayon = "1.9.0"
 
 
 [dependencies.sdl2]
@@ -49,6 +51,7 @@ rand = "0.8.4"
 image = "0.23.14"
 ttf-parser = "0.14.0"
 lipsum = "0.8"
+
 
 [build-dependencies]
 gl_generator = "0.14.0"

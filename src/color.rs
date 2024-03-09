@@ -27,10 +27,27 @@ impl Color {
         Self::from_vec4((1.0 - t) * c1 + t * c2)
     }
 
+
+
     pub fn from_vec4(c: na::Vector4::<f32>) -> Self {
         Color::RgbAf32(c.x, c.y, c.z, c.w)
     }
 
+    pub fn as_rgba(&self) -> na::Vector4::<u8> {
+        match *self {
+            Color::Rgb(r,g,b) => na::Vector4::new(r, g, b, 255),
+            Color::RgbA(r,g,b,a) => na::Vector4::new(r, g, b, a),
+            Color::RgbAf32(r,g,b,a) => na::Vector4::new((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8, (a * 255.0) as u8),
+            Color::Hsv(h,s,v,a) => {
+                let rgba_f32 = hsv_to_rgba_vec(h, s, v, a);
+                let r = rgba_f32.x;
+                let g = rgba_f32.y;
+                let b = rgba_f32.z;
+                let a = rgba_f32.w;
+                na::Vector4::new((r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8, (a * 255.0) as u8)
+            }
+        }
+    }
 
     pub fn as_vec4(&self) -> na::Vector4::<f32> {
         match *self {
