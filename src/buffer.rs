@@ -10,8 +10,8 @@ pub struct Buffer<B> where B: BufferType {
 
 // PBO
 pub struct PixelBuffer {
-    gl: gl::Gl,
-    pbo: gl::types::GLuint
+    pub gl: gl::Gl,
+    pub pbo: gl::types::GLuint
 }
 
 impl PixelBuffer {
@@ -21,8 +21,11 @@ impl PixelBuffer {
 
         unsafe {
             gl.GenBuffers(1, &mut pbo);
+
             gl.BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
             gl.BufferData(gl::PIXEL_UNPACK_BUFFER, size as isize, std::ptr::null(), gl::STREAM_DRAW);
+
+            gl.BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
         }
 
         Self {

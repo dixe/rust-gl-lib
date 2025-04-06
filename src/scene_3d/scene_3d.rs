@@ -507,6 +507,7 @@ impl<UserPostProcessData, UserControllerData> Scene<UserPostProcessData, UserCon
         while let Some(action) = self.action_queue.pop_front() {
             match action {
                 Action::StartAnimation(e_id, name, trans_time) => {
+
                     let skel = self.entity(&e_id).unwrap().skeleton_id.unwrap();
                     let anim = self.animations.get(&skel).unwrap().get(&name).expect(&format!("Animation {:?} was expected for {:?}", name, e_id));
                     play_animation(anim.clone(), false, &e_id, &mut self.player, &mut self.entities, Some(trans_time));

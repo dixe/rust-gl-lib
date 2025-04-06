@@ -9,7 +9,9 @@ pub struct Style {
     pub text_styles: TextStyles,
     pub button: ButtonStyle,
     pub drag_point: Color,
-    pub clear_color: Color
+    pub clear_color: Color,
+    pub text_field: TextFieldStyle,
+
 }
 
 impl Default for Style {
@@ -21,7 +23,8 @@ impl Default for Style {
             text_styles: Default::default(),
             button: Default::default(),
             drag_point: Color::Rgb(220, 220, 220),
-            clear_color: Color::Rgb(27, 27, 27)
+            clear_color: Color::Rgb(27, 27, 27),
+            text_field: Default::default(),
         }
     }
 }
@@ -147,8 +150,26 @@ impl Default for ButtonStyle {
             color: Color::Rgb(60, 60, 60),
             hover_color: Color::Rgb(70, 70, 70),
             active_color: Color::Rgb(200, 200, 200),
-            text_color: Color::Rgb(10, 10, 10),
+            text_color: Color::Rgb(240, 240, 204),
             radius: BorderRadius::HeightRelative(0.33),
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, Copy)]
+pub struct TextFieldStyle {
+    pub bg_color: Color,
+    pub text_color: Color,
+    pub cursor_color: Color,
+}
+
+impl Default for TextFieldStyle {
+    fn default() -> Self {
+        Self {
+            bg_color: Color::Rgb(60, 60, 60),
+            text_color: Color::Rgb(240, 240, 204),
+            cursor_color: Color::Rgb(250, 5, 5),
         }
     }
 }

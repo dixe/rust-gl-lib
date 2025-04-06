@@ -76,7 +76,8 @@ pub fn update_senses(game: &mut GameData, scene: &mut Scene) {
         let unit_data = match game.units_data.get(&goap_data.id)  {
             Some(ud) => ud,
             None => {
-                return;
+                i += 1;
+                continue;
             }
         };
 

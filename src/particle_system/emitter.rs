@@ -129,7 +129,7 @@ impl<'a, T> Iterator for EmitterIter<'a, T> {
 }
 
 
-pub fn update_1(p: &mut ParticleCircle, dt: f32) {
+pub fn update_linear(p: &mut ParticleCircle, dt: f32) {
 
     let t = 1.0 - p.life / p.total_life;
 
@@ -141,7 +141,7 @@ pub fn update_1(p: &mut ParticleCircle, dt: f32) {
     p.vel.y += dt;
 }
 
-pub fn emit_1(p: &mut ParticleCircle, x: f32, y: f32) {
+pub fn emit_random_circle(p: &mut ParticleCircle, x: f32, y: f32) {
 
     // TODO maybe have in struct
     let mut rng = rand::thread_rng();

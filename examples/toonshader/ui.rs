@@ -105,10 +105,14 @@ fn show_player(scene: &mut Scene, data : &mut UiData, game: &mut Game) {
 fn show_unit_data(ui: &mut Ui, unit_data: &unit::UnitData ){
     ui.label("Hp:");
     ui.body_text(&format!("{:?}", unit_data.hp));
-
     ui.newline();
+
     ui.label("Cooldown:");
     ui.body_text(&format!("{:?}", unit_data.cooldown));
+    ui.newline();
+
+    ui.label("Dead:");
+    ui.body_text(&format!("{:?}", unit_data.dead));
     ui.newline();
 
 }

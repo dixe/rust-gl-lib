@@ -44,11 +44,9 @@ impl DeathSystem for GameData {
 
         // wait for animation to be done.
         if scene.player.expired(&id) {
-            // remove unit
+            // remove entiy, unit and unit_data
             scene.remove_entity(&id);
             self.units.swap_remove(idx);
-
-            // remove unit data
             self.units_data.remove(&id);
 
             return false;

@@ -19,7 +19,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut show = false;
 
-    let input = "".to_string();
+    let mut input = "".to_string();
     let _offset = 0.0;
     ui.drawer2D.tr.set_text_color(Color::Rgb(240, 240, 240));
     ui.drawer2D.font_cache.fonts_path = Some("assets\\fonts\\".to_string());
@@ -31,7 +31,7 @@ fn main() -> Result<(), failure::Error> {
 
         ui.start_frame(&mut sdl_setup.event_pump);
 
-        //ui.textbox(&mut input);
+        ui.textbox(&mut input);
         ui.body_text("Body text beloiong to the main windows in the app");
 
         ui.newline();
@@ -70,6 +70,7 @@ fn main() -> Result<(), failure::Error> {
 
             if ui.color_picker(&mut text_color) {
                 ui.drawer2D.tr.set_text_color(text_color);
+                ui.style.text_field.text_color = text_color;
             }
 
             ui.window_end("Window1");

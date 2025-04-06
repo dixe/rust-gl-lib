@@ -237,7 +237,6 @@ fn calc_char_info(font: &Font, text: &str, max_width: f32, input_scale: f32, cha
 
 pub fn render_text_with_font(char_quad: &mut objects::char_quad::CharQuad, font: &Font, gl: &gl::Gl, text: &str, alignment: TextAlignment, screen_box: ScreenBox, pixel_size: i32, color: Color) {
 
-
     let input_scale = pixel_size as f32 / font.size();
 
     let mut chars_info = Vec::new();

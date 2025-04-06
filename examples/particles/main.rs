@@ -15,7 +15,7 @@ fn main() -> Result<(), failure::Error> {
 
     ui.drawer2D.font_cache.fonts_path = Some("assets/fonts/".to_string());
 
-    let mut emitter = emitter::Emitter::new(10000, emitter::emit_1, emitter::update_1);
+    let mut emitter = emitter::Emitter::new(10000, emitter::emit_random_cirlce, emitter::update_linear);
 
 
     let mut args = Args {
@@ -49,7 +49,9 @@ fn main() -> Result<(), failure::Error> {
 
         if let Some((x,y)) = state.mouse_pos {
             for _ in 0..3 {
-                emitter.emit_from_fn(x, y, |p, x, y| emit_1(p, x, y, args));
+                emitter.emit(x, y);
+                // can also just emit from a arbitrary emit func
+                //emitter.emit_from_fn(x, y, |p, x, y| emit_linear(p, x, y, args));
             }
         }
 
@@ -61,8 +63,6 @@ fn main() -> Result<(), failure::Error> {
         ui.end_frame();
     }
 }
-
-
 
 
 #[derive(Clone, Copy)]
@@ -78,34 +78,6 @@ pub struct Args {
 #[derive(Default)]
 struct State {
     mouse_pos: Option<(f32, f32)>
-}
-
-pub fn emit_1(p: &mut ParticleCircle, x: f32, y: f32, args: Args) {
-
-    // TODO maybe have in struct
-    let mut rng = rand::thread_rng();
-
-    let angle : f32 = rng.gen::<f32>() * args.spread - std::f32::consts::PI / 2.0;
-
-    p.pos.x = x;
-    p.pos.y = y;
-
-    let x = angle.cos();
-    let y = angle.sin();
-
-    let dir = V3::new(x,y, 0.0).normalize();
-
-    p.vel = dir * args.speed;
-
-
-    let life = (rng.gen::<f32>() - 0.5) * 3.0 + args.life;
-    p.life = life;
-
-    p.color_from = args.color_from;
-    p.color_to = args.color_to;
-
-    // max size 10
-    p.size = rng.gen::<f32>() * 1.1;
 }
 
 

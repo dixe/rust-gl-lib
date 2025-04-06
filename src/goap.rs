@@ -53,7 +53,6 @@ pub struct Action {
     pub post: Conditions,
 }
 
-
 impl Eq for Action {}
 
 
@@ -67,6 +66,8 @@ impl PartialEq for Action {
 // make this a type param on goal, action, and cond
 // so each program can make their own state/blackboard type
 // should be copy, so hashmap is not too good I think
+// But then again we need the key value mapping, so might
+// need hashmap. And then have different type for senses
 pub type State = HashMap::<Rc::<str>, bool>;
 
 
@@ -82,7 +83,6 @@ impl Action {
         }
         false
     }
-
 }
 
 

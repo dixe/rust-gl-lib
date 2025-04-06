@@ -410,8 +410,8 @@ fn clear_context(ctx: &mut ContainerContext) {
 #[derive(Debug, Clone, Default, Copy)]
 pub struct ContainerContext {
     pub id: CtxId,
-    /// Reset after each frame. Widget should use hot instead of just checking in the mouse is inside them
-    /// since hot only gets set when there is not active widget or we out self are the active elemnt
+    /// Reset after each frame. Widget should use hot instead of just checking if the mouse is inside them
+    /// since hot only gets set when there is not active widget or we our self are the active elemnt
     /// use to check fx release of mouse happens inside button.
     pub hot: Option<Id>,
 

@@ -3,7 +3,7 @@ use gl_lib::imode_gui::ui::*;
 use gl_lib::math::numeric::Numeric;
 use gl_lib::imode_gui::style::Style;
 use noise::{NoiseFn, Perlin, Seedable};
-use gl_lib::{gl, texture, shader, typedef::*};
+use gl_lib::{gl, buffer, texture, shader, typedef::*};
 use gl_lib::color::Color;
 use rand::Rng;
 use std::time::{Duration, SystemTime};
@@ -18,8 +18,10 @@ fn main() -> Result<(), failure::Error> {
     let mut settings = NoiseSettings {
         scale_x: 50.0,
         scale_y: 50.0,
-        w: 512,
-        h: 512,
+        //w: 512,
+        //h: 512,
+        w: 1024,
+        h: 1024,
         seed: 0,
         add: 1.0,
         div: 2.0,
@@ -28,14 +30,17 @@ fn main() -> Result<(), failure::Error> {
 
 
     let tex_id = texture::gen_texture_pbo(&gl, settings.w as i32, settings.h as i32);
+    let pbo = buffer::PixelBuffer::new(&gl, settings.w * settings.h * 4);
 
     let mut noise = perlin_field_par(&settings);
-    let mut update_time = update_pixels(&gl, tex_id, noise.w as i32, noise.h as i32, &noise.data);
+    let mut update_time = update_pixels_pbo(&gl, tex_id, pbo.pbo, noise.w as i32, noise.h as i32, &noise.data);
 
     let mut color = Color::white();
     let mut use_par = true;
+    let mut use_pbo = true;
 
     loop {
+
         ui.start_frame(&mut sdl_setup.event_pump);
 
 
@@ -51,6 +56,9 @@ fn main() -> Result<(), failure::Error> {
         ui.newline();
         ui.label("Use par:");
         ui.checkbox(&mut use_par);
+
+        ui.label("Use pbo:");
+        ui.checkbox(&mut use_pbo);
 
         ui.window_begin("Settings");
 
@@ -102,12 +110,17 @@ fn main() -> Result<(), failure::Error> {
         if update {
 
             if use_par {
-                noise = perlin_field_par(&settings);
+                //noise = perlin_field_par(&settings);
             } else {
-                noise = perlin_field(&settings);
+                //noise = perlin_field(&settings);
             }
 
-            update_time = update_pixels(&gl, tex_id, noise.w as i32, noise.h as i32, &noise.data);
+            if use_pbo {
+                update_time = update_pixels_pbo(&gl, tex_id, pbo.pbo, noise.w as i32, noise.h as i32, &noise.data);
+            } else {
+                update_time = update_pixels_simple(&gl, tex_id, noise.w as i32, noise.h as i32, &noise.data);
+            }
+
 
         }
 
@@ -116,9 +129,46 @@ fn main() -> Result<(), failure::Error> {
 }
 
 
+/// Take about the same total time, but the TexSubImage2D call is much faster, so maybe its usefull somehow
+fn update_pixels_pbo(gl: &gl::Gl, tex_id: texture::TextureId, pbo: gl::types::GLuint, w: i32, h: i32, image_data: &[V4u8]) -> Duration {
 
+    let now = SystemTime::now();
 
-fn update_pixels(gl: &gl::Gl, tex_id: texture::TextureId, w: i32, h: i32, image_data: &[V4u8]) -> Duration {
+    let mut res = now.elapsed().unwrap();
+    unsafe {
+
+        gl.BindTexture(gl::TEXTURE_2D, tex_id);
+        gl.BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
+
+        // copy pixels from pbo to texture
+        // use offset and not pointer
+        gl.TexSubImage2D(gl::TEXTURE_2D, 0, 0, 0, w, h, gl::RGBA, gl::UNSIGNED_BYTE, std::ptr::null());
+
+        res = now.elapsed().unwrap();
+        gl.BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
+        gl.BufferData(gl::PIXEL_UNPACK_BUFFER, (w * h * 4) as isize,  std::ptr::null(), gl::STREAM_DRAW);
+
+        let ptr = gl.MapBuffer(gl::PIXEL_UNPACK_BUFFER, gl::WRITE_ONLY) as (*mut u8);
+
+        if ptr != std::ptr::null_mut() {
+
+            let data_ptr = image_data.as_ptr() as *const u8;
+
+            ptr.copy_from(data_ptr, (w * h * 4) as usize);
+
+            gl.UnmapBuffer(gl::PIXEL_UNPACK_BUFFER);
+        } else {
+            panic!("Ptr for buffer map is 0");
+        }
+
+        gl.BindBuffer(gl::PIXEL_UNPACK_BUFFER, 0);
+
+    }
+
+    res
+}
+
+fn update_pixels_simple(gl: &gl::Gl, tex_id: texture::TextureId, w: i32, h: i32, image_data: &[V4u8]) -> Duration {
 
     let now = SystemTime::now();
     unsafe {

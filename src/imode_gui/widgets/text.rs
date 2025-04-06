@@ -97,26 +97,39 @@ impl Ui {
         }
 
 
+        // we can only show 17 chars, so offset into string so cursor stays in textbox
         // get max 17 chars from string
         // TODO: get &Vec::<CharPosInfo> from text_renderer, so we can inspect the size out self
+
+        // TODO: 17 is arebtrary, get width of container and use that as a guide for how many chars we can have
+        // TODO: Some sort of container state would be nice, we se can move the cursor
+
 
         let start = i32::max(0, (data.len() as i32 - 17)) as usize;
         let txt = &data[start..data.len()];
 
         let font_name = &self.style.text_styles.body.font_name;
 
-        let color = Color::Rgb(250, 250, 250);
-        // background
-        self.drawer2D.rect_color(rect.x , rect.y, rect.w, rect.h, color);
-
+        // Cursor, has to be before backgorund, since they overlap and we then might skip drawn objects
         if active {
-        // cursor
+            // cursor
             let render_box = self.drawer2D.text_render_box_with_font_name(txt, pixel_size, font_name);
 
-            let cursor_color = Color::Rgb(5,5,5);
+            let cursor_color = self.style.text_field.cursor_color;
             self.drawer2D.rect_color(rect.x + 2 + render_box.total_width as i32, rect.y + 2, 5, pixel_size, cursor_color);
         }
+
+
+        let box_color = self.style.text_field.bg_color;
+        // background
+        self.drawer2D.rect_color(rect.x , rect.y, rect.w, rect.h, box_color);
+
         // draw the text input
+        // change text color of drawers text render to button text color.
+        let cur_color = self.drawer2D.tr.color;
+        self.drawer2D.tr.color = self.style.text_field.text_color;
         self.drawer2D.render_text_from_font_name(txt, rect.x, rect.y, pixel_size, font_name);
+        self.drawer2D.tr.color = cur_color;
+
     }
 }

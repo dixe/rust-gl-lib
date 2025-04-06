@@ -265,8 +265,8 @@ fn spawn_enemy(scene: &mut Scene, game: &mut Game) -> EntityId {
 
     game.data.units.push(unit::Unit { id: enemy_id});
     game.data.units_data.insert(enemy_id, unit::UnitData {id: enemy_id, hp: 5.0, dead: false, team: 1, range: 5.0, cooldown: 0.0 });
-
     game.data.goap_datas.push(goap_ai::GoapData::new(enemy_id, game.goals.clone(), game.actions.clone()));
+    scene.action_queue.push_back(actions::Action::StartAnimation(enemy_id, "t_pose".into(), 0.0));
 
 
     enemy_id
