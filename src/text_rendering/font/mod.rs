@@ -3,11 +3,11 @@ use crate::gl;
 use crate::texture::{self, TextureId};
 
 mod msdf_font;
-pub use self::msdf_font::*;
+pub use self::msdf_font::MsdfFont;
 
 
 mod fnt_font;
-pub use self::fnt_font::*;
+pub use self::fnt_font::FntFont;
 
 
 #[derive(Debug, Clone)]

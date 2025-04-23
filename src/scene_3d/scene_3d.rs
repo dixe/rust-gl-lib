@@ -11,7 +11,6 @@ use crate::objects::{mesh::Mesh, cubemap::{self, Cubemap}};
 use crate::camera::{self, free_camera, follow_camera, Camera};
 use crate::na::{Rotation3, Rotation2};
 use crate::{buffer, movement::Inputs};
-use crate::shader::Shader;
 use crate::audio::audio_player::AudioPlayer;
 use std::{thread, sync::{Arc, Mutex}};
 use std::rc::Rc;

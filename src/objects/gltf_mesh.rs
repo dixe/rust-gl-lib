@@ -345,7 +345,7 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
             for j in reader.into_u16() {
 
                 let mut data: [usize; 4] = [0; 4];
-                'outer: for (i, index) in j.iter().enumerate() {
+                for (i, index) in j.iter().enumerate() {
                     // index is into the skins.joints array, which has a list of node indexes
                     // so we have to map from index into joints to
 
@@ -364,7 +364,7 @@ fn load_gltf_mesh_data(mesh: &gltf::mesh::Mesh, buffers: &Vec<gltf::buffer::Data
                                 println!("ERROR");
                                 println!("map: {:#?}", index_map);
                                 println!("c={}, j={:?} Weight Data = {:?}", c, j, weights_data[c]);
-                                panic!("Non mapped bone has weights. Check weight paint for {}", *index);;
+                                panic!("Non mapped bone has weights. Check weight paint for {}", *index);
                             }
                             //println!("Non mapped bone has weights. Check weight paint for {} - {} - {:?}", *index, &inter_joint_index[*index as usize], index_map.get(index));
 

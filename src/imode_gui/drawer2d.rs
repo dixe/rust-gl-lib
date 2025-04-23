@@ -461,6 +461,7 @@ impl Drawer2D {
         render_text(&self.gl, &mut self.tr, text, x, y, &self.viewport, pixel_size, font);
     }
 
+
     /// render the texture in texture_id, at x,y with size
     pub fn render_img(&mut self, texture_id: TextureId, x: i32, y: i32, size: na::Vector2::<f32>) {
 
@@ -474,7 +475,26 @@ impl Drawer2D {
         };
 
         let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
-        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
+        self.texture_shader.setup(ts::Uniforms { texture_id, transform, zoom: 1.0});
+
+        self.texture_square.render(&self.gl);
+    }
+
+    /// render the texture in texture_id, at x,y with size, zoomed factor zoom, focus on zoom_point
+    pub fn render_img_zoom(&mut self, texture_id: TextureId, x: i32, y: i32, size: V2, zoom: f32, zoom_point: V2) {
+
+        self.texture_shader.shader.set_used();
+
+        let geom = Geom {
+            x,
+            y,
+            w: size.x,
+            h: size.y
+        };
+
+        let mut transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
+
+        self.texture_shader.setup(ts::Uniforms { texture_id, transform, zoom });
 
         self.texture_square.render(&self.gl);
     }
@@ -495,7 +515,7 @@ impl Drawer2D {
 
         let transform = unit_square_transform_matrix(&geom, rot, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
 
-        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
+        self.texture_shader.setup(ts::Uniforms { texture_id, transform, zoom: 1.0 });
 
         self.texture_square.render(&self.gl);
 
@@ -516,7 +536,7 @@ impl Drawer2D {
 
         let transform = unit_square_transform_matrix(&geom, rot, &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z + 1.0);
 
-        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
+        self.texture_shader.setup(ts::Uniforms { texture_id, transform, zoom: 1.0 });
 
         render_obj.render(&self.gl);
 
@@ -535,7 +555,7 @@ impl Drawer2D {
         };
 
         let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(0.0, 0.0), 1.0, self.z);
-        shader.setup(ts::Uniforms { texture_id, transform });
+        shader.setup(ts::Uniforms { texture_id, transform, zoom: 1.0 });
 
         self.texture_square.render(&self.gl);
     }
@@ -556,7 +576,7 @@ impl Drawer2D {
         let y_flip = if sprite.flip_y { -1.0} else { 1.0};
 
         let transform = unit_square_transform_matrix(&geom, RotationWithOrigin::Center(0.0), &self.viewport, na::Vector2::new(size.x.to_f32() / 2.0, size.y.to_f32()), y_flip, self.z);
-        self.texture_shader.setup(ts::Uniforms { texture_id, transform });
+        self.texture_shader.setup(ts::Uniforms { texture_id, transform, zoom: 1.0 });
 
         let l = sprite.pixel_l as f32 / sprite.sheet_size.x;
         let r = sprite.pixel_r as f32 / sprite.sheet_size.x;
@@ -802,6 +822,45 @@ pub fn unit_line_transform<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T
 
 }
 
+
+fn unit_square_transform_zoom_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric + std::fmt::Debug>(
+    geom: &Geom<T1, T2, T3, T4>,
+    rot: RotationWithOrigin,
+    viewport: &viewport::Viewport,
+    anchor: na::Vector2::<T5>,
+    y_flip: f32,
+    zoom: f32,
+    z: f32) -> na::Matrix4::<f32> {
+
+    let mut scale = na::Matrix4::<f32>::identity();
+    scale[0] = geom.w.to_f32();
+    scale[5] = geom.h.to_f32();
+
+
+    let rot_mat = rot.to_homogeneous(geom.w.to_f32(), geom.h.to_f32());
+
+    // Unit len square and center at 0.0. So for anchor 0,0 as top left corner
+    // move 0.5 * x_scale along x, and - 0.5 * y_scale along y
+    // Negative since sdl inverse coordinate system
+
+
+    let x_offset = 0.5 * geom.w.to_f32() - anchor.x.to_f32();
+    let y_offset = -0.5 * geom.h.to_f32() + anchor.y.to_f32();;
+
+
+    // translate so that our start pos is at x0, y0
+    // Invert y since sdl is (0,0) in top left. Our Mapping has (0,0) in lower left
+    let t = Translation3::new(geom.x.to_f32() + x_offset, viewport.h as f32 - geom.y.to_f32() + y_offset, z);
+
+    let proj = Orthographic3::new(0.0, viewport.w as f32, 0.0, viewport.h as f32, -10.0, 100.0);
+
+    let mut flip = na::Matrix4::identity();
+    flip[0] = y_flip;
+    flip[5] = 1.0;
+
+    proj.to_homogeneous() * t.to_homogeneous() * rot_mat * flip * scale
+}
+
 fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numeric, T5: Numeric + std::fmt::Debug>(
     geom: &Geom<T1, T2, T3, T4>,
     rot: RotationWithOrigin,
@@ -836,9 +895,7 @@ fn unit_square_transform_matrix<T1: Numeric, T2: Numeric, T3: Numeric, T4: Numer
     flip[0] = y_flip;
     flip[5] = 1.0;
 
-
     proj.to_homogeneous() * t.to_homogeneous() * rot_mat * flip * scale
-
 }
 
 

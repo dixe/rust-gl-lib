@@ -2,6 +2,7 @@ use super::*;
 
 pub struct WindowRes {
     pub closed: bool,
+    pub id: usize,
     //expanded: bool,
 }
 
@@ -12,11 +13,6 @@ impl Ui{
     /// Should be handled by applications
     pub fn window_begin(&mut self, text: &str) -> WindowRes {
 
-        let mut res = WindowRes {
-            closed: false,
-            //expanded: false
-        };
-
         let win_id = match self.window_to_id.get(text) {
             Some(id) => *id,
             None => {
@@ -24,7 +20,7 @@ impl Ui{
                 self.next_window_id += 1;
 
                 self.window_to_id.insert(text.to_string(), window_id);
-                let mut window : Window =  Default::default();
+                let mut window : Window = Default::default();
 
                 window.id = window_id;
                 window.top_bar_size = Pos::new(0, 20);
@@ -38,6 +34,13 @@ impl Ui{
                 window_id
             }
         };
+
+
+        let mut res = WindowRes {
+            closed: false,
+            id: win_id,
+        };
+
 
         // windows can use 0, since they are the "base", this makes it so we always get the same id
         let id = Id {widget_id: 0, window_id: win_id };
@@ -116,9 +119,9 @@ impl Ui{
             let bg_color = Color::Rgb(27, 27, 27);
             let color = Color::Rgb(90, 90, 110);
 
-            let window_w = window.base_container_context.width.size() + self.style.spacing.x * 4;
+            window.last_w = window.base_container_context.width.size() + self.style.spacing.x * 2;
 
-            let window_h = window.base_container_context.height.size() + self.style.spacing.y;
+            window.last_h = window.base_container_context.height.size() + self.style.spacing.y;
 
             let z = self.drawer2D.z;
 
@@ -128,8 +131,8 @@ impl Ui{
             // Background
             self.drawer2D.rect_color(anchor.x,
                                              anchor.y,
-                                             window_w,
-                                             window_h,
+                                             window.last_w,
+                                             window.last_h,
                                              bg_color);
             // window Top Bar
 
@@ -146,11 +149,11 @@ impl Ui{
             // window border
             let thickness = 3;
             let tl = anchor + Pos::new(0, -window.top_bar_size.y);
-            let tr = anchor+ Pos::new(window_w, -window.top_bar_size.y);
+            let tr = anchor+ Pos::new(window.last_w, -window.top_bar_size.y);
 
 
-            let bl = anchor + Pos::new(0, window_h);
-            let br = anchor + Pos::new(window_w, window_h);
+            let bl = anchor + Pos::new(0, window.last_h);
+            let br = anchor + Pos::new(window.last_w, window.last_h);
 
 
             // left vertical
@@ -197,7 +200,10 @@ impl Ui{
         }
 
         // get window width, from max of container??
-        window.top_bar_size.x = window.base_container_context.width.size() + self.style.spacing.x * 4;
+
+        window.last_w = window.base_container_context.width.size();
+        window.last_h = window.base_container_context.height.size();
+        window.top_bar_size.x = window.last_w + self.style.spacing.x * 2;
 
         self.current_window.pop();
 

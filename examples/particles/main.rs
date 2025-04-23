@@ -1,7 +1,6 @@
 use gl_lib::{helpers};
 use gl_lib::color::Color;
 use gl_lib::particle_system::*;
-
 use gl_lib::imode_gui::ui::*;
 use sdl2::event;
 use rand::Rng;

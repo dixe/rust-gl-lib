@@ -31,12 +31,15 @@ pub struct Window {
     pub is_drawn: bool,
     pub top_bar_size: Pos,
     pub drag_point: Pos,
+    pub last_w: i32,
+    pub last_h: i32
 }
 
 pub struct Ui {
     pub deltatime: deltatime::Deltatime,
     pub drawer2D: Drawer2D,
     pub mouse_pos: Pos,
+    pub mouse_wheel_y: i32,
     pub mouse_diff: Pos,
 
     pub mouse_down: bool,
@@ -80,6 +83,7 @@ impl Ui {
             deltatime,
             drawer2D,
             mouse_pos: Pos::new(0,0),
+            mouse_wheel_y : 0,
             ctrl: false,
             mouse_diff: Pos::new(0,0),
             mouse_down: false,
@@ -338,6 +342,9 @@ impl Ui {
                         self.frame_events.push(event.clone());
                     }
                 },
+                MouseWheel {which: 0, y, direction: sdl2::mouse::MouseWheelDirection::Normal, .. } => {
+                    self.mouse_wheel_y = y;
+                },
                 Window {win_event: event::WindowEvent::Resized(x,y), ..} => {
                     self.drawer2D.update_viewport(x, y);
                     self.windows.get_mut(&0).unwrap().base_container_context.width = ContainerSize::Fixed(x);
@@ -381,6 +388,19 @@ impl Ui {
     pub fn set_window_drag_point(&mut self, pos: Pos) {
         let window : &mut Window = self.windows.get_mut(self.current_window.last().unwrap_or(&0)).unwrap();
         window.drag_point = pos;
+    }
+
+    pub fn get_window_rect(&self, window_id: usize) -> Rect {
+        if let Some(window) = self.windows.get(&window_id) {
+            return Rect { x: window.base_container_context.anchor_pos.x,
+                   y: window.base_container_context.anchor_pos.y,
+                   w: window.last_w,
+                   h: window.last_h
+            }
+        }
+
+        Rect { x:0, y:0, h:0, w:0}
+
     }
 
     pub fn end_frame(&mut self) {

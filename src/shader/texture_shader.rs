@@ -28,6 +28,7 @@ impl TextureShader {
         // sampler 0 since there is only 1 sampler
         self.shader.set_i32(&self.gl, "text_map", 0);
         self.shader.set_mat4(&self.gl, "transform", uni.transform);
+        self.shader.set_f32(&self.gl, "zoom", uni.zoom);
 
         unsafe {
             self.gl.ActiveTexture(gl::TEXTURE0);
@@ -39,7 +40,8 @@ impl TextureShader {
 #[derive(Clone, Debug, Copy)]
 pub struct Uniforms {
     pub texture_id: TextureId,
-    pub transform: na::Matrix4::<f32>
+    pub transform: na::Matrix4::<f32>,
+    pub zoom: f32
 }
 
 

@@ -113,6 +113,17 @@ impl Ui {
         // Cursor, has to be before backgorund, since they overlap and we then might skip drawn objects
         if active {
             // cursor
+
+            // get tmp info like
+            // - text offset into textbox, what char/pos is the first show
+            // - cursor offset, either into textbox or into string. Both calculate to the same
+            // - start of selection
+
+            // maybe just have 1 textedit state, that is shared for everyone, will be reset when a
+            // widget is no longer active/new widget that needs it gets active
+
+
+
             let render_box = self.drawer2D.text_render_box_with_font_name(txt, pixel_size, font_name);
 
             let cursor_color = self.style.text_field.cursor_color;

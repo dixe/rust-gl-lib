@@ -86,12 +86,12 @@ impl ShadowMap {
     }
 
 
-    fn getFrustumCornersWorldSpace(proj: &Mat4, view: Mat4) -> Vec::<V4>
+    fn get_frustum_corners_world_space(proj: &Mat4, view: Mat4) -> Vec::<V4>
     {
 
         let inv: Mat4 = (proj * view).try_inverse().unwrap();
 
-        let mut frustumCorners = vec![];
+        let mut frustum_corners = vec![];
         for xi in 0..2 {
             for yi in 0..2 {
                 for zi in 0..2 {
@@ -105,13 +105,13 @@ impl ShadowMap {
                         2.0 * z - 1.0,
                         1.0);
 
-                    frustumCorners.push(pt / pt.w);
+                    frustum_corners.push(pt / pt.w);
 
                 }
             }
         }
 
-        frustumCorners
+        frustum_corners
     }
 
     pub fn view(&self, light_pos: na::Vector3::<f32>) -> na::Matrix4::<f32> {
